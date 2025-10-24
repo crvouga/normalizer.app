@@ -28,6 +28,7 @@
     "@trpc/react-query": "^11.6.0",
     "@trpc/server": "^11.6.0",
     "bun-plugin-tailwind": "^0.0.14",
+    "minio": "^8.0.6",
     "react": "^19",
     "react-dom": "^19",
     "tailwindcss": "^4.0.6",
