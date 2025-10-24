@@ -1,4 +1,14 @@
+import { FileInput } from "~/src/components/ui/FileInput";
+
 export const StartNormalizationWorkflowScreen = () => {
+  const handleInputFilesChange = (files: FileList | null) => {
+    // Handle input files change
+  };
+
+  const handleTargetFilesChange = (files: FileList | null) => {
+    // Handle target files change
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-2xl p-8">
@@ -9,11 +19,14 @@ export const StartNormalizationWorkflowScreen = () => {
             <label htmlFor="input-files" className="font-medium">
               Input Files
             </label>
-            <input
+            <FileInput
               id="input-files"
-              type="file"
               multiple
-              className="border rounded p-2"
+              maxFiles={5}
+              maxSize={50 * 1024 * 1024} // 50MB
+              onFilesChange={handleInputFilesChange}
+              placeholder="Upload input files"
+              accept=".txt,.csv,.xlsx,.json"
             />
           </div>
 
@@ -21,11 +34,14 @@ export const StartNormalizationWorkflowScreen = () => {
             <label htmlFor="target-files" className="font-medium">
               Target Files
             </label>
-            <input
+            <FileInput
               id="target-files"
-              type="file"
               multiple
-              className="border rounded p-2"
+              maxFiles={5}
+              maxSize={50 * 1024 * 1024} // 50MB
+              onFilesChange={handleTargetFilesChange}
+              placeholder="Upload target files"
+              accept=".txt,.csv,.xlsx,.json"
             />
           </div>
 

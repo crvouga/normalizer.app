@@ -16,7 +16,9 @@
     "docker:clean": "docker-compose down -v --remove-orphans",
     "docker:app": "bun docker:down && COMPOSE_BAKE=true bun docker:up",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
-    "docker:prune": "docker system prune -a"
+    "docker:prune": "docker system prune -a",
+    "type-check": "tsc --noEmit --watch",
+    "tc": "bun type-check"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.0.14",
