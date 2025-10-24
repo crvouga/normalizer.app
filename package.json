@@ -6,9 +6,17 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "dev": "bun --hot src/index.tsx",
-    "start": "NODE_ENV=production bun src/index.tsx",
-    "build": "bun run build.ts"
+    "dev": "bun run dev:server",
+    "dev:server": "bun run --hot src/index.tsx",
+    "start": "bun run src/index.tsx",
+    "build": "bun run build.ts",
+    "up": "docker-compose up --build",
+    "down": "docker-compose down",
+    "restart": "docker-compose restart",
+    "logs": "docker-compose logs -f app",
+    "shell": "docker-compose exec app bun shell",
+    "clean": "docker-compose down -v --remove-orphans",
+    "app": "bun down && bun up"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",
