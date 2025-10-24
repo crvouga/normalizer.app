@@ -5,55 +5,19 @@ import * as React from "react";
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export const StartNormalizationWorkflowScreen = () => {
-  const [prompt, setPrompt] = React.useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("normalization-prompt") || "";
-    }
-    return "";
-  });
+  const [prompt, setPrompt] = React.useState("");
 
   const handleInputFilesChange = (files: FileList | null) => {
     // Handle input files change
-    // Note: Files cannot be stored in localStorage directly
-    // Only storing file metadata if needed
-    if (files) {
-      const fileNames = Array.from(files).map((f) => f.name);
-      localStorage.setItem(
-        "normalization-input-files",
-        JSON.stringify(fileNames)
-      );
-    } else {
-      localStorage.removeItem("normalization-input-files");
-    }
   };
 
   const handleTargetFilesChange = (files: FileList | null) => {
     // Handle target files change
-    if (files) {
-      const fileNames = Array.from(files).map((f) => f.name);
-      localStorage.setItem(
-        "normalization-target-files",
-        JSON.stringify(fileNames)
-      );
-    } else {
-      localStorage.removeItem("normalization-target-files");
-    }
   };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newPrompt = e.target.value;
-    setPrompt(newPrompt);
-    localStorage.setItem("normalization-prompt", newPrompt);
+    setPrompt(e.target.value);
   };
-
-  // Clear form data on unmount
-  React.useEffect(() => {
-    return () => {
-      localStorage.removeItem("normalization-prompt");
-      localStorage.removeItem("normalization-input-files");
-      localStorage.removeItem("normalization-target-files");
-    };
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
