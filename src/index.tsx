@@ -2,6 +2,9 @@ import { serve, SQL } from "bun";
 import { applyDBSchema } from "./db-schema";
 import index from "./index.html";
 import { Logger } from "./lib/logger";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { appRouter } from "./lib/routers";
+import { createContext } from "./lib/trpc";
 
 const main = async () => {
   const logger = Logger();
@@ -33,6 +36,16 @@ const main = async () => {
     routes: {
       // Serve index.html for all unmatched routes.
       "/*": index,
+
+      // tRPC endpoint
+      "/api/trpc/*": async (req) => {
+        return fetchRequestHandler({
+          endpoint: "/api/trpc",
+          req,
+          router: appRouter,
+          createContext,
+        });
+      },
 
       "/api/hello": {
         async GET(req) {

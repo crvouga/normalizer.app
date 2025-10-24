@@ -1,11 +1,13 @@
 import { FileInput } from "~/src/ui/file-input/file-input";
 import { Button } from "~/src/ui/button";
+import { useCurrentScreen } from "~/src/screen/use-current-screen";
 import * as React from "react";
 
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export const StartNormalizationWorkflowScreen = () => {
   const [prompt, setPrompt] = React.useState("");
+  const { setCurrentScreen } = useCurrentScreen();
 
   const handleInputFilesChange = (files: FileList | null) => {
     // Handle input files change
@@ -22,7 +24,16 @@ export const StartNormalizationWorkflowScreen = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-2xl p-8">
-        <h1 className="text-3xl font-bold mb-8">Normalizer</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Normalizer</h1>
+          <Button
+            variant="outline"
+            color="gray"
+            onClick={() => setCurrentScreen({ type: "trpc-example" })}
+          >
+            View tRPC Example
+          </Button>
+        </div>
 
         <form className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">

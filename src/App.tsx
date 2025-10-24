@@ -1,5 +1,6 @@
 import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow/normalization-workflow-screen";
 import { StartNormalizationWorkflowScreen } from "./normalization-workflow/start-normalization-workflow/start-normalization-workflow-screen";
+import { TrpcExample } from "./components/trpc-example";
 import { useCurrentScreen } from "./screen/use-current-screen";
 
 export const App = () => {
@@ -17,5 +18,7 @@ const CurrentScreen = () => {
       return <StartNormalizationWorkflowScreen />;
     case "normalization-workflow":
       return <NormalizationWorkflowScreen />;
+    case "trpc-example":
+      return <TrpcExample />;
   }
 };

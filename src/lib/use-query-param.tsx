@@ -17,7 +17,7 @@ export function useQueryParam<T>({
   paramName: string;
   parser: z.ZodType<T>;
   defaultValue: T;
-}): [T, (newValue: T, method: "push" | "replace") => void] {
+}): [T, (newValue: T, method?: "push" | "replace") => void] {
   const decodeParam = useCallback(
     (param: string | null): T => {
       if (param === null) return defaultValue;
@@ -70,7 +70,7 @@ export function useQueryParam<T>({
       }
 
       const newUrl = `${window.location.pathname}?${params.toString()}`;
-      switch (method) {
+      switch (method ?? "push") {
         case "push":
           window.history.pushState({}, "", newUrl);
           break;

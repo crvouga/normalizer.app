@@ -1,11 +1,19 @@
 import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
+import { trpc, trpcClient } from "./lib/trpc-client";
+
+const queryClient = new QueryClient();
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <App />
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </trpc.Provider>
   </StrictMode>
 );
 

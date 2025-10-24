@@ -18,9 +18,14 @@
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
     "docker:prune": "docker system prune -a",
     "type-check": "tsc --noEmit --watch",
-    "tc": "bun type-check"
+    "tc": "bun type-check",
+    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.5",
+    "@trpc/client": "^11.6.0",
+    "@trpc/react-query": "^11.6.0",
+    "@trpc/server": "^11.6.0",
     "bun-plugin-tailwind": "^0.0.14",
     "react": "^19",
     "react-dom": "^19",
