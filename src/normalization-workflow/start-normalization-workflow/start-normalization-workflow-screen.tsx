@@ -1,5 +1,5 @@
-import { FileInput } from "~/src/components/ui/file-input";
-import { Button } from "~/src/components/ui/button";
+import { FileInput } from "~/src/ui/file-input/file-input";
+import { Button } from "~/src/ui/button";
 import * as React from "react";
 
 const MAX_FILES = 1;

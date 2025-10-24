@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { cn } from "~/src/lib/utils";
-import { Label } from "~/src/components/ui/label";
+import { Label } from "~/src/ui/label";
 
 // Simple form context for basic form state
 type FormContextValue = {
