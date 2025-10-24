@@ -1,4 +1,4 @@
-import { useQueryParam } from "~/src/lib/useQueryParam";
+import { useQueryParam } from "~/src/lib/use-query-param";
 import { CurrentScreen } from "./current-screen";
 
 export const useCurrentScreen = () => {

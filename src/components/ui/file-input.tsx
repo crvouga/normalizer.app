@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "~/src/lib/utils";
 import { UploadIcon, ImageIcon, FileIcon, XIcon } from "./icon";
+import { FilePreview } from "./file-preview/file-preview";
 
 export interface FileInputProps
   extends Omit<
@@ -221,6 +222,32 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* File Preview Section */}
+        {showPreview && selectedFiles.length > 0 && (
+          <div className="mt-4 space-y-4">
+            {selectedFiles.map((file, index) => (
+              <div key={`preview-${file.name}-${index}`} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h5 className="text-sm font-medium text-foreground">
+                    Preview: {file.name}
+                  </h5>
+                  <span className="text-xs text-muted-foreground">
+                    ({formatFileSize(file.size)})
+                  </span>
+                </div>
+                <div className="border rounded-md p-4 bg-card">
+                  <FilePreview
+                    file={file}
+                    maxRows={5}
+                    maxColumns={8}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

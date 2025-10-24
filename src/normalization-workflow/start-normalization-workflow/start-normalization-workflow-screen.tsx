@@ -1,14 +1,59 @@
-import { FileInput } from "~/src/components/ui/FileInput";
+import { FileInput } from "~/src/components/ui/file-input";
 import { Button } from "~/src/components/ui/button";
+import * as React from "react";
 
+const MAX_FILES = 1;
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export const StartNormalizationWorkflowScreen = () => {
+  const [prompt, setPrompt] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("normalization-prompt") || "";
+    }
+    return "";
+  });
+
   const handleInputFilesChange = (files: FileList | null) => {
     // Handle input files change
+    // Note: Files cannot be stored in localStorage directly
+    // Only storing file metadata if needed
+    if (files) {
+      const fileNames = Array.from(files).map((f) => f.name);
+      localStorage.setItem(
+        "normalization-input-files",
+        JSON.stringify(fileNames)
+      );
+    } else {
+      localStorage.removeItem("normalization-input-files");
+    }
   };
 
   const handleTargetFilesChange = (files: FileList | null) => {
     // Handle target files change
+    if (files) {
+      const fileNames = Array.from(files).map((f) => f.name);
+      localStorage.setItem(
+        "normalization-target-files",
+        JSON.stringify(fileNames)
+      );
+    } else {
+      localStorage.removeItem("normalization-target-files");
+    }
   };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newPrompt = e.target.value;
+    setPrompt(newPrompt);
+    localStorage.setItem("normalization-prompt", newPrompt);
+  };
+
+  // Clear form data on unmount
+  React.useEffect(() => {
+    return () => {
+      localStorage.removeItem("normalization-prompt");
+      localStorage.removeItem("normalization-input-files");
+      localStorage.removeItem("normalization-target-files");
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -23,8 +68,8 @@ export const StartNormalizationWorkflowScreen = () => {
             <FileInput
               id="input-files"
               multiple
-              maxFiles={5}
-              maxSize={50 * 1024 * 1024} // 50MB
+              maxFiles={MAX_FILES}
+              maxSize={MAX_FILE_SIZE}
               onFilesChange={handleInputFilesChange}
               placeholder="Upload input files"
               accept=".txt,.csv,.xlsx,.json"
@@ -38,8 +83,8 @@ export const StartNormalizationWorkflowScreen = () => {
             <FileInput
               id="target-files"
               multiple
-              maxFiles={5}
-              maxSize={50 * 1024 * 1024} // 50MB
+              maxFiles={MAX_FILES}
+              maxSize={MAX_FILE_SIZE}
               onFilesChange={handleTargetFilesChange}
               placeholder="Upload target files"
               accept=".txt,.csv,.xlsx,.json"
@@ -55,6 +100,8 @@ export const StartNormalizationWorkflowScreen = () => {
               rows={4}
               className="border rounded p-2 resize-y"
               placeholder="Enter your prompt here..."
+              value={prompt}
+              onChange={handlePromptChange}
             />
           </div>
 

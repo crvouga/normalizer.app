@@ -1,6 +1,6 @@
-import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow/NormalizationWorkflow";
-import { StartNormalizationWorkflowScreen } from "./normalization-workflow/start-normalization-workflow/StartNormalizationWorkflow";
-import { useCurrentScreen } from "./screen/useCurrentScreen";
+import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow/normalization-workflow-screen";
+import { StartNormalizationWorkflowScreen } from "./normalization-workflow/start-normalization-workflow/start-normalization-workflow-screen";
+import { useCurrentScreen } from "./screen/use-current-screen";
 
 export const App = () => {
   return (
