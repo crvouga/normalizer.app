@@ -1,16 +1,16 @@
 import React, { useRef, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "~/src/components/ui/button";
+import { Input } from "~/src/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "~/src/components/ui/select";
+import { cn } from "~/src/lib/utils";
 
-export function APITester() {
+export const APITester = () => {
   const responseInputRef = useRef<HTMLTextAreaElement>(null);
 
   const testEndpoint = async (e: FormEvent<HTMLFormElement>) => {
@@ -77,4 +77,4 @@ export function APITester() {
       />
     </div>
   );
-}
+};
