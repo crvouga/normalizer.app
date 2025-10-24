@@ -7,6 +7,9 @@
     "minioadmin",
     "officedocument",
     "openxmlformats",
-    "spreadsheetml"
+    "pkey",
+    "plpgsql",
+    "spreadsheetml",
+    "timestamptz"
   ]
 }

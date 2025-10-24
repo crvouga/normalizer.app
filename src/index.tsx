@@ -1,6 +1,16 @@
-import { serve } from "bun";
+import { serve, SQL } from "bun";
+import { applyDBSchema } from "./db-schema";
 import index from "./index.html";
+import { Logger } from "./lib/logger";
 
+const logger = Logger();
+
+const sql = new SQL();
+
+logger.info("Applying database schema...");
+applyDBSchema(sql, logger);
+
+logger.info("Starting server...");
 const server = serve({
   routes: {
     // Serve index.html for all unmatched routes.
@@ -36,4 +46,4 @@ const server = serve({
   development: process.env.NODE_ENV !== "production",
 });
 
-console.log(`🚀 Server running at ${server.url}`);
+logger.info(`🚀 Server running at ${server.url}`);
