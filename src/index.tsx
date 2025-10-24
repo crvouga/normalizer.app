@@ -2,6 +2,7 @@ import { serve } from "bun";
 import index from "./index.html";
 
 const server = serve({
+  port: 5000,
   routes: {
     // Serve index.html for all unmatched routes.
     "/*": index,
@@ -26,6 +27,10 @@ const server = serve({
       return Response.json({
         message: `Hello, ${name}!`,
       });
+    },
+
+    "/health": async () => {
+      return Response.json({ status: "ok" });
     },
   },
 

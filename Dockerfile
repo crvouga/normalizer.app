@@ -19,6 +19,10 @@ COPY . .
 # Build the application
 RUN bun run build
 
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=5000
+
 # Expose port
 EXPOSE 5000
 
