@@ -5,6 +5,7 @@ import { createContext } from "./lib/trpc";
 import { createS3 } from "./s3";
 import { createSQL, cleanupSQL } from "./sql";
 import { createAppRouter } from "./trpc-app-router";
+import index from "./index.html";
 
 const main = async () => {
   const logger = createLogger();
@@ -36,15 +37,7 @@ const main = async () => {
   const server = serve({
     routes: {
       // Serve index.html for all unmatched routes.
-      "/*": async (req) => {
-        // Serve the HTML file directly
-        const htmlFile = Bun.file("./src/index.html");
-        return new Response(htmlFile, {
-          headers: {
-            "Content-Type": "text/html",
-          },
-        });
-      },
+      "/*": index,
 
       // tRPC endpoint
       "/api/trpc/*": async (req) => {

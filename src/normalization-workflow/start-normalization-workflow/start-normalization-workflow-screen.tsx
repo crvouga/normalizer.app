@@ -26,13 +26,6 @@ export const StartNormalizationWorkflowScreen = () => {
       <div className="w-full max-w-2xl p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Normalizer</h1>
-          <Button
-            variant="outline"
-            color="gray"
-            onClick={() => setCurrentScreen({ type: "trpc-example" })}
-          >
-            View tRPC Example
-          </Button>
         </div>
 
         <form className="flex flex-col gap-6">

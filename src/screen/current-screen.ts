@@ -8,9 +8,6 @@ export const CurrentScreen = z.discriminatedUnion("type", [
     type: z.literal("normalization-workflow"),
     input: z.string(),
   }),
-  z.object({
-    type: z.literal("trpc-example"),
-  }),
 ]);
 
 export type CurrentScreen = z.infer<typeof CurrentScreen>;

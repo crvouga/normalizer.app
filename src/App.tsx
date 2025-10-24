@@ -18,5 +18,8 @@ const CurrentScreen = () => {
       return <StartNormalizationWorkflowScreen />;
     case "normalization-workflow":
       return <NormalizationWorkflowScreen />;
+    default:
+      const never: never = currentScreen;
+      return never;
   }
 };

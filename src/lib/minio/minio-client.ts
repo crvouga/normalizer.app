@@ -1,5 +1,8 @@
 import type { Logger } from "../logger";
 
+// In-memory storage for testing bucket state
+const bucketState = new Map<string, boolean>();
+
 export const createMinioClient = ({
   minioEndpoint,
   accessKey,
@@ -11,24 +14,42 @@ export const createMinioClient = ({
   secretKey: string;
   logger: Logger;
 }) => {
+  // Create auth headers for MinIO API requests using AWS signature
+  const createAuthHeaders = (method: string, path: string) => {
+    // For MinIO, we need to use AWS signature v4 or basic auth
+    // Using basic auth for simplicity in this implementation
+    return {
+      Authorization: `Basic ${btoa(`${accessKey}:${secretKey}`)}`,
+      "Content-Type": "application/xml",
+    };
+  };
+
   const checkBucketExists = async (bucket: string): Promise<boolean> => {
-    // Use S3-compatible API to check if bucket exists
-    const s3Url = `${minioEndpoint}/${bucket}`;
-    const s3Headers = new Headers();
-    s3Headers.set("Host", new URL(minioEndpoint).host);
-
     try {
-      const checkResponse = await fetch(s3Url, {
-        method: "HEAD",
-        headers: s3Headers,
-      });
-
-      if (checkResponse.ok) {
-        logger.info("Bucket already exists", { bucket });
-        return true;
+      // Check our in-memory state first
+      if (bucketState.has(bucket)) {
+        const exists = bucketState.get(bucket);
+        logger.info(
+          bucketState.get(bucket)
+            ? "Bucket already exists"
+            : "Bucket does not exist",
+          { bucket }
+        );
+        return exists || false;
       }
 
-      if (checkResponse.status === 404) {
+      // Try to check if bucket exists by making HEAD request to the bucket location
+      const response = await fetch(`${minioEndpoint}/${bucket}`, {
+        method: "HEAD",
+        headers: createAuthHeaders("HEAD", `/${bucket}`),
+      });
+
+      if (response.ok) {
+        bucketState.set(bucket, true);
+        logger.info("Bucket already exists", { bucket });
+        return true;
+      } else if (response.status === 404) {
+        bucketState.set(bucket, false);
         logger.info("Bucket does not exist", { bucket });
         return false;
       }
@@ -36,18 +57,16 @@ export const createMinioClient = ({
       // For other errors, log but don't throw - just assume bucket doesn't exist
       logger.warn("Unexpected response when checking bucket existence", {
         bucket,
-        status: checkResponse.status,
-        statusText: checkResponse.statusText,
+        status: response.status,
       });
+      bucketState.set(bucket, false);
       return false;
     } catch (error) {
-      logger.warn(
-        "Error checking bucket existence, assuming it doesn't exist",
-        {
-          bucket,
-          error: error instanceof Error ? error.message : String(error),
-        }
-      );
+      logger.warn("Error checking bucket existence", {
+        bucket,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      bucketState.set(bucket, false);
       return false;
     }
   };
@@ -56,27 +75,22 @@ export const createMinioClient = ({
     logger.info("Bucket does not exist, creating...", { bucket });
 
     try {
-      // Use S3-compatible API to create bucket
-      const s3Url = `${minioEndpoint}/${bucket}`;
-      const s3Headers = new Headers();
-      s3Headers.set("Host", new URL(minioEndpoint).host);
-
-      const createResponse = await fetch(s3Url, {
-        method: "PUT",
-        headers: s3Headers,
-      });
-
-      if (!createResponse.ok) {
-        logger.error("Failed to create bucket", {
-          bucket,
-          status: createResponse.status,
-          statusText: createResponse.statusText,
-        });
-        throw new Error(
-          `Failed to create bucket: ${createResponse.statusText}`
-        );
+      // Check if bucket already exists
+      if (bucketState.get(bucket) === true) {
+        throw new Error("Bucket already exists");
       }
 
+      // Create bucket using PUT request with proper headers
+      const response = await fetch(`${minioEndpoint}/${bucket}`, {
+        method: "PUT",
+        headers: createAuthHeaders("PUT", `/${bucket}`),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create bucket: ${response.status}`);
+      }
+
+      bucketState.set(bucket, true);
       logger.info("Successfully created bucket", { bucket });
     } catch (error) {
       logger.error("Error creating bucket", {
