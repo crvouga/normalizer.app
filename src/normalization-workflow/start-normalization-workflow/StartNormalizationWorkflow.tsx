@@ -1,4 +1,5 @@
 import { FileInput } from "~/src/components/ui/FileInput";
+import { Button } from "~/src/components/ui/button";
 
 export const StartNormalizationWorkflowScreen = () => {
   const handleInputFilesChange = (files: FileList | null) => {
@@ -57,12 +58,9 @@ export const StartNormalizationWorkflowScreen = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-          >
+          <Button size="lg" type="submit">
             Start Normalization
-          </button>
+          </Button>
         </form>
       </div>
     </div>
