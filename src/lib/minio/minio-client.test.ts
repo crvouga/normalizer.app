@@ -1,0 +1,43 @@
+import { describe, test, expect } from "bun:test";
+import { createMinioClient } from "./minio-client";
+import { createLogger } from "../logger";
+
+describe("MinioClient", () => {
+  const logger = createLogger();
+  const minioClient = createMinioClient({
+    minioEndpoint: "http://localhost:9000",
+    accessKey: "minioadmin",
+    secretKey: "minioadmin",
+    logger,
+  });
+
+  const testBucket = "test-bucket-" + Math.random().toString(36).substring(7);
+
+  test("should check if bucket exists", async () => {
+    const exists = await minioClient.checkBucketExists(testBucket);
+    expect(exists).toBe(false);
+  });
+
+  test("should create a new bucket", async () => {
+    await minioClient.createBucket(testBucket);
+    const exists = await minioClient.checkBucketExists(testBucket);
+    expect(exists).toBe(true);
+  });
+
+  test("should ensure bucket exists - create if not exists", async () => {
+    const newBucket = "test-bucket-" + Math.random().toString(36).substring(7);
+    await minioClient.ensureBucketExists(newBucket);
+    const exists = await minioClient.checkBucketExists(newBucket);
+    expect(exists).toBe(true);
+  });
+
+  test("should ensure bucket exists - do nothing if exists", async () => {
+    await minioClient.ensureBucketExists(testBucket);
+    const exists = await minioClient.checkBucketExists(testBucket);
+    expect(exists).toBe(true);
+  });
+
+  test("should throw error when trying to create bucket that already exists", async () => {
+    await expect(minioClient.createBucket(testBucket)).rejects.toThrow();
+  });
+});

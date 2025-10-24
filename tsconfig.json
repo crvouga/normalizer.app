@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
+    "target": "ES2020",
     "jsx": "react-jsx",
     "allowJs": true,
+    "skipLibCheck": true,
 
     // Bundler mode
     "moduleResolution": "bundler",
@@ -14,5 +16,6 @@
       "~/*": ["*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }

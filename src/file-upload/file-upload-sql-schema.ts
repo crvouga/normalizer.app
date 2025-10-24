@@ -1,4 +1,4 @@
-export const FILE_UPLOAD_DB_SCHEMA = `
+export const FILE_UPLOAD_SQL_SCHEMA = `
 CREATE OR REPLACE FUNCTION update_files_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN

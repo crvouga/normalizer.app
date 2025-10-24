@@ -1,35 +1,21 @@
-import { serve, SQL } from "bun";
-import { applyDBSchema } from "./db-schema";
-import index from "./index.html";
-import { Logger } from "./lib/logger";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "./lib/routers";
+import { serve } from "bun";
+import index from "./index.html";
+import { createLogger } from "./lib/logger";
 import { createContext } from "./lib/trpc";
+import { createS3 } from "./s3";
+import { createSQL } from "./sql";
+import { createAppRouter } from "./trpc-app-router";
 
 const main = async () => {
-  const logger = Logger();
-
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    logger.error("DATABASE_URL environment variable is not set");
-    process.exit(1);
-  }
-
-  logger.info(`Database URL: ${databaseUrl}`);
-
-  const sql = new SQL(databaseUrl);
-
-  logger.info("Checking database health...");
-  try {
-    await sql`SELECT 1`;
-    logger.info("Database connection successful");
-  } catch (error) {
-    logger.error("Database connection failed:", error);
-    process.exit(1);
-  }
-
-  logger.info("Applying database schema...");
-  await applyDBSchema({ sql, logger });
+  const logger = createLogger();
+  const sql = await createSQL({ logger });
+  const s3 = await createS3({ logger });
+  const appRouter = createAppRouter({
+    sql,
+    s3,
+    logger,
+  });
 
   logger.info("Starting server...");
   const server = serve({

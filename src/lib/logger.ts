@@ -27,7 +27,7 @@ const formatMessage = (
   return `${baseMessage} ${JSON.stringify(meta)}`;
 };
 
-export const Logger = (): Logger => ({
+export const createLogger = (): Logger => ({
   error: (message: string, meta?: Record<string, unknown>) => {
     console.error(formatMessage("error", message, meta));
   },
