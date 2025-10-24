@@ -4,16 +4,6 @@ describe("Server", () => {
   test("should start server and respond to health check", async () => {
     // Start server in background with custom port
     const port = 3456;
-    // Kill any existing process on the port
-    try {
-      const lsofProcess = Bun.spawn(["lsof", "-ti", `:${port}`]);
-      const pid = await new Response(lsofProcess.stdout).text();
-      if (pid) {
-        await Bun.spawn(["kill", "-9", pid.trim()]).exited;
-      }
-    } catch (error) {
-      // Port may not be in use, which is fine
-    }
 
     const serverProcess = Bun.spawn(["bun", "run", "src/index.tsx"], {
       stdout: "inherit",
