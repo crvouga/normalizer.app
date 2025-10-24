@@ -4,11 +4,27 @@ import index from "./index.html";
 import { createLogger } from "./lib/logger";
 import { createContext } from "./lib/trpc";
 import { createS3 } from "./s3";
-import { createSQL } from "./sql";
+import { createSQL, cleanupSQL } from "./sql";
 import { createAppRouter } from "./trpc-app-router";
 
 const main = async () => {
   const logger = createLogger();
+
+  // Setup graceful shutdown handlers
+  const setupGracefulShutdown = () => {
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down gracefully...`);
+      await cleanupSQL(logger);
+      process.exit(0);
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGHUP", () => shutdown("SIGHUP"));
+  };
+
+  setupGracefulShutdown();
+
   const sql = await createSQL({ logger });
   const s3 = await createS3({ logger });
   const appRouter = createAppRouter({
@@ -66,4 +82,7 @@ const main = async () => {
   logger.info(`🚀 Server running at ${server.url}`);
 };
 
-main();
+main().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

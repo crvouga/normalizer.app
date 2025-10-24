@@ -2,11 +2,30 @@ import { SQL } from "bun";
 import type { Logger } from "./lib/logger";
 import { SQL_SCHEMA } from "./sql-schema";
 
+// Global connection instance to prevent multiple connections during hot reload
+let globalSQL: SQL | null = null;
+let isInitialized = false;
+
 export const createSQL = async ({
   logger,
 }: {
   logger: Logger;
 }): Promise<SQL> => {
+  // Return existing connection if available and healthy
+  if (globalSQL && isInitialized) {
+    try {
+      await globalSQL`SELECT 1`;
+      logger.info("Reusing existing database connection");
+      return globalSQL;
+    } catch (error) {
+      logger.warn("Existing connection is unhealthy, creating new one", {
+        error,
+      });
+      globalSQL = null;
+      isInitialized = false;
+    }
+  }
+
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
@@ -14,6 +33,7 @@ export const createSQL = async ({
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
+  logger.info("Creating new database connection...");
   const sql = new SQL(databaseUrl);
 
   logger.info("Checking database health...");
@@ -25,8 +45,13 @@ export const createSQL = async ({
     throw new Error("Failed to connect to database");
   }
 
-  await applySqlSchema({ sql, logger });
+  // Only apply schema if not already initialized
+  if (!isInitialized) {
+    await applySqlSchema({ sql, logger });
+    isInitialized = true;
+  }
 
+  globalSQL = sql;
   return sql;
 };
 
@@ -44,5 +69,20 @@ const applySqlSchema = async ({
   } catch (error) {
     logger.error("Failed to apply database schema", { error });
     throw error;
+  }
+};
+
+// Cleanup function to close connections gracefully
+export const cleanupSQL = async (logger: Logger): Promise<void> => {
+  if (globalSQL) {
+    try {
+      logger.info("Closing database connection...");
+      // Note: Bun's SQL doesn't have an explicit close method, but we can clear the reference
+      globalSQL = null;
+      isInitialized = false;
+      logger.info("Database connection closed");
+    } catch (error) {
+      logger.error("Error closing database connection:", error);
+    }
   }
 };
