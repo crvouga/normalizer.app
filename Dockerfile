@@ -16,11 +16,8 @@ RUN bun install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
-RUN bun run build
-
 # Set environment variables
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV PORT=5000
 
 # Expose port
@@ -30,5 +27,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
-# Start the application
-CMD ["bun", "run", "start"]
+# Start the development server with hot reloading
+CMD ["bun", "run", "dev:server"]

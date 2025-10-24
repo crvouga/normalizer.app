@@ -16,7 +16,8 @@
     "logs": "docker-compose logs -f app",
     "shell": "docker-compose exec app bun shell",
     "clean": "docker-compose down -v --remove-orphans",
-    "app": "bun down && bun up"
+    "app": "bun down && bun up",
+    "dev:docker": "docker-compose up --build"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.0",
