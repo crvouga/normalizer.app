@@ -3,6 +3,14 @@ import { StartNormalizationWorkflowScreen } from "./normalization-workflow/start
 import { useCurrentScreen } from "./screen/useCurrentScreen";
 
 export const App = () => {
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      <CurrentScreen />
+    </div>
+  );
+};
+
+const CurrentScreen = () => {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
     case "start-normalization":
