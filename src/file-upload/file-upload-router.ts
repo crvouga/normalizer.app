@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, publicProcedure } from "../lib/trpc";
 import { SQL, S3Client } from "bun";
 import { randomUUID } from "crypto";
-import { getS3Config } from "../s3";
+import { getS3Config } from "../s3-config";
 
 // Types for file metadata
 const FileMetadata = z.object({
