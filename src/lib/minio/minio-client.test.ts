@@ -1,13 +1,15 @@
 import { describe, test, expect } from "bun:test";
 import { createMinioClient } from "./minio-client";
 import { createLogger } from "../logger";
+import { getS3Config } from "~/src/s3";
 
 describe("MinioClient", () => {
   const logger = createLogger();
+  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const minioClient = createMinioClient({
-    minioEndpoint: "http://localhost:9000",
-    accessKey: "minioadmin",
-    secretKey: "minioadmin",
+    minioEndpoint: s3Endpoint,
+    accessKey: s3AccessKeyId,
+    secretKey: s3SecretAccessKey,
     logger,
   });
 

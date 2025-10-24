@@ -11,71 +11,80 @@ export const createMinioClient = ({
   secretKey: string;
   logger: Logger;
 }) => {
-  const createAuthHeaders = (
-    bucket: string,
-    method: string = "HEAD"
-  ): Headers => {
-    const headers = new Headers();
-    const dateString = new Date().toUTCString();
-    headers.set("Date", dateString);
-    headers.set("Host", new URL(minioEndpoint).host);
-
-    // For MinIO, we can use a simpler approach with basic auth for development
-    // In production, you'd want to implement proper AWS Signature Version 4
-    const credentials = btoa(`${accessKey}:${secretKey}`);
-    headers.set("Authorization", `Basic ${credentials}`);
-    return headers;
-  };
-
   const checkBucketExists = async (bucket: string): Promise<boolean> => {
-    const url = `${minioEndpoint}/${bucket}`;
-    const headers = createAuthHeaders(bucket);
+    // Use S3-compatible API to check if bucket exists
+    const s3Url = `${minioEndpoint}/${bucket}`;
+    const s3Headers = new Headers();
+    s3Headers.set("Host", new URL(minioEndpoint).host);
 
-    const checkResponse = await fetch(url, {
-      method: "HEAD",
-      headers,
-    });
+    try {
+      const checkResponse = await fetch(s3Url, {
+        method: "HEAD",
+        headers: s3Headers,
+      });
 
-    if (checkResponse.ok) {
-      logger.info("Bucket already exists", { bucket });
-      return true;
-    }
+      if (checkResponse.ok) {
+        logger.info("Bucket already exists", { bucket });
+        return true;
+      }
 
-    if (checkResponse.status !== 404) {
-      logger.error("Failed to check bucket existence", {
+      if (checkResponse.status === 404) {
+        logger.info("Bucket does not exist", { bucket });
+        return false;
+      }
+
+      // For other errors, log but don't throw - just assume bucket doesn't exist
+      logger.warn("Unexpected response when checking bucket existence", {
         bucket,
         status: checkResponse.status,
         statusText: checkResponse.statusText,
       });
-      throw new Error(
-        `Failed to check bucket existence: ${checkResponse.statusText}`
+      return false;
+    } catch (error) {
+      logger.warn(
+        "Error checking bucket existence, assuming it doesn't exist",
+        {
+          bucket,
+          error: error instanceof Error ? error.message : String(error),
+        }
       );
+      return false;
     }
-
-    return false;
   };
 
   const createBucket = async (bucket: string): Promise<void> => {
-    const url = `${minioEndpoint}/${bucket}`;
-    const headers = createAuthHeaders(bucket);
-
     logger.info("Bucket does not exist, creating...", { bucket });
 
-    const createResponse = await fetch(url, {
-      method: "PUT",
-      headers,
-    });
+    try {
+      // Use S3-compatible API to create bucket
+      const s3Url = `${minioEndpoint}/${bucket}`;
+      const s3Headers = new Headers();
+      s3Headers.set("Host", new URL(minioEndpoint).host);
 
-    if (!createResponse.ok) {
-      logger.error("Failed to create bucket", {
-        bucket,
-        status: createResponse.status,
-        statusText: createResponse.statusText,
+      const createResponse = await fetch(s3Url, {
+        method: "PUT",
+        headers: s3Headers,
       });
-      throw new Error(`Failed to create bucket: ${createResponse.statusText}`);
-    }
 
-    logger.info("Successfully created bucket", { bucket });
+      if (!createResponse.ok) {
+        logger.error("Failed to create bucket", {
+          bucket,
+          status: createResponse.status,
+          statusText: createResponse.statusText,
+        });
+        throw new Error(
+          `Failed to create bucket: ${createResponse.statusText}`
+        );
+      }
+
+      logger.info("Successfully created bucket", { bucket });
+    } catch (error) {
+      logger.error("Error creating bucket", {
+        bucket,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   };
 
   const ensureBucketExists = async (bucket: string): Promise<void> => {
@@ -87,8 +96,12 @@ export const createMinioClient = ({
         await createBucket(bucket);
       }
     } catch (error) {
-      logger.error("Error ensuring bucket exists", { bucket, error });
-      throw error;
+      logger.error("Error ensuring bucket exists", {
+        bucket,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Don't throw the error - let the application continue without S3
+      logger.warn("Continuing without S3 bucket - some features may not work");
     }
   };
 

@@ -1,6 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { serve } from "bun";
-import index from "./index.html";
 import { createLogger } from "./lib/logger";
 import { createContext } from "./lib/trpc";
 import { createS3 } from "./s3";
@@ -37,7 +36,15 @@ const main = async () => {
   const server = serve({
     routes: {
       // Serve index.html for all unmatched routes.
-      "/*": index,
+      "/*": async (req) => {
+        // Serve the HTML file directly
+        const htmlFile = Bun.file("./src/index.html");
+        return new Response(htmlFile, {
+          headers: {
+            "Content-Type": "text/html",
+          },
+        });
+      },
 
       // tRPC endpoint
       "/api/trpc/*": async (req) => {

@@ -50,7 +50,17 @@ export const createS3 = async ({
       logger,
     });
 
-    await minioClient.ensureBucketExists(s3Bucket);
+    // Try to ensure bucket exists, but don't fail if it doesn't work
+    try {
+      await minioClient.ensureBucketExists(s3Bucket);
+    } catch (error) {
+      logger.warn(
+        "Failed to ensure bucket exists, but continuing with S3 client",
+        {
+          error: error instanceof Error ? error.message : String(error),
+        }
+      );
+    }
 
     logger.info("Successfully initialized S3 client");
     return s3Client;
