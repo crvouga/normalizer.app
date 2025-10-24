@@ -6,8 +6,8 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "dev": "bun run dev:server",
-    "dev:server": "bun run --hot src/index.tsx",
+    "dev": "bun run server",
+    "server": "bun run --hot src/index.tsx",
     "start": "bun run src/index.tsx",
     "build": "bun run build.ts",
     "up": "docker-compose up --build",
