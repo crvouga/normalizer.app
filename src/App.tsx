@@ -1,4 +1,3 @@
-import "./index.css";
 import { APITester } from "./APITester";
 import { Card, CardContent } from "@/components/ui/card";
 

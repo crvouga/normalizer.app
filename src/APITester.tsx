@@ -39,7 +39,7 @@ export function APITester() {
       >
         <Select name="method" defaultValue="GET">
           <SelectTrigger className="w-[100px]">
-            <SelectValue placeholder="Method" />
+            <SelectValue>Method</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="GET">GET</SelectItem>

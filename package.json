@@ -1,5 +1,5 @@
 {
-  "name": "bun-react-template",
+  "name": "normalizer.app",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,14 +15,14 @@
     "docker:shell": "docker-compose exec app bun shell",
     "docker:clean": "docker-compose down -v --remove-orphans",
     "docker:app": "bun docker:down && COMPOSE_BAKE=true bun docker:up",
-    "docker:dev": "COMPOSE_BAKE=true docker-compose up --build"
+    "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
+    "docker:prune": "docker system prune -a"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.0.14",
     "react": "^19",
     "react-dom": "^19",
     "tailwindcss": "^4.0.6",
-    "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2"
   },
   "devDependencies": {
