@@ -3,47 +3,68 @@ import { applyDBSchema } from "./db-schema";
 import index from "./index.html";
 import { Logger } from "./lib/logger";
 
-const logger = Logger();
+const main = async () => {
+  const logger = Logger();
 
-const sql = new SQL();
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    logger.error("DATABASE_URL environment variable is not set");
+    process.exit(1);
+  }
 
-logger.info("Applying database schema...");
-applyDBSchema(sql, logger);
+  logger.info(`Database URL: ${databaseUrl}`);
 
-logger.info("Starting server...");
-const server = serve({
-  routes: {
-    // Serve index.html for all unmatched routes.
-    "/*": index,
+  const sql = new SQL(databaseUrl);
 
-    "/api/hello": {
-      async GET(req) {
+  logger.info("Checking database health...");
+  try {
+    await sql`SELECT 1`;
+    logger.info("Database connection successful");
+  } catch (error) {
+    logger.error("Database connection failed:", error);
+    process.exit(1);
+  }
+
+  logger.info("Applying database schema...");
+  await applyDBSchema({ sql, logger });
+
+  logger.info("Starting server...");
+  const server = serve({
+    routes: {
+      // Serve index.html for all unmatched routes.
+      "/*": index,
+
+      "/api/hello": {
+        async GET(req) {
+          return Response.json({
+            message: "Hello, world!",
+            method: "GET",
+          });
+        },
+        async PUT(req) {
+          return Response.json({
+            message: "Hello, world!",
+            method: "PUT",
+          });
+        },
+      },
+
+      "/api/hello/:name": async (req) => {
+        const name = req.params.name;
         return Response.json({
-          message: "Hello, world!",
-          method: "GET",
+          message: `Hello, ${name}!`,
         });
       },
-      async PUT(req) {
-        return Response.json({
-          message: "Hello, world!",
-          method: "PUT",
-        });
+
+      "/health": async () => {
+        return Response.json({ status: "ok" });
       },
     },
 
-    "/api/hello/:name": async (req) => {
-      const name = req.params.name;
-      return Response.json({
-        message: `Hello, ${name}!`,
-      });
-    },
+    development: process.env.NODE_ENV !== "production",
+  });
 
-    "/health": async () => {
-      return Response.json({ status: "ok" });
-    },
-  },
+  logger.info(`🚀 Server running at ${server.url}`);
+};
 
-  development: process.env.NODE_ENV !== "production",
-});
-
-logger.info(`🚀 Server running at ${server.url}`);
+main();

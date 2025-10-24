@@ -6,10 +6,13 @@ export const DB_SCHEMA = `
 ${FILE_UPLOAD_DB_SCHEMA}
 `;
 
-export const applyDBSchema = async (
-  sql: SQL,
-  logger: Logger
-): Promise<void> => {
+export const applyDBSchema = async ({
+  sql,
+  logger,
+}: {
+  sql: SQL;
+  logger: Logger;
+}): Promise<void> => {
   logger.info("Applying database schema...");
   try {
     await sql.unsafe(DB_SCHEMA);

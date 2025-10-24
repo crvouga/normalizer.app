@@ -1,6 +1,6 @@
 FROM oven/bun:1-alpine
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl netcat-openbsd
 
 WORKDIR /app
 
@@ -18,4 +18,4 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-CMD ["bun", "server"]
+CMD ["bun", "run", "--hot", "src/index.tsx"]
