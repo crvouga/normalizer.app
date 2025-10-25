@@ -35,8 +35,8 @@ const main = async () => {
 
   logger.info("Starting server...");
   const server = serve({
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
     routes: {
-      // Serve index.html for all unmatched routes.
       "/*": index,
 
       // tRPC endpoint

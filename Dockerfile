@@ -18,4 +18,4 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-CMD ["bun", "run", "--hot", "src/index.tsx"]
+CMD ["bun", "run", "src/index.tsx"]
