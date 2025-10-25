@@ -10,16 +10,30 @@ $$ language 'plpgsql';
 CREATE TABLE IF NOT EXISTS files();
 
 ALTER TABLE files ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jsonb;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS key text GENERATED ALWAYS AS ((data->>'key')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS filename text GENERATED ALWAYS AS ((data->>'filename')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS content_type text GENERATED ALWAYS AS ((data->>'content_type')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS size integer GENERATED ALWAYS AS ((data->>'size')::integer) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS file_type text GENERATED ALWAYS AS ((data->>'file_type')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS user_id text GENERATED ALWAYS AS ((data->>'user_id')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS status text GENERATED ALWAYS AS ((data->>'status')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS s3_bucket text GENERATED ALWAYS AS ((data->>'s3_bucket')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS s3_region text GENERATED ALWAYS AS ((data->>'s3_region')::text) STORED;
-ALTER TABLE files ADD COLUMN IF NOT EXISTS s3_key text GENERATED ALWAYS AS ((data->>'s3_key')::text) STORED;
+
+-- Drop existing generated columns if they exist
+ALTER TABLE files DROP COLUMN IF EXISTS key CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS filename CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS content_type CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS size CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS file_type CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS user_id CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS status CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS s3_bucket CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS s3_region CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS s3_key CASCADE;
+
+-- Recreate generated columns
+ALTER TABLE files ADD COLUMN key text GENERATED ALWAYS AS ((data->>'key')::text) STORED;
+ALTER TABLE files ADD COLUMN filename text GENERATED ALWAYS AS ((data->>'filename')::text) STORED;
+ALTER TABLE files ADD COLUMN content_type text GENERATED ALWAYS AS ((data->>'content_type')::text) STORED;
+ALTER TABLE files ADD COLUMN size integer GENERATED ALWAYS AS ((data->>'size')::integer) STORED;
+ALTER TABLE files ADD COLUMN file_type text GENERATED ALWAYS AS ((data->>'file_type')::text) STORED;
+ALTER TABLE files ADD COLUMN user_id text GENERATED ALWAYS AS ((data->>'user_id')::text) STORED;
+ALTER TABLE files ADD COLUMN status text GENERATED ALWAYS AS ((data->>'status')::text) STORED;
+ALTER TABLE files ADD COLUMN s3_bucket text GENERATED ALWAYS AS ((data->>'s3_bucket')::text) STORED;
+ALTER TABLE files ADD COLUMN s3_region text GENERATED ALWAYS AS ((data->>'s3_region')::text) STORED;
+ALTER TABLE files ADD COLUMN s3_key text GENERATED ALWAYS AS ((data->>'s3_key')::text) STORED;
 
 ALTER TABLE files DROP CONSTRAINT IF EXISTS files_pkey CASCADE;
 ALTER TABLE files ADD PRIMARY KEY (key);

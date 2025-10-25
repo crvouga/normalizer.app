@@ -37,6 +37,12 @@ export const createFileUploadRouter = ({
           userId: z.string(),
         })
       )
+      .output(
+        z.object({
+          uploadUrl: z.string(),
+          fileKey: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const key = randomUUID();
         const s3Key = `uploads/${key}/${input.filename}`;
@@ -60,9 +66,9 @@ export const createFileUploadRouter = ({
 
         // Insert into database
         await sql`
-        INSERT INTO files (data)
-        VALUES (${JSON.stringify(fileData)})
-      `;
+          INSERT INTO files (data, key)
+          VALUES (${JSON.stringify(fileData)}, ${key})
+        `;
 
         return {
           uploadUrl,
@@ -77,6 +83,7 @@ export const createFileUploadRouter = ({
           key: z.string(),
         })
       )
+      .output(FileMetadata)
       .query(async ({ input }) => {
         const result = await sql`
         SELECT data FROM files 
@@ -93,6 +100,7 @@ export const createFileUploadRouter = ({
           userId: z.string(),
         })
       )
+      .output(z.array(FileMetadata))
       .query(async ({ input }) => {
         const results = await sql`
         SELECT data FROM files
@@ -111,6 +119,7 @@ export const createFileUploadRouter = ({
           size: z.number(),
         })
       )
+      .output(z.void())
       .mutation(async ({ input }) => {
         await sql`
         UPDATE files
@@ -134,6 +143,7 @@ export const createFileUploadRouter = ({
           key: z.string(),
         })
       )
+      .output(z.void())
       .mutation(async ({ input }) => {
         const file = await sql`
         SELECT data FROM files
