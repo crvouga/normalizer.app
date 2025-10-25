@@ -33,6 +33,16 @@ export const createSQL = async ({
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
+  // Log non-sensitive database config
+  const dbUrlObj = new URL(databaseUrl);
+  logger.info("Database configuration:", {
+    host: dbUrlObj.hostname,
+    port: dbUrlObj.port,
+    database: dbUrlObj.pathname.slice(1),
+    user: dbUrlObj.username,
+    // Omit password for security
+  });
+
   logger.info("Creating new database connection...");
   const sql = new SQL(databaseUrl);
 

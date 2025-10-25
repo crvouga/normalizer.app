@@ -13,7 +13,11 @@ export const createS3 = async ({
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } =
     getS3Config();
 
-  logger.info("Initializing S3 client...");
+  logger.info("Initializing S3 client...", {
+    endpoint: s3Endpoint,
+    bucket: s3Bucket,
+  });
+
   try {
     const s3Client = new S3Client({
       endpoint: s3Endpoint,
@@ -36,14 +40,23 @@ export const createS3 = async ({
         "Failed to ensure bucket exists, but continuing with S3 client",
         {
           error: error instanceof Error ? error.message : String(error),
+          endpoint: s3Endpoint,
+          bucket: s3Bucket,
         }
       );
     }
 
-    logger.info("Successfully initialized S3 client");
+    logger.info("Successfully initialized S3 client", {
+      endpoint: s3Endpoint,
+      bucket: s3Bucket,
+    });
     return s3Client;
   } catch (error) {
-    logger.error("Failed to initialize S3 client:", error);
+    logger.error("Failed to initialize S3 client:", {
+      error,
+      endpoint: s3Endpoint,
+      bucket: s3Bucket,
+    });
     throw new Error("Failed to initialize S3 client");
   }
 };
