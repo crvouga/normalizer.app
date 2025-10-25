@@ -11,7 +11,6 @@ const FileMetadata = z.object({
   content_type: z.string(),
   size: z.number(),
   file_type: z.string(),
-  user_id: z.string(),
   status: z.string(),
   s3_bucket: z.string(),
   s3_key: z.string(),
@@ -34,7 +33,6 @@ export const createFileUploadRouter = ({
         z.object({
           filename: z.string(),
           contentType: z.string(),
-          userId: z.string(),
         })
       )
       .output(
@@ -58,7 +56,6 @@ export const createFileUploadRouter = ({
           content_type: input.contentType,
           size: 0, // Will be updated after upload
           file_type: input.filename.split(".").pop() || "unknown",
-          user_id: input.userId,
           status: "pending",
           s3_bucket: s3Bucket,
           s3_key: s3Key,
@@ -95,17 +92,12 @@ export const createFileUploadRouter = ({
 
     // List files for user
     listFiles: publicProcedure
-      .input(
-        z.object({
-          userId: z.string(),
-        })
-      )
+      .input(z.void())
       .output(z.array(FileMetadata))
-      .query(async ({ input }) => {
+      .query(async () => {
         const results = await sql`
         SELECT data FROM files
-        WHERE user_id = ${input.userId}
-        AND deleted_at IS NULL
+        WHERE deleted_at IS NULL
         ORDER BY created_at DESC
       `;
         return results.map((r) => r.data as FileMetadata);

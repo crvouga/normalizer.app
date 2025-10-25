@@ -2,23 +2,58 @@ import { FileInput } from "~/src/ui/file-input/file-input";
 import { Button } from "~/src/ui/button";
 import { useCurrentScreen } from "~/src/screen/use-current-screen";
 import * as React from "react";
+import { useFileUpload } from "~/src/file-upload/use-file-upload";
 
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export const StartNormalizationWorkflowScreen = () => {
   const [prompt, setPrompt] = React.useState("");
-  const { setCurrentScreen } = useCurrentScreen();
+  const [inputFile, setInputFile] = React.useState<File | null>(null);
+  const [targetFile, setTargetFile] = React.useState<File | null>(null);
+
+  const { uploadFile, isUploading } = useFileUpload({
+    onUploadComplete: (file) => {
+      console.log("File uploaded:", file);
+    },
+    onUploadError: (error) => {
+      console.error("Upload error:", error);
+    },
+  });
 
   const handleInputFilesChange = (files: FileList | null) => {
-    // Handle input files change
+    if (files && files.length > 0) {
+      setInputFile(files[0]);
+    }
   };
 
   const handleTargetFilesChange = (files: FileList | null) => {
-    // Handle target files change
+    if (files && files.length > 0) {
+      setTargetFile(files[0]);
+    }
   };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!inputFile || !targetFile) {
+      console.error("Please select both input and target files");
+      return;
+    }
+
+    try {
+      // Upload both files
+      await uploadFile(inputFile);
+      await uploadFile(targetFile);
+
+      // TODO: Handle successful upload - perhaps navigate to next screen
+      console.log("Files uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading files:", error);
+    }
   };
 
   return (
@@ -28,7 +63,7 @@ export const StartNormalizationWorkflowScreen = () => {
           <h1 className="text-3xl font-bold">Normalizer</h1>
         </div>
 
-        <form className="flex flex-col gap-6">
+        <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
             <label htmlFor="input-files" className="font-medium">
               Input Files
@@ -73,8 +108,8 @@ export const StartNormalizationWorkflowScreen = () => {
             />
           </div>
 
-          <Button size="lg" type="submit">
-            Start Normalization
+          <Button size="lg" type="submit" disabled={isUploading}>
+            {isUploading ? "Uploading..." : "Start Normalization"}
           </Button>
         </form>
       </div>
