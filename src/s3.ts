@@ -1,4 +1,5 @@
 import type { Logger } from "./lib/logger";
+import { S3Client } from "bun";
 import { createMinioClient } from "./lib/minio/minio-client";
 import { getS3Config } from "./s3-config";
 
@@ -6,9 +7,16 @@ export const createS3 = async ({
   logger,
 }: {
   logger: Logger;
-}): Promise<ReturnType<typeof createMinioClient>> => {
+}): Promise<S3Client> => {
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } =
     getS3Config();
+
+  const s3Client = new S3Client({
+    endpoint: s3Endpoint,
+    accessKeyId: s3AccessKeyId,
+    secretAccessKey: s3SecretAccessKey,
+    bucket: s3Bucket,
+  });
 
   logger.info("Initializing MinIO client...", {
     endpoint: s3Endpoint,
@@ -41,7 +49,7 @@ export const createS3 = async ({
       endpoint: s3Endpoint,
       bucket: s3Bucket,
     });
-    return minioClient;
+    return s3Client;
   } catch (error) {
     logger.error("Failed to initialize MinIO client:", {
       error,

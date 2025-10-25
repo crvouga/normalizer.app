@@ -1,9 +1,8 @@
-import { z } from "zod";
-import { router, publicProcedure } from "../lib/trpc";
-import { SQL } from "bun";
+import { S3Client, SQL } from "bun";
 import { randomUUID } from "crypto";
+import { z } from "zod";
+import { publicProcedure, router } from "../lib/trpc";
 import { getS3Config } from "../s3-config";
-import { type MinioClient } from "../lib/minio/minio-client";
 
 // Types for file metadata
 const FileMetadata = z.object({
@@ -22,10 +21,10 @@ export type FileMetadata = z.infer<typeof FileMetadata>;
 // Create router with injected dependencies
 export const createFileUploadRouter = ({
   sql,
-  minioClient,
+  s3,
 }: {
   sql: SQL;
-  minioClient: MinioClient;
+  s3: S3Client;
 }) =>
   router({
     // Get presigned upload URL
@@ -47,17 +46,14 @@ export const createFileUploadRouter = ({
         const s3Key = `uploads/${id}/${input.filename}`;
         const { s3Bucket, s3ExternalEndpoint, s3Endpoint } = getS3Config();
 
-        // Generate presigned URL with MinIO client
-        const uploadUrl = await minioClient.generatePresignedUrl(
-          s3Bucket,
-          s3Key
-        );
-
-        // Replace internal endpoint with external endpoint if different
-        const finalUploadUrl = uploadUrl.replace(
-          s3Endpoint,
-          s3ExternalEndpoint
-        );
+        // Generate presigned URL with S3 client
+        const uploadUrl = s3
+          .file(s3Key, {
+            bucket: s3Bucket,
+          })
+          .presign({
+            expiresIn: 60 * 60 * 24 * 30, // 30 days
+          });
 
         // Create file record
         const fileData: FileMetadata = {
@@ -78,7 +74,7 @@ export const createFileUploadRouter = ({
         `;
 
         return {
-          uploadUrl: finalUploadUrl,
+          uploadUrl,
           fileId: id,
         };
       }),
@@ -90,14 +86,14 @@ export const createFileUploadRouter = ({
           key: z.string(),
         })
       )
-      .output(FileMetadata)
+      .output(FileMetadata.nullable())
       .query(async ({ input }) => {
         const result = await sql`
           SELECT data FROM files 
           WHERE id = ${input.key}
           LIMIT 1
         `;
-        return result[0]?.data as FileMetadata;
+        return result[0]?.data || null;
       }),
 
     // List files for user
@@ -122,7 +118,7 @@ export const createFileUploadRouter = ({
       )
       .output(z.void())
       .mutation(async ({ input }) => {
-        await sql`
+        const result = await sql`
           UPDATE files
           SET data = jsonb_set(
             jsonb_set(
@@ -134,7 +130,12 @@ export const createFileUploadRouter = ({
             ${input.size}::text::jsonb
           )
           WHERE id = ${input.key}
+          RETURNING data
         `;
+
+        if (!result.length) {
+          throw new Error("File not found");
+        }
       }),
 
     // Delete file
@@ -158,8 +159,12 @@ export const createFileUploadRouter = ({
 
         const fileData = file[0].data as FileMetadata;
 
-        // Delete from MinIO
-        await minioClient.deleteObject(fileData.s3_bucket, fileData.s3_key);
+        // Delete from S3
+        await s3
+          .file(fileData.s3_key, {
+            bucket: fileData.s3_bucket,
+          })
+          .delete();
 
         // Delete from database
         await sql`

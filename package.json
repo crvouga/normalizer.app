@@ -6,21 +6,19 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "app": "bun docker:app",
     "server": "bun run --hot src/index.tsx",
-    "docker:up": "COMPOSE_BAKE=true docker-compose up --build",
+    "docker": "bun docker:down && bun docker:up",
+    "docker:up": "COMPOSE_BAKE=true docker-compose up --build -d",
     "docker:down": "docker-compose down --volumes --remove-orphans",
     "docker:restart": "docker-compose restart",
     "docker:logs": "docker-compose logs -f app",
-    "docker:shell": "docker-compose exec app bun shell",
     "docker:clean": "docker-compose down -v --remove-orphans",
-    "docker:app": "bun docker:down && COMPOSE_BAKE=true bun docker:up",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
     "docker:prune": "docker system prune -a",
     "type-check": "tsc --noEmit --watch",
-    "docker:test": "docker-compose exec app bun test",
     "tc": "bun type-check",
-    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres"
+    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
+    "kp": "bun x kill-port 5000"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.5",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trpc } from "../trpc-client";
+import { trpc, trpcClient } from "../trpc-client";
 import type { FileMetadata } from "./file-upload-router";
 
 interface UseFileUploadOptions {
@@ -24,17 +24,13 @@ export const useFileUpload = ({
       setUploadProgress(0);
 
       // Get presigned URL
-      const result = await getUploadUrl.mutateAsync({
+      const got = await trpcClient.fileUpload.getUploadUrl.mutate({
         filename: file.name,
         contentType: file.type,
       });
-      const { uploadUrl, fileKey } = result as {
-        uploadUrl: string;
-        fileKey: string;
-      };
 
       // Upload to S3
-      const response = await fetch(uploadUrl, {
+      const response = await fetch(got.uploadUrl, {
         method: "PUT",
         body: file,
         headers: {
@@ -48,13 +44,15 @@ export const useFileUpload = ({
 
       // Mark as uploaded in database
       await markUploaded.mutateAsync({
-        key: fileKey,
+        key: got.fileId,
         size: file.size,
       });
 
       // Invalidate and refetch file data
-      await utils.fileUpload.getFile.invalidate({ key: fileKey });
-      const fileData = await utils.fileUpload.getFile.fetch({ key: fileKey });
+      await utils.fileUpload.getFile.invalidate({ key: got.fileId });
+      const fileData = await utils.fileUpload.getFile.fetch({
+        key: got.fileId,
+      });
 
       // Invalidate files cache
       await utils.fileUpload.listFiles.invalidate();
