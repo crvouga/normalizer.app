@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { router, publicProcedure } from "../lib/trpc";
-import { SQL, S3Client } from "bun";
+import { SQL } from "bun";
 import { randomUUID } from "crypto";
 import { getS3Config } from "../s3-config";
+import { type MinioClient } from "../lib/minio/minio-client";
 
 // Types for file metadata
 const FileMetadata = z.object({
@@ -21,10 +22,10 @@ export type FileMetadata = z.infer<typeof FileMetadata>;
 // Create router with injected dependencies
 export const createFileUploadRouter = ({
   sql,
-  s3,
+  minioClient,
 }: {
   sql: SQL;
-  s3: S3Client;
+  minioClient: MinioClient;
 }) =>
   router({
     // Get presigned upload URL
@@ -46,10 +47,17 @@ export const createFileUploadRouter = ({
         const s3Key = `uploads/${id}/${input.filename}`;
         const { s3Bucket, s3ExternalEndpoint, s3Endpoint } = getS3Config();
 
-        // Generate presigned URL with external endpoint
-        const uploadUrl = s3
-          .presign(s3Key)
-          .replace(s3Endpoint, s3ExternalEndpoint);
+        // Generate presigned URL with MinIO client
+        const uploadUrl = await minioClient.generatePresignedUrl(
+          s3Bucket,
+          s3Key
+        );
+
+        // Replace internal endpoint with external endpoint if different
+        const finalUploadUrl = uploadUrl.replace(
+          s3Endpoint,
+          s3ExternalEndpoint
+        );
 
         // Create file record
         const fileData: FileMetadata = {
@@ -70,7 +78,7 @@ export const createFileUploadRouter = ({
         `;
 
         return {
-          uploadUrl,
+          uploadUrl: finalUploadUrl,
           fileId: id,
         };
       }),
@@ -150,8 +158,8 @@ export const createFileUploadRouter = ({
 
         const fileData = file[0].data as FileMetadata;
 
-        // Delete from S3
-        await s3.delete(fileData.s3_key);
+        // Delete from MinIO
+        await minioClient.deleteObject(fileData.s3_bucket, fileData.s3_key);
 
         // Delete from database
         await sql`

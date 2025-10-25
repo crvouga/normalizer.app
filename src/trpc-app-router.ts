@@ -1,11 +1,12 @@
-import type { S3Client, SQL } from "bun";
+import type { SQL } from "bun";
 import { createFileUploadRouter } from "~/src/file-upload/file-upload-router";
-import { router } from "./lib/trpc";
 import type { Logger } from "./lib/logger";
+import { type MinioClient } from "./lib/minio/minio-client";
+import { router } from "./lib/trpc";
 
 export const createAppRouter = (config: {
   sql: SQL;
-  s3: S3Client;
+  minioClient: MinioClient;
   logger: Logger;
 }) =>
   router({

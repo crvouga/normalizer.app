@@ -26,10 +26,10 @@ const main = async () => {
   setupGracefulShutdown();
 
   const sql = await createSQL({ logger });
-  const s3 = await createS3({ logger });
+  const minioClient = await createS3({ logger });
   const appRouter = createAppRouter({
     sql,
-    s3,
+    minioClient,
     logger,
   });
 

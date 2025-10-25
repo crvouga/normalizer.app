@@ -57,8 +57,8 @@ export const createMinioClient = ({
         throw new Error("Bucket already exists");
       }
 
-      // Create bucket with default region
-      await minioClient.makeBucket(bucket, "us-east-1");
+      // Create bucket with default region (empty string for MinIO)
+      await minioClient.makeBucket(bucket, "");
       logger.info("Successfully created bucket", { bucket });
     } catch (error) {
       logger.error("Error creating bucket", {
@@ -74,15 +74,20 @@ export const createMinioClient = ({
 
     try {
       // Policy that allows public read and write access to the bucket
-      // This is needed for presigned URLs to work
       const policy = {
         Version: "2012-10-17",
         Statement: [
           {
+            Sid: "PublicReadWrite",
             Effect: "Allow",
-            Principal: { AWS: ["*"] },
-            Action: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-            Resource: [`arn:aws:s3:::${bucket}/*`],
+            Principal: "*",
+            Action: [
+              "s3:GetObject",
+              "s3:PutObject",
+              "s3:DeleteObject",
+              "s3:ListBucket",
+            ],
+            Resource: [`arn:aws:s3:::${bucket}/*`, `arn:aws:s3:::${bucket}`],
           },
         ],
       };
@@ -128,10 +133,62 @@ export const createMinioClient = ({
     }
   };
 
+  const generatePresignedUrl = async (
+    bucket: string,
+    objectKey: string,
+    expiresIn: number = 86400 // 24 hours default
+  ): Promise<string> => {
+    try {
+      const url = await minioClient.presignedPutObject(
+        bucket,
+        objectKey,
+        expiresIn
+      );
+      logger.info("Generated presigned URL", {
+        bucket,
+        objectKey,
+        expiresIn,
+      });
+      return url;
+    } catch (error) {
+      logger.error("Error generating presigned URL", {
+        bucket,
+        objectKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
+  const deleteObject = async (
+    bucket: string,
+    objectKey: string
+  ): Promise<void> => {
+    try {
+      await minioClient.removeObject(bucket, objectKey);
+      logger.info("Successfully deleted object", {
+        bucket,
+        objectKey,
+      });
+    } catch (error) {
+      logger.error("Error deleting object", {
+        bucket,
+        objectKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
   return {
     checkBucketExists,
     createBucket,
     setBucketPolicy,
     ensureBucketExists,
+    generatePresignedUrl,
+    deleteObject,
+    client: minioClient,
   };
 };
+
+export type MinioClient = ReturnType<typeof createMinioClient>;
