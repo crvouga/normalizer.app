@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trpc, trpcClient } from "../trpc-client";
+import { trpcReactClient, trpcClient } from "../trpc-client";
 import type { FileMetadata } from "./file-upload-router";
 
 interface UseFileUploadOptions {
@@ -14,9 +14,9 @@ export const useFileUpload = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const utils = trpc.useUtils();
-  const getUploadUrl = trpc.fileUpload.getUploadUrl.useMutation();
-  const markUploaded = trpc.fileUpload.markUploaded.useMutation();
+  const utils = trpcReactClient.useUtils();
+  const getUploadUrl = trpcReactClient.fileUpload.getUploadUrl.useMutation();
+  const markUploaded = trpcReactClient.fileUpload.markUploaded.useMutation();
 
   const uploadFile = async (file: File) => {
     try {
@@ -24,13 +24,13 @@ export const useFileUpload = ({
       setUploadProgress(0);
 
       // Get presigned URL
-      const got = await trpcClient.fileUpload.getUploadUrl.mutate({
+      const { uploadUrl, fileId } = await getUploadUrl.mutateAsync({
         filename: file.name,
         contentType: file.type,
       });
 
       // Upload to S3
-      const response = await fetch(got.uploadUrl, {
+      const response = await fetch(uploadUrl, {
         method: "PUT",
         body: file,
         headers: {
@@ -38,20 +38,16 @@ export const useFileUpload = ({
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to upload file");
-      }
-
       // Mark as uploaded in database
       await markUploaded.mutateAsync({
-        key: got.fileId,
+        key: fileId,
         size: file.size,
       });
 
       // Invalidate and refetch file data
-      await utils.fileUpload.getFile.invalidate({ key: got.fileId });
+      await utils.fileUpload.getFile.invalidate({ key: fileId });
       const fileData = await utils.fileUpload.getFile.fetch({
-        key: got.fileId,
+        key: fileId,
       });
 
       // Invalidate files cache
