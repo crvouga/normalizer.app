@@ -5,6 +5,7 @@
     "dotenv",
     "eslintcache",
     "healthcheck",
+    "INITDB",
     "isready",
     "minioadmin",
     "officedocument",

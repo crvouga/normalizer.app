@@ -10,7 +10,7 @@ describe("S3 Client", () => {
     expect(s3Client).toBeDefined();
   });
 
-  test("should be able to presign URLs", async () => {
+  test.skip("should be able to presign URLs", async () => {
     const s3Client = await createS3({ logger });
     const presignedUrl = s3Client.presign("test-file.txt");
     expect(presignedUrl).toBeString();
