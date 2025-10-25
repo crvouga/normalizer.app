@@ -9,7 +9,7 @@
     "app": "bun docker:app",
     "server": "bun run --hot src/index.tsx",
     "docker:up": "COMPOSE_BAKE=true docker-compose up --build",
-    "docker:bun": "docker-compose down --volumes --remove-orphans",
+    "docker:down": "docker-compose down --volumes --remove-orphans",
     "docker:restart": "docker-compose restart",
     "docker:logs": "docker-compose logs -f app",
     "docker:shell": "docker-compose exec app bun shell",

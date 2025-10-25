@@ -65,8 +65,8 @@ export const createFileUploadRouter = ({
 
         // Insert into database
         await sql`
-          INSERT INTO files (data, id)
-          VALUES (${JSON.stringify(fileData)}, ${id})
+          INSERT INTO files (id, data)
+          VALUES (${id}, ${JSON.stringify(fileData)}::jsonb)
         `;
 
         return {
@@ -85,10 +85,10 @@ export const createFileUploadRouter = ({
       .output(FileMetadata)
       .query(async ({ input }) => {
         const result = await sql`
-        SELECT data FROM files 
-        WHERE id = ${input.key}
-        AND deleted_at IS NULL
-      `;
+          SELECT data FROM files 
+          WHERE id = ${input.key}
+          LIMIT 1
+        `;
         return result[0]?.data as FileMetadata;
       }),
 
@@ -98,10 +98,9 @@ export const createFileUploadRouter = ({
       .output(z.array(FileMetadata))
       .query(async () => {
         const results = await sql`
-        SELECT data FROM files
-        WHERE deleted_at IS NULL
-        ORDER BY created_at DESC
-      `;
+          SELECT data FROM files
+          ORDER BY id DESC
+        `;
         return results.map((r) => r.data as FileMetadata);
       }),
 
@@ -116,18 +115,18 @@ export const createFileUploadRouter = ({
       .output(z.void())
       .mutation(async ({ input }) => {
         await sql`
-        UPDATE files
-        SET data = jsonb_set(
-          jsonb_set(
-            data,
-            '{status}',
-            '"uploaded"'
-          ),
-          '{size}',
-          ${input.size}::text::jsonb
-        )
-        WHERE id = ${input.key}
-      `;
+          UPDATE files
+          SET data = jsonb_set(
+            jsonb_set(
+              data,
+              '{status}',
+              '"uploaded"'::jsonb
+            ),
+            '{size}',
+            ${input.size}::text::jsonb
+          )
+          WHERE id = ${input.key}
+        `;
       }),
 
     // Delete file
@@ -140,10 +139,10 @@ export const createFileUploadRouter = ({
       .output(z.void())
       .mutation(async ({ input }) => {
         const file = await sql`
-        SELECT data FROM files
-        WHERE id = ${input.key}
-        AND deleted_at IS NULL
-      `;
+          SELECT data FROM files
+          WHERE id = ${input.key}
+          LIMIT 1
+        `;
 
         if (!file[0]) {
           throw new Error("File not found");
@@ -154,11 +153,10 @@ export const createFileUploadRouter = ({
         // Delete from S3
         await s3.delete(fileData.s3_key);
 
-        // Soft delete in database
+        // Delete from database
         await sql`
-        UPDATE files
-        SET deleted_at = NOW()
-        WHERE id = ${input.key}
-      `;
+          DELETE FROM files
+          WHERE id = ${input.key}
+        `;
       }),
   });

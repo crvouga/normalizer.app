@@ -69,6 +69,35 @@ export const createMinioClient = ({
     }
   };
 
+  const setBucketPolicy = async (bucket: string): Promise<void> => {
+    logger.info("Setting bucket policy...", { bucket });
+
+    try {
+      // Policy that allows public read and write access to the bucket
+      // This is needed for presigned URLs to work
+      const policy = {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { AWS: ["*"] },
+            Action: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+            Resource: [`arn:aws:s3:::${bucket}/*`],
+          },
+        ],
+      };
+
+      await minioClient.setBucketPolicy(bucket, JSON.stringify(policy));
+      logger.info("Successfully set bucket policy", { bucket });
+    } catch (error) {
+      logger.error("Error setting bucket policy", {
+        bucket,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  };
+
   const ensureBucketExists = async (bucket: string): Promise<void> => {
     logger.info("Checking if bucket exists...", { bucket });
 
@@ -76,6 +105,18 @@ export const createMinioClient = ({
       const exists = await checkBucketExists(bucket);
       if (!exists) {
         await createBucket(bucket);
+        // Set the bucket policy after creating the bucket
+        await setBucketPolicy(bucket);
+      } else {
+        // Even if bucket exists, ensure policy is set
+        try {
+          await setBucketPolicy(bucket);
+        } catch (error) {
+          logger.warn("Failed to set bucket policy on existing bucket", {
+            bucket,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     } catch (error) {
       logger.error("Error ensuring bucket exists", {
@@ -90,6 +131,7 @@ export const createMinioClient = ({
   return {
     checkBucketExists,
     createBucket,
+    setBucketPolicy,
     ensureBucketExists,
   };
 };
