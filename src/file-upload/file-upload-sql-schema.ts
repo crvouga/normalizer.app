@@ -13,6 +13,7 @@ ALTER TABLE files ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jso
 
 -- Drop existing generated columns if they exist
 ALTER TABLE files DROP COLUMN IF EXISTS key CASCADE;
+ALTER TABLE files DROP COLUMN IF EXISTS id CASCADE;
 ALTER TABLE files DROP COLUMN IF EXISTS filename CASCADE;
 ALTER TABLE files DROP COLUMN IF EXISTS content_type CASCADE;
 ALTER TABLE files DROP COLUMN IF EXISTS size CASCADE;
@@ -24,7 +25,7 @@ ALTER TABLE files DROP COLUMN IF EXISTS s3_region CASCADE;
 ALTER TABLE files DROP COLUMN IF EXISTS s3_key CASCADE;
 
 -- Recreate generated columns
-ALTER TABLE files ADD COLUMN key text GENERATED ALWAYS AS ((data->>'key')::text) STORED;
+ALTER TABLE files ADD COLUMN id text;
 ALTER TABLE files ADD COLUMN filename text GENERATED ALWAYS AS ((data->>'filename')::text) STORED;
 ALTER TABLE files ADD COLUMN content_type text GENERATED ALWAYS AS ((data->>'content_type')::text) STORED;
 ALTER TABLE files ADD COLUMN size integer GENERATED ALWAYS AS ((data->>'size')::integer) STORED;
@@ -36,7 +37,7 @@ ALTER TABLE files ADD COLUMN s3_region text GENERATED ALWAYS AS ((data->>'s3_reg
 ALTER TABLE files ADD COLUMN s3_key text GENERATED ALWAYS AS ((data->>'s3_key')::text) STORED;
 
 ALTER TABLE files DROP CONSTRAINT IF EXISTS files_pkey CASCADE;
-ALTER TABLE files ADD PRIMARY KEY (key);
+ALTER TABLE files ADD PRIMARY KEY (id);
 
 ALTER TABLE files ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE files ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP;

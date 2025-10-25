@@ -3,13 +3,11 @@ import { trpc } from "../trpc-client";
 import type { FileMetadata } from "./file-upload-router";
 
 interface UseFileUploadOptions {
-  userId?: string;
   onUploadComplete?: (file: FileMetadata) => void;
   onUploadError?: (error: Error) => void;
 }
 
 export const useFileUpload = ({
-  userId,
   onUploadComplete,
   onUploadError,
 }: UseFileUploadOptions) => {

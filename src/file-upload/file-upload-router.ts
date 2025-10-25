@@ -6,7 +6,7 @@ import { getS3Config } from "../s3-config";
 
 // Types for file metadata
 const FileMetadata = z.object({
-  key: z.string(),
+  id: z.string(),
   filename: z.string(),
   content_type: z.string(),
   size: z.number(),
@@ -38,12 +38,12 @@ export const createFileUploadRouter = ({
       .output(
         z.object({
           uploadUrl: z.string(),
-          fileKey: z.string(),
+          fileId: z.string(),
         })
       )
       .mutation(async ({ input }) => {
-        const key = randomUUID();
-        const s3Key = `uploads/${key}/${input.filename}`;
+        const id = randomUUID();
+        const s3Key = `uploads/${id}/${input.filename}`;
         const { s3Bucket } = getS3Config();
 
         // Generate presigned URL
@@ -51,7 +51,7 @@ export const createFileUploadRouter = ({
 
         // Create file record
         const fileData: FileMetadata = {
-          key,
+          id,
           filename: input.filename,
           content_type: input.contentType,
           size: 0, // Will be updated after upload
@@ -63,13 +63,13 @@ export const createFileUploadRouter = ({
 
         // Insert into database
         await sql`
-          INSERT INTO files (data, key)
-          VALUES (${JSON.stringify(fileData)}, ${key})
+          INSERT INTO files (data, id)
+          VALUES (${JSON.stringify(fileData)}, ${id})
         `;
 
         return {
           uploadUrl,
-          fileKey: key,
+          fileId: id,
         };
       }),
 
@@ -84,7 +84,7 @@ export const createFileUploadRouter = ({
       .query(async ({ input }) => {
         const result = await sql`
         SELECT data FROM files 
-        WHERE key = ${input.key}
+        WHERE id = ${input.key}
         AND deleted_at IS NULL
       `;
         return result[0]?.data as FileMetadata;
@@ -124,7 +124,7 @@ export const createFileUploadRouter = ({
           '{size}',
           ${input.size}::text::jsonb
         )
-        WHERE key = ${input.key}
+        WHERE id = ${input.key}
       `;
       }),
 
@@ -139,7 +139,7 @@ export const createFileUploadRouter = ({
       .mutation(async ({ input }) => {
         const file = await sql`
         SELECT data FROM files
-        WHERE key = ${input.key}
+        WHERE id = ${input.key}
         AND deleted_at IS NULL
       `;
 
@@ -156,7 +156,7 @@ export const createFileUploadRouter = ({
         await sql`
         UPDATE files
         SET deleted_at = NOW()
-        WHERE key = ${input.key}
+        WHERE id = ${input.key}
       `;
       }),
   });
