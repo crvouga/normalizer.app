@@ -44,10 +44,12 @@ export const createFileUploadRouter = ({
       .mutation(async ({ input }) => {
         const id = randomUUID();
         const s3Key = `uploads/${id}/${input.filename}`;
-        const { s3Bucket } = getS3Config();
+        const { s3Bucket, s3ExternalEndpoint, s3Endpoint } = getS3Config();
 
-        // Generate presigned URL
-        const uploadUrl = s3.presign(s3Key);
+        // Generate presigned URL with external endpoint
+        const uploadUrl = s3
+          .presign(s3Key)
+          .replace(s3Endpoint, s3ExternalEndpoint);
 
         // Create file record
         const fileData: FileMetadata = {
