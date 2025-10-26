@@ -65,21 +65,6 @@ export const StartNormalizationWorkflowScreen = () => {
 
         <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
-            <label htmlFor="input-files" className="font-medium">
-              Input Files
-            </label>
-            <FileInput
-              id="input-files"
-              multiple
-              maxFiles={MAX_FILES}
-              maxSize={MAX_FILE_SIZE}
-              onFilesChange={handleInputFilesChange}
-              placeholder="Upload input files"
-              accept=".txt,.csv,.xlsx,.json"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
             <label htmlFor="target-files" className="font-medium">
               Target Files
             </label>
@@ -90,6 +75,21 @@ export const StartNormalizationWorkflowScreen = () => {
               maxSize={MAX_FILE_SIZE}
               onFilesChange={handleTargetFilesChange}
               placeholder="Upload target files"
+              accept=".txt,.csv,.xlsx,.json"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="input-files" className="font-medium">
+              Input Files
+            </label>
+            <FileInput
+              id="input-files"
+              multiple
+              maxFiles={MAX_FILES}
+              maxSize={MAX_FILE_SIZE}
+              onFilesChange={handleInputFilesChange}
+              placeholder="Upload input files"
               accept=".txt,.csv,.xlsx,.json"
             />
           </div>
