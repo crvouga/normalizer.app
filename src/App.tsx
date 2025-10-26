@@ -1,4 +1,4 @@
-import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow/normalization-workflow-screen";
+import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow-screen";
 import { useCurrentScreen } from "./screen/use-current-screen";
 
 export const App = () => {
