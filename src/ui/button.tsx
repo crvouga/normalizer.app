@@ -61,11 +61,13 @@ function getButtonClasses(
   return `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`;
 }
 
-interface ButtonProps extends React.ComponentProps<"button"> {
+interface ButtonProps extends Omit<React.ComponentProps<"button">, "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   color?: ButtonColor;
   asChild?: boolean;
+  text?: string;
+  startIcon?: React.ReactNode;
 }
 
 function Button({
@@ -74,6 +76,8 @@ function Button({
   size = "default",
   color = "blue",
   asChild = false,
+  text,
+  startIcon,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? "button" : "button";
@@ -83,7 +87,10 @@ function Button({
       data-slot="button"
       className={cn(getButtonClasses(variant, size, color), className)}
       {...props}
-    />
+    >
+      {startIcon}
+      {text}
+    </Comp>
   );
 }
 
