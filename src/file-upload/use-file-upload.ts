@@ -24,6 +24,7 @@ export const useFileUpload = ({
       setUploadProgress(0);
 
       // Get presigned URL
+      // @ts-ignore
       const { uploadUrl, fileId } = await getUploadUrl.mutateAsync({
         filename: file.name,
         contentType: file.type,

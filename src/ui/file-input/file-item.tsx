@@ -99,8 +99,8 @@ export const FileItem: React.FC<FileItemProps> = ({
       {isPreviewVisible && showPreview && (
         <FilePreview
           file={file}
-          maxRows={5}
-          maxColumns={8}
+          maxRows={3}
+          maxColumns={Infinity}
           className="text-sm"
         />
       )}

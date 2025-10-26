@@ -57,6 +57,12 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
       setSelectedFiles((prev) =>
         multiple ? [...prev, ...fileArray] : fileArray
       );
+      // Initialize previews as open for new files
+      const newPreviews = fileArray.reduce((acc, _, index) => {
+        acc[selectedFiles.length + index] = true;
+        return acc;
+      }, {} as Record<number, boolean>);
+      setShowPreviews((prev) => ({ ...prev, ...newPreviews }));
       onFilesChange?.(files);
     };
 

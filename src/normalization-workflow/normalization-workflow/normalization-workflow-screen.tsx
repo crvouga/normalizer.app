@@ -23,16 +23,26 @@ export const NormalizationWorkflowScreen = () => {
           <h1 className="text-3xl font-bold">Normalizer</h1>
         </div>
 
-        <FileInputField
-          id="target-files"
-          label="Target Files"
-          multiple
-          maxFiles={MAX_FILES}
-          maxSize={MAX_FILE_SIZE}
-          onFilesChange={handleTargetFilesChange}
-          placeholder="Upload target files"
-          accept=".txt,.csv,.xlsx,.json"
-        />
+        <div className="flex flex-col gap-6">
+          <FileInputField
+            id="target-files"
+            label="Target Files"
+            multiple
+            maxFiles={MAX_FILES}
+            maxSize={MAX_FILE_SIZE}
+            onFilesChange={handleTargetFilesChange}
+            placeholder="Upload target files"
+            accept=".txt,.csv,.xlsx,.json"
+          />
+          <div className="flex justify-end">
+            <Button
+              size="lg"
+              type="submit"
+              disabled={isUploading}
+              text="Start Normalization Workflow"
+            />
+          </div>
+        </div>
 
         <div className="h-px bg-gray-700 my-8" />
 

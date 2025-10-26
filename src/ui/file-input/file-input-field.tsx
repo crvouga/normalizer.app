@@ -35,6 +35,7 @@ export const FileInputField: React.FC<FileInputFieldProps> = ({
         onFilesChange={onFilesChange}
         placeholder={placeholder}
         accept={accept}
+        showPreview
       />
     </div>
   );
