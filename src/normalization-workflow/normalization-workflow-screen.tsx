@@ -20,7 +20,7 @@ export const NormalizationWorkflowScreen = () => {
     <div className="min-h-screen">
       <div className="w-full max-w-2xl p-8 mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Normalizer</h1>
+          <h1 className="text-3xl font-bold">normalizer.app</h1>
         </div>
 
         <div className="flex flex-col gap-6">
