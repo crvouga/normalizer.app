@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 interface PromptInputFieldProps {
   id?: string;
@@ -10,11 +10,11 @@ interface PromptInputFieldProps {
 }
 
 export const PromptInputField: React.FC<PromptInputFieldProps> = ({
-  id = "prompt",
-  label = "Prompt",
+  id = 'prompt',
+  label = 'Prompt',
   value,
   onChange,
-  placeholder = "Enter your prompt here...",
+  placeholder = 'Enter your prompt here...',
   rows = 4,
 }) => {
   return (
@@ -25,7 +25,7 @@ export const PromptInputField: React.FC<PromptInputFieldProps> = ({
       <textarea
         id={id}
         rows={rows}
-        className="border rounded p-2 resize-y"
+        className="resize-y rounded border p-2"
         placeholder={placeholder}
         value={value}
         onChange={onChange}

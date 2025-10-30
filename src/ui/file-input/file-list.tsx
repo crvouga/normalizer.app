@@ -1,5 +1,5 @@
-import * as React from "react";
-import { FileItem } from "./file-item";
+import * as React from 'react';
+import { FileItem } from './file-item';
 
 export interface FileListProps {
   files: File[];
@@ -25,21 +25,19 @@ export const FileList: React.FC<FileListProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-foreground">
-          Selected Files ({files.length})
-        </h4>
+        <h4 className="text-foreground text-sm font-medium">Selected Files ({files.length})</h4>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onAddMore}
-            className="text-xs text-primary hover:text-primary/80 transition-colors"
+            className="text-primary hover:text-primary/80 text-xs transition-colors"
           >
             Add more
           </button>
           <button
             type="button"
             onClick={onClearAll}
-            className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+            className="text-muted-foreground hover:text-destructive text-xs transition-colors"
           >
             Clear all
           </button>

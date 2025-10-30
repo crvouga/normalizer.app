@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Build outputs
+build
+dist
+.out
+.next
+.vercel
+
+# Coverage and reports
+coverage
+
+# Environment files
+.env
+.env.*
+
+# Locks and package manager artifacts
+*.lock
+bun.lock
+
+# Generated assets
+*.min.*

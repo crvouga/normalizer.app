@@ -1,17 +1,17 @@
-import * as React from "react";
-import { useFileUpload } from "~/src/file-upload/use-file-upload";
+import * as React from 'react';
+import { useFileUpload } from '~/src/file-upload/use-file-upload';
 
 export const useNormalizationForm = () => {
-  const [prompt, setPrompt] = React.useState("");
+  const [prompt, setPrompt] = React.useState('');
   const [inputFile, setInputFile] = React.useState<File | null>(null);
   const [targetFile, setTargetFile] = React.useState<File | null>(null);
 
   const { uploadFile, isUploading } = useFileUpload({
     onUploadComplete: (file) => {
-      console.log("File uploaded:", file);
+      console.log('File uploaded:', file);
     },
     onUploadError: (error) => {
-      console.error("Upload error:", error);
+      console.error('Upload error:', error);
     },
   });
 
@@ -35,7 +35,7 @@ export const useNormalizationForm = () => {
     e.preventDefault();
 
     if (!inputFile || !targetFile) {
-      console.error("Please select both input and target files");
+      console.error('Please select both input and target files');
       return;
     }
 
@@ -45,9 +45,9 @@ export const useNormalizationForm = () => {
       await uploadFile(targetFile);
 
       // TODO: Handle successful upload - perhaps navigate to next screen
-      console.log("Files uploaded successfully");
+      console.log('Files uploaded successfully');
     } catch (error) {
-      console.error("Error uploading files:", error);
+      console.error('Error uploading files:', error);
     }
   };
 

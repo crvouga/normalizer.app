@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "~/src/lib/utils";
+import * as React from 'react';
+import { cn } from '~/src/lib/utils';
 
 interface FilePreviewTableProps {
   data: any[] | null;
@@ -16,7 +16,7 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
 }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground p-6 text-center border rounded-lg bg-muted/20">
+      <div className="text-muted-foreground bg-muted/20 rounded-lg border p-6 text-center text-sm">
         No data to preview
       </div>
     );
@@ -27,17 +27,17 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
   const truncatedData = data.slice(0, maxRows);
 
   return (
-    <div className={cn("flex flex-col", className)}>
+    <div className={cn('flex flex-col', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm min-w-full">
+        <table className="w-full min-w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b bg-muted/50">
+            <tr className="bg-muted/50 border-b">
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="p-3 text-left font-medium text-muted-foreground whitespace-nowrap min-w-0"
+                  className="text-muted-foreground min-w-0 p-3 text-left font-medium whitespace-nowrap"
                 >
-                  <div className="truncate max-w-[200px]" title={header}>
+                  <div className="max-w-[200px] truncate" title={header}>
                     {header}
                   </div>
                 </th>
@@ -46,14 +46,11 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
           </thead>
           <tbody>
             {truncatedData.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className="border-b transition-colors hover:bg-muted/30"
-              >
+              <tr key={rowIndex} className="hover:bg-muted/30 border-b transition-colors">
                 {headers.map((header, colIndex) => (
-                  <td key={colIndex} className="p-3 whitespace-nowrap min-w-0">
+                  <td key={colIndex} className="min-w-0 p-3 whitespace-nowrap">
                     <div
-                      className="truncate max-w-[200px] text-foreground"
+                      className="text-foreground max-w-[200px] truncate"
                       title={String(row[header])}
                     >
                       {String(row[header])}
@@ -66,7 +63,7 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
         </table>
       </div>
       {data.length > maxRows && (
-        <div className="text-xs text-muted-foreground p-3 text-center bg-muted/20 border-t">
+        <div className="text-muted-foreground bg-muted/20 border-t p-3 text-center text-xs">
           Showing {maxRows} of {data.length} rows
         </div>
       )}

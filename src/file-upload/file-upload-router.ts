@@ -1,8 +1,8 @@
-import { S3Client, SQL } from "bun";
-import { randomUUID } from "crypto";
-import { z } from "zod";
-import { publicProcedure, router } from "../lib/trpc";
-import { getS3Config } from "../s3-config";
+import { S3Client, SQL } from 'bun';
+import { randomUUID } from 'crypto';
+import { z } from 'zod';
+import { publicProcedure, router } from '../lib/trpc';
+import { getS3Config } from '../s3-config';
 
 // Types for file metadata
 const FileMetadata = z.object({
@@ -19,13 +19,7 @@ const FileMetadata = z.object({
 export type FileMetadata = z.infer<typeof FileMetadata>;
 
 // Create router with injected dependencies
-export const createFileUploadRouter = ({
-  sql,
-  s3,
-}: {
-  sql: SQL;
-  s3: S3Client;
-}) =>
+export const createFileUploadRouter = ({ sql, s3 }: { sql: SQL; s3: S3Client }) =>
   router({
     // Get presigned upload URL
     getUploadUrl: publicProcedure
@@ -33,13 +27,13 @@ export const createFileUploadRouter = ({
         z.object({
           filename: z.string(),
           contentType: z.string(),
-        })
+        }),
       )
       .output(
         z.object({
           uploadUrl: z.string(),
           fileId: z.string(),
-        })
+        }),
       )
       .mutation(async ({ input }) => {
         const id = randomUUID();
@@ -61,8 +55,8 @@ export const createFileUploadRouter = ({
           filename: input.filename,
           content_type: input.contentType,
           size: 0, // Will be updated after upload
-          file_type: input.filename.split(".").pop() || "unknown",
-          status: "pending",
+          file_type: input.filename.split('.').pop() || 'unknown',
+          status: 'pending',
           s3_bucket: s3Bucket,
           s3_key: s3Key,
         };
@@ -84,7 +78,7 @@ export const createFileUploadRouter = ({
       .input(
         z.object({
           key: z.string(),
-        })
+        }),
       )
       .output(FileMetadata.nullable())
       .query(async ({ input }) => {
@@ -114,7 +108,7 @@ export const createFileUploadRouter = ({
         z.object({
           key: z.string(),
           size: z.number(),
-        })
+        }),
       )
       .output(z.void())
       .mutation(async ({ input }) => {
@@ -134,7 +128,7 @@ export const createFileUploadRouter = ({
         `;
 
         if (!result.length) {
-          throw new Error("File not found");
+          throw new Error('File not found');
         }
       }),
 
@@ -143,7 +137,7 @@ export const createFileUploadRouter = ({
       .input(
         z.object({
           key: z.string(),
-        })
+        }),
       )
       .output(z.void())
       .mutation(async ({ input }) => {
@@ -154,7 +148,7 @@ export const createFileUploadRouter = ({
         `;
 
         if (!file[0]) {
-          throw new Error("File not found");
+          throw new Error('File not found');
         }
 
         const fileData = file[0].data as FileMetadata;

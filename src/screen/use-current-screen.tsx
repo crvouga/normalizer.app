@@ -1,12 +1,12 @@
-import { useQueryParam } from "~/src/lib/use-query-param";
-import { CurrentScreen } from "./current-screen";
+import { useQueryParam } from '~/src/lib/use-query-param';
+import { CurrentScreen } from './current-screen';
 
 export const useCurrentScreen = () => {
   const [currentScreen, setCurrentScreen] = useQueryParam({
-    paramName: "screen",
+    paramName: 'screen',
     parser: CurrentScreen,
     defaultValue: {
-      type: "normalization-workflow",
+      type: 'normalization-workflow',
     },
   });
 

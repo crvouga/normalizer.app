@@ -1,5 +1,5 @@
-import * as React from "react";
-import type { FilePreviewResult, FileType } from "./types";
+import * as React from 'react';
+import type { FilePreviewResult, FileType } from './types';
 
 interface UseFilePreviewBaseParams {
   file: File;
@@ -25,7 +25,7 @@ export const useFilePreviewBase = ({
         const parsedData = await parser(file);
         setData(parsedData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to parse file");
+        setError(err instanceof Error ? err.message : 'Failed to parse file');
         setData(null);
       } finally {
         setIsLoading(false);

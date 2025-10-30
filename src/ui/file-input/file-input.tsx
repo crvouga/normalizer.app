@@ -1,13 +1,10 @@
-import * as React from "react";
-import { DropZone } from "./drop-zone";
-import { FileList } from "./file-list";
-import { validateFiles, createFileListFromFiles } from "./file-utils";
+import * as React from 'react';
+import { DropZone } from './drop-zone';
+import { FileList } from './file-list';
+import { validateFiles, createFileListFromFiles } from './file-utils';
 
 export interface FileInputProps
-  extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    "type" | "onChange"
-  > {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
   onFilesChange?: (files: FileList | null) => void;
   accept?: string;
   multiple?: boolean;
@@ -27,18 +24,16 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
       multiple = false,
       maxFiles = 10,
       maxSize = 10 * 1024 * 1024, // 10MB default
-      placeholder = "Click to upload or drag and drop",
+      placeholder = 'Click to upload or drag and drop',
       showPreview = true,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [isDragOver, setIsDragOver] = React.useState(false);
     const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
     const [error, setError] = React.useState<string | null>(null);
-    const [showPreviews, setShowPreviews] = React.useState<
-      Record<number, boolean>
-    >({});
+    const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useImperativeHandle(ref, () => fileInputRef.current!);
@@ -54,14 +49,15 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
 
       setError(null);
       const fileArray = Array.from(files);
-      setSelectedFiles((prev) =>
-        multiple ? [...prev, ...fileArray] : fileArray
-      );
+      setSelectedFiles((prev) => (multiple ? [...prev, ...fileArray] : fileArray));
       // Initialize previews as open for new files
-      const newPreviews = fileArray.reduce((acc, _, index) => {
-        acc[selectedFiles.length + index] = true;
-        return acc;
-      }, {} as Record<number, boolean>);
+      const newPreviews = fileArray.reduce(
+        (acc, _, index) => {
+          acc[selectedFiles.length + index] = true;
+          return acc;
+        },
+        {} as Record<number, boolean>,
+      );
       setShowPreviews((prev) => ({ ...prev, ...newPreviews }));
       onFilesChange?.(files);
     };
@@ -112,7 +108,7 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
       setError(null);
       setShowPreviews({});
       if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        fileInputRef.current.value = '';
       }
       onFilesChange?.(null);
     };
@@ -146,7 +142,7 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
         )}
 
         {/* Error Message */}
-        {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+        {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
 
         {/* Selected Files */}
         <FileList
@@ -160,9 +156,9 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
         />
       </div>
     );
-  }
+  },
 );
 
-FileInput.displayName = "FileInput";
+FileInput.displayName = 'FileInput';
 
 export { FileInput };

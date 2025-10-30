@@ -6,18 +6,14 @@ export interface Logger {
 }
 
 const colors = {
-  error: "\x1b[31m", // red
-  warn: "\x1b[33m", // yellow
-  info: "\x1b[36m", // cyan
-  debug: "\x1b[90m", // gray
-  reset: "\x1b[0m",
+  error: '\x1b[31m', // red
+  warn: '\x1b[33m', // yellow
+  info: '\x1b[36m', // cyan
+  debug: '\x1b[90m', // gray
+  reset: '\x1b[0m',
 };
 
-const formatMessage = (
-  level: string,
-  message: string,
-  meta?: Record<string, unknown>
-): string => {
+const formatMessage = (level: string, message: string, meta?: Record<string, unknown>): string => {
   const timestamp = new Date().toISOString();
   const color = colors[level as keyof typeof colors];
   const formattedLevel = `${color}[${level.toUpperCase()}]${colors.reset}`;
@@ -29,15 +25,15 @@ const formatMessage = (
 
 export const createLogger = (): Logger => ({
   error: (message: string, meta?: Record<string, unknown>) => {
-    console.error(formatMessage("error", message, meta));
+    console.error(formatMessage('error', message, meta));
   },
   warn: (message: string, meta?: Record<string, unknown>) => {
-    console.warn(formatMessage("warn", message, meta));
+    console.warn(formatMessage('warn', message, meta));
   },
   info: (message: string, meta?: Record<string, unknown>) => {
-    console.info(formatMessage("info", message, meta));
+    console.info(formatMessage('info', message, meta));
   },
   debug: (message: string, meta?: Record<string, unknown>) => {
-    console.debug(formatMessage("debug", message, meta));
+    console.debug(formatMessage('debug', message, meta));
   },
 });

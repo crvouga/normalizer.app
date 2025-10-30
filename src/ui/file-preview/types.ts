@@ -5,7 +5,7 @@ export interface FilePreviewResult {
   fileType: string;
 }
 
-export type FileType = "csv" | "json" | "excel" | "unsupported";
+export type FileType = 'csv' | 'json' | 'excel' | 'unsupported';
 
 export interface FileParser {
   parse: (file: File) => Promise<any[]>;

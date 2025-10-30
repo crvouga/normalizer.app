@@ -1,5 +1,5 @@
-import * as React from "react";
-import { FileInput } from "./file-input";
+import * as React from 'react';
+import { FileInput } from './file-input';
 
 interface FileInputFieldProps {
   id: string;

@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const CurrentScreen = z.discriminatedUnion("type", [
+export const CurrentScreen = z.discriminatedUnion('type', [
   z.object({
-    type: z.literal("normalization-workflow"),
+    type: z.literal('normalization-workflow'),
     normalizationWorkflowId: z.string(),
   }),
 ]);

@@ -6,19 +6,22 @@
   "main": "src/index.tsx",
   "module": "src/index.tsx",
   "scripts": {
-    "server": "bun run --hot src/index.tsx",
+    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
     "docker": "bun docker:down && bun docker:up",
-    "docker:up": "COMPOSE_BAKE=true docker-compose up --build -d",
-    "docker:down": "docker-compose down --volumes --remove-orphans",
-    "docker:restart": "docker-compose restart",
-    "docker:logs": "docker-compose logs -f app",
     "docker:clean": "docker-compose down -v --remove-orphans",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
+    "docker:down": "docker-compose down --volumes --remove-orphans",
+    "docker:logs": "docker-compose logs -f app",
     "docker:prune": "docker system prune -a",
-    "type-check": "tsc --noEmit --watch",
+    "docker:restart": "docker-compose restart",
+    "docker:stop": "docker stop $(docker ps -q)",
+    "docker:up": "COMPOSE_BAKE=true docker-compose up --build -d",
+    "format": "bun x sort-package-json && bun x prettier --write .",
+    "format:check": "bun x prettier --check .",
+    "kp": "bun x kill-port 5000",
+    "server": "bun run --hot src/index.tsx",
     "tc": "bun type-check",
-    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
-    "kp": "bun x kill-port 5000"
+    "type-check": "tsc --noEmit --watch"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.5",
@@ -34,8 +37,11 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/bun": "latest"
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "sort-package-json": "^3.4.0"
   }
 }

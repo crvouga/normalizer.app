@@ -1,6 +1,6 @@
-import * as React from "react";
-import { useFilePreview } from "./use-file-preview";
-import { FilePreviewTable } from "./file-preview-table";
+import * as React from 'react';
+import { useFilePreview } from './use-file-preview';
+import { FilePreviewTable } from './file-preview-table';
 
 interface FilePreviewProps {
   file: File;
@@ -19,7 +19,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="text-sm text-muted-foreground p-6 text-center rounded-lg bg-muted/20">
+      <div className="text-muted-foreground bg-muted/20 rounded-lg p-6 text-center text-sm">
         Loading {fileType} file...
       </div>
     );
@@ -27,18 +27,13 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (error) {
     return (
-      <div className="text-sm text-destructive p-6 text-center rounded-lg bg-destructive/10">
+      <div className="text-destructive bg-destructive/10 rounded-lg p-6 text-center text-sm">
         {error}
       </div>
     );
   }
 
   return (
-    <FilePreviewTable
-      data={data}
-      className={className}
-      maxRows={maxRows}
-      maxColumns={maxColumns}
-    />
+    <FilePreviewTable data={data} className={className} maxRows={maxRows} maxColumns={maxColumns} />
   );
 };

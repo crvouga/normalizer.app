@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { z } from "zod";
+import { useCallback, useEffect, useState } from 'react';
+import { z } from 'zod';
 
 /**
  * Hook to sync a value with a URL query parameter
@@ -17,7 +17,7 @@ export function useQueryParam<T>({
   paramName: string;
   parser: z.ZodType<T>;
   defaultValue: T;
-}): [T, (newValue: T, method?: "push" | "replace") => void] {
+}): [T, (newValue: T, method?: 'push' | 'replace') => void] {
   const decodeParam = useCallback(
     (param: string | null): T => {
       if (param === null) return defaultValue;
@@ -30,7 +30,7 @@ export function useQueryParam<T>({
         return defaultValue;
       }
     },
-    [parser, defaultValue]
+    [parser, defaultValue],
   );
 
   const encodeValue = useCallback((value: T): string => {
@@ -52,13 +52,13 @@ export function useQueryParam<T>({
       setValue(decodeParam(param));
     };
 
-    window.addEventListener("popstate", handleUrlChange);
-    return () => window.removeEventListener("popstate", handleUrlChange);
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
   }, [paramName, decodeParam]);
 
   // Update URL when state changes
   const updateValue = useCallback(
-    (newValue: T, method: "push" | "replace") => {
+    (newValue: T, method: 'push' | 'replace') => {
       setValue(newValue);
       const params = new URLSearchParams(window.location.search);
 
@@ -70,16 +70,16 @@ export function useQueryParam<T>({
       }
 
       const newUrl = `${window.location.pathname}?${params.toString()}`;
-      switch (method ?? "push") {
-        case "push":
-          window.history.pushState({}, "", newUrl);
+      switch (method ?? 'push') {
+        case 'push':
+          window.history.pushState({}, '', newUrl);
           break;
-        case "replace":
-          window.history.replaceState({}, "", newUrl);
+        case 'replace':
+          window.history.replaceState({}, '', newUrl);
           break;
       }
     },
-    [paramName, encodeValue]
+    [paramName, encodeValue],
   );
 
   return [value, updateValue];

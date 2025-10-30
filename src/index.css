@@ -1,30 +1,30 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Customize scrollbar for Webkit browsers */
 ::-webkit-scrollbar {
-    width: 14px;
-    height: 14px;
+  width: 14px;
+  height: 14px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 6px;
-    border: 2px solid theme('colors.gray.700');
+  background: transparent;
+  border-radius: 6px;
+  border: 2px solid theme('colors.gray.700');
 }
 
 ::-webkit-scrollbar-thumb {
-    background: theme('colors.gray.500');
-    border-radius: 6px;
-    border: 2px solid theme('colors.gray.700');
-    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background: theme('colors.gray.500');
+  border-radius: 6px;
+  border: 2px solid theme('colors.gray.700');
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.gray.400');
+  background: theme('colors.gray.400');
 }
 
 /* Firefox scrollbar styling */
 * {
-    scrollbar-width: auto;
-    scrollbar-color: theme('colors.gray.500') transparent;
+  scrollbar-width: auto;
+  scrollbar-color: theme('colors.gray.500') transparent;
 }

@@ -1,16 +1,13 @@
-import { useState } from "react";
-import { trpcReactClient, trpcClient } from "../trpc-client";
-import type { FileMetadata } from "./file-upload-router";
+import { useState } from 'react';
+import { trpcReactClient, trpcClient } from '../trpc-client';
+import type { FileMetadata } from './file-upload-router';
 
 interface UseFileUploadOptions {
   onUploadComplete?: (file: FileMetadata) => void;
   onUploadError?: (error: Error) => void;
 }
 
-export const useFileUpload = ({
-  onUploadComplete,
-  onUploadError,
-}: UseFileUploadOptions) => {
+export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUploadOptions) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -32,10 +29,10 @@ export const useFileUpload = ({
 
       // Upload to S3
       const response = await fetch(uploadUrl, {
-        method: "PUT",
+        method: 'PUT',
         body: file,
         headers: {
-          "Content-Type": file.type,
+          'Content-Type': file.type,
         },
       });
 

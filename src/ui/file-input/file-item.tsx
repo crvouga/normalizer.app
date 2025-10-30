@@ -1,7 +1,7 @@
-import * as React from "react";
-import { FilePreview } from "../file-preview/file-preview";
-import { FileIcon, ImageIcon, XIcon } from "../icon";
-import { formatFileSize } from "./file-utils";
+import * as React from 'react';
+import { FilePreview } from '../file-preview/file-preview';
+import { FileIcon, ImageIcon, XIcon } from '../icon';
+import { formatFileSize } from './file-utils';
 
 export interface FileItemHeaderProps {
   file: File;
@@ -22,25 +22,21 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
 }) => {
   return (
     <div className="flex items-center justify-between p-3">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="shrink-0">
-          {file.type.startsWith("image/") ? (
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+          {file.type.startsWith('image/') ? (
+            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
               <ImageIcon />
             </div>
           ) : (
-            <div className="w-10 h-10 bg-muted-foreground/10 rounded-lg flex items-center justify-center">
+            <div className="bg-muted-foreground/10 flex h-10 w-10 items-center justify-center rounded-lg">
               <FileIcon />
             </div>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium truncate text-foreground">
-            {file.name}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(file.size)}
-          </p>
+          <p className="text-foreground truncate text-sm font-medium">{file.name}</p>
+          <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -48,9 +44,9 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           <button
             type="button"
             onClick={() => onTogglePreview(index)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
+            className="text-muted-foreground hover:text-foreground rounded px-2 py-1 text-xs transition-colors"
           >
-            {isPreviewVisible ? "Hide" : "Preview"}
+            {isPreviewVisible ? 'Hide' : 'Preview'}
           </button>
         )}
         <button
@@ -59,7 +55,7 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
             e.stopPropagation();
             onRemove(index);
           }}
-          className="shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors rounded"
+          className="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 transition-colors"
         >
           <XIcon />
         </button>
@@ -86,7 +82,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   onRemove,
 }) => {
   return (
-    <div className="bg-muted/50 rounded-lg border overflow-hidden">
+    <div className="bg-muted/50 overflow-hidden rounded-lg border">
       <FileItemHeader
         file={file}
         index={index}
@@ -97,12 +93,7 @@ export const FileItem: React.FC<FileItemProps> = ({
       />
 
       {isPreviewVisible && showPreview && (
-        <FilePreview
-          file={file}
-          maxRows={3}
-          maxColumns={Infinity}
-          className="text-sm"
-        />
+        <FilePreview file={file} maxRows={3} maxColumns={Infinity} className="text-sm" />
       )}
     </div>
   );

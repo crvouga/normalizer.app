@@ -1,13 +1,13 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from 'bun:test';
 
-describe("Server", () => {
-  test("should start server and respond to health check", async () => {
+describe('Server', () => {
+  test('should start server and respond to health check', async () => {
     // Start server in background with custom port
     const port = 3456;
 
-    const serverProcess = Bun.spawn(["bun", "run", "src/index.tsx"], {
-      stdout: "inherit",
-      stderr: "inherit",
+    const serverProcess = Bun.spawn(['bun', 'run', 'src/index.tsx'], {
+      stdout: 'inherit',
+      stderr: 'inherit',
       env: {
         ...process.env,
         PORT: port.toString(),
@@ -33,7 +33,7 @@ describe("Server", () => {
 
     if (!isServerUp) {
       serverProcess.kill();
-      throw new Error("Server failed to start within timeout");
+      throw new Error('Server failed to start within timeout');
     }
 
     try {
@@ -42,7 +42,7 @@ describe("Server", () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data).toEqual({ status: "ok" });
+      expect(data).toEqual({ status: 'ok' });
     } finally {
       // Cleanup: kill server process
       serverProcess.kill();

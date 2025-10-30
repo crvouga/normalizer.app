@@ -1,5 +1,5 @@
-import { NormalizationWorkflowScreen } from "./normalization-workflow/normalization-workflow-screen";
-import { useCurrentScreen } from "./screen/use-current-screen";
+import { NormalizationWorkflowScreen } from './normalization-workflow/normalization-workflow-screen';
+import { useCurrentScreen } from './screen/use-current-screen';
 
 export const App = () => {
   return (
@@ -12,7 +12,7 @@ export const App = () => {
 const CurrentScreen = () => {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
-    case "normalization-workflow":
+    case 'normalization-workflow':
       return <NormalizationWorkflowScreen />;
     default:
       return <div>Unknown screen</div>;
