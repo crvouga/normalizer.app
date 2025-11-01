@@ -38,7 +38,7 @@ export const createFileUploadRouter = ({ sql, s3 }: { sql: SQL; s3: S3Client }) 
       .mutation(async ({ input }) => {
         const id = randomUUID();
         const s3Key = `uploads/${id}/${input.filename}`;
-        const { s3Bucket, s3ExternalEndpoint, s3Endpoint } = getS3Config();
+        const { s3Bucket, s3Endpoint } = getS3Config();
 
         // Generate presigned URL with S3 client
         const uploadUrl = s3
