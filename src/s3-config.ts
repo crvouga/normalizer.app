@@ -1,9 +1,11 @@
+import { deriveURL } from "./lib/url";
+
 export const getS3Config = () => {
-  const s3Endpoint = process.env.S3_ENDPOINT;
-  if (!s3Endpoint) {
+  const s3EndpointEnv = process.env.S3_ENDPOINT;
+  if (!s3EndpointEnv) {
     throw new Error('S3_ENDPOINT environment variable is not set');
   }
-  const s3ExternalEndpoint = process.env.S3_EXTERNAL_ENDPOINT || s3Endpoint;
+  const s3Endpoint = deriveURL(s3EndpointEnv);
   const s3AccessKeyId = process.env.S3_ACCESS_KEY;
   if (!s3AccessKeyId) {
     throw new Error('S3_ACCESS_KEY environment variable is not set');
@@ -18,7 +20,6 @@ export const getS3Config = () => {
   }
   return {
     s3Endpoint,
-    s3ExternalEndpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
     s3Bucket,
