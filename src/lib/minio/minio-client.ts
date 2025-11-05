@@ -48,7 +48,34 @@ export const createMinioClient = ({
 
     try {
       // Check if bucket already exists first
-      const exists = await minioClient.bucketExists(bucket);
+      // Try direct check first to catch connection errors early
+      let exists: boolean;
+      try {
+        exists = await minioClient.bucketExists(bucket);
+        logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', {
+          bucket,
+        });
+      } catch (error) {
+        // If connection error during check, throw it immediately rather than trying to create
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (
+          errorMessage.toLowerCase().includes('unable to connect') ||
+          errorMessage.toLowerCase().includes('access the url')
+        ) {
+          logger.error('Error creating bucket', {
+            bucket,
+            error: errorMessage,
+          });
+          throw error;
+        }
+        // For other errors, log and assume bucket doesn't exist
+        logger.warn('Error checking bucket existence', {
+          bucket,
+          error: errorMessage,
+        });
+        exists = false;
+      }
+
       if (exists) {
         throw new Error('Bucket already exists');
       }

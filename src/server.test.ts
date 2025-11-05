@@ -5,7 +5,7 @@ describe('Server', () => {
     // Start server in background with custom port
     const port = 3456;
 
-    const serverProcess = Bun.spawn(['bun', 'run', 'src/index.tsx'], {
+    const serverProcess = Bun.spawn(['bun', 'run', 'src/server.tsx'], {
       stdout: 'inherit',
       stderr: 'inherit',
       env: {

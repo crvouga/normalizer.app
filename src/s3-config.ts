@@ -1,4 +1,4 @@
-import { deriveURL } from "./lib/url";
+import { deriveURL } from './lib/url';
 
 export const getS3Config = () => {
   const s3EndpointEnv = process.env.S3_ENDPOINT;

@@ -23,12 +23,8 @@ describe('deriveURL', () => {
   });
 
   it('returns https://example.com/path?foo=bar for full URL with path and query', () => {
-    expect(
-      deriveURL('http://example.com/path?foo=bar')
-    ).toBe('https://example.com/path?foo=bar');
-    expect(
-      deriveURL('https://example.com/path?foo=bar')
-    ).toBe('https://example.com/path?foo=bar');
+    expect(deriveURL('http://example.com/path?foo=bar')).toBe('https://example.com/path?foo=bar');
+    expect(deriveURL('https://example.com/path?foo=bar')).toBe('https://example.com/path?foo=bar');
   });
 
   it('returns https://example.com/ for bare hostname', () => {
@@ -65,7 +61,7 @@ describe('deriveURL', () => {
 
   it('preserves search and hash', () => {
     expect(deriveURL('example.com/foo?bar=baz#section')).toBe(
-      'https://example.com/foo?bar=baz#section'
+      'https://example.com/foo?bar=baz#section',
     );
   });
 
@@ -73,4 +69,3 @@ describe('deriveURL', () => {
     expect(deriveURL('/////')).toBeNull();
   });
 });
-
