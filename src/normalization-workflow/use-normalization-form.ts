@@ -1,10 +1,11 @@
-import * as React from 'react';
+import { useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useFileUpload } from '~/src/file-upload/use-file-upload';
 
 export const useNormalizationForm = () => {
-  const [prompt, setPrompt] = React.useState('');
-  const [inputFile, setInputFile] = React.useState<File | null>(null);
-  const [targetFile, setTargetFile] = React.useState<File | null>(null);
+  const [prompt, setPrompt] = useState('');
+  const [inputFile, setInputFile] = useState<File | null>(null);
+  const [targetFile, setTargetFile] = useState<File | null>(null);
 
   const { uploadFile, isUploading } = useFileUpload({
     onUploadComplete: (file) => {
@@ -27,11 +28,11 @@ export const useNormalizationForm = () => {
     }
   };
 
-  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handlePromptChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!inputFile || !targetFile) {
