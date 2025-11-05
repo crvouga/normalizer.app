@@ -76,7 +76,7 @@ jobs:
           echo "Waiting for PostgreSQL..."
           timeout 30 bash -c 'until docker-compose exec -T db pg_isready -U postgres; do sleep 1; done'
           echo "✅ PostgreSQL is ready"
-          
+
           echo "Waiting for MinIO..."
           timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live 2>/dev/null; do sleep 1; done'
           echo "✅ MinIO is ready"
@@ -178,4 +178,3 @@ jobs:
 
       - name: Production migration success
         run: echo "🚀 Production database migrations completed successfully"
-

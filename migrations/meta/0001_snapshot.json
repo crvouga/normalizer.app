@@ -143,10 +143,7 @@
     "public.file_status": {
       "name": "file_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "uploaded"
-      ]
+      "values": ["pending", "uploaded"]
     }
   },
   "schemas": {},
