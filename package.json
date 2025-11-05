@@ -24,8 +24,8 @@
     "type-check": "tsc --noEmit --watch"
   },
   "dependencies": {
-    "@orpc/client": "^1.10.3",
-    "@orpc/server": "^1.10.3",
+    "@trpc/client": "^11.0.0",
+    "@trpc/server": "^11.0.0",
     "bun-plugin-tailwind": "^0.0.14",
     "minio": "^8.0.6",
     "react": "^19",

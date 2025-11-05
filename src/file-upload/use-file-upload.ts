@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-import type { FileMetadata } from './file-upload-orpc-server';
-import { orpcClient } from '../orpc-client';
+import type { FileMetadata } from './file-upload-trpc-router';
+import { trpcClient } from '../trpc-client';
 
 interface UseFileUploadOptions {
   onUploadComplete?: (file: FileMetadata) => void;
@@ -18,16 +18,10 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
       setUploadProgress(0);
 
       // Get presigned URL
-      const result = await orpcClient.fileUpload.getUploadUrl({
+      const { uploadUrl, fileId } = await trpcClient.fileUpload.getUploadUrl.mutate({
         filename: file.name,
         contentType: file.type,
       });
-
-      if (result[0]) {
-        throw new Error(result[0].message || 'Failed to get upload URL');
-      }
-
-      const { uploadUrl, fileId } = result[1]!;
 
       // Upload to S3
       const response = await fetch(uploadUrl, {
@@ -43,25 +37,15 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
       }
 
       // Mark as uploaded in database
-      const markResult = await orpcClient.fileUpload.markUploaded({
+      await trpcClient.fileUpload.markUploaded.mutate({
         key: fileId,
         size: file.size,
       });
 
-      if (markResult[0]) {
-        throw new Error(markResult[0].message || 'Failed to mark file as uploaded');
-      }
-
       // Invalidate and refetch file data
-      const fileResult = await orpcClient.fileUpload.getFile({
+      const fileData = await trpcClient.fileUpload.getFile.query({
         key: fileId,
       });
-
-      if (fileResult[0]) {
-        throw new Error(fileResult[0].message || 'Failed to fetch file data');
-      }
-
-      const fileData = fileResult[1];
 
       // Invalidate files cache
 

@@ -1,8 +1,9 @@
-import { RPCHandler } from '@orpc/server/fetch';
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { serve } from 'bun';
 import { createLogger } from './lib/logger';
+import { createContext } from './lib/trpc-server';
 import clientHtml from './client.html';
-import { createRouter } from './orpc-server';
+import { createRouter } from './trpc-server';
 import { createS3 } from './s3';
 import { cleanupSQL, createSQL } from './sql';
 
@@ -32,22 +33,20 @@ const main = async () => {
     logger,
   });
 
-  // Create oRPC handler
-  const rpcHandler = new RPCHandler(appRouter, {});
-
   logger.info('Starting server...');
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
     routes: {
       '/*': clientHtml,
 
-      // oRPC endpoint
-      '/api/orpc/*': async (req) => {
-        const res = await rpcHandler.handle(req);
-        if (res.matched) {
-          return res.response;
-        }
-        return new Response('Not Found', { status: 404 });
+      // tRPC endpoint
+      '/api/trpc/*': async (req) => {
+        return fetchRequestHandler({
+          endpoint: '/api/trpc',
+          req,
+          router: appRouter,
+          createContext: () => createContext({ sql, s3, logger }),
+        });
       },
 
       '/api/hello': {
