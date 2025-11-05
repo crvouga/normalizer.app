@@ -6,6 +6,7 @@ import clientHtml from './client.html';
 import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
 import { cleanupDb, createDb } from './sql';
+import { runMigrations } from './db/migrations';
 
 const main = async () => {
   const logger = createLogger();
@@ -25,12 +26,10 @@ const main = async () => {
 
   setupGracefulShutdown();
 
+  // Run DB migrations *before* DB connection
+  await runMigrations(logger);
+
   const db = await createDb({ logger });
-
-  // Migrate DB here
-  logger.info('Running database migrations...');
-
-  logger.info('Database migrations complete.');
 
   const s3 = await createS3({ logger });
 

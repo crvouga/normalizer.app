@@ -6,7 +6,7 @@ import { useNormalizationForm } from './use-normalization-form';
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-export const NormalizationWorkflowScreen = () => {
+export const NormalizationWorkflowScreen = (props: { normalizationWorkflowId: string | null }) => {
   const {
     prompt,
     isUploading,

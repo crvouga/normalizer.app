@@ -1,4 +1,6 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+
+export const fileStatusEnum = pgEnum('file_status', ['pending', 'uploaded']);
 
 export const files = pgTable('files', {
   id: text('id').primaryKey(),
@@ -6,7 +8,7 @@ export const files = pgTable('files', {
   content_type: text('content_type').notNull(),
   size: integer('size').notNull(),
   file_type: text('file_type').notNull(),
-  status: text('status').notNull(),
+  status: fileStatusEnum('status').notNull(),
   s3_bucket: text('s3_bucket').notNull(),
   s3_key: text('s3_key').notNull(),
 
@@ -34,3 +36,5 @@ export const files = pgTable('files', {
   // Soft delete marker
   deleted: boolean('deleted'),
 });
+
+export type IFile = typeof files.$inferSelect;

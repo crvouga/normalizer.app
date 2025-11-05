@@ -5,9 +5,9 @@ import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { getS3Config } from '../s3-config';
 
-export const fileUploadRouter = router({
+export const fileRouter = router({
   // Get presigned upload URL (mutation because it creates DB record)
-  start: procedure
+  startUpload: procedure
     .input(
       z.object({
         filename: z.string(),
@@ -16,7 +16,7 @@ export const fileUploadRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const id = randomUUID();
-      const s3Key = `uploads/${id}/${input.filename}`;
+      const s3Key = `user-uploaded-files/${id}/${input.filename}`;
       const { s3Bucket } = getS3Config();
 
       const expiresIn = 60 * 60 * 24 * 30; // 30 days

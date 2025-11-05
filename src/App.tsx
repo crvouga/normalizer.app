@@ -13,7 +13,11 @@ const CurrentScreen = () => {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
     case 'normalization-workflow':
-      return <NormalizationWorkflowScreen />;
+      return (
+        <NormalizationWorkflowScreen
+          normalizationWorkflowId={currentScreen.normalizationWorkflowId}
+        />
+      );
     default:
       return <div>Unknown screen</div>;
   }

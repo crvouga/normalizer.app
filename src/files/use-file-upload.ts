@@ -1,18 +1,17 @@
 import { useMemo, useState } from 'react';
-
-import { trpcClient } from '../trpc-client';
-import type { IFileUploadRecord } from './file-record';
+import type { IFile } from '../db/schema';
 import type { RemoteResult } from '../lib/result';
-import { NotAsked, Loading, Success, Failure } from '../lib/result';
+import { Failure, Loading, NotAsked, Success } from '../lib/result';
+import { trpcClient } from '../trpc-client';
 
 interface UseFileUploadOptions {
-  onUploadComplete?: (file: IFileUploadRecord) => void;
+  onUploadComplete?: (file: IFile) => void;
   onUploadError?: (error: Error) => void;
 }
 
 export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUploadOptions) => {
   // Use RemoteResult for the main upload state
-  const [uploadState, setUploadState] = useState<RemoteResult<IFileUploadRecord, Error>>(NotAsked);
+  const [uploadState, setUploadState] = useState<RemoteResult<IFile, Error>>(NotAsked);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const uploadFile = async (file: File) => {
@@ -20,12 +19,12 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
     setUploadProgress(0);
     try {
       // Get presigned URL
-      const { fileId } = await trpcClient.fileUpload.start.mutate({
+      const { fileId } = await trpcClient.file.startUpload.mutate({
         filename: file.name,
         contentType: file.type,
       });
 
-      const fileUploadRecordBefore = await trpcClient.fileUpload.get.query({
+      const fileUploadRecordBefore = await trpcClient.file.get.query({
         key: fileId,
       });
 
@@ -43,24 +42,41 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
       }
 
       // Mark as uploaded in database
-      await trpcClient.fileUpload.finish.mutate({
+      await trpcClient.file.finish.mutate({
         key: fileId,
         size: file.size,
       });
 
       // Invalidate and refetch file data
-      const fileUploadRecordAfter = await trpcClient.fileUpload.get.query({
+      const fileUploadRecordAfter = await trpcClient.file.get.query({
         key: fileId,
       });
 
       setUploadProgress(100);
 
-      if (fileUploadRecordAfter) {
-        setUploadState(Success(fileUploadRecordAfter));
-        onUploadComplete?.(fileUploadRecordAfter);
-      } else {
+      if (!fileUploadRecordAfter) {
         throw new Error('Failed to fetch file after upload');
       }
+
+      // Convert tRPC result to IFile (dates are serialized as strings)
+      const fileRecord: IFile = {
+        ...fileUploadRecordAfter,
+        created_at: fileUploadRecordAfter.created_at
+          ? new Date(fileUploadRecordAfter.created_at)
+          : null,
+        updated_at: fileUploadRecordAfter.updated_at
+          ? new Date(fileUploadRecordAfter.updated_at)
+          : null,
+        download_url_expires_at: fileUploadRecordAfter.download_url_expires_at
+          ? new Date(fileUploadRecordAfter.download_url_expires_at)
+          : null,
+        upload_url_expires_at: fileUploadRecordAfter.upload_url_expires_at
+          ? new Date(fileUploadRecordAfter.upload_url_expires_at)
+          : null,
+      } as IFile;
+
+      setUploadState(Success(fileRecord));
+      onUploadComplete?.(fileRecord);
     } catch (error) {
       setUploadState(Failure(error as Error));
       onUploadError?.(error as Error);
