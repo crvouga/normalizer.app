@@ -1,11 +1,13 @@
-import { deriveURL } from './lib/url';
+import { parseAndValidateURL } from './lib/url';
 
 export const getS3Config = () => {
   const s3EndpointEnv = process.env.S3_ENDPOINT;
   if (!s3EndpointEnv) {
     throw new Error('S3_ENDPOINT environment variable is not set');
   }
-  const s3Endpoint = deriveURL(s3EndpointEnv);
+  // Parse and validate the endpoint URL, but preserve the original protocol
+  // (don't force HTTPS like deriveURL does, since MinIO may use HTTP)
+  const s3Endpoint = parseAndValidateURL(s3EndpointEnv, 'Invalid S3_ENDPOINT');
   const s3AccessKeyId = process.env.S3_ACCESS_KEY;
   if (!s3AccessKeyId) {
     throw new Error('S3_ACCESS_KEY environment variable is not set');

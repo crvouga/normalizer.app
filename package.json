@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@orpc/client": "^1.10.3",
-    "@orpc/react-query": "^1.10.3",
     "@orpc/server": "^1.10.3",
     "bun-plugin-tailwind": "^0.0.14",
     "minio": "^8.0.6",
