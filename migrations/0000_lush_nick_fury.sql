@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS "files";
 CREATE TABLE "files" (
 	"id" text PRIMARY KEY NOT NULL,
 	"filename" text NOT NULL,
