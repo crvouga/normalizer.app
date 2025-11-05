@@ -15,8 +15,15 @@ export async function runMigrations(logger: Logger): Promise<void> {
       throw new Error('DATABASE_URL environment variable is not set');
     }
 
+    // Ensure SSL is enabled for production databases
+    const url = new URL(databaseUrl);
+    if (!url.searchParams.has('sslmode') && !url.searchParams.has('ssl')) {
+      url.searchParams.set('sslmode', 'require');
+      logger.info('Added SSL mode to database connection');
+    }
+
     // Create a temporary SQL connection for migrations
-    const sql = new SQL(databaseUrl);
+    const sql = new SQL(url.toString());
     const db = drizzle(sql);
 
     // Run migrations from the migrations folder

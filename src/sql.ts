@@ -44,8 +44,14 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
     // Omit password for security
   });
 
+  // Ensure SSL is enabled for production databases
+  if (!dbUrlObj.searchParams.has('sslmode') && !dbUrlObj.searchParams.has('ssl')) {
+    dbUrlObj.searchParams.set('sslmode', 'require');
+    logger.info('Added SSL mode to database connection');
+  }
+
   logger.info('Creating new database connection...');
-  const sql = new SQL(databaseUrl);
+  const sql = new SQL(dbUrlObj.toString());
 
   logger.info('Checking database health...');
   try {
