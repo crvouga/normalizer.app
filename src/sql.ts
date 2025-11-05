@@ -45,8 +45,11 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
   });
 
   // Ensure SSL is enabled for production databases (non-localhost)
-  const isLocalhost = dbUrlObj.hostname === 'localhost' || dbUrlObj.hostname === '127.0.0.1' || dbUrlObj.hostname === '::1';
-  
+  const isLocalhost =
+    dbUrlObj.hostname === 'localhost' ||
+    dbUrlObj.hostname === '127.0.0.1' ||
+    dbUrlObj.hostname === '::1';
+
   if (!isLocalhost && !dbUrlObj.searchParams.has('sslmode') && !dbUrlObj.searchParams.has('ssl')) {
     dbUrlObj.searchParams.set('sslmode', 'require');
     logger.info('Added SSL mode to database connection');
