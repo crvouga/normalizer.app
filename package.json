@@ -22,7 +22,7 @@
     "format": "bun x sort-package-json && bun x prettier --write .",
     "format:check": "bun x prettier --check .",
     "kp": "bun x kill-port 5000",
-    "server": "bun run --hot src/server.tsx",
+    "server": "bun db:migrate && bun run --hot src/server.tsx",
     "tc": "bun type-check",
     "type-check": "tsc --noEmit --watch"
   },
