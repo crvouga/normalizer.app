@@ -16,12 +16,17 @@ export const FileUploadRecord = z.object({
   updated_at: z.string().datetime().or(z.date()).optional(), // When last updated
 
   // Upload metadata
-  uploader: z.string().optional(), // Who uploaded the file (user id, etc.)
+  uploaded_by_user_id: z.string().optional(), // Who uploaded the file (user id, etc.)
   upload_ip: z.string().optional(), // Where the upload came from
 
   // File info
   sha256: z.string().optional(), // Optional file hash for integrity/check
   download_url: z.string().url().optional(), // Direct download URL if available
+  download_url_expires_at: z.string().datetime().or(z.date()).optional(), // Expiry for download URL
+
+  // Upload URL metadata
+  upload_url: z.string().url().optional(), // Presigned URL for uploading
+  upload_url_expires_at: z.string().datetime().or(z.date()).optional(), // Expiry for upload URL
 
   // Application/domain-specific
   tags: z.array(z.string()).optional(), // Any tags assigned to the file
