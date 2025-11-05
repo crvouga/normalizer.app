@@ -15,9 +15,11 @@ export async function runMigrations(logger: Logger): Promise<void> {
       throw new Error('DATABASE_URL environment variable is not set');
     }
 
-    // Ensure SSL is enabled for production databases
+    // Ensure SSL is enabled for production databases (non-localhost)
     const url = new URL(databaseUrl);
-    if (!url.searchParams.has('sslmode') && !url.searchParams.has('ssl')) {
+    const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
+    
+    if (!isLocalhost && !url.searchParams.has('sslmode') && !url.searchParams.has('ssl')) {
       url.searchParams.set('sslmode', 'require');
       logger.info('Added SSL mode to database connection');
     }

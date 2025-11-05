@@ -18,6 +18,7 @@
     "presign",
     "psql",
     "spreadsheetml",
+    "sslmode",
     "timestamptz"
   ],
   "cursor.cpp.disabledLanguages": [],
