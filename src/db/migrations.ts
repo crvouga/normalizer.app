@@ -17,8 +17,9 @@ export async function runMigrations(logger: Logger): Promise<void> {
 
     // Ensure SSL is enabled for production databases (non-localhost)
     const url = new URL(databaseUrl);
-    const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
-    
+    const isLocalhost =
+      url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1';
+
     if (!isLocalhost && !url.searchParams.has('sslmode') && !url.searchParams.has('ssl')) {
       url.searchParams.set('sslmode', 'require');
       logger.info('Added SSL mode to database connection');
