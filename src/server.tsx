@@ -3,9 +3,10 @@ import { serve } from 'bun';
 import { createLogger } from './lib/logger';
 import { createContext } from './lib/trpc-server';
 import clientHtml from './client.html';
-import { createRouter } from './trpc-server';
+import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
 import { cleanupSQL, createSQL } from './sql';
+import { FileUploadRecordDb } from './file-upload/file-upload-record-db';
 
 const main = async () => {
   const logger = createLogger();
@@ -27,11 +28,9 @@ const main = async () => {
 
   const sql = await createSQL({ logger });
   const s3 = await createS3({ logger });
-  const appRouter = createRouter({
-    sql,
-    s3,
-    logger,
-  });
+
+  const fileUploadRecordDb = new FileUploadRecordDb({ sql, logger });
+  await fileUploadRecordDb.migrate();
 
   logger.info('Starting server...');
   const server = serve({

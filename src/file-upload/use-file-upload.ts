@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-import type { FileMetadata } from './file-upload-trpc-router';
 import { trpcClient } from '../trpc-client';
+import type { IFileUploadRecord } from './file-upload-record';
 
 interface UseFileUploadOptions {
-  onUploadComplete?: (file: FileMetadata) => void;
+  onUploadComplete?: (file: IFileUploadRecord) => void;
   onUploadError?: (error: Error) => void;
 }
 

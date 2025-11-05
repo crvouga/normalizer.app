@@ -1,6 +1,5 @@
 import { SQL } from 'bun';
 import type { Logger } from './lib/logger';
-import { SQL_SCHEMA } from './sql-schema';
 
 // Global connection instance to prevent multiple connections during hot reload
 let globalSQL: SQL | null = null;
@@ -53,23 +52,11 @@ export const createSQL = async ({ logger }: { logger: Logger }): Promise<SQL> =>
 
   // Only apply schema if not already initialized
   if (!isInitialized) {
-    await applySqlSchema({ sql, logger });
     isInitialized = true;
   }
 
   globalSQL = sql;
   return sql;
-};
-
-const applySqlSchema = async ({ sql, logger }: { sql: SQL; logger: Logger }): Promise<void> => {
-  logger.info('Applying database schema...');
-  try {
-    await sql.unsafe(SQL_SCHEMA);
-    logger.info('Successfully applied database schema');
-  } catch (error) {
-    logger.error('Failed to apply database schema', { error });
-    throw error;
-  }
 };
 
 // Cleanup function to close connections gracefully
