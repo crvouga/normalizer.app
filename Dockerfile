@@ -18,4 +18,5 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-CMD ["bun", "--hot", "run", "src/server.tsx"]
+# Run migrations before starting the server
+CMD ["bun", "run", "src/server.tsx"]
