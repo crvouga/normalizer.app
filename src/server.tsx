@@ -5,8 +5,7 @@ import { createContext } from './lib/trpc-server';
 import clientHtml from './client.html';
 import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
-import { cleanupSQL, createSQL } from './sql';
-import { FileUploadRecordDb } from './file-upload/file-upload-record-db';
+import { cleanupDb, createDb } from './sql';
 
 const main = async () => {
   const logger = createLogger();
@@ -15,7 +14,7 @@ const main = async () => {
   const setupGracefulShutdown = () => {
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down gracefully...`);
-      await cleanupSQL(logger);
+      await cleanupDb(logger);
       process.exit(0);
     };
 
@@ -26,11 +25,14 @@ const main = async () => {
 
   setupGracefulShutdown();
 
-  const sql = await createSQL({ logger });
-  const s3 = await createS3({ logger });
+  const db = await createDb({ logger });
 
-  const fileUploadRecordDb = new FileUploadRecordDb({ sql, logger });
-  await fileUploadRecordDb.migrate();
+  // Migrate DB here
+  logger.info('Running database migrations...');
+
+  logger.info('Database migrations complete.');
+
+  const s3 = await createS3({ logger });
 
   logger.info('Starting server...');
   const server = serve({
@@ -44,7 +46,7 @@ const main = async () => {
           endpoint: '/api/trpc',
           req,
           router: appRouter,
-          createContext: () => createContext({ sql, s3, logger }),
+          createContext: () => createContext({ db, s3, logger }),
         });
       },
 

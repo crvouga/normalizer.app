@@ -1,4 +1,4 @@
-import { fileUploadRouter } from '~/src/file-upload/file-upload-trpc-router';
+import { fileUploadRouter } from '~/src/files/file-trpc-router';
 import { router } from './lib/trpc-server';
 
 export const appRouter = router({

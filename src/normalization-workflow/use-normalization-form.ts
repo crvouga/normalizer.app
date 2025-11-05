@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { useFileUpload } from '~/src/file-upload/use-file-upload';
+import { useFileUpload } from '~/src/files/use-file-upload';
 
 export const useNormalizationForm = () => {
   const [prompt, setPrompt] = useState('');

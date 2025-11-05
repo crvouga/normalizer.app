@@ -1,21 +1,27 @@
 import { SQL } from 'bun';
+import { drizzle } from 'drizzle-orm/bun-sql';
 import type { Logger } from './lib/logger';
+import * as schema from './db/schema';
+
+export type Db = ReturnType<typeof drizzle<typeof schema>>;
 
 // Global connection instance to prevent multiple connections during hot reload
+let globalDb: Db | null = null;
 let globalSQL: SQL | null = null;
 let isInitialized = false;
 
-export const createSQL = async ({ logger }: { logger: Logger }): Promise<SQL> => {
+export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
   // Return existing connection if available and healthy
-  if (globalSQL && isInitialized) {
+  if (globalDb && globalSQL && isInitialized) {
     try {
       await globalSQL`SELECT 1`;
       logger.info('Reusing existing database connection');
-      return globalSQL;
+      return globalDb;
     } catch (error) {
       logger.warn('Existing connection is unhealthy, creating new one', {
         error,
       });
+      globalDb = null;
       globalSQL = null;
       isInitialized = false;
     }
@@ -50,22 +56,27 @@ export const createSQL = async ({ logger }: { logger: Logger }): Promise<SQL> =>
     throw new Error('Failed to connect to database');
   }
 
+  // Create Drizzle instance
+  const db = drizzle(sql, { schema });
+
   // Only apply schema if not already initialized
   if (!isInitialized) {
     isInitialized = true;
   }
 
   globalSQL = sql;
-  return sql;
+  globalDb = db;
+  return db;
 };
 
 // Cleanup function to close connections gracefully
-export const cleanupSQL = async (logger: Logger): Promise<void> => {
-  if (globalSQL) {
+export const cleanupDb = async (logger: Logger): Promise<void> => {
+  if (globalSQL || globalDb) {
     try {
       logger.info('Closing database connection...');
       // Note: Bun's SQL doesn't have an explicit close method, but we can clear the reference
       globalSQL = null;
+      globalDb = null;
       isInitialized = false;
       logger.info('Database connection closed');
     } catch (error) {

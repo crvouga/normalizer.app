@@ -1,0 +1,22 @@
+CREATE TABLE "files" (
+	"id" text PRIMARY KEY NOT NULL,
+	"filename" text NOT NULL,
+	"content_type" text NOT NULL,
+	"size" integer NOT NULL,
+	"file_type" text NOT NULL,
+	"status" text NOT NULL,
+	"s3_bucket" text NOT NULL,
+	"s3_key" text NOT NULL,
+	"created_at" timestamp,
+	"updated_at" timestamp,
+	"uploaded_by_user_id" text,
+	"upload_ip" text,
+	"sha256" text,
+	"download_url" text,
+	"download_url_expires_at" timestamp,
+	"upload_url" text,
+	"upload_url_expires_at" timestamp,
+	"tags" jsonb,
+	"description" text,
+	"deleted" boolean
+);

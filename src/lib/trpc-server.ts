@@ -1,18 +1,19 @@
 import { initTRPC } from '@trpc/server';
-import type { S3Client, SQL } from 'bun';
+import type { S3Client } from 'bun';
 import type { Logger } from './logger';
+import type { Db } from '../sql';
 
 // Create context type
 export type Context = {
-  sql: SQL;
+  db: Db;
   s3: S3Client;
   logger: Logger;
 };
 
 // Create context function
-export const createContext = (config: { sql: SQL; s3: S3Client; logger: Logger }): Context => {
+export const createContext = (config: { db: Db; s3: S3Client; logger: Logger }): Context => {
   return {
-    sql: config.sql,
+    db: config.db,
     s3: config.s3,
     logger: config.logger,
   };
