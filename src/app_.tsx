@@ -23,8 +23,6 @@ const CurrentScreen = () => {
           normalizationWorkflowId={currentScreen.normalizationWorkflowId}
         />
       );
-    default:
-      return <div>Unknown screen</div>;
   }
 };
 
