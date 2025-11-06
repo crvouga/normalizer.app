@@ -29,9 +29,6 @@ const CurrentScreen = () => {
 const AppSidebar: React.FC = () => (
   <SidebarRoot>
     <SidebarHeader icon={<IconSparkles className="size-8" />} title="normalizer.app" />
-    <SidebarAction>
-      <IconPlus className="size-6" />
-      New Session
-    </SidebarAction>
+    <SidebarAction label="New Session" icon={<IconPlus className="size-6" />} />
   </SidebarRoot>
 );
