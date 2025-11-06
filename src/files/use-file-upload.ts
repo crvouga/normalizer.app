@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
-import type { IFile } from '../db/schema';
+import type { IArtifact } from '../db/schema';
 import type { RemoteResult } from '../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../lib/result';
 import { trpcClient } from '../trpc-client';
 
 interface UseFileUploadOptions {
-  onUploadComplete?: (file: IFile) => void;
+  onUploadComplete?: (artifact: IArtifact) => void;
   onUploadError?: (error: Error) => void;
 }
 
 export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUploadOptions) => {
   // Use RemoteResult for the main upload state
-  const [uploadState, setUploadState] = useState<RemoteResult<IFile, Error>>(NotAsked);
+  const [uploadState, setUploadState] = useState<RemoteResult<IArtifact, Error>>(NotAsked);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const uploadFile = async (file: File) => {
@@ -58,8 +58,8 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
         throw new Error('Failed to fetch file after upload');
       }
 
-      // Convert tRPC result to IFile (dates are serialized as strings)
-      const fileRecord: IFile = {
+      // Convert tRPC result to IArtifact (dates are serialized as strings)
+      const artifactRecord: IArtifact = {
         ...fileUploadRecordAfter,
         created_at: fileUploadRecordAfter.created_at
           ? new Date(fileUploadRecordAfter.created_at)
@@ -73,10 +73,10 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
         upload_url_expires_at: fileUploadRecordAfter.upload_url_expires_at
           ? new Date(fileUploadRecordAfter.upload_url_expires_at)
           : null,
-      } as IFile;
+      } as IArtifact;
 
-      setUploadState(Success(fileRecord));
-      onUploadComplete?.(fileRecord);
+      setUploadState(Success(artifactRecord));
+      onUploadComplete?.(artifactRecord);
     } catch (error) {
       setUploadState(Failure(error as Error));
       onUploadError?.(error as Error);

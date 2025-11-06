@@ -1,14 +1,14 @@
 import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const fileStatusEnum = pgEnum('file_status', ['pending', 'uploaded']);
+export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
 
-export const files = pgTable('files', {
+export const artifacts = pgTable('artifacts', {
   id: text('id').primaryKey(),
   filename: text('filename').notNull(),
   content_type: text('content_type').notNull(),
   size: integer('size').notNull(),
   file_type: text('file_type').notNull(),
-  status: fileStatusEnum('status').notNull(),
+  status: artifactStatusEnum('status').notNull(),
   s3_bucket: text('s3_bucket').notNull(),
   s3_key: text('s3_key').notNull(),
 
@@ -37,4 +37,4 @@ export const files = pgTable('files', {
   deleted: boolean('deleted'),
 });
 
-export type IFile = typeof files.$inferSelect;
+export type IArtifact = typeof artifacts.$inferSelect;
