@@ -7,7 +7,7 @@ export const App = () => {
   return (
     <div className="flex min-h-screen flex-row bg-gray-900 text-white">
       <AppSidebar />
-      <div className="flex-1 h-full">
+      <div className="h-full flex-1">
         <CurrentScreen />
       </div>
     </div>
