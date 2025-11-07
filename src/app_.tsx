@@ -1,13 +1,14 @@
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
+import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';
 import { SidebarAction, SidebarHeader, SidebarRoot } from './ui/sidebar';
 
 export const App = () => {
   return (
-    <div className="flex min-h-screen flex-row bg-gray-900 text-white">
+    <div className="flex h-dvh flex-row overflow-hidden bg-gray-900 text-white">
       <AppSidebar />
-      <div className="h-full flex-1 shrink-0">
+      <div className="min-h-full flex-1 shrink-0">
         <CurrentScreen />
       </div>
     </div>
@@ -27,6 +28,8 @@ const CurrentScreen = () => {
 const AppSidebar: React.FC = () => (
   <SidebarRoot>
     <SidebarHeader icon={<IconSparkles className="size-8" />} title="normalizer.app" />
-    <SidebarAction label="New Session" icon={<IconPlus className="size-6" />} />
+    <div className="w-full p-4">
+      <Button className="w-full" text="New Session" startIcon={<IconPlus className="size-6" />} />
+    </div>
   </SidebarRoot>
 );

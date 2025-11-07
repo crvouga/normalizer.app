@@ -12,7 +12,7 @@ export const SidebarHeader: React.FC<{
   icon?: React.ReactNode;
   title: React.ReactNode;
 }> = ({ icon, title }) => (
-  <div className="flex items-center gap-2 border-b border-gray-800 px-6 py-6">
+  <div className="flex items-center gap-2 px-6 py-6">
     {icon}
     <span className="text-lg font-bold tracking-wide">{title}</span>
   </div>
@@ -26,7 +26,7 @@ export const SidebarAction: React.FC<{
 }> = ({ icon, label, onClick, className = '' }) => (
   <div className="p-4">
     <button
-      className={`flex w-full items-center justify-center gap-2 rounded bg-gray-800 px-4 py-2 font-medium text-gray-100 transition-colors hover:bg-gray-700 ${className}`}
+      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-800 px-4 py-2 font-medium text-gray-100 transition-colors hover:bg-gray-700 active:opacity-80 ${className}`}
       onClick={onClick}
     >
       {icon}

@@ -27,6 +27,8 @@ function getButtonClasses(
     'dark:outline-ring/40 outline-ring/50',
     'focus-visible:ring-4 focus-visible:outline-1',
     'aria-invalid:focus-visible:ring-0',
+    'cursor-pointer',
+    'active:opacity-80',
   ].join(' ');
 
   const colorClasses = {

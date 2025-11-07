@@ -17,7 +17,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
   } = useNormalizationForm();
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-8">
+    <div className="flex h-full w-full items-start justify-center p-8">
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <FileInputField
           id="target-files"
