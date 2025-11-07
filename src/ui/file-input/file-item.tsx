@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { FilePreview } from '../file-preview/file-preview';
-import { FileIcon, ImageIcon, XIcon } from '../icons';
+import { FileIcon, ImageIcon, IconX } from '../icons';
 import { formatFileSize } from './file-utils';
 
 export interface FileItemHeaderProps {
@@ -57,7 +57,7 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           }}
           className="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 transition-colors"
         >
-          <XIcon />
+          <IconX />
         </button>
       </div>
     </div>

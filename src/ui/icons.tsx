@@ -120,7 +120,7 @@ export const FileIcon = React.forwardRef<SVGSVGElement, IconProps>(
   ),
 );
 
-export const XIcon = React.forwardRef<SVGSVGElement, IconProps>(({ className, ...props }, ref) => (
+export const IconX = React.forwardRef<SVGSVGElement, IconProps>(({ className, ...props }, ref) => (
   <svg
     ref={ref}
     className={cn('h-4 w-4', className)}
