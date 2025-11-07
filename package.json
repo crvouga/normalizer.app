@@ -29,6 +29,7 @@
     "type-check:once": "tsc --noEmit"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@trpc/client": "^11.0.0",
     "@trpc/server": "^11.0.0",
     "bun-plugin-tailwind": "^0.0.14",

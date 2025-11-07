@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Transition } from '@headlessui/react';
 import { useKeyDown } from '../lib/use-key-down';
 import { IconBars2 } from './icons';
 
@@ -38,14 +39,22 @@ const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
 
 // Sidebar overlay (mobile only, fade in/out when show changes)
 const SidebarOverlay: React.FC<{ show: boolean; onClose: () => void }> = ({ show, onClose }) => {
-  if (!show) return null;
-
   return (
-    <div
-      className={`pointer-events-auto fixed inset-0 z-30 bg-black/80 opacity-100 transition-opacity duration-200 lg:hidden`}
-      onClick={onClose}
-      aria-hidden="true"
-    />
+    <Transition
+      show={show}
+      enter="transition-opacity duration-300"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="transition-opacity duration-200"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+    >
+      <div
+        className="pointer-events-auto fixed inset-0 z-30 bg-black/80 lg:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+    </Transition>
   );
 };
 
