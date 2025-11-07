@@ -12,6 +12,7 @@ export interface ComboboxOptionItemProps<T> {
 /**
  * Individual option item in the combobox dropdown.
  * Handles rendering, selection state, and disabled state.
+ * Supports dark mode with appropriate hover and selection colors.
  */
 export function ComboboxOptionItem<T extends string | number>({
   option,
@@ -24,8 +25,10 @@ export function ComboboxOptionItem<T extends string | number>({
 
     return (
       <div className="flex items-center justify-between">
-        <span className={cn('truncate', selected && 'font-semibold')}>{option.label}</span>
-        {selected && <IconCheck className="text-blue-600" />}
+        <span className={cn('truncate text-gray-900 dark:text-gray-100', selected && 'font-semibold')}>
+          {option.label}
+        </span>
+        {selected && <IconCheck className="text-blue-600 dark:text-blue-400" />}
       </div>
     );
   };
@@ -38,8 +41,8 @@ export function ComboboxOptionItem<T extends string | number>({
       className={({ focus, selected }) =>
         cn(
           'relative cursor-pointer py-2 pr-9 pl-3 select-none',
-          focus && 'bg-blue-50',
-          selected && 'bg-blue-100',
+          focus && 'bg-blue-50 dark:bg-gray-700',
+          selected && 'bg-blue-100 dark:bg-gray-600',
           option.disabled && 'cursor-not-allowed opacity-50',
         )
       }

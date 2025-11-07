@@ -8,6 +8,7 @@ export interface ComboboxHelperTextProps {
 /**
  * Displays helper text or error message below the combobox.
  * Error messages take priority over helper text.
+ * Supports dark mode with lighter text colors.
  */
 export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProps) {
   if (!helperText && !error) {
@@ -21,7 +22,12 @@ export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProp
     : null;
 
   return (
-    <p className={cn('mt-1 text-xs', error ? 'text-red-600' : 'text-gray-500')}>
+    <p
+      className={cn(
+        'mt-1 text-xs',
+        error ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400',
+      )}
+    >
       {errorMessage || helperText}
     </p>
   );
