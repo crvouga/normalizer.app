@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { ComboboxOption } from '../combobox';
+import type { AsyncComboboxAction } from './use-async-combobox-state';
 
 export interface AsyncComboboxFetchOptions {
   query: string;
@@ -19,15 +20,7 @@ export interface UseAsyncComboboxFetchParams<T extends string | number> {
   pageSize: number;
   minQueryLength: number;
   debouncedQuery: string;
-  setOptions: (
-    options: ComboboxOption<T>[] | ((prev: ComboboxOption<T>[]) => ComboboxOption<T>[]),
-  ) => void;
-  setIsLoading: (loading: boolean) => void;
-  setIsLoadingMore: (loading: boolean) => void;
-  setFetchError: (error: Error | null) => void;
-  setHasMore: (hasMore: boolean) => void;
-  setTotal: (total: number | undefined) => void;
-  setPage: (page: number) => void;
+  dispatch: React.Dispatch<AsyncComboboxAction<T>>;
 }
 
 /**
@@ -36,19 +29,15 @@ export interface UseAsyncComboboxFetchParams<T extends string | number> {
  * - Abort controller management
  * - Initial fetch and load more pagination
  * - Error handling
+ * 
+ * Uses reducer dispatch for better performance by batching state updates.
  */
 export function useAsyncComboboxFetch<T extends string | number>({
   fetchOptions,
   pageSize,
   minQueryLength,
   debouncedQuery,
-  setOptions,
-  setIsLoading,
-  setIsLoadingMore,
-  setFetchError,
-  setHasMore,
-  setTotal,
-  setPage,
+  dispatch,
 }: UseAsyncComboboxFetchParams<T>) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -62,10 +51,10 @@ export function useAsyncComboboxFetch<T extends string | number>({
 
       // Check min query length
       if (searchQuery.length < minQueryLength) {
-        setOptions([]);
-        setHasMore(false);
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        dispatch({ type: 'SET_OPTIONS', payload: [] });
+        dispatch({ type: 'SET_HAS_MORE', payload: false });
+        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: 'SET_LOADING_MORE', payload: false });
         return;
       }
 
@@ -73,12 +62,8 @@ export function useAsyncComboboxFetch<T extends string | number>({
       abortControllerRef.current = new AbortController();
 
       try {
-        if (isLoadingMoreData) {
-          setIsLoadingMore(true);
-        } else {
-          setIsLoading(true);
-        }
-        setFetchError(null);
+        // Dispatch fetch start - batches loading state updates
+        dispatch({ type: 'FETCH_START', payload: { isLoadingMore: isLoadingMoreData } });
 
         const result = await fetchOptions({
           query: searchQuery,
@@ -87,45 +72,37 @@ export function useAsyncComboboxFetch<T extends string | number>({
           signal: abortControllerRef.current.signal,
         });
 
-        if (isLoadingMoreData) {
-          setOptions((prev) => [...prev, ...result.items]);
-        } else {
-          setOptions(result.items);
-        }
-
-        setHasMore(result.hasMore);
-        setTotal(result.total);
+        // Dispatch fetch success - batches all success state updates
+        dispatch({
+          type: 'FETCH_SUCCESS',
+          payload: {
+            items: result.items,
+            hasMore: result.hasMore,
+            total: result.total,
+            isLoadingMore: isLoadingMoreData,
+          },
+        });
       } catch (err) {
         // Ignore abort errors
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        setFetchError(err instanceof Error ? err : new Error('Failed to fetch options'));
-        setOptions([]);
-        setHasMore(false);
-      } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        
+        // Dispatch fetch error - batches all error state updates
+        dispatch({
+          type: 'FETCH_ERROR',
+          payload: err instanceof Error ? err : new Error('Failed to fetch options'),
+        });
       }
     },
-    [
-      fetchOptions,
-      pageSize,
-      minQueryLength,
-      setOptions,
-      setIsLoading,
-      setIsLoadingMore,
-      setFetchError,
-      setHasMore,
-      setTotal,
-    ],
+    [fetchOptions, pageSize, minQueryLength, dispatch],
   );
 
   // Effect to fetch data when query changes
   useEffect(() => {
-    setPage(0);
+    dispatch({ type: 'RESET_FOR_NEW_QUERY' });
     fetchData(debouncedQuery, 0, false);
-  }, [debouncedQuery, fetchData, setPage]);
+  }, [debouncedQuery, fetchData, dispatch]);
 
   // Cleanup on unmount
   useEffect(() => {

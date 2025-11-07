@@ -37,25 +37,9 @@ export function AsyncCombobox<T extends string | number>({
   minQueryLength = 0,
   ...comboboxProps
 }: AsyncComboboxProps<T>) {
-  // Use extracted hooks
-  const {
-    query,
-    setQuery,
-    options,
-    setOptions,
-    isLoading,
-    setIsLoading,
-    isLoadingMore,
-    setIsLoadingMore,
-    fetchError,
-    setFetchError,
-    page,
-    setPage,
-    hasMore,
-    setHasMore,
-    total,
-    setTotal,
-  } = useAsyncComboboxState<T>();
+  // Use reducer for better performance - single state object reduces re-renders
+  const { state, dispatch } = useAsyncComboboxState<T>();
+  const { query, options, isLoading, isLoadingMore, fetchError, page, hasMore, total } = state;
 
   const debouncedQuery = useDebounce(query, debounceMs);
 
@@ -64,20 +48,14 @@ export function AsyncCombobox<T extends string | number>({
     pageSize,
     minQueryLength,
     debouncedQuery,
-    setOptions,
-    setIsLoading,
-    setIsLoadingMore,
-    setFetchError,
-    setHasMore,
-    setTotal,
-    setPage,
+    dispatch,
   });
 
   const handleLoadMore = useCallback(() => {
     const nextPage = page + 1;
-    setPage(nextPage);
+    dispatch({ type: 'SET_PAGE', payload: nextPage });
     fetchData(debouncedQuery, nextPage, true);
-  }, [page, setPage, fetchData, debouncedQuery]);
+  }, [page, dispatch, fetchData, debouncedQuery]);
 
   const loadMoreRef = useInfiniteScroll({
     hasMore,
@@ -117,7 +95,7 @@ export function AsyncCombobox<T extends string | number>({
         {...comboboxProps}
         options={options}
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
         isLoading={isLoading}
         error={fetchError}
         renderEmpty={renderEmpty}
