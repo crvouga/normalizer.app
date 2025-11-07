@@ -6,19 +6,22 @@ import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
+import { useI18n } from './i18n/use-i18n';
 
 export const App = () => {
+  const { t } = useI18n();
+
   return (
     <ThemeProvider>
       <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
         <SidebarLayout
           sidebar={
             <SidebarRoot>
-              <SidebarHeader icon={<IconSparkles className="size-8" />} title="normalizer.app" />
+              <SidebarHeader icon={<IconSparkles className="size-8" />} title={t('app.title')} />
               <div className="w-full p-4">
                 <Button
                   className="w-full"
-                  text="New Session"
+                  text={t('app.newSession')}
                   startIcon={<IconPlus className="size-6" />}
                 />
               </div>

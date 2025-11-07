@@ -8,6 +8,7 @@ import {
 import { IconCheck } from '~/src/ui/icons';
 import { Typography } from '~/src/ui/typography';
 import type { ArtifactId } from './artifact-id';
+import { useI18n } from '../i18n/use-i18n';
 
 export type ArtifactInputProps = {
   value: ArtifactId[];
@@ -22,6 +23,7 @@ interface Artifact {
 }
 
 export const ArtifactInput = (props: ArtifactInputProps) => {
+  const { t } = useI18n();
   const [selectedArtifact, setSelectedArtifact] = React.useState<ArtifactId | null>(null);
 
   // Example fetch function that simulates an API call
@@ -100,9 +102,9 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
         value={selectedArtifact}
         onChange={handleChange}
         fetchOptions={fetchArtifacts}
-        placeholder="Search artifacts..."
-        label="Select Artifact"
-        helperText="Search by name or type"
+        placeholder={t('artifact.searchPlaceholder')}
+        label={t('artifact.label')}
+        helperText={t('artifact.helperText')}
         renderOption={renderOption}
         debounceMs={300}
         pageSize={20}
@@ -112,7 +114,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       {props.value.length > 0 && (
         <div className="space-y-2">
           <Typography variant="sm" weight="medium" color="primary">
-            Selected Artifacts:
+            {t('artifact.selectedArtifacts')}
           </Typography>
           <div className="flex flex-wrap gap-2">
             {props.value.map((id) => (

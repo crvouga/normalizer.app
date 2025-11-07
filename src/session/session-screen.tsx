@@ -3,11 +3,13 @@ import { FileInputField } from '~/src/ui/file-input/file-input-field';
 import { PromptInputField } from '~/src/ui/prompt/prompt-field';
 import { useStartSessionForm } from './start-session-form';
 import { ArtifactInput } from '../artifacts/artifact-input';
+import { useI18n } from '../i18n/use-i18n';
 
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const NormalizationSessionScreen = (props: { normalizationSessionId: string | null }) => {
+  const { t } = useI18n();
   const {
     prompt,
     isUploading,
@@ -25,12 +27,12 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
         {false && (
           <FileInputField
             id="target-files"
-            label="Target Files"
+            label={t('session.targetFiles')}
             multiple
             maxFiles={MAX_FILES}
             maxSize={MAX_FILE_SIZE}
             onFilesChange={handleTargetFilesChange}
-            placeholder="Upload target files"
+            placeholder={t('session.uploadPlaceholder')}
             accept=".txt,.csv,.xlsx,.json"
           />
         )}
@@ -39,7 +41,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
             size="lg"
             type="submit"
             disabled={isUploading}
-            text="Start Normalization Session"
+            text={t('session.startButton')}
           />
         </div>
       </div>

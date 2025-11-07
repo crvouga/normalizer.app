@@ -3,6 +3,7 @@ import { Fragment } from 'react';
 import { cn } from '~/src/lib/utils';
 import { IconX } from './icons';
 import { Typography } from './typography';
+import { useI18n } from '../i18n/use-i18n';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ const sizeClasses = {
 };
 
 export function Modal({ isOpen, onClose, title, children, size = 'md', className }: ModalProps) {
+  const { t } = useI18n();
+
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog onClose={onClose} className="relative z-50">
@@ -66,7 +69,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
                   <button
                     onClick={onClose}
                     className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                    aria-label="Close"
+                    aria-label={t('modal.close')}
                   >
                     <IconX className="size-5" />
                   </button>
