@@ -2,6 +2,7 @@ import { Button } from '~/src/ui/button';
 import { FileInputField } from '~/src/ui/file-input/file-input-field';
 import { PromptInputField } from '~/src/ui/prompt/prompt-field';
 import { useStartSessionForm } from './start-session-form';
+import { ArtifactInput } from '../artifacts/artifact-input';
 
 const MAX_FILES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -19,6 +20,8 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
   return (
     <div className="flex h-full w-full items-start justify-center p-8">
       <div className="flex w-full max-w-2xl flex-col gap-6">
+        <ArtifactInput value={[]} onChange={() => {}} />
+
         <FileInputField
           id="target-files"
           label="Target Files"
