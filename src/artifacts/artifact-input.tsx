@@ -39,7 +39,9 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
 
       // Check if request was aborted
       if (signal?.aborted) {
-        throw new Error('Request aborted');
+        const abortError = new Error('Request aborted');
+        abortError.name = 'AbortError';
+        throw abortError;
       }
 
       // Mock data - replace with actual API call
