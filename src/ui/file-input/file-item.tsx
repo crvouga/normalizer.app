@@ -25,18 +25,20 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="shrink-0">
           {file.type.startsWith('image/') ? (
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
               <ImageIcon />
             </div>
           ) : (
-            <div className="bg-muted-foreground/10 flex h-10 w-10 items-center justify-center rounded-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
               <FileIcon />
             </div>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-foreground truncate text-sm font-medium">{file.name}</p>
-          <p className="text-muted-foreground text-xs">{formatFileSize(file.size)}</p>
+          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+            {file.name}
+          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{formatFileSize(file.size)}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -44,7 +46,7 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           <button
             type="button"
             onClick={() => onTogglePreview(index)}
-            className="text-muted-foreground hover:text-foreground rounded px-2 py-1 text-xs transition-colors"
+            className="rounded px-2 py-1 text-xs text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             {isPreviewVisible ? 'Hide' : 'Preview'}
           </button>
@@ -55,7 +57,7 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
             e.stopPropagation();
             onRemove(index);
           }}
-          className="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 transition-colors"
+          className="shrink-0 rounded p-1 text-gray-600 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
         >
           <IconX />
         </button>
@@ -82,7 +84,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   onRemove,
 }) => {
   return (
-    <div className="bg-muted/50 overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
       <FileItemHeader
         file={file}
         index={index}

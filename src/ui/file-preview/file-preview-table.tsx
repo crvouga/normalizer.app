@@ -16,7 +16,7 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
 }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="text-muted-foreground bg-muted/20 rounded-lg border p-6 text-center text-sm">
+      <div className="rounded-lg border border-gray-200 bg-gray-100 p-6 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
         No data to preview
       </div>
     );
@@ -31,11 +31,11 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full min-w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-muted/50 border-b">
+            <tr className="border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="text-muted-foreground min-w-0 p-3 text-left font-medium whitespace-nowrap"
+                  className="min-w-0 p-3 text-left font-medium whitespace-nowrap text-gray-600 dark:text-gray-400"
                 >
                   <div className="max-w-[200px] truncate" title={header}>
                     {header}
@@ -46,11 +46,14 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
           </thead>
           <tbody>
             {truncatedData.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-muted/30 border-b transition-colors">
+              <tr
+                key={rowIndex}
+                className="border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+              >
                 {headers.map((header, colIndex) => (
                   <td key={colIndex} className="min-w-0 p-3 whitespace-nowrap">
                     <div
-                      className="text-foreground max-w-[200px] truncate"
+                      className="max-w-[200px] truncate text-gray-900 dark:text-gray-100"
                       title={String(row[header])}
                     >
                       {String(row[header])}
@@ -63,7 +66,7 @@ export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
         </table>
       </div>
       {data.length > maxRows && (
-        <div className="text-muted-foreground bg-muted/20 border-t p-3 text-center text-xs">
+        <div className="border-t border-gray-200 bg-gray-100 p-3 text-center text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
           Showing {maxRows} of {data.length} rows
         </div>
       )}

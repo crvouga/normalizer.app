@@ -29,7 +29,7 @@ const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
   <div className="flex w-full items-center justify-start p-4 px-8 lg:hidden">
     <button
       onClick={onOpen}
-      className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-800 p-2 text-white lg:hidden"
+      className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-100 p-2 text-gray-900 lg:hidden dark:bg-gray-800 dark:text-white"
       aria-label="Open sidebar"
     >
       <IconBars2 className="size-6" />

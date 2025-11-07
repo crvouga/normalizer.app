@@ -32,9 +32,9 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
     return (
       <div
         className={cn(
-          'relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-          'hover:border-primary/50 hover:bg-accent/50',
-          isDragOver && 'border-primary bg-primary/5',
+          'relative cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors dark:border-gray-600',
+          'hover:border-blue-500 hover:bg-blue-50 dark:hover:border-blue-400 dark:hover:bg-blue-950',
+          isDragOver && 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950',
           hasError && 'border-destructive',
           className,
         )}
@@ -46,12 +46,14 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
         <input ref={ref} type="file" accept={accept} className="hidden" />
 
         <div className="flex flex-col items-center gap-4">
-          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
             <UploadIcon />
           </div>
           <div className="space-y-1">
-            <p className="text-foreground text-sm font-medium">{placeholder}</p>
-            {accept && <p className="text-muted-foreground text-xs">Accepted formats: {accept}</p>}
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{placeholder}</p>
+            {accept && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">Accepted formats: {accept}</p>
+            )}
           </div>
         </div>
       </div>

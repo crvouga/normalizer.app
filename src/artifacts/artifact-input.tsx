@@ -84,7 +84,9 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       <div className="flex flex-col">
         <span className={selected ? 'font-semibold' : ''}>{option.label}</span>
         {option.metadata?.type && (
-          <span className="text-xs text-gray-500">{option.metadata.type as string}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            {option.metadata.type as string}
+          </span>
         )}
       </div>
       {selected && <IconCheck className="text-blue-600" />}
@@ -108,17 +110,19 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       {/* Display selected artifacts */}
       {props.value.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">Selected Artifacts:</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            Selected Artifacts:
+          </p>
           <div className="flex flex-wrap gap-2">
             {props.value.map((id) => (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
+                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900 dark:text-blue-200"
               >
                 {id}
                 <button
                   onClick={() => props.onChange(props.value.filter((v) => v !== id))}
-                  className="hover:text-blue-900"
+                  className="hover:text-blue-900 dark:hover:text-blue-100"
                 >
                   ×
                 </button>

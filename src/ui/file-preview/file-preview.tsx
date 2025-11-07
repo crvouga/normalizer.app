@@ -19,7 +19,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground bg-muted/20 rounded-lg p-6 text-center text-sm">
+      <div className="rounded-lg bg-gray-100 p-6 text-center text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
         Loading {fileType} file...
       </div>
     );
@@ -27,7 +27,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (error) {
     return (
-      <div className="text-destructive bg-destructive/10 rounded-lg p-6 text-center text-sm">
+      <div className="rounded-lg bg-red-100 p-6 text-center text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
         {error}
       </div>
     );

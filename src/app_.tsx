@@ -7,7 +7,7 @@ import { SidebarLayout } from './ui/sidebar-layout';
 
 export const App = () => {
   return (
-    <div className="flex h-dvh flex-row overflow-hidden bg-gray-900 text-white">
+    <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
       <SidebarLayout
         sidebar={
           <SidebarRoot>

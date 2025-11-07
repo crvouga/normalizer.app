@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-800 bg-gray-900 text-white select-none">
+  <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white text-gray-900 select-none dark:border-gray-800 dark:bg-gray-900 dark:text-white">
     {children}
   </aside>
 );
@@ -24,7 +24,7 @@ export const SidebarAction: React.FC<{
 }> = ({ icon, label, onClick, className = '' }) => (
   <div className="p-4">
     <button
-      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-800 px-4 py-2 font-medium text-gray-100 transition-colors hover:bg-gray-700 active:opacity-80 ${className}`}
+      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-100 px-4 py-2 font-medium text-gray-900 transition-colors hover:bg-gray-200 active:opacity-80 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 ${className}`}
       onClick={onClick}
     >
       {icon}
@@ -45,8 +45,8 @@ export const SidebarNavItem: React.FC<{
   onClick?: React.MouseEventHandler<HTMLLIElement>;
 }> = ({ content, active = false, onClick }) => (
   <li
-    className={`flex cursor-pointer items-center rounded px-3 py-2 transition-colors hover:bg-gray-800 ${
-      active ? 'bg-gray-800' : ''
+    className={`flex cursor-pointer items-center rounded px-3 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+      active ? 'bg-gray-100 dark:bg-gray-800' : ''
     }`}
     onClick={onClick}
   >
@@ -57,7 +57,9 @@ export const SidebarNavItem: React.FC<{
 export const SidebarFooter: React.FC<{
   content: React.ReactNode;
 }> = ({ content }) => (
-  <div className="flex items-center gap-3 border-t border-gray-800 p-4">{content}</div>
+  <div className="flex items-center gap-3 border-t border-gray-200 p-4 dark:border-gray-800">
+    {content}
+  </div>
 );
 
 export const SidebarAvatar: React.FC<{
@@ -65,10 +67,10 @@ export const SidebarAvatar: React.FC<{
   avatarContent?: React.ReactNode;
 }> = ({ name, avatarContent }) => (
   <div className="flex items-center gap-2 overflow-hidden">
-    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-700 font-semibold text-gray-300">
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
       {avatarContent}
     </div>
-    <span className="truncate text-sm text-gray-200">{name}</span>
+    <span className="truncate text-sm text-gray-700 dark:text-gray-200">{name}</span>
   </div>
 );
 
@@ -78,7 +80,7 @@ export const SidebarFooterButton: React.FC<{
   className?: string;
 }> = ({ content, onClick, className = '' }) => (
   <button
-    className={`ml-auto rounded px-2 py-1 text-gray-400 transition-colors hover:bg-gray-800 ${className}`}
+    className={`ml-auto rounded px-2 py-1 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 ${className}`}
     onClick={onClick}
   >
     {content}

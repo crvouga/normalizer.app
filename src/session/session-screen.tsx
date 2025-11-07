@@ -18,7 +18,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
   } = useStartSessionForm();
 
   return (
-    <div className="flex h-full w-full items-start justify-center p-8">
+    <div className="flex h-full w-full items-start justify-center bg-white p-8 dark:bg-gray-900">
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <ArtifactInput value={[]} onChange={() => {}} />
 
@@ -46,7 +46,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
 
       {false && (
         <>
-          <div className="my-8 h-px bg-gray-700" />
+          <div className="my-8 h-px bg-gray-300 dark:bg-gray-700" />
           <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
             <FileInputField
               id="input-files"
