@@ -31,7 +31,7 @@ export const fileRouter = router({
         });
 
       // Insert directly into database
-      await ctx.db.insert(schema.files).values({
+      await ctx.db.insert(schema.artifacts).values({
         id,
         filename: input.filename,
         content_type: input.contentType,
@@ -61,13 +61,13 @@ export const fileRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       await ctx.db
-        .update(schema.files)
+        .update(schema.artifacts)
         .set({
           status: 'uploaded',
           size: input.size,
           updated_at: new Date(),
         })
-        .where(eq(schema.files.id, input.key));
+        .where(eq(schema.artifacts.id, input.key));
     }),
 
   get: procedure
@@ -79,8 +79,8 @@ export const fileRouter = router({
     .query(async ({ input, ctx }) => {
       const file = await ctx.db
         .select()
-        .from(schema.files)
-        .where(eq(schema.files.id, input.key))
+        .from(schema.artifacts)
+        .where(eq(schema.artifacts.id, input.key))
         .limit(1)
         .then((rows) => rows[0]);
       return file;
@@ -89,7 +89,7 @@ export const fileRouter = router({
   // List files for user
   list: procedure.query(async ({ ctx }) => {
     // You may want to filter by user or other logic in a real app
-    const files = await ctx.db.select().from(schema.files).orderBy(schema.files.created_at);
+    const files = await ctx.db.select().from(schema.artifacts).orderBy(schema.artifacts.created_at);
     return files;
   }),
 });

@@ -8,6 +8,7 @@
     "INITDB",
     "isready",
     "keepalives",
+    "micromacro",
     "minioadmin",
     "netcat",
     "officedocument",

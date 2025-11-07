@@ -15,6 +15,13 @@
       "when": 1762368643947,
       "tag": "0001_little_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1730937600000,
+      "tag": "0002_rename_files_to_artifacts",
+      "breakpoints": true
     }
   ]
 }
