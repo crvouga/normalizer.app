@@ -37,12 +37,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
           />
         )}
         <div className="flex justify-end">
-          <Button
-            size="lg"
-            type="submit"
-            disabled={isUploading}
-            text={t('session.startButton')}
-          />
+          <Button size="lg" type="submit" disabled={isUploading} text={t('session.startButton')} />
         </div>
       </div>
 

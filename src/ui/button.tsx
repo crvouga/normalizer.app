@@ -19,7 +19,7 @@ function getButtonClasses(
 ) {
   const baseClasses = [
     'inline-flex items-center justify-center gap-2',
-    'whitespace-nowrap rounded-md text-sm font-medium',
+    'whitespace-nowrap rounded-md text-base font-medium',
     'transition-[color,box-shadow]',
     'disabled:pointer-events-none disabled:opacity-50',
     "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",

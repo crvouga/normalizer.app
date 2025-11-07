@@ -15,4 +15,3 @@ export type TranslationKey = RecursiveKeyOf<TranslationKeys>;
 
 // Type for interpolation values
 export type InterpolationValues = Record<string, string | number>;
-

@@ -66,7 +66,7 @@ export function RadioGroup<T extends string = string>({
                     <HeadlessRadioGroup.Label
                       as="span"
                       className={cn(
-                        'text-sm font-medium',
+                        'text-base font-medium',
                         checked
                           ? 'text-blue-900 dark:text-blue-100'
                           : 'text-gray-900 dark:text-gray-100',
@@ -78,7 +78,7 @@ export function RadioGroup<T extends string = string>({
                       <HeadlessRadioGroup.Description
                         as="span"
                         className={cn(
-                          'text-xs',
+                          'text-sm',
                           checked
                             ? 'text-blue-700 dark:text-blue-300'
                             : 'text-gray-600 dark:text-gray-400',

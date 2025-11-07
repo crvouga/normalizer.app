@@ -19,7 +19,7 @@ import { useI18n } from '~/src/i18n/use-i18n';
 
 function MyComponent() {
   const { t } = useI18n();
-  
+
   return (
     <div>
       <h1>{t('app.title')}</h1>
@@ -35,7 +35,7 @@ The system supports interpolation for dynamic values:
 
 ```tsx
 // In en.json: "greeting": "Hello, {{name}}!"
-t('greeting', { name: 'John' }) // Returns: "Hello, John!"
+t('greeting', { name: 'John' }); // Returns: "Hello, John!"
 ```
 
 ## Adding a new language
@@ -60,4 +60,3 @@ t('greeting', { name: 'John' }) // Returns: "Hello, John!"
 - Use dot notation for nested namespaces
 - Keep keys descriptive and organized by feature/domain
 - Group related translations under common prefixes (e.g., `theme.*`, `app.*`)
-

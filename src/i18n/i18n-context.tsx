@@ -56,8 +56,5 @@ export function I18nProvider({ children, locale = 'en' }: I18nProviderProps) {
     console.log('Setting locale to:', newLocale);
   };
 
-  return (
-    <I18nContext.Provider value={{ locale, t, setLocale }}>{children}</I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={{ locale, t, setLocale }}>{children}</I18nContext.Provider>;
 }
-
