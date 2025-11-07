@@ -29,7 +29,7 @@ export interface UseAsyncComboboxFetchParams<T extends string | number> {
  * - Abort controller management
  * - Initial fetch and load more pagination
  * - Error handling
- * 
+ *
  * Uses reducer dispatch for better performance by batching state updates.
  */
 export function useAsyncComboboxFetch<T extends string | number>({
@@ -87,7 +87,7 @@ export function useAsyncComboboxFetch<T extends string | number>({
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        
+
         // Dispatch fetch error - batches all error state updates
         dispatch({
           type: 'FETCH_ERROR',

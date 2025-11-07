@@ -23,7 +23,15 @@ export type AsyncComboboxAction<T> =
   | { type: 'SET_HAS_MORE'; payload: boolean }
   | { type: 'SET_TOTAL'; payload: number | undefined }
   | { type: 'FETCH_START'; payload: { isLoadingMore: boolean } }
-  | { type: 'FETCH_SUCCESS'; payload: { items: ComboboxOption<T>[]; hasMore: boolean; total?: number; isLoadingMore: boolean } }
+  | {
+      type: 'FETCH_SUCCESS';
+      payload: {
+        items: ComboboxOption<T>[];
+        hasMore: boolean;
+        total?: number;
+        isLoadingMore: boolean;
+      };
+    }
   | { type: 'FETCH_ERROR'; payload: Error }
   | { type: 'RESET_FOR_NEW_QUERY' };
 
@@ -47,31 +55,31 @@ function asyncComboboxReducer<T>(
   switch (action.type) {
     case 'SET_QUERY':
       return { ...state, query: action.payload };
-    
+
     case 'SET_OPTIONS':
       return { ...state, options: action.payload };
-    
+
     case 'APPEND_OPTIONS':
       return { ...state, options: [...state.options, ...action.payload] };
-    
+
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
-    
+
     case 'SET_LOADING_MORE':
       return { ...state, isLoadingMore: action.payload };
-    
+
     case 'SET_ERROR':
       return { ...state, fetchError: action.payload };
-    
+
     case 'SET_PAGE':
       return { ...state, page: action.payload };
-    
+
     case 'SET_HAS_MORE':
       return { ...state, hasMore: action.payload };
-    
+
     case 'SET_TOTAL':
       return { ...state, total: action.payload };
-    
+
     case 'FETCH_START':
       return {
         ...state,
@@ -79,11 +87,11 @@ function asyncComboboxReducer<T>(
         isLoadingMore: action.payload.isLoadingMore,
         fetchError: null,
       };
-    
+
     case 'FETCH_SUCCESS':
       return {
         ...state,
-        options: action.payload.isLoadingMore 
+        options: action.payload.isLoadingMore
           ? [...state.options, ...action.payload.items]
           : action.payload.items,
         hasMore: action.payload.hasMore,
@@ -91,7 +99,7 @@ function asyncComboboxReducer<T>(
         isLoading: false,
         isLoadingMore: false,
       };
-    
+
     case 'FETCH_ERROR':
       return {
         ...state,
@@ -101,7 +109,7 @@ function asyncComboboxReducer<T>(
         isLoading: false,
         isLoadingMore: false,
       };
-    
+
     case 'RESET_FOR_NEW_QUERY':
       return {
         ...state,
@@ -109,7 +117,7 @@ function asyncComboboxReducer<T>(
         options: [],
         hasMore: true,
       };
-    
+
     default:
       return state;
   }
@@ -118,7 +126,7 @@ function asyncComboboxReducer<T>(
 /**
  * Manages the state for an async combobox using useReducer for better performance.
  * This approach batches related state updates and prevents unnecessary re-renders.
- * 
+ *
  * Benefits over multiple useState:
  * - Single state object reduces re-renders
  * - Actions provide clear state transition logic
