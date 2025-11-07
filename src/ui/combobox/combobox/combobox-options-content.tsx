@@ -52,4 +52,3 @@ export function ComboboxOptionsContent<T extends string | number>({
     </>
   );
 }
-

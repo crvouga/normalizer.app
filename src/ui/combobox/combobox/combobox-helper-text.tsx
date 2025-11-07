@@ -15,11 +15,7 @@ export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProp
     return null;
   }
 
-  const errorMessage = error
-    ? error instanceof Error
-      ? error.message
-      : String(error)
-    : null;
+  const errorMessage = error ? (error instanceof Error ? error.message : String(error)) : null;
 
   return (
     <p
@@ -32,4 +28,3 @@ export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProp
     </p>
   );
 }
-

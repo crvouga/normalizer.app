@@ -12,7 +12,10 @@ export interface ComboboxOptionsWrapperProps {
  * Provides consistent styling for the options container (positioning, shadow, scrolling, etc.)
  * Supports dark mode with appropriate background and border colors.
  */
-export function ComboboxOptionsWrapper({ optionsClassName, children }: ComboboxOptionsWrapperProps) {
+export function ComboboxOptionsWrapper({
+  optionsClassName,
+  children,
+}: ComboboxOptionsWrapperProps) {
   return (
     <ComboboxOptions
       className={cn(
@@ -25,4 +28,3 @@ export function ComboboxOptionsWrapper({ optionsClassName, children }: ComboboxO
     </ComboboxOptions>
   );
 }
-

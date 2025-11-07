@@ -25,7 +25,9 @@ export function ComboboxOptionItem<T extends string | number>({
 
     return (
       <div className="flex items-center justify-between">
-        <span className={cn('truncate text-gray-900 dark:text-gray-100', selected && 'font-semibold')}>
+        <span
+          className={cn('truncate text-gray-900 dark:text-gray-100', selected && 'font-semibold')}
+        >
           {option.label}
         </span>
         {selected && <IconCheck className="text-blue-600 dark:text-blue-400" />}
