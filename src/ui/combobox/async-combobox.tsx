@@ -1,21 +1,10 @@
-import {
-  ComboboxButton,
-  ComboboxInput,
-  ComboboxOption,
-  ComboboxOptions,
-  Combobox as HeadlessCombobox,
-} from '@headlessui/react';
-import * as React from 'react';
-import { cn } from '~/src/lib/utils';
-import { IconAlertCircle, IconCheck, IconChevronDown, IconSpinner } from '../icons';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconSpinner } from '../icons';
+import type { ComboboxOption, ComboboxProps } from './combobox';
+import { Combobox } from './combobox';
 
-// Types
-export interface AsyncComboboxOption<T> {
-  value: T;
-  label: string;
-  disabled?: boolean;
-  metadata?: Record<string, unknown>;
-}
+// Re-export the base ComboboxOption type as AsyncComboboxOption for backwards compatibility
+export type AsyncComboboxOption<T> = ComboboxOption<T>;
 
 export interface AsyncComboboxFetchOptions {
   query: string;
@@ -30,43 +19,21 @@ export interface AsyncComboboxFetchResult<T> {
   total?: number;
 }
 
-export interface AsyncComboboxProps<T> {
-  // Value management
-  value: T | null;
-  onChange: (value: T | null) => void;
-
+export interface AsyncComboboxProps<T>
+  extends Omit<ComboboxProps<T>, 'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'> {
   // Data fetching
   fetchOptions: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchResult<T>>;
 
-  // Customization
-  placeholder?: string;
-  displayValue?: (value: T | null) => string;
-  filterOptions?: (options: AsyncComboboxOption<T>[], query: string) => AsyncComboboxOption<T>[];
-  renderOption?: (option: AsyncComboboxOption<T>, selected: boolean) => React.ReactNode;
-  renderEmpty?: (query: string) => React.ReactNode;
-  renderError?: (error: Error) => React.ReactNode;
-
-  // Behavior
+  // Async-specific behavior
   debounceMs?: number;
   pageSize?: number;
   minQueryLength?: number;
-  disabled?: boolean;
-
-  // Styling
-  className?: string;
-  inputClassName?: string;
-  optionsClassName?: string;
-
-  // Labels
-  label?: string;
-  error?: string;
-  helperText?: string;
 }
 
 function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = React.useState(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
@@ -80,43 +47,29 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function AsyncCombobox<T extends string | number>({
-  value,
-  onChange,
   fetchOptions,
-  placeholder = 'Search...',
-  displayValue,
-  filterOptions,
-  renderOption,
-  renderEmpty,
-  renderError,
   debounceMs = 300,
   pageSize = 20,
   minQueryLength = 0,
-  disabled = false,
-  className,
-  inputClassName,
-  optionsClassName,
-  label,
-  error,
-  helperText,
+  ...comboboxProps
 }: AsyncComboboxProps<T>) {
   // State
-  const [query, setQuery] = React.useState('');
-  const [options, setOptions] = React.useState<AsyncComboboxOption<T>[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
-  const [fetchError, setFetchError] = React.useState<Error | null>(null);
-  const [page, setPage] = React.useState(0);
-  const [hasMore, setHasMore] = React.useState(true);
-  const [total, setTotal] = React.useState<number | undefined>(undefined);
+  const [query, setQuery] = useState('');
+  const [options, setOptions] = useState<AsyncComboboxOption<T>[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [fetchError, setFetchError] = useState<Error | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState<number | undefined>(undefined);
 
   const debouncedQuery = useDebounce(query, debounceMs);
-  const abortControllerRef = React.useRef<AbortController | null>(null);
-  const observerRef = React.useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch function
-  const fetchData = React.useCallback(
+  const fetchData = useCallback(
     async (searchQuery: string, pageNum: number, isLoadingMoreData = false) => {
       // Cancel any ongoing request
       if (abortControllerRef.current) {
@@ -175,13 +128,13 @@ export function AsyncCombobox<T extends string | number>({
   );
 
   // Effect to fetch data when query changes
-  React.useEffect(() => {
+  useEffect(() => {
     setPage(0);
     fetchData(debouncedQuery, 0, false);
   }, [debouncedQuery, fetchData]);
 
   // Intersection observer for infinite scroll
-  React.useEffect(() => {
+  useEffect(() => {
     if (!hasMore || isLoading || isLoadingMore) {
       return;
     }
@@ -213,7 +166,7 @@ export function AsyncCombobox<T extends string | number>({
   }, [hasMore, isLoading, isLoadingMore, page, debouncedQuery, fetchData]);
 
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -221,220 +174,67 @@ export function AsyncCombobox<T extends string | number>({
     };
   }, []);
 
-  // Display value function
-  const getDisplayValue = React.useCallback(
-    (val: T | null) => {
-      if (val === null) return '';
-      if (displayValue) return displayValue(val);
-
-      const option = options.find((opt) => opt.value === val);
-      return option?.label || String(val);
-    },
-    [displayValue, options],
-  );
-
-  // Filter options if provided
-  const filteredOptions = React.useMemo(() => {
-    if (filterOptions && query) {
-      return filterOptions(options, query);
-    }
-    return options;
-  }, [options, query, filterOptions]);
-
-  // Render option content
-  const renderOptionContent = React.useCallback(
-    (option: AsyncComboboxOption<T>, selected: boolean) => {
-      if (renderOption) {
-        return renderOption(option, selected);
+  // Custom empty state renderer that respects minQueryLength
+  const renderEmpty = useCallback(
+    (q: string) => {
+      // Use custom renderEmpty if provided
+      if (comboboxProps.renderEmpty) {
+        return comboboxProps.renderEmpty(q);
       }
 
-      return (
-        <div className="flex items-center justify-between">
-          <span className={cn('truncate', selected && 'font-semibold')}>{option.label}</span>
-          {selected && <IconCheck className="text-blue-600" />}
-        </div>
-      );
+      if (q.length < minQueryLength) {
+        return (
+          <div className="px-4 py-8 text-center text-sm text-gray-500">
+            Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
+          </div>
+        );
+      }
+
+      return null; // Use default from base Combobox
     },
-    [renderOption],
+    [comboboxProps.renderEmpty, minQueryLength],
   );
 
-  // Render empty state
-  const renderEmptyState = React.useCallback(() => {
-    if (renderEmpty) {
-      return renderEmpty(query);
-    }
-
-    if (query.length < minQueryLength) {
-      return (
-        <div className="px-4 py-8 text-center text-sm text-gray-500">
-          Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
-        </div>
-      );
-    }
+  // Custom footer for infinite scroll
+  const renderFooter = useCallback(() => {
+    if (!hasMore) return null;
 
     return (
-      <div className="px-4 py-8 text-center text-sm text-gray-500">
-        {query ? `No results found for "${query}"` : 'No options available'}
+      <div
+        ref={loadMoreRef}
+        className="relative cursor-default py-2 pr-9 pl-3 text-center select-none"
+      >
+        {isLoadingMore ? (
+          <div className="flex items-center justify-center gap-2 text-gray-500">
+            <IconSpinner />
+            <span className="text-xs">Loading more...</span>
+          </div>
+        ) : (
+          <div className="h-2" />
+        )}
       </div>
     );
-  }, [renderEmpty, query, minQueryLength]);
-
-  // Render error state
-  const renderErrorState = React.useCallback(
-    (err: Error) => {
-      if (renderError) {
-        return renderError(err);
-      }
-
-      return (
-        <div className="flex items-center gap-2 px-4 py-8 text-sm text-red-600">
-          <IconAlertCircle />
-          <span>{err.message}</span>
-        </div>
-      );
-    },
-    [renderError],
-  );
+  }, [hasMore, isLoadingMore]);
 
   return (
-    <div className={cn('w-full', className)}>
-      {label && <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>}
-
-      <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
-        <div className="relative">
-          <div className="relative">
-            <ComboboxInput
-              className={cn(
-                'w-full rounded-lg border border-gray-300 bg-white py-2 pr-10 pl-3 text-sm leading-5 text-gray-900',
-                'focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none',
-                'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-                error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-                inputClassName,
-              )}
-              displayValue={getDisplayValue}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={placeholder}
-            />
-
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
-              {isLoading ? (
-                <IconSpinner className="text-gray-400" />
-              ) : (
-                <IconChevronDown className="text-gray-400" />
-              )}
-            </ComboboxButton>
-          </div>
-
-          <ComboboxOptions
-            className={cn(
-              'ring-opacity-5 absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black focus:outline-none sm:text-sm',
-              optionsClassName,
-            )}
-          >
-            {fetchError ? (
-              renderErrorState(fetchError)
-            ) : filteredOptions.length === 0 && !isLoading ? (
-              renderEmptyState()
-            ) : (
-              <>
-                {filteredOptions.map((option) => (
-                  <ComboboxOption
-                    key={String(option.value)}
-                    value={option.value}
-                    disabled={option.disabled}
-                    className={({ focus, selected }) =>
-                      cn(
-                        'relative cursor-pointer py-2 pr-9 pl-3 select-none',
-                        focus && 'bg-blue-50',
-                        selected && 'bg-blue-100',
-                        option.disabled && 'cursor-not-allowed opacity-50',
-                      )
-                    }
-                  >
-                    {({ selected }) => <>{renderOptionContent(option, selected)}</>}
-                  </ComboboxOption>
-                ))}
-
-                {/* Infinite scroll trigger */}
-                {hasMore && (
-                  <div
-                    ref={loadMoreRef}
-                    className="relative cursor-default py-2 pr-9 pl-3 text-center select-none"
-                  >
-                    {isLoadingMore ? (
-                      <div className="flex items-center justify-center gap-2 text-gray-500">
-                        <IconSpinner />
-                        <span className="text-xs">Loading more...</span>
-                      </div>
-                    ) : (
-                      <div className="h-2" />
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </ComboboxOptions>
-        </div>
-      </HeadlessCombobox>
-
-      {/* Helper text or error message */}
-      {(helperText || error) && (
-        <p className={cn('mt-1 text-xs', error ? 'text-red-600' : 'text-gray-500')}>
-          {error || helperText}
-        </p>
-      )}
+    <>
+      <Combobox
+        {...comboboxProps}
+        options={options}
+        query={query}
+        onQueryChange={setQuery}
+        isLoading={isLoading}
+        error={fetchError}
+        renderEmpty={renderEmpty}
+        renderFooter={renderFooter}
+      />
 
       {/* Optional: Show total count */}
-      {total !== undefined && !error && !isLoading && (
+      {total !== undefined && !fetchError && !isLoading && (
         <p className="mt-1 text-xs text-gray-500">
           {total} {total === 1 ? 'result' : 'results'}
         </p>
       )}
-    </div>
+    </>
   );
-}
-
-// Export a simpler version for common use cases
-export interface SimpleComboboxProps<T> extends Omit<AsyncComboboxProps<T>, 'fetchOptions'> {
-  options: AsyncComboboxOption<T>[];
-  onSearch?: (query: string) => void;
-}
-
-export function SimpleCombobox<T extends string | number>({
-  options: staticOptions,
-  onSearch,
-  ...props
-}: SimpleComboboxProps<T>) {
-  const fetchOptions = React.useCallback(
-    async ({
-      query,
-      page,
-      pageSize,
-    }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchResult<T>> => {
-      // Filter options based on query
-      const filtered = staticOptions.filter((option) =>
-        option.label.toLowerCase().includes(query.toLowerCase()),
-      );
-
-      // Pagination
-      const start = page * pageSize;
-      const end = start + pageSize;
-      const items = filtered.slice(start, end);
-      const hasMore = end < filtered.length;
-
-      // Call onSearch if provided
-      if (onSearch) {
-        onSearch(query);
-      }
-
-      return {
-        items,
-        hasMore,
-        total: filtered.length,
-      };
-    },
-    [staticOptions, onSearch],
-  );
-
-  return <AsyncCombobox {...props} fetchOptions={fetchOptions} />;
 }
