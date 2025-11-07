@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { Artifact } from './artifact';
+import { ArtifactId } from './artifact-id';
 import type { RemoteResult } from '../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../lib/result';
 import { trpcClient } from '../trpc-client';
+import { dispatch } from '../store/entity-store';
 
 export const useArtifactUpload = ({
   onUploadComplete,
@@ -18,12 +20,57 @@ export const useArtifactUpload = ({
   const uploadFile = async (file: File) => {
     setUploadState(Loading);
     setUploadProgress(0);
+
+    // Generate client-side artifact ID
+    const clientId = ArtifactId.generate();
+
     try {
+      // Create optimistic artifact entity with pending status
+      const optimisticArtifact: Artifact = {
+        id: clientId,
+        filename: file.name,
+        content_type: file.type,
+        size: 0,
+        file_type: file.name.split('.').pop() || 'unknown',
+        status: 'pending',
+        s3_bucket: '',
+        s3_key: '',
+        created_at: new Date(),
+        updated_at: new Date(),
+        uploaded_by_user_id: null,
+        upload_ip: null,
+        sha256: null,
+        download_url: null,
+        download_url_expires_at: null,
+        upload_url: null,
+        upload_url_expires_at: null,
+        tags: null,
+        description: null,
+        deleted: null,
+      };
+
+      // Optimistically insert into entity store
+      dispatch({
+        type: 'entity/ADD',
+        entityType: 'artifacts',
+        entity: optimisticArtifact,
+      });
+
       // Get presigned URL
       const { fileId } = await trpcClient.artifact.startUpload.mutate({
         filename: file.name,
         contentType: file.type,
       });
+
+      // If server ID differs from client ID, update the entity
+      if (fileId !== clientId) {
+        // Remove the optimistic entity
+        dispatch({
+          type: 'entity/REMOVE',
+          entityType: 'artifacts',
+          id: clientId,
+        });
+      }
 
       const before: Artifact | null = await trpcClient.artifact.get.query({
         key: fileId,
@@ -32,6 +79,13 @@ export const useArtifactUpload = ({
       if (!before?.upload_url) {
         throw new Error('Failed to get upload URL');
       }
+
+      // Add or update with server data
+      dispatch({
+        type: 'entity/ADD',
+        entityType: 'artifacts',
+        entity: before,
+      });
 
       // Upload to S3
       const response = await fetch(before.upload_url, {
@@ -52,7 +106,7 @@ export const useArtifactUpload = ({
         size: file.size,
       });
 
-      // Invalidate and refetch file data
+      // Fetch updated artifact
       const artifact: Artifact | null = await trpcClient.artifact.get.query({
         key: fileId,
       });
@@ -63,10 +117,28 @@ export const useArtifactUpload = ({
         throw new Error('Failed to fetch file after upload');
       }
 
-      // The artifact is already properly typed from the router
+      // Update entity store with uploaded status
+      dispatch({
+        type: 'entity/UPDATE',
+        entityType: 'artifacts',
+        id: fileId as ArtifactId,
+        changes: {
+          status: 'uploaded',
+          size: file.size,
+          updated_at: artifact.updated_at,
+        },
+      });
+
       setUploadState(Success(artifact));
       onUploadComplete?.(artifact);
     } catch (error) {
+      // Remove the optimistic entity on error
+      dispatch({
+        type: 'entity/REMOVE',
+        entityType: 'artifacts',
+        id: clientId,
+      });
+
       setUploadState(Failure(error as Error));
       onUploadError?.(error as Error);
     }

@@ -6,7 +6,6 @@ import { useArtifactUpload } from '../use-artifact-upload';
 import type { Artifact } from '../artifact';
 
 export interface ArtifactUploadButtonProps {
-  onUploadStart?: (file: File) => void;
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
 }
@@ -16,7 +15,6 @@ export interface ArtifactUploadButtonProps {
  * Shows loading state during upload and calls lifecycle callbacks.
  */
 export function ArtifactUploadButton({
-  onUploadStart,
   onUploadComplete,
   onUploadError,
 }: ArtifactUploadButtonProps) {
@@ -35,9 +33,6 @@ export function ArtifactUploadButton({
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    // Call onUploadStart before starting the upload
-    onUploadStart?.(file);
 
     // Start the upload
     await uploadFile(file);

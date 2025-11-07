@@ -29,7 +29,7 @@
     "searchPlaceholder": "Search artifacts...",
     "helperText": "Search by name or type",
     "selectedArtifacts": "Selected Artifacts:",
-    "uploadButton": "Upload New",
+    "uploadButton": "Upload",
     "uploadError": "Upload failed",
     "uploading": "Uploading..."
   },

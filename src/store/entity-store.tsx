@@ -14,7 +14,9 @@ export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
   };
-  indexes: {};
+  indexes: {
+    searchResults: Record<string, string[]>;
+  };
 };
 
 // Helper type to extract entity type from a slice
@@ -64,12 +66,24 @@ type EntityResetAction = {
   };
 }[keyof EntityStore['entities']];
 
+type IndexSetSearchResultsAction = {
+  type: 'index/SET_SEARCH_RESULTS';
+  searchKey: string;
+  ids: string[];
+};
+
+type IndexClearSearchResultsAction = {
+  type: 'index/CLEAR_SEARCH_RESULTS';
+};
+
 export type EntityStoreAction =
   | EntityAddAction
   | EntityAddManyAction
   | EntityUpdateAction
   | EntityRemoveAction
-  | EntityResetAction;
+  | EntityResetAction
+  | IndexSetSearchResultsAction
+  | IndexClearSearchResultsAction;
 
 // Initial state
 const initialEntityStore: EntityStore = {
@@ -79,7 +93,9 @@ const initialEntityStore: EntityStore = {
       allIds: [],
     },
   },
-  indexes: {},
+  indexes: {
+    searchResults: {},
+  },
 };
 
 // Generic reducer that works with any entity
@@ -186,6 +202,30 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
             byId: {} as typeof slice.byId,
             allIds: [] as typeof slice.allIds,
           } as EntityStore['entities'][typeof entityType],
+        },
+      };
+    }
+
+    case 'index/SET_SEARCH_RESULTS': {
+      const { searchKey, ids } = action;
+      return {
+        ...state,
+        indexes: {
+          ...state.indexes,
+          searchResults: {
+            ...state.indexes.searchResults,
+            [searchKey]: ids,
+          },
+        },
+      };
+    }
+
+    case 'index/CLEAR_SEARCH_RESULTS': {
+      return {
+        ...state,
+        indexes: {
+          ...state.indexes,
+          searchResults: {},
         },
       };
     }
