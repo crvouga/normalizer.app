@@ -1,5 +1,4 @@
 import { useContext } from 'react';
-import type { RadioOption } from '../radio-group';
 import { ThemeContext, type EffectiveTheme, type Theme } from './theme-context';
 
 export type { EffectiveTheme, Theme };
