@@ -1,23 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { IconSpinner } from '../icons';
 import type { ComboboxOption, ComboboxProps } from './combobox';
 import { Combobox } from './combobox';
+import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
+import {
+  type AsyncComboboxFetchOptions,
+  type AsyncComboboxFetchResult,
+  useAsyncComboboxFetch,
+} from './async-combobox/use-async-combobox-fetch';
+import { useDebounce } from './async-combobox/use-debounce';
+import { useInfiniteScroll } from './async-combobox/use-infinite-scroll';
 
 // Re-export the base ComboboxOption type as AsyncComboboxOption for backwards compatibility
 export type AsyncComboboxOption<T> = ComboboxOption<T>;
 
-export interface AsyncComboboxFetchOptions {
-  query: string;
-  page: number;
-  pageSize: number;
-  signal?: AbortSignal;
-}
-
-export interface AsyncComboboxFetchResult<T> {
-  items: AsyncComboboxOption<T>[];
-  hasMore: boolean;
-  total?: number;
-}
+// Re-export types for consumers
+export type { AsyncComboboxFetchOptions, AsyncComboboxFetchResult };
 
 export interface AsyncComboboxProps<T>
   extends Omit<ComboboxProps<T>, 'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'> {
@@ -30,22 +28,6 @@ export interface AsyncComboboxProps<T>
   minQueryLength?: number;
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 export function AsyncCombobox<T extends string | number>({
   fetchOptions,
   debounceMs = 300,
@@ -53,126 +35,54 @@ export function AsyncCombobox<T extends string | number>({
   minQueryLength = 0,
   ...comboboxProps
 }: AsyncComboboxProps<T>) {
-  // State
-  const [query, setQuery] = useState('');
-  const [options, setOptions] = useState<AsyncComboboxOption<T>[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [fetchError, setFetchError] = useState<Error | null>(null);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState<number | undefined>(undefined);
+  // Use extracted hooks
+  const {
+    query,
+    setQuery,
+    options,
+    setOptions,
+    isLoading,
+    setIsLoading,
+    isLoadingMore,
+    setIsLoadingMore,
+    fetchError,
+    setFetchError,
+    page,
+    setPage,
+    hasMore,
+    setHasMore,
+    total,
+    setTotal,
+  } = useAsyncComboboxState<T>();
 
   const debouncedQuery = useDebounce(query, debounceMs);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch function
-  const fetchData = useCallback(
-    async (searchQuery: string, pageNum: number, isLoadingMoreData = false) => {
-      // Cancel any ongoing request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  const { fetchData } = useAsyncComboboxFetch({
+    fetchOptions,
+    pageSize,
+    minQueryLength,
+    debouncedQuery,
+    setOptions,
+    setIsLoading,
+    setIsLoadingMore,
+    setFetchError,
+    setHasMore,
+    setTotal,
+    setPage,
+  });
 
-      // Check min query length
-      if (searchQuery.length < minQueryLength) {
-        setOptions([]);
-        setHasMore(false);
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        return;
-      }
+  const handleLoadMore = useCallback(() => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchData(debouncedQuery, nextPage, true);
+  }, [page, setPage, fetchData, debouncedQuery]);
 
-      // Create new abort controller
-      abortControllerRef.current = new AbortController();
-
-      try {
-        if (isLoadingMoreData) {
-          setIsLoadingMore(true);
-        } else {
-          setIsLoading(true);
-        }
-        setFetchError(null);
-
-        const result = await fetchOptions({
-          query: searchQuery,
-          page: pageNum,
-          pageSize,
-          signal: abortControllerRef.current.signal,
-        });
-
-        if (isLoadingMoreData) {
-          setOptions((prev) => [...prev, ...result.items]);
-        } else {
-          setOptions(result.items);
-        }
-
-        setHasMore(result.hasMore);
-        setTotal(result.total);
-      } catch (err) {
-        // Ignore abort errors
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        setFetchError(err instanceof Error ? err : new Error('Failed to fetch options'));
-        setOptions([]);
-        setHasMore(false);
-      } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
-      }
-    },
-    [fetchOptions, pageSize, minQueryLength],
-  );
-
-  // Effect to fetch data when query changes
-  useEffect(() => {
-    setPage(0);
-    fetchData(debouncedQuery, 0, false);
-  }, [debouncedQuery, fetchData]);
-
-  // Intersection observer for infinite scroll
-  useEffect(() => {
-    if (!hasMore || isLoading || isLoadingMore) {
-      return;
-    }
-
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !isLoading && !isLoadingMore) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchData(debouncedQuery, nextPage, true);
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [hasMore, isLoading, isLoadingMore, page, debouncedQuery, fetchData]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
+  const loadMoreRef = useInfiniteScroll({
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    onLoadMore: handleLoadMore,
+  });
 
   // Custom empty state renderer that respects minQueryLength
   const renderEmpty = useCallback(
