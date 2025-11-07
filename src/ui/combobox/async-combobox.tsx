@@ -28,6 +28,9 @@ export interface AsyncComboboxProps<T>
   debounceMs?: number;
   pageSize?: number;
   minQueryLength?: number;
+
+  // Action button
+  actionButton?: React.ReactNode;
 }
 
 export function AsyncCombobox<T extends string | number>({
@@ -35,6 +38,7 @@ export function AsyncCombobox<T extends string | number>({
   debounceMs = 300,
   pageSize = 20,
   minQueryLength = 0,
+  actionButton,
   ...comboboxProps
 }: AsyncComboboxProps<T>) {
   // Use reducer for better performance - single state object reduces re-renders
@@ -91,16 +95,21 @@ export function AsyncCombobox<T extends string | number>({
 
   return (
     <>
-      <Combobox
-        {...comboboxProps}
-        options={options}
-        query={query}
-        onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
-        isLoading={isLoading}
-        error={fetchError}
-        renderEmpty={renderEmpty}
-        renderFooter={renderFooter}
-      />
+      <div className="flex items-start gap-2">
+        <div className="flex-1">
+          <Combobox
+            {...comboboxProps}
+            options={options}
+            query={query}
+            onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
+            isLoading={isLoading}
+            error={fetchError}
+            renderEmpty={renderEmpty}
+            renderFooter={renderFooter}
+          />
+        </div>
+        {actionButton && <div className="flex-shrink-0">{actionButton}</div>}
+      </div>
 
       <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} />
     </>

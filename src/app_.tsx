@@ -1,4 +1,3 @@
-import { ThemeProvider } from './ui/theme/theme-context';
 import { NormalizationSessionScreen } from './session/session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { SettingsButton } from './settings/settings-button';
@@ -8,40 +7,38 @@ import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
 import { useI18n } from './i18n/use-i18n';
 
-export const App = () => {
-  const { t } = useI18n();
-
+export function App() {
   return (
-    <ThemeProvider>
-      <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-        <SidebarLayout
-          sidebar={
-            <SidebarRoot>
-              <SidebarHeader icon={<IconSparkles className="size-8" />} title={t('app.title')} />
-              <div className="w-full p-4">
-                <Button
-                  className="w-full"
-                  text={t('app.newSession')}
-                  startIcon={<IconPlus className="size-6" />}
-                />
-              </div>
-              <SidebarFooter
-                content={
-                  <div className="flex w-full items-center justify-end">
-                    <SettingsButton />
-                  </div>
-                }
-              />
-            </SidebarRoot>
-          }
-          main={<CurrentScreen />}
+    <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+      <SidebarLayout sidebar={<AppSidebar />} main={<AppScreen />} />
+    </div>
+  );
+}
+
+function AppSidebar() {
+  const { t } = useI18n();
+  return (
+    <SidebarRoot>
+      <SidebarHeader icon={<IconSparkles className="size-8" />} title={t('app.title')} />
+      <div className="w-full p-4">
+        <Button
+          className="w-full"
+          text={t('app.newSession')}
+          startIcon={<IconPlus className="size-6" />}
         />
       </div>
-    </ThemeProvider>
+      <SidebarFooter
+        content={
+          <div className="flex w-full items-center justify-end">
+            <SettingsButton />
+          </div>
+        }
+      />
+    </SidebarRoot>
   );
-};
+}
 
-const CurrentScreen = () => {
+function AppScreen() {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
     case 'normalization-session':
@@ -49,4 +46,4 @@ const CurrentScreen = () => {
         <NormalizationSessionScreen normalizationSessionId={currentScreen.normalizationSessionId} />
       );
   }
-};
+}

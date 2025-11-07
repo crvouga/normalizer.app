@@ -1,0 +1,72 @@
+import * as React from 'react';
+import { Button } from '~/src/ui/button';
+import { UploadIcon } from '~/src/ui/icons';
+import { useI18n } from '../../i18n/use-i18n';
+import { useArtifactUploadForm } from '../artifact-upload-form';
+import type { IArtifact } from '../../db/schema';
+
+export interface ArtifactUploadButtonProps {
+  onUploadStart?: (file: File) => void;
+  onUploadComplete?: (artifact: IArtifact) => void;
+  onUploadError?: (error: Error) => void;
+}
+
+/**
+ * Button component that triggers a file upload dialog.
+ * Shows loading state during upload and calls lifecycle callbacks.
+ */
+export function ArtifactUploadButton({
+  onUploadStart,
+  onUploadComplete,
+  onUploadError,
+}: ArtifactUploadButtonProps) {
+  const { t } = useI18n();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const { uploadFile, isUploading } = useArtifactUploadForm({
+    onUploadComplete,
+    onUploadError,
+  });
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Call onUploadStart before starting the upload
+    onUploadStart?.(file);
+
+    // Start the upload
+    await uploadFile(file);
+
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        disabled={isUploading}
+      />
+      <Button
+        type="button"
+        onClick={handleButtonClick}
+        disabled={isUploading}
+        variant="outline"
+        size="default"
+        startIcon={<UploadIcon className="size-5" />}
+        text={isUploading ? t('artifact.uploading') : t('artifact.uploadButton')}
+        className="h-[52px] whitespace-nowrap"
+      />
+    </>
+  );
+}

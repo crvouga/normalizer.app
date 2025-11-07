@@ -28,7 +28,10 @@
     "label": "Select Artifact",
     "searchPlaceholder": "Search artifacts...",
     "helperText": "Search by name or type",
-    "selectedArtifacts": "Selected Artifacts:"
+    "selectedArtifacts": "Selected Artifacts:",
+    "uploadButton": "Upload New",
+    "uploadError": "Upload failed",
+    "uploading": "Uploading..."
   },
   "modal": {
     "close": "Close"

@@ -6,13 +6,19 @@ export interface SelectedArtifactsListProps {
   artifacts: ArtifactId[];
   onRemove: (artifactId: ArtifactId) => void;
   title: string;
+  uploadingArtifacts?: Set<ArtifactId>;
 }
 
 /**
  * Component for displaying a list of selected artifacts as removable badges.
  * Only renders when there are artifacts to display.
  */
-export function SelectedArtifactsList({ artifacts, onRemove, title }: SelectedArtifactsListProps) {
+export function SelectedArtifactsList({
+  artifacts,
+  onRemove,
+  title,
+  uploadingArtifacts,
+}: SelectedArtifactsListProps) {
   if (artifacts.length === 0) {
     return null;
   }
@@ -24,7 +30,12 @@ export function SelectedArtifactsList({ artifacts, onRemove, title }: SelectedAr
       </Typography>
       <div className="flex flex-wrap gap-2">
         {artifacts.map((id) => (
-          <SelectedArtifactBadge key={id} artifactId={id} onRemove={onRemove} />
+          <SelectedArtifactBadge
+            key={id}
+            artifactId={id}
+            onRemove={onRemove}
+            isUploading={uploadingArtifacts?.has(id)}
+          />
         ))}
       </div>
     </div>
