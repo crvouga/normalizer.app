@@ -53,12 +53,13 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
     [],
   );
 
-  // Memoized upload button
+  // Memoized upload button with connected styling
   const uploadButton = React.useMemo(
     () => (
       <ArtifactUploadButton
         onUploadComplete={handleUploadComplete}
         onUploadError={handleUploadError}
+        className="h-[52px] rounded-l-none rounded-r-lg border-l-0 whitespace-nowrap"
       />
     ),
     [handleUploadComplete, handleUploadError],

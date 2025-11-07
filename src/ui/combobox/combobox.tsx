@@ -56,6 +56,10 @@ export interface ComboboxProps<T> {
   // Labels
   label?: string;
   helperText?: string;
+
+  // Action button
+  hasActionButton?: boolean;
+  actionButton?: React.ReactNode;
 }
 
 export function Combobox<T extends string | number>({
@@ -79,6 +83,8 @@ export function Combobox<T extends string | number>({
   optionsClassName,
   label,
   helperText,
+  hasActionButton = false,
+  actionButton,
 }: ComboboxProps<T>) {
   // Use extracted hooks
   const { query, setQuery } = useComboboxQuery({
@@ -132,30 +138,36 @@ export function Combobox<T extends string | number>({
     <div className={cn('w-full', className)}>
       <ComboboxLabel label={label} />
 
-      <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
-        <div className="relative">
-          <ComboboxInputField
-            displayValue={getDisplayValue}
-            onQueryChange={setQuery}
-            placeholder={placeholder}
-            isLoading={isLoading}
-            hasError={hasError}
-            inputClassName={inputClassName}
-          />
+      <div className="flex">
+        <div className="flex-1">
+          <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
+            <div className="relative">
+              <ComboboxInputField
+                displayValue={getDisplayValue}
+                onQueryChange={setQuery}
+                placeholder={placeholder}
+                isLoading={isLoading}
+                hasError={hasError}
+                inputClassName={inputClassName}
+                hasActionButton={Boolean(actionButton)}
+              />
 
-          <ComboboxOptionsWrapper optionsClassName={optionsClassName}>
-            <ComboboxOptionsContent
-              error={error}
-              filteredOptions={filteredOptions}
-              isLoading={isLoading}
-              renderOption={renderOption}
-              renderEmptyState={renderEmptyState}
-              renderErrorState={renderErrorState}
-              renderFooter={renderFooter}
-            />
-          </ComboboxOptionsWrapper>
+              <ComboboxOptionsWrapper optionsClassName={optionsClassName}>
+                <ComboboxOptionsContent
+                  error={error}
+                  filteredOptions={filteredOptions}
+                  isLoading={isLoading}
+                  renderOption={renderOption}
+                  renderEmptyState={renderEmptyState}
+                  renderErrorState={renderErrorState}
+                  renderFooter={renderFooter}
+                />
+              </ComboboxOptionsWrapper>
+            </div>
+          </HeadlessCombobox>
         </div>
-      </HeadlessCombobox>
+        {actionButton && <div className="flex-shrink-0">{actionButton}</div>}
+      </div>
 
       <ComboboxHelperText helperText={helperText} error={error} />
     </div>

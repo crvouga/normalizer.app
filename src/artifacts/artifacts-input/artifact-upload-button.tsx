@@ -8,6 +8,7 @@ import type { Artifact } from '../artifact';
 export interface ArtifactUploadButtonProps {
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
+  className?: string;
 }
 
 /**
@@ -17,6 +18,7 @@ export interface ArtifactUploadButtonProps {
 export function ArtifactUploadButton({
   onUploadComplete,
   onUploadError,
+  className,
 }: ArtifactUploadButtonProps) {
   const { t } = useI18n();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -60,7 +62,7 @@ export function ArtifactUploadButton({
         size="default"
         startIcon={<UploadIcon className="size-5" />}
         text={isUploading ? t('artifact.uploading') : t('artifact.uploadButton')}
-        className="h-[52px] whitespace-nowrap"
+        className={className}
       />
     </>
   );

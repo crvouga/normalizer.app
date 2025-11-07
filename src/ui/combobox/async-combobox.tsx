@@ -95,21 +95,18 @@ export function AsyncCombobox<T extends string | number>({
 
   return (
     <>
-      <div className="flex items-start gap-2">
-        <div className="flex-1">
-          <Combobox
-            {...comboboxProps}
-            options={options}
-            query={query}
-            onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
-            isLoading={isLoading}
-            error={fetchError}
-            renderEmpty={renderEmpty}
-            renderFooter={renderFooter}
-          />
-        </div>
-        {actionButton && <div className="flex-shrink-0">{actionButton}</div>}
-      </div>
+      <Combobox
+        {...comboboxProps}
+        options={options}
+        query={query}
+        onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
+        isLoading={isLoading}
+        error={fetchError}
+        renderEmpty={renderEmpty}
+        renderFooter={renderFooter}
+        hasActionButton={Boolean(actionButton)}
+        actionButton={actionButton}
+      />
 
       <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} />
     </>

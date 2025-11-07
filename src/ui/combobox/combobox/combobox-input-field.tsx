@@ -9,6 +9,7 @@ export interface ComboboxInputFieldProps<T> {
   isLoading: boolean;
   hasError: boolean;
   inputClassName?: string;
+  hasActionButton?: boolean;
 }
 
 /**
@@ -23,12 +24,13 @@ export function ComboboxInputField<T extends string | number>({
   isLoading,
   hasError,
   inputClassName,
+  hasActionButton = false,
 }: ComboboxInputFieldProps<T>) {
   return (
     <div className="relative">
       <ComboboxInput
         className={cn(
-          'w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-gray-900',
+          'w-full border border-gray-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-gray-900',
           'dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100',
           'focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none',
           'dark:focus:border-blue-400 dark:focus:ring-blue-400',
@@ -37,6 +39,7 @@ export function ComboboxInputField<T extends string | number>({
           hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500',
           hasError && 'dark:border-red-400 dark:focus:border-red-400 dark:focus:ring-red-400',
           'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+          hasActionButton ? 'rounded-l-lg border-r-0' : 'rounded-lg',
           inputClassName,
         )}
         displayValue={displayValue}
