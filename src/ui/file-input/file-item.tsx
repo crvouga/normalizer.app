@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { FilePreview } from '../file-preview/file-preview';
-import { FileIcon, ImageIcon, XIcon } from '../icon';
+import { FileIcon, ImageIcon, XIcon } from '../icons';
 import { formatFileSize } from './file-utils';
 
 export interface FileItemHeaderProps {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/utils';
-import { UploadIcon } from '../icon';
+import { UploadIcon } from '../icons';
 
 export interface DropZoneProps {
   className?: string;

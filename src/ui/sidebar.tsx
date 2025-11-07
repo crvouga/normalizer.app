@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { IconBars2 } from './icons';
 
 // Generic reusable sidebar components
 
@@ -7,6 +8,41 @@ export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children 
     {children}
   </aside>
 );
+
+// Collapsible sidebar wrapper for mobile responsiveness
+export const CollapsibleSidebar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Hamburger menu button - only visible on mobile */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed top-4 left-4 z-50 flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-800 p-2 text-white lg:hidden"
+        aria-label="Toggle sidebar"
+      >
+        <IconBars2 className="size-6" />
+      </button>
+
+      {/* Overlay backdrop - only visible on mobile when sidebar is open */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/80 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - hidden on mobile by default, overlay when open */}
+      <div
+        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {children}
+      </div>
+    </>
+  );
+};
 
 export const SidebarHeader: React.FC<{
   icon?: React.ReactNode;

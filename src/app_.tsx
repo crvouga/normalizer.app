@@ -2,7 +2,7 @@ import { NormalizationSessionScreen } from './normalization-session/normalizatio
 import { useCurrentScreen } from './screen/use-current-screen';
 import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';
-import { SidebarAction, SidebarHeader, SidebarRoot } from './ui/sidebar';
+import { CollapsibleSidebar, SidebarHeader, SidebarRoot } from './ui/sidebar';
 
 export const App = () => {
   return (
@@ -26,10 +26,12 @@ const CurrentScreen = () => {
 };
 
 const AppSidebar: React.FC = () => (
-  <SidebarRoot>
-    <SidebarHeader icon={<IconSparkles className="size-8" />} title="normalizer.app" />
-    <div className="w-full p-4">
-      <Button className="w-full" text="New Session" startIcon={<IconPlus className="size-6" />} />
-    </div>
-  </SidebarRoot>
+  <CollapsibleSidebar>
+    <SidebarRoot>
+      <SidebarHeader icon={<IconSparkles className="size-8" />} title="normalizer.app" />
+      <div className="w-full p-4">
+        <Button className="w-full" text="New Session" startIcon={<IconPlus className="size-6" />} />
+      </div>
+    </SidebarRoot>
+  </CollapsibleSidebar>
 );
