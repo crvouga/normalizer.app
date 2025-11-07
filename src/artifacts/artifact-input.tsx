@@ -1,11 +1,11 @@
 import * as React from 'react';
 import type { ArtifactId } from './artifact-id';
 import {
-  Combobox,
-  type ComboboxFetchOptions,
-  type ComboboxFetchResult,
-  type ComboboxOption,
-} from '~/src/ui/combobox/combobox';
+  DataFetchingCombobox,
+  type DataFetchingComboboxFetchOptions,
+  type DataFetchingComboboxFetchResult,
+  type DataFetchingComboboxOption,
+} from '~/src/ui/combobox/data-fetching-combobox';
 
 export type ArtifactInputProps = {
   value: ArtifactId[];
@@ -29,7 +29,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       page,
       pageSize,
       signal,
-    }: ComboboxFetchOptions): Promise<ComboboxFetchResult<ArtifactId>> => {
+    }: DataFetchingComboboxFetchOptions): Promise<DataFetchingComboboxFetchResult<ArtifactId>> => {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -78,7 +78,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
   };
 
   // Custom render for options showing artifact type
-  const renderOption = (option: ComboboxOption<ArtifactId>, selected: boolean) => (
+  const renderOption = (option: DataFetchingComboboxOption<ArtifactId>, selected: boolean) => (
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
         <span className={selected ? 'font-semibold' : ''}>{option.label}</span>
@@ -101,7 +101,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
 
   return (
     <div className="space-y-4">
-      <Combobox
+      <DataFetchingCombobox
         value={selectedArtifact}
         onChange={handleChange}
         fetchOptions={fetchArtifacts}

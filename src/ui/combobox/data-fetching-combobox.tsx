@@ -1,117 +1,53 @@
-import * as React from 'react';
 import {
-  Combobox as HeadlessCombobox,
+  ComboboxButton,
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
-  ComboboxButton,
+  Combobox as HeadlessCombobox,
 } from '@headlessui/react';
+import * as React from 'react';
 import { cn } from '~/src/lib/utils';
-
-// Icons
-const IconChevronDown = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
-  ({ className, ...props }, ref) => (
-    <svg
-      ref={ref}
-      className={cn('h-4 w-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  ),
-);
-
-const IconCheck = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
-  ({ className, ...props }, ref) => (
-    <svg
-      ref={ref}
-      className={cn('h-4 w-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-);
-
-const IconSpinner = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
-  ({ className, ...props }, ref) => (
-    <svg
-      ref={ref}
-      className={cn('h-4 w-4 animate-spin', className)}
-      fill="none"
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
-  ),
-);
-
-const IconAlertCircle = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
-  ({ className, ...props }, ref) => (
-    <svg
-      ref={ref}
-      className={cn('h-4 w-4', className)}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      {...props}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  ),
-);
+import { IconAlertCircle, IconCheck, IconChevronDown, IconSpinner } from '../icons';
 
 // Types
-export interface ComboboxOption<T> {
+export interface DataFetchingComboboxOption<T> {
   value: T;
   label: string;
   disabled?: boolean;
   metadata?: Record<string, unknown>;
 }
 
-export interface ComboboxFetchOptions {
+export interface DataFetchingComboboxFetchOptions {
   query: string;
   page: number;
   pageSize: number;
   signal?: AbortSignal;
 }
 
-export interface ComboboxFetchResult<T> {
-  items: ComboboxOption<T>[];
+export interface DataFetchingComboboxFetchResult<T> {
+  items: DataFetchingComboboxOption<T>[];
   hasMore: boolean;
   total?: number;
 }
 
-export interface ComboboxProps<T> {
+export interface DataFetchingComboboxProps<T> {
   // Value management
   value: T | null;
   onChange: (value: T | null) => void;
 
   // Data fetching
-  fetchOptions: (options: ComboboxFetchOptions) => Promise<ComboboxFetchResult<T>>;
+  fetchOptions: (
+    options: DataFetchingComboboxFetchOptions,
+  ) => Promise<DataFetchingComboboxFetchResult<T>>;
 
   // Customization
   placeholder?: string;
   displayValue?: (value: T | null) => string;
-  filterOptions?: (options: ComboboxOption<T>[], query: string) => ComboboxOption<T>[];
-  renderOption?: (option: ComboboxOption<T>, selected: boolean) => React.ReactNode;
+  filterOptions?: (
+    options: DataFetchingComboboxOption<T>[],
+    query: string,
+  ) => DataFetchingComboboxOption<T>[];
+  renderOption?: (option: DataFetchingComboboxOption<T>, selected: boolean) => React.ReactNode;
   renderEmpty?: (query: string) => React.ReactNode;
   renderError?: (error: Error) => React.ReactNode;
 
@@ -148,7 +84,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export function Combobox<T extends string | number>({
+export function DataFetchingCombobox<T extends string | number>({
   value,
   onChange,
   fetchOptions,
@@ -168,10 +104,10 @@ export function Combobox<T extends string | number>({
   label,
   error,
   helperText,
-}: ComboboxProps<T>) {
+}: DataFetchingComboboxProps<T>) {
   // State
   const [query, setQuery] = React.useState('');
-  const [options, setOptions] = React.useState<ComboboxOption<T>[]>([]);
+  const [options, setOptions] = React.useState<DataFetchingComboboxOption<T>[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<Error | null>(null);
@@ -312,7 +248,7 @@ export function Combobox<T extends string | number>({
 
   // Render option content
   const renderOptionContent = React.useCallback(
-    (option: ComboboxOption<T>, selected: boolean) => {
+    (option: DataFetchingComboboxOption<T>, selected: boolean) => {
       if (renderOption) {
         return renderOption(option, selected);
       }
@@ -464,8 +400,8 @@ export function Combobox<T extends string | number>({
 }
 
 // Export a simpler version for common use cases
-export interface SimpleComboboxProps<T> extends Omit<ComboboxProps<T>, 'fetchOptions'> {
-  options: ComboboxOption<T>[];
+export interface SimpleComboboxProps<T> extends Omit<DataFetchingComboboxProps<T>, 'fetchOptions'> {
+  options: DataFetchingComboboxOption<T>[];
   onSearch?: (query: string) => void;
 }
 
@@ -475,7 +411,11 @@ export function SimpleCombobox<T extends string | number>({
   ...props
 }: SimpleComboboxProps<T>) {
   const fetchOptions = React.useCallback(
-    async ({ query, page, pageSize }: ComboboxFetchOptions): Promise<ComboboxFetchResult<T>> => {
+    async ({
+      query,
+      page,
+      pageSize,
+    }: DataFetchingComboboxFetchOptions): Promise<DataFetchingComboboxFetchResult<T>> => {
       // Filter options based on query
       const filtered = staticOptions.filter((option) =>
         option.label.toLowerCase().includes(query.toLowerCase()),
@@ -501,5 +441,5 @@ export function SimpleCombobox<T extends string | number>({
     [staticOptions, onSearch],
   );
 
-  return <Combobox {...props} fetchOptions={fetchOptions} />;
+  return <DataFetchingCombobox {...props} fetchOptions={fetchOptions} />;
 }
