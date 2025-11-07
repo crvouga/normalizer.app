@@ -10,44 +10,39 @@ import { cn } from '~/src/lib/utils';
 import { IconAlertCircle, IconCheck, IconChevronDown, IconSpinner } from '../icons';
 
 // Types
-export interface DataFetchingComboboxOption<T> {
+export interface AsyncComboboxOption<T> {
   value: T;
   label: string;
   disabled?: boolean;
   metadata?: Record<string, unknown>;
 }
 
-export interface DataFetchingComboboxFetchOptions {
+export interface AsyncComboboxFetchOptions {
   query: string;
   page: number;
   pageSize: number;
   signal?: AbortSignal;
 }
 
-export interface DataFetchingComboboxFetchResult<T> {
-  items: DataFetchingComboboxOption<T>[];
+export interface AsyncComboboxFetchResult<T> {
+  items: AsyncComboboxOption<T>[];
   hasMore: boolean;
   total?: number;
 }
 
-export interface DataFetchingComboboxProps<T> {
+export interface AsyncComboboxProps<T> {
   // Value management
   value: T | null;
   onChange: (value: T | null) => void;
 
   // Data fetching
-  fetchOptions: (
-    options: DataFetchingComboboxFetchOptions,
-  ) => Promise<DataFetchingComboboxFetchResult<T>>;
+  fetchOptions: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchResult<T>>;
 
   // Customization
   placeholder?: string;
   displayValue?: (value: T | null) => string;
-  filterOptions?: (
-    options: DataFetchingComboboxOption<T>[],
-    query: string,
-  ) => DataFetchingComboboxOption<T>[];
-  renderOption?: (option: DataFetchingComboboxOption<T>, selected: boolean) => React.ReactNode;
+  filterOptions?: (options: AsyncComboboxOption<T>[], query: string) => AsyncComboboxOption<T>[];
+  renderOption?: (option: AsyncComboboxOption<T>, selected: boolean) => React.ReactNode;
   renderEmpty?: (query: string) => React.ReactNode;
   renderError?: (error: Error) => React.ReactNode;
 
@@ -84,7 +79,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export function DataFetchingCombobox<T extends string | number>({
+export function AsyncCombobox<T extends string | number>({
   value,
   onChange,
   fetchOptions,
@@ -104,10 +99,10 @@ export function DataFetchingCombobox<T extends string | number>({
   label,
   error,
   helperText,
-}: DataFetchingComboboxProps<T>) {
+}: AsyncComboboxProps<T>) {
   // State
   const [query, setQuery] = React.useState('');
-  const [options, setOptions] = React.useState<DataFetchingComboboxOption<T>[]>([]);
+  const [options, setOptions] = React.useState<AsyncComboboxOption<T>[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<Error | null>(null);
@@ -248,7 +243,7 @@ export function DataFetchingCombobox<T extends string | number>({
 
   // Render option content
   const renderOptionContent = React.useCallback(
-    (option: DataFetchingComboboxOption<T>, selected: boolean) => {
+    (option: AsyncComboboxOption<T>, selected: boolean) => {
       if (renderOption) {
         return renderOption(option, selected);
       }
@@ -400,8 +395,8 @@ export function DataFetchingCombobox<T extends string | number>({
 }
 
 // Export a simpler version for common use cases
-export interface SimpleComboboxProps<T> extends Omit<DataFetchingComboboxProps<T>, 'fetchOptions'> {
-  options: DataFetchingComboboxOption<T>[];
+export interface SimpleComboboxProps<T> extends Omit<AsyncComboboxProps<T>, 'fetchOptions'> {
+  options: AsyncComboboxOption<T>[];
   onSearch?: (query: string) => void;
 }
 
@@ -415,7 +410,7 @@ export function SimpleCombobox<T extends string | number>({
       query,
       page,
       pageSize,
-    }: DataFetchingComboboxFetchOptions): Promise<DataFetchingComboboxFetchResult<T>> => {
+    }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchResult<T>> => {
       // Filter options based on query
       const filtered = staticOptions.filter((option) =>
         option.label.toLowerCase().includes(query.toLowerCase()),
@@ -441,5 +436,5 @@ export function SimpleCombobox<T extends string | number>({
     [staticOptions, onSearch],
   );
 
-  return <DataFetchingCombobox {...props} fetchOptions={fetchOptions} />;
+  return <AsyncCombobox {...props} fetchOptions={fetchOptions} />;
 }

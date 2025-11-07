@@ -1,11 +1,12 @@
 import * as React from 'react';
-import type { ArtifactId } from './artifact-id';
 import {
-  DataFetchingCombobox,
-  type DataFetchingComboboxFetchOptions,
-  type DataFetchingComboboxFetchResult,
-  type DataFetchingComboboxOption,
-} from '~/src/ui/combobox/data-fetching-combobox';
+  AsyncCombobox,
+  type AsyncComboboxFetchOptions,
+  type AsyncComboboxFetchResult,
+  type AsyncComboboxOption,
+} from '~/src/ui/combobox/async-combobox';
+import { IconCheck } from '~/src/ui/icons';
+import type { ArtifactId } from './artifact-id';
 
 export type ArtifactInputProps = {
   value: ArtifactId[];
@@ -29,7 +30,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       page,
       pageSize,
       signal,
-    }: DataFetchingComboboxFetchOptions): Promise<DataFetchingComboboxFetchResult<ArtifactId>> => {
+    }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchResult<ArtifactId>> => {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -78,7 +79,7 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
   };
 
   // Custom render for options showing artifact type
-  const renderOption = (option: DataFetchingComboboxOption<ArtifactId>, selected: boolean) => (
+  const renderOption = (option: AsyncComboboxOption<ArtifactId>, selected: boolean) => (
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
         <span className={selected ? 'font-semibold' : ''}>{option.label}</span>
@@ -86,22 +87,13 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
           <span className="text-xs text-gray-500">{option.metadata.type as string}</span>
         )}
       </div>
-      {selected && (
-        <svg
-          className="h-4 w-4 text-blue-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      )}
+      {selected && <IconCheck className="text-blue-600" />}
     </div>
   );
 
   return (
     <div className="space-y-4">
-      <DataFetchingCombobox
+      <AsyncCombobox
         value={selectedArtifact}
         onChange={handleChange}
         fetchOptions={fetchArtifacts}
