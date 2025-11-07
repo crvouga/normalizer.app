@@ -9,7 +9,10 @@ interface UseFileUploadOptions {
   onUploadError?: (error: Error) => void;
 }
 
-export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUploadOptions) => {
+export const useArtifactUploadForm = ({
+  onUploadComplete,
+  onUploadError,
+}: UseFileUploadOptions) => {
   // Use RemoteResult for the main upload state
   const [uploadState, setUploadState] = useState<RemoteResult<IArtifact, Error>>(NotAsked);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -19,12 +22,12 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
     setUploadProgress(0);
     try {
       // Get presigned URL
-      const { fileId } = await trpcClient.file.startUpload.mutate({
+      const { fileId } = await trpcClient.artifact.startUpload.mutate({
         filename: file.name,
         contentType: file.type,
       });
 
-      const fileUploadRecordBefore = await trpcClient.file.get.query({
+      const fileUploadRecordBefore = await trpcClient.artifact.get.query({
         key: fileId,
       });
 
@@ -42,13 +45,13 @@ export const useFileUpload = ({ onUploadComplete, onUploadError }: UseFileUpload
       }
 
       // Mark as uploaded in database
-      await trpcClient.file.finish.mutate({
+      await trpcClient.artifact.finish.mutate({
         key: fileId,
         size: file.size,
       });
 
       // Invalidate and refetch file data
-      const fileUploadRecordAfter = await trpcClient.file.get.query({
+      const fileUploadRecordAfter = await trpcClient.artifact.get.query({
         key: fileId,
       });
 

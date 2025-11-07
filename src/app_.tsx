@@ -1,4 +1,4 @@
-import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
+import { NormalizationSessionScreen } from './session/session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';

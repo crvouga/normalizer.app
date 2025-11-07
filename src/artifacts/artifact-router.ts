@@ -1,11 +1,11 @@
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { getS3Config } from '../s3-config';
+import { ArtifactId } from './artifact-id';
 
-export const fileRouter = router({
+export const artifactRouter = router({
   // Get presigned upload URL (mutation because it creates DB record)
   startUpload: procedure
     .input(
@@ -15,8 +15,8 @@ export const fileRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const id = randomUUID();
-      const s3Key = `user-uploaded-files/${id}/${input.filename}`;
+      const id = ArtifactId.generate();
+      const s3Key = `artifacts/${id}/${input.filename}`;
       const { s3Bucket } = getS3Config();
 
       const expiresIn = 60 * 60 * 24 * 30; // 30 days
