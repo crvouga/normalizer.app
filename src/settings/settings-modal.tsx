@@ -1,6 +1,6 @@
 import { RadioGroup } from '@headlessui/react';
 import { Modal } from '~/src/ui/modal';
-import { useTheme, type Theme } from '~/src/lib/use-theme';
+import { useTheme, type Theme } from '~/src/ui/theme/use-theme';
 import { IconCheck } from '~/src/ui/icons';
 import { cn } from '~/src/lib/utils';
 

@@ -1,4 +1,4 @@
-import { ThemeProvider } from './lib/theme-context';
+import { ThemeProvider } from './ui/theme/theme-context';
 import { NormalizationSessionScreen } from './session/session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { SettingsButton } from './settings/settings-button';
