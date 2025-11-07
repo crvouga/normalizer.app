@@ -16,7 +16,7 @@
     "darkDescription": "Dark mode"
   },
   "session": {
-    "startButton": "Start Normalization Session",
+    "startButton": "Start Session",
     "targetFiles": "Target Files",
     "uploadPlaceholder": "Upload target files"
   },
