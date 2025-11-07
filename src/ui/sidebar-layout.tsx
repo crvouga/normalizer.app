@@ -9,39 +9,62 @@ export const SidebarLayout: React.FC<{ sidebar: React.ReactNode; main: React.Rea
 }) => {
   const [state, setState] = useState<'open' | 'closed'>('closed');
   useKeyDown('Escape', () => setState('closed'));
+
   return (
     <div className="flex h-full w-full flex-col lg:flex-row">
-      {/* Mobile sidebar open button */}
-      <div className="flex w-full items-center justify-start p-4 px-8 lg:hidden">
-        <button
-          onClick={() => setState('open')}
-          className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-800 p-2 text-white lg:hidden"
-          aria-label="Open sidebar"
-        >
-          <IconBars2 className="size-6" />
-        </button>
-      </div>
+      <SidebarOpenButton onOpen={() => setState('open')} />
 
-      {/* Mobile sidebar overlay */}
-      {state === 'open' && (
-        <div
-          className="fixed inset-0 z-30 bg-black/80 lg:hidden"
-          onClick={() => setState('closed')}
-        />
-      )}
+      <SidebarOverlay show={state === 'open'} onClose={() => setState('closed')} />
 
-      {/* Sidebar: collapsible on mobile, visible on desktop */}
-      <div
-        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:static lg:translate-x-0 ${
-          state === 'open' ? 'translate-x-0' : '-translate-x-full'
-        } lg:flex lg:translate-x-0`}
-        style={{ minWidth: 0 }} // fixes overflow scroll issues on flex row
-      >
-        {sidebar}
-      </div>
+      <SidebarContainer open={state === 'open'}>{sidebar}</SidebarContainer>
 
-      {/* Main content area */}
-      <div className="flex-1 shrink-0">{main}</div>
+      <MainContent>{main}</MainContent>
     </div>
   );
 };
+
+// Sidebar open button (mobile only)
+const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
+  <div className="flex w-full items-center justify-start p-4 px-8 lg:hidden">
+    <button
+      onClick={onOpen}
+      className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-800 p-2 text-white lg:hidden"
+      aria-label="Open sidebar"
+    >
+      <IconBars2 className="size-6" />
+    </button>
+  </div>
+);
+
+// Sidebar overlay (mobile only, fade in/out when show changes)
+const SidebarOverlay: React.FC<{ show: boolean; onClose: () => void }> = ({ show, onClose }) => {
+  if (!show) return null;
+
+  return (
+    <div
+      className={`pointer-events-auto fixed inset-0 z-30 bg-black/80 opacity-100 transition-opacity duration-200 lg:hidden`}
+      onClick={onClose}
+      aria-hidden="true"
+    />
+  );
+};
+
+// Collapsible sidebar container (styles for mobile/desktop)
+const SidebarContainer: React.FC<{
+  open: boolean;
+  children: React.ReactNode;
+}> = ({ open, children }) => (
+  <div
+    className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 lg:static lg:translate-x-0 ${
+      open ? 'translate-x-0' : '-translate-x-full'
+    } lg:flex lg:translate-x-0`}
+    style={{ minWidth: 0 }} // fixes overflow scroll issues on flex row
+  >
+    {children}
+  </div>
+);
+
+// Main content area (flex child)
+const MainContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex-1 shrink-0">{children}</div>
+);
