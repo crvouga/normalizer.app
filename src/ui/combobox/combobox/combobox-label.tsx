@@ -14,7 +14,7 @@ export function ComboboxLabel({ label }: ComboboxLabelProps) {
   }
 
   return (
-    <Typography as="label" variant="sm" weight="medium" color="secondary" className="mb-2 block">
+    <Typography as="label" variant="base" weight="medium" color="secondary" className="mb-2 block">
       {label}
     </Typography>
   );

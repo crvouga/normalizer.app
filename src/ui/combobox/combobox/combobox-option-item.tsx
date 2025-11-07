@@ -27,13 +27,13 @@ export function ComboboxOptionItem<T extends string | number>({
       <div className="flex items-center justify-between">
         <span
           className={cn(
-            'truncate text-base text-gray-900 dark:text-gray-100',
+            'truncate text-lg text-gray-900 dark:text-gray-100',
             selected && 'font-semibold',
           )}
         >
           {option.label}
         </span>
-        {selected && <IconCheck className="text-blue-600 dark:text-blue-400" />}
+        {selected && <IconCheck className="size-5 text-blue-600 dark:text-blue-400" />}
       </div>
     );
   };
@@ -45,7 +45,7 @@ export function ComboboxOptionItem<T extends string | number>({
       disabled={option.disabled}
       className={({ focus, selected }) =>
         cn(
-          'relative cursor-pointer py-2 pr-9 pl-3 select-none',
+          'relative cursor-pointer py-3 pr-10 pl-4 select-none',
           focus && 'bg-blue-50 dark:bg-gray-700',
           selected && 'bg-blue-100 dark:bg-gray-600',
           option.disabled && 'cursor-not-allowed opacity-50',

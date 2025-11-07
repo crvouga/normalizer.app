@@ -28,7 +28,7 @@ export function ComboboxInputField<T extends string | number>({
     <div className="relative">
       <ComboboxInput
         className={cn(
-          'w-full rounded-lg border border-gray-300 bg-white py-2 pr-10 pl-3 text-base leading-5 text-gray-900',
+          'w-full rounded-lg border border-gray-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-gray-900',
           'dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100',
           'focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none',
           'dark:focus:border-blue-400 dark:focus:ring-blue-400',
@@ -44,7 +44,7 @@ export function ComboboxInputField<T extends string | number>({
         placeholder={placeholder}
       />
 
-      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
+      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
         {isLoading ? (
           <IconSpinner className="text-gray-400 dark:text-gray-500" />
         ) : (
