@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import type { Artifact } from './artifact';
-import { ArtifactId } from './artifact-id';
-import type { RemoteResult } from '../lib/result';
-import { Failure, Loading, NotAsked, Success } from '../lib/result';
-import { trpcClient } from '../trpc-client';
-import { dispatch } from '../store/entity-store';
+import type { Artifact } from '../artifact';
+import { ArtifactId } from '../artifact-id';
+import type { RemoteResult } from '../../lib/result';
+import { Failure, Loading, NotAsked, Success } from '../../lib/result';
+import { trpcClient } from '../../trpc-client';
+import { dispatch } from '../../store/entity-store';
 
 export const useArtifactUpload = ({
   onUploadComplete,
@@ -57,7 +57,7 @@ export const useArtifactUpload = ({
       });
 
       // Get presigned URL
-      const { fileId } = await trpcClient.artifact.startUpload.mutate({
+      const { fileId } = await trpcClient.artifactUpload.start.mutate({
         filename: file.name,
         contentType: file.type,
       });
@@ -101,7 +101,7 @@ export const useArtifactUpload = ({
       }
 
       // Mark as uploaded in database
-      await trpcClient.artifact.finish.mutate({
+      await trpcClient.artifactUpload.finish.mutate({
         key: fileId,
         size: file.size,
       });

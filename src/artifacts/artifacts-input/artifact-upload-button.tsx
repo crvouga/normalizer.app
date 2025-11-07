@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Button } from '~/src/ui/button';
 import { UploadIcon } from '~/src/ui/icons';
 import { useI18n } from '../../i18n/use-i18n';
-import { useArtifactUpload } from '../use-artifact-upload';
+import { useArtifactUpload } from '../artifact-upload/use-artifact-upload';
 import type { Artifact } from '../artifact';
 
 export interface ArtifactUploadButtonProps {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { useArtifactUpload } from '~/src/artifacts/use-artifact-upload';
+import { useArtifactUpload } from '~/src/artifacts/artifact-upload/use-artifact-upload';
 
 export const useStartSessionForm = () => {
   const [prompt, setPrompt] = useState('');
