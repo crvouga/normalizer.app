@@ -3,7 +3,7 @@ import React from 'react';
 // Generic reusable sidebar components
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <aside className="flex h-screen w-64 flex-col border-r border-gray-800 bg-gray-900 text-white select-none">
+  <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-800 bg-gray-900 text-white select-none">
     {children}
   </aside>
 );

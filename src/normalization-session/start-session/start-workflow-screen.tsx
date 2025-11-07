@@ -1,3 +1,3 @@
-export const StartWorkflowScreen = () => {
-  return <div>StartWorkflowScreen</div>;
+export const StartSessionScreen = () => {
+  return <div>StartSessionScreen</div>;
 };

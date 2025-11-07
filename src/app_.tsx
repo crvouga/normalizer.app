@@ -7,7 +7,7 @@ export const App = () => {
   return (
     <div className="flex min-h-screen flex-row bg-gray-900 text-white">
       <AppSidebar />
-      <div className="h-full flex-1">
+      <div className="h-full flex-1 shrink-0">
         <CurrentScreen />
       </div>
     </div>
@@ -17,11 +17,9 @@ export const App = () => {
 const CurrentScreen = () => {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
-    case 'normalization-workflow':
+    case 'normalization-session':
       return (
-        <NormalizationSessionScreen
-          normalizationWorkflowId={currentScreen.normalizationWorkflowId}
-        />
+        <NormalizationSessionScreen normalizationSessionId={currentScreen.normalizationSessionId} />
       );
   }
 };
