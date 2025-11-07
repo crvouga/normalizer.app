@@ -2,7 +2,7 @@ import { Button } from '~/src/ui/button';
 import { FileInputField } from '~/src/ui/file-input/file-input-field';
 import { PromptInputField } from '~/src/ui/prompt/prompt-field';
 import { useStartSessionForm } from './start-session-form';
-import { ArtifactInput } from '../artifacts/artifact-input';
+import { ArtifactsInput } from '../artifacts/artifacts-input/artifacts-input';
 import { useI18n } from '../i18n/use-i18n';
 
 const MAX_FILES = 1;
@@ -22,7 +22,7 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
   return (
     <div className="flex h-full w-full items-start justify-center bg-white p-8 dark:bg-gray-900">
       <div className="flex w-full max-w-2xl flex-col gap-6">
-        <ArtifactInput value={[]} onChange={() => {}} />
+        <ArtifactsInput value={[]} onChange={() => {}} />
 
         {false && (
           <FileInputField
