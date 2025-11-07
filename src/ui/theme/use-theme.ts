@@ -1,7 +1,8 @@
 import { useContext } from 'react';
-import { ThemeContext, type Theme, type EffectiveTheme } from './theme-context';
+import type { RadioOption } from '../radio-group';
+import { ThemeContext, type EffectiveTheme, type Theme } from './theme-context';
 
-export type { Theme, EffectiveTheme };
+export type { EffectiveTheme, Theme };
 
 export function useTheme() {
   const context = useContext(ThemeContext);
