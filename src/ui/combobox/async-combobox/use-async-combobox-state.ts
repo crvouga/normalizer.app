@@ -38,4 +38,3 @@ export function useAsyncComboboxState<T extends string | number>() {
     setTotal,
   };
 }
-

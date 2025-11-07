@@ -1,7 +1,9 @@
 import { useCallback } from 'react';
-import { IconSpinner } from '../icons';
 import type { ComboboxOption, ComboboxProps } from './combobox';
 import { Combobox } from './combobox';
+import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-state';
+import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
+import { AsyncComboboxTotalCount } from './async-combobox/async-combobox-total-count';
 import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
 import {
   type AsyncComboboxFetchOptions,
@@ -92,39 +94,22 @@ export function AsyncCombobox<T extends string | number>({
         return comboboxProps.renderEmpty(q);
       }
 
-      if (q.length < minQueryLength) {
-        return (
-          <div className="px-4 py-8 text-center text-sm text-gray-500">
-            Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
-          </div>
-        );
-      }
-
-      return null; // Use default from base Combobox
+      return <AsyncComboboxEmptyState query={q} minQueryLength={minQueryLength} />;
     },
     [comboboxProps.renderEmpty, minQueryLength],
   );
 
   // Custom footer for infinite scroll
-  const renderFooter = useCallback(() => {
-    if (!hasMore) return null;
-
-    return (
-      <div
-        ref={loadMoreRef}
-        className="relative cursor-default py-2 pr-9 pl-3 text-center select-none"
-      >
-        {isLoadingMore ? (
-          <div className="flex items-center justify-center gap-2 text-gray-500">
-            <IconSpinner />
-            <span className="text-xs">Loading more...</span>
-          </div>
-        ) : (
-          <div className="h-2" />
-        )}
-      </div>
-    );
-  }, [hasMore, isLoadingMore]);
+  const renderFooter = useCallback(
+    () => (
+      <AsyncComboboxFooter
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        loadMoreRef={loadMoreRef}
+      />
+    ),
+    [hasMore, isLoadingMore, loadMoreRef],
+  );
 
   return (
     <>
@@ -139,12 +124,7 @@ export function AsyncCombobox<T extends string | number>({
         renderFooter={renderFooter}
       />
 
-      {/* Optional: Show total count */}
-      {total !== undefined && !fetchError && !isLoading && (
-        <p className="mt-1 text-xs text-gray-500">
-          {total} {total === 1 ? 'result' : 'results'}
-        </p>
-      )}
+      <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} />
     </>
   );
 }

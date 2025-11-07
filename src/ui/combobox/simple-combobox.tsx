@@ -47,4 +47,3 @@ export function SimpleCombobox<T extends string | number>({
 
   return <AsyncCombobox {...props} fetchOptions={fetchOptions} />;
 }
-

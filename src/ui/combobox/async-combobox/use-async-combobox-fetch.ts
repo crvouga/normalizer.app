@@ -19,7 +19,9 @@ export interface UseAsyncComboboxFetchParams<T extends string | number> {
   pageSize: number;
   minQueryLength: number;
   debouncedQuery: string;
-  setOptions: (options: ComboboxOption<T>[] | ((prev: ComboboxOption<T>[]) => ComboboxOption<T>[])) => void;
+  setOptions: (
+    options: ComboboxOption<T>[] | ((prev: ComboboxOption<T>[]) => ComboboxOption<T>[]),
+  ) => void;
   setIsLoading: (loading: boolean) => void;
   setIsLoadingMore: (loading: boolean) => void;
   setFetchError: (error: Error | null) => void;
@@ -106,7 +108,17 @@ export function useAsyncComboboxFetch<T extends string | number>({
         setIsLoadingMore(false);
       }
     },
-    [fetchOptions, pageSize, minQueryLength, setOptions, setIsLoading, setIsLoadingMore, setFetchError, setHasMore, setTotal],
+    [
+      fetchOptions,
+      pageSize,
+      minQueryLength,
+      setOptions,
+      setIsLoading,
+      setIsLoadingMore,
+      setFetchError,
+      setHasMore,
+      setTotal,
+    ],
   );
 
   // Effect to fetch data when query changes
@@ -126,4 +138,3 @@ export function useAsyncComboboxFetch<T extends string | number>({
 
   return { fetchData };
 }
-
