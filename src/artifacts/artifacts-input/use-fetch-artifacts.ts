@@ -3,18 +3,13 @@ import type {
   AsyncComboboxFetchOptions,
   AsyncComboboxFetchResult,
 } from '~/src/ui/combobox/async-combobox';
+import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
-
-// Example artifact data structure
-export interface Artifact {
-  id: ArtifactId;
-  name: string;
-  type: string;
-}
+import { trpcClient } from '../../trpc-client';
 
 /**
  * Hook for fetching artifacts with pagination and search.
- * TODO: Replace mock data with actual API call.
+ * Uses the artifact router to fetch real data from the backend.
  */
 export function useFetchArtifacts() {
   const fetchArtifacts = React.useCallback(
@@ -24,9 +19,6 @@ export function useFetchArtifacts() {
       pageSize,
       signal,
     }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchResult<ArtifactId>> => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       // Check if request was aborted
       if (signal?.aborted) {
         const abortError = new Error('Request aborted');
@@ -34,18 +26,21 @@ export function useFetchArtifacts() {
         throw abortError;
       }
 
-      // Mock data - replace with actual API call
-      const mockArtifacts: Artifact[] = Array.from({ length: 100 }, (_, i) => ({
-        id: `artifact-${i + 1}` as ArtifactId,
-        name: `Artifact ${i + 1}`,
-        type: i % 3 === 0 ? 'CSV' : i % 3 === 1 ? 'JSON' : 'Excel',
-      }));
+      // Fetch artifacts from the API
+      const artifacts: Artifact[] = await trpcClient.artifact.list.query();
+
+      // Check if request was aborted after fetch
+      if (signal?.aborted) {
+        const abortError = new Error('Request aborted');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
 
       // Filter based on query
-      const filtered = mockArtifacts.filter(
+      const filtered = artifacts.filter(
         (artifact) =>
-          artifact.name.toLowerCase().includes(query.toLowerCase()) ||
-          artifact.type.toLowerCase().includes(query.toLowerCase()),
+          artifact.filename.toLowerCase().includes(query.toLowerCase()) ||
+          artifact.file_type.toLowerCase().includes(query.toLowerCase()),
       );
 
       // Paginate
@@ -55,9 +50,9 @@ export function useFetchArtifacts() {
 
       return {
         items: items.map((artifact) => ({
-          value: artifact.id,
-          label: artifact.name,
-          metadata: { type: artifact.type },
+          value: artifact.id as ArtifactId,
+          label: artifact.filename,
+          metadata: { type: artifact.file_type, size: artifact.size },
         })),
         hasMore: end < filtered.length,
         total: filtered.length,

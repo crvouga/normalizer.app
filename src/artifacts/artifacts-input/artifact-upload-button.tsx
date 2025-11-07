@@ -2,12 +2,12 @@ import * as React from 'react';
 import { Button } from '~/src/ui/button';
 import { UploadIcon } from '~/src/ui/icons';
 import { useI18n } from '../../i18n/use-i18n';
-import { useArtifactUploadForm } from '../artifact-upload-form';
-import type { IArtifact } from '../../db/schema';
+import { useArtifactUpload } from '../use-artifact-upload';
+import type { Artifact } from '../artifact';
 
 export interface ArtifactUploadButtonProps {
   onUploadStart?: (file: File) => void;
-  onUploadComplete?: (artifact: IArtifact) => void;
+  onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
 }
 
@@ -23,7 +23,7 @@ export function ArtifactUploadButton({
   const { t } = useI18n();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { uploadFile, isUploading } = useArtifactUploadForm({
+  const { uploadFile, isUploading } = useArtifactUpload({
     onUploadComplete,
     onUploadError,
   });

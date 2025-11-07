@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { AsyncCombobox } from '~/src/ui/combobox/async-combobox';
 import { useI18n } from '../../i18n/use-i18n';
-import type { IArtifact } from '../../db/schema';
+import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { ArtifactOptionItem } from './artifact-option-item';
 import { ArtifactUploadButton } from './artifact-upload-button';
@@ -46,7 +46,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
 
   // Handle upload complete - update the artifact ID
   const handleUploadComplete = React.useCallback(
-    (artifact: IArtifact) => {
+    (artifact: Artifact) => {
       // Remove from uploading state
       setUploadingArtifacts((prev) => {
         const next = new Set(prev);

@@ -1,20 +1,18 @@
 import { useMemo, useState } from 'react';
-import type { IArtifact } from '../db/schema';
+import type { Artifact } from './artifact';
 import type { RemoteResult } from '../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../lib/result';
 import { trpcClient } from '../trpc-client';
 
-interface UseFileUploadOptions {
-  onUploadComplete?: (artifact: IArtifact) => void;
-  onUploadError?: (error: Error) => void;
-}
-
-export const useArtifactUploadForm = ({
+export const useArtifactUpload = ({
   onUploadComplete,
   onUploadError,
-}: UseFileUploadOptions) => {
+}: {
+  onUploadComplete?: (artifact: Artifact) => void;
+  onUploadError?: (error: Error) => void;
+}) => {
   // Use RemoteResult for the main upload state
-  const [uploadState, setUploadState] = useState<RemoteResult<IArtifact, Error>>(NotAsked);
+  const [uploadState, setUploadState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const uploadFile = async (file: File) => {
@@ -27,12 +25,16 @@ export const useArtifactUploadForm = ({
         contentType: file.type,
       });
 
-      const fileUploadRecordBefore = await trpcClient.artifact.get.query({
+      const before: Artifact | null = await trpcClient.artifact.get.query({
         key: fileId,
       });
 
+      if (!before?.upload_url) {
+        throw new Error('Failed to get upload URL');
+      }
+
       // Upload to S3
-      const response = await fetch(fileUploadRecordBefore?.upload_url, {
+      const response = await fetch(before.upload_url, {
         method: 'PUT',
         body: file,
         headers: {
@@ -51,35 +53,19 @@ export const useArtifactUploadForm = ({
       });
 
       // Invalidate and refetch file data
-      const fileUploadRecordAfter = await trpcClient.artifact.get.query({
+      const artifact: Artifact | null = await trpcClient.artifact.get.query({
         key: fileId,
       });
 
       setUploadProgress(100);
 
-      if (!fileUploadRecordAfter) {
+      if (!artifact) {
         throw new Error('Failed to fetch file after upload');
       }
 
-      // Convert tRPC result to IArtifact (dates are serialized as strings)
-      const artifactRecord: IArtifact = {
-        ...fileUploadRecordAfter,
-        created_at: fileUploadRecordAfter.created_at
-          ? new Date(fileUploadRecordAfter.created_at)
-          : null,
-        updated_at: fileUploadRecordAfter.updated_at
-          ? new Date(fileUploadRecordAfter.updated_at)
-          : null,
-        download_url_expires_at: fileUploadRecordAfter.download_url_expires_at
-          ? new Date(fileUploadRecordAfter.download_url_expires_at)
-          : null,
-        upload_url_expires_at: fileUploadRecordAfter.upload_url_expires_at
-          ? new Date(fileUploadRecordAfter.upload_url_expires_at)
-          : null,
-      } as IArtifact;
-
-      setUploadState(Success(artifactRecord));
-      onUploadComplete?.(artifactRecord);
+      // The artifact is already properly typed from the router
+      setUploadState(Success(artifact));
+      onUploadComplete?.(artifact);
     } catch (error) {
       setUploadState(Failure(error as Error));
       onUploadError?.(error as Error);

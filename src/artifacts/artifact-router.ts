@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { getS3Config } from '../s3-config';
+import { Artifact } from './artifact';
 import { ArtifactId } from './artifact-id';
 
 export const artifactRouter = router({
@@ -76,6 +77,7 @@ export const artifactRouter = router({
         key: z.string(),
       }),
     )
+    .output(Artifact.schema.nullable())
     .query(async ({ input, ctx }) => {
       const file = await ctx.db
         .select()
@@ -83,13 +85,21 @@ export const artifactRouter = router({
         .where(eq(schema.artifacts.id, input.key))
         .limit(1)
         .then((rows) => rows[0]);
-      return file;
+
+      if (!file) {
+        return null;
+      }
+
+      // Validate and transform to Artifact type
+      return Artifact.schema.parse(file);
     }),
 
   // List files for user
-  list: procedure.query(async ({ ctx }) => {
+  list: procedure.output(z.array(Artifact.schema)).query(async ({ ctx }): Promise<Artifact[]> => {
     // You may want to filter by user or other logic in a real app
     const files = await ctx.db.select().from(schema.artifacts).orderBy(schema.artifacts.created_at);
-    return files;
+
+    // Validate and transform to Artifact type array
+    return z.array(Artifact.schema).parse(files);
   }),
 });
