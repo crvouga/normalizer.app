@@ -28,9 +28,6 @@ export interface AsyncComboboxProps<T>
   debounceMs?: number;
   pageSize?: number;
   minQueryLength?: number;
-
-  // Action button
-  actionButton?: React.ReactNode;
 }
 
 export function AsyncCombobox<T extends string | number>({
@@ -104,7 +101,6 @@ export function AsyncCombobox<T extends string | number>({
         error={fetchError}
         renderEmpty={renderEmpty}
         renderFooter={renderFooter}
-        hasActionButton={Boolean(actionButton)}
         actionButton={actionButton}
       />
 

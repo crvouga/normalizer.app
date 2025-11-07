@@ -58,7 +58,6 @@ export interface ComboboxProps<T> {
   helperText?: string;
 
   // Action button
-  hasActionButton?: boolean;
   actionButton?: React.ReactNode;
 }
 
@@ -83,7 +82,6 @@ export function Combobox<T extends string | number>({
   optionsClassName,
   label,
   helperText,
-  hasActionButton = false,
   actionButton,
 }: ComboboxProps<T>) {
   // Use extracted hooks
@@ -166,7 +164,7 @@ export function Combobox<T extends string | number>({
             </div>
           </HeadlessCombobox>
         </div>
-        {actionButton && <div className="flex-shrink-0">{actionButton}</div>}
+        {actionButton && <div className="flex-shrink-0 h-full">{actionButton}</div>}
       </div>
 
       <ComboboxHelperText helperText={helperText} error={error} />

@@ -9,6 +9,7 @@ export interface ArtifactUploadButtonProps {
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
   className?: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'contained';
 }
 
 /**
@@ -19,6 +20,7 @@ export function ArtifactUploadButton({
   onUploadComplete,
   onUploadError,
   className,
+  variant = 'outline',
 }: ArtifactUploadButtonProps) {
   const { t } = useI18n();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -58,9 +60,9 @@ export function ArtifactUploadButton({
         type="button"
         onClick={handleButtonClick}
         disabled={isUploading}
-        variant="outline"
+        variant={variant}
         size="default"
-        startIcon={<UploadIcon className="size-5" />}
+        startIcon={<UploadIcon className="size-4" />}
         text={isUploading ? t('artifact.uploading') : t('artifact.uploadButton')}
         className={className}
       />
