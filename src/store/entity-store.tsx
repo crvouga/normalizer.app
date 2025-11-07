@@ -3,24 +3,73 @@ import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
 import { Store } from '../lib/store';
 
+// Entity slice type
+type EntitySlice<TId extends string = string, TEntity = unknown> = {
+  byId: Record<TId, TEntity>;
+  allIds: TId[];
+};
+
 // Store type
 export type EntityStore = {
   entities: {
-    artifacts: {
-      byId: Record<ArtifactId, Artifact>;
-      allIds: ArtifactId[];
-    };
+    artifacts: EntitySlice<ArtifactId, Artifact>;
   };
   indexes: {};
 };
 
-// Generic actions for any entity type
+// Helper type to extract entity type from a slice
+type EntityFromSlice<T> = T extends EntitySlice<string, infer E> ? E : never;
+
+// Helper type to extract ID type from a slice
+type IdFromSlice<T> = T extends EntitySlice<infer I, unknown> ? I : never;
+
+// Type-safe actions for each entity type
+type EntityAddAction = {
+  [K in keyof EntityStore['entities']]: {
+    type: 'entity/ADD';
+    entityType: K;
+    entity: EntityFromSlice<EntityStore['entities'][K]>;
+  };
+}[keyof EntityStore['entities']];
+
+type EntityAddManyAction = {
+  [K in keyof EntityStore['entities']]: {
+    type: 'entity/ADD_MANY';
+    entityType: K;
+    entities: EntityFromSlice<EntityStore['entities'][K]>[];
+  };
+}[keyof EntityStore['entities']];
+
+type EntityUpdateAction = {
+  [K in keyof EntityStore['entities']]: {
+    type: 'entity/UPDATE';
+    entityType: K;
+    id: IdFromSlice<EntityStore['entities'][K]>;
+    changes: Partial<EntityFromSlice<EntityStore['entities'][K]>>;
+  };
+}[keyof EntityStore['entities']];
+
+type EntityRemoveAction = {
+  [K in keyof EntityStore['entities']]: {
+    type: 'entity/REMOVE';
+    entityType: K;
+    id: IdFromSlice<EntityStore['entities'][K]>;
+  };
+}[keyof EntityStore['entities']];
+
+type EntityResetAction = {
+  [K in keyof EntityStore['entities']]: {
+    type: 'entity/RESET';
+    entityType: K;
+  };
+}[keyof EntityStore['entities']];
+
 export type EntityStoreAction =
-  | { type: 'entity/ADD'; entityType: keyof EntityStore['entities']; entity: any }
-  | { type: 'entity/ADD_MANY'; entityType: keyof EntityStore['entities']; entities: any[] }
-  | { type: 'entity/UPDATE'; entityType: keyof EntityStore['entities']; id: string; changes: any }
-  | { type: 'entity/REMOVE'; entityType: keyof EntityStore['entities']; id: string }
-  | { type: 'entity/RESET'; entityType: keyof EntityStore['entities'] };
+  | EntityAddAction
+  | EntityAddManyAction
+  | EntityUpdateAction
+  | EntityRemoveAction
+  | EntityResetAction;
 
 // Initial state
 const initialEntityStore: EntityStore = {
@@ -38,9 +87,12 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
   switch (action.type) {
     case 'entity/ADD': {
       const { entityType, entity } = action;
-      const slice = state.entities[entityType] as any;
-      if (slice.byId[entity.id]) return state;
-      
+      const slice = state.entities[entityType];
+
+      // Type guard to ensure entity has an id property
+      if (!('id' in entity)) return state;
+      if (entity.id in slice.byId) return state;
+
       return {
         ...state,
         entities: {
@@ -48,24 +100,27 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
           [entityType]: {
             byId: { ...slice.byId, [entity.id]: entity },
             allIds: [...slice.allIds, entity.id],
-          },
+          } as EntityStore['entities'][typeof entityType],
         },
-      } as EntityStore;
+      };
     }
-    
+
     case 'entity/ADD_MANY': {
       const { entityType, entities } = action;
-      const slice = state.entities[entityType] as any;
+      const slice = state.entities[entityType];
       const newById = { ...slice.byId };
-      const newIds: any[] = [];
-      
+      const newIds: IdFromSlice<typeof slice>[] = [];
+
       for (const entity of entities) {
-        if (!newById[entity.id]) {
-          newById[entity.id] = entity;
-          newIds.push(entity.id);
+        // Type guard to ensure entity has an id property
+        if (!('id' in entity)) continue;
+        if (!(entity.id in newById)) {
+          newById[entity.id as keyof typeof newById] =
+            entity as (typeof newById)[keyof typeof newById];
+          newIds.push(entity.id as IdFromSlice<typeof slice>);
         }
       }
-      
+
       return {
         ...state,
         entities: {
@@ -73,16 +128,18 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
           [entityType]: {
             byId: newById,
             allIds: [...slice.allIds, ...newIds],
-          },
+          } as EntityStore['entities'][typeof entityType],
         },
-      } as EntityStore;
+      };
     }
-    
+
     case 'entity/UPDATE': {
       const { entityType, id, changes } = action;
-      const slice = state.entities[entityType] as any;
-      if (!slice.byId[id]) return state;
-      
+      const slice = state.entities[entityType];
+      if (!(id in slice.byId)) return state;
+
+      const existingEntity = slice.byId[id as keyof typeof slice.byId];
+
       return {
         ...state,
         entities: {
@@ -91,59 +148,62 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
             ...slice,
             byId: {
               ...slice.byId,
-              [id]: { ...slice.byId[id], ...changes },
+              [id]: { ...existingEntity, ...changes } as typeof existingEntity,
             },
-          },
+          } as EntityStore['entities'][typeof entityType],
         },
-      } as EntityStore;
+      };
     }
-    
+
     case 'entity/REMOVE': {
       const { entityType, id } = action;
-      const slice = state.entities[entityType] as any;
-      if (!slice.byId[id]) return state;
-      
-      const { [id]: _, ...restById } = slice.byId;
+      const slice = state.entities[entityType];
+      if (!(id in slice.byId)) return state;
+
+      const { [id]: _, ...restById } = slice.byId as Record<string, unknown>;
+
       return {
         ...state,
         entities: {
           ...state.entities,
           [entityType]: {
-            byId: restById,
-            allIds: slice.allIds.filter((entityId: any) => entityId !== id),
-          },
+            byId: restById as typeof slice.byId,
+            allIds: slice.allIds.filter((entityId) => entityId !== id),
+          } as EntityStore['entities'][typeof entityType],
         },
-      } as EntityStore;
+      };
     }
-    
+
     case 'entity/RESET': {
       const { entityType } = action;
+      const slice = state.entities[entityType];
+
       return {
         ...state,
         entities: {
           ...state.entities,
           [entityType]: {
-            byId: {},
-            allIds: [],
-          },
+            byId: {} as typeof slice.byId,
+            allIds: [] as typeof slice.allIds,
+          } as EntityStore['entities'][typeof entityType],
         },
-      } as EntityStore;
+      };
     }
-    
+
     default:
       return state;
   }
 }
 
 // Create the store instance
-export const store = new Store<EntityStore>(initialEntityStore);
+const store = new Store<EntityStore>(initialEntityStore);
 
 // Hook with selector for optimized re-renders
 export function useEntityStore<T>(selector: (state: EntityStore) => T): T {
   return useSyncExternalStore(
     store.subscribe,
     () => selector(store.getState()),
-    () => selector(store.getState())
+    () => selector(store.getState()),
   );
 }
 
@@ -151,20 +211,3 @@ export function useEntityStore<T>(selector: (state: EntityStore) => T): T {
 export function dispatch(action: EntityStoreAction): void {
   store.updateState((state) => entityStoreReducer(state, action));
 }
-
-// Convenience hooks for specific entities
-
-export function useArtifacts(): Artifact[] {
-  return useEntityStore((state) =>
-    state.entities.artifacts.allIds.map((id) => state.entities.artifacts.byId[id])
-  );
-}
-
-export function useArtifact(id: ArtifactId): Artifact | undefined {
-  return useEntityStore((state) => state.entities.artifacts.byId[id]);
-}
-
-export function useArtifactIds(): ArtifactId[] {
-  return useEntityStore((state) => state.entities.artifacts.allIds);
-}
-

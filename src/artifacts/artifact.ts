@@ -4,7 +4,7 @@ import { ArtifactId } from './artifact-id';
 /**
  * Zod schema for the Artifact entity, matching the database schema.
  */
- const schema = z.object({
+const schema = z.object({
   id: ArtifactId.schema,
   filename: z.string(),
   content_type: z.string(),

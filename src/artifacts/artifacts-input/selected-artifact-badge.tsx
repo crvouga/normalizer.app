@@ -20,18 +20,14 @@ export function SelectedArtifactBadge({
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-        isUploading
-          ? 'bg-gray-100 dark:bg-gray-700 opacity-75'
-          : 'bg-blue-100 dark:bg-blue-900'
+        isUploading ? 'bg-gray-100 opacity-75 dark:bg-gray-700' : 'bg-blue-100 dark:bg-blue-900'
       }`}
     >
       {isUploading && <IconSpinner className="size-4 text-gray-600 dark:text-gray-400" />}
       <Typography
         variant="sm"
         className={
-          isUploading
-            ? 'text-gray-700 dark:text-gray-300'
-            : 'text-blue-800 dark:text-blue-200'
+          isUploading ? 'text-gray-700 dark:text-gray-300' : 'text-blue-800 dark:text-blue-200'
         }
       >
         {artifactId}
@@ -41,7 +37,7 @@ export function SelectedArtifactBadge({
         disabled={isUploading}
         className={`${
           isUploading
-            ? 'cursor-not-allowed opacity-50 text-gray-600 dark:text-gray-400'
+            ? 'cursor-not-allowed text-gray-600 opacity-50 dark:text-gray-400'
             : 'text-blue-800 hover:text-blue-900 dark:text-blue-200 dark:hover:text-blue-100'
         }`}
         aria-label={`Remove ${artifactId}`}
