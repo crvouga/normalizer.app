@@ -6,6 +6,7 @@ import {
   type AsyncComboboxOption,
 } from '~/src/ui/combobox/async-combobox';
 import { IconCheck } from '~/src/ui/icons';
+import { Typography } from '~/src/ui/typography';
 import type { ArtifactId } from './artifact-id';
 
 export type ArtifactInputProps = {
@@ -82,11 +83,11 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
   const renderOption = (option: AsyncComboboxOption<ArtifactId>, selected: boolean) => (
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
-        <span className={selected ? 'font-semibold' : ''}>{option.label}</span>
+        <Typography weight={selected ? 'semibold' : 'normal'}>{option.label}</Typography>
         {option.metadata?.type && (
-          <span className="text-xs text-gray-600 dark:text-gray-400">
+          <Typography variant="xs" color="muted">
             {option.metadata.type as string}
-          </span>
+          </Typography>
         )}
       </div>
       {selected && <IconCheck className="text-blue-600" />}
@@ -110,19 +111,21 @@ export const ArtifactInput = (props: ArtifactInputProps) => {
       {/* Display selected artifacts */}
       {props.value.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <Typography variant="sm" weight="medium" color="primary">
             Selected Artifacts:
-          </p>
+          </Typography>
           <div className="flex flex-wrap gap-2">
             {props.value.map((id) => (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 dark:bg-blue-900"
               >
-                {id}
+                <Typography variant="sm" className="text-blue-800 dark:text-blue-200">
+                  {id}
+                </Typography>
                 <button
                   onClick={() => props.onChange(props.value.filter((v) => v !== id))}
-                  className="hover:text-blue-900 dark:hover:text-blue-100"
+                  className="text-blue-800 hover:text-blue-900 dark:text-blue-200 dark:hover:text-blue-100"
                 >
                   ×
                 </button>

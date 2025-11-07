@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Typography } from '../typography';
 
 interface PromptInputFieldProps {
   id?: string;
@@ -19,9 +20,9 @@ export const PromptInputField: React.FC<PromptInputFieldProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-medium text-gray-900 dark:text-gray-100">
+      <Typography as="label" weight="medium" color="primary" {...({ htmlFor: id } as any)}>
         {label}
-      </label>
+      </Typography>
       <textarea
         id={id}
         rows={rows}

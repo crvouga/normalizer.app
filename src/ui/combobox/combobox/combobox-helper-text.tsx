@@ -1,4 +1,4 @@
-import { cn } from '~/src/lib/utils';
+import { Typography } from '../../typography';
 
 export interface ComboboxHelperTextProps {
   helperText?: string;
@@ -18,13 +18,8 @@ export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProp
   const errorMessage = error ? (error instanceof Error ? error.message : String(error)) : null;
 
   return (
-    <p
-      className={cn(
-        'mt-1 text-xs',
-        error ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400',
-      )}
-    >
+    <Typography variant="xs" color={error ? 'error' : 'muted'} className="mt-1">
       {errorMessage || helperText}
-    </p>
+    </Typography>
   );
 }

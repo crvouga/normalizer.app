@@ -1,3 +1,5 @@
+import { Typography } from '../../typography';
+
 export interface AsyncComboboxEmptyStateProps {
   query: string;
   minQueryLength: number;
@@ -10,8 +12,10 @@ export interface AsyncComboboxEmptyStateProps {
 export function AsyncComboboxEmptyState({ query, minQueryLength }: AsyncComboboxEmptyStateProps) {
   if (query.length < minQueryLength) {
     return (
-      <div className="px-4 py-8 text-center text-sm text-gray-500">
-        Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
+      <div className="px-4 py-8 text-center">
+        <Typography variant="sm" color="muted">
+          Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
+        </Typography>
       </div>
     );
   }

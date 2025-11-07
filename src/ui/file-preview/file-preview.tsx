@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useFilePreview } from './use-file-preview';
 import { FilePreviewTable } from './file-preview-table';
+import { Typography } from '../typography';
 
 interface FilePreviewProps {
   file: File;
@@ -19,16 +20,20 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg bg-gray-100 p-6 text-center text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-        Loading {fileType} file...
+      <div className="rounded-lg bg-gray-100 p-6 text-center dark:bg-gray-800">
+        <Typography variant="sm" color="muted">
+          Loading {fileType} file...
+        </Typography>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg bg-red-100 p-6 text-center text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-        {error}
+      <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
+        <Typography variant="sm" color="error">
+          {error}
+        </Typography>
       </div>
     );
   }

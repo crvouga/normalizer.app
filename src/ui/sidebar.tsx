@@ -1,4 +1,5 @@
 import React from 'react';
+import { Typography } from './typography';
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <aside className="flex h-full w-64 shrink-0 flex-col border-r border-gray-200 bg-white text-gray-900 select-none dark:border-gray-800 dark:bg-gray-900 dark:text-white">
@@ -12,7 +13,9 @@ export const SidebarHeader: React.FC<{
 }> = ({ icon, title }) => (
   <div className="flex items-center gap-2 px-6 py-6">
     {icon}
-    <span className="text-lg font-bold tracking-wide">{title}</span>
+    <Typography as="span" variant="lg" weight="bold" color="primary" className="tracking-wide">
+      {title}
+    </Typography>
   </div>
 );
 
@@ -67,10 +70,16 @@ export const SidebarAvatar: React.FC<{
   avatarContent?: React.ReactNode;
 }> = ({ name, avatarContent }) => (
   <div className="flex items-center gap-2 overflow-hidden">
-    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+    <Typography
+      as="div"
+      weight="semibold"
+      className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+    >
       {avatarContent}
-    </div>
-    <span className="truncate text-sm text-gray-700 dark:text-gray-200">{name}</span>
+    </Typography>
+    <Typography as="span" variant="sm" color="secondary" className="truncate">
+      {name}
+    </Typography>
   </div>
 );
 

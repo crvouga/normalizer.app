@@ -2,6 +2,7 @@ import * as React from 'react';
 import { FilePreview } from '../file-preview/file-preview';
 import { FileIcon, ImageIcon, IconX } from '../icons';
 import { formatFileSize } from './file-utils';
+import { Typography } from '../typography';
 
 export interface FileItemHeaderProps {
   file: File;
@@ -35,10 +36,12 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+          <Typography variant="sm" weight="medium" color="primary" className="truncate">
             {file.name}
-          </p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">{formatFileSize(file.size)}</p>
+          </Typography>
+          <Typography variant="xs" color="muted">
+            {formatFileSize(file.size)}
+          </Typography>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -46,9 +49,15 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           <button
             type="button"
             onClick={() => onTogglePreview(index)}
-            className="rounded px-2 py-1 text-xs text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="rounded px-2 py-1 transition-colors"
           >
-            {isPreviewVisible ? 'Hide' : 'Preview'}
+            <Typography
+              variant="xs"
+              color="muted"
+              className="hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              {isPreviewVisible ? 'Hide' : 'Preview'}
+            </Typography>
           </button>
         )}
         <button

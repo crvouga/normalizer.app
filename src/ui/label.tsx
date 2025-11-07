@@ -1,16 +1,22 @@
 import * as React from 'react';
 
 import { cn } from '~/src/lib/utils';
+import { Typography } from './typography';
 
-function Label({ className, ...props }: React.ComponentProps<'label'>) {
+function Label({ className, color, ...props }: React.ComponentProps<'label'>) {
   return (
-    <label
-      data-slot="label"
+    <Typography
+      as="label"
+      variant="sm"
+      weight="medium"
+      color="primary"
       className={cn(
-        'text-sm leading-none font-medium text-gray-900 select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 dark:text-gray-100',
+        'leading-none select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
         className,
       )}
-      {...props}
+      data-slot="label"
+      style={color ? { color } : undefined}
+      {...(props as any)}
     />
   );
 }

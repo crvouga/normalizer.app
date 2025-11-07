@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { FilePreview } from '../file-preview/file-preview';
 import { formatFileSize } from './file-utils';
+import { Typography } from '../typography';
 
 export interface FilePreviewSectionProps {
   file: File;
@@ -18,10 +19,12 @@ export const FilePreviewSection: React.FC<FilePreviewSectionProps> = ({
   return (
     <div className="bg-white p-2 dark:bg-gray-800">
       <div className="mb-2 flex items-center gap-2">
-        <h6 className="text-sm font-medium text-gray-900 dark:text-gray-100">{file.name}</h6>
-        <span className="text-xs text-gray-600 dark:text-gray-400">
+        <Typography as="h6" variant="sm" weight="medium" color="primary">
+          {file.name}
+        </Typography>
+        <Typography variant="xs" color="muted">
           {formatFileSize(file.size)}
-        </span>
+        </Typography>
       </div>
       <FilePreview file={file} maxRows={5} maxColumns={8} className="text-sm" />
     </div>

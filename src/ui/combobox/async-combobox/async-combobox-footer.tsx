@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { IconSpinner } from '../../icons';
+import { Typography } from '../../typography';
 
 export interface AsyncComboboxFooterProps {
   hasMore: boolean;
@@ -24,9 +25,11 @@ export function AsyncComboboxFooter({
       className="relative cursor-default py-2 pr-9 pl-3 text-center select-none"
     >
       {isLoadingMore ? (
-        <div className="flex items-center justify-center gap-2 text-gray-500">
+        <div className="flex items-center justify-center gap-2">
           <IconSpinner />
-          <span className="text-xs">Loading more...</span>
+          <Typography variant="xs" color="muted">
+            Loading more...
+          </Typography>
         </div>
       ) : (
         <div className="h-2" />

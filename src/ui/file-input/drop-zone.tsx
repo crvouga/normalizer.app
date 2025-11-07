@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/utils';
 import { UploadIcon } from '../icons';
+import { Typography } from '../typography';
 
 export interface DropZoneProps {
   className?: string;
@@ -50,9 +51,13 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
             <UploadIcon />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{placeholder}</p>
+            <Typography variant="sm" weight="medium" color="primary">
+              {placeholder}
+            </Typography>
             {accept && (
-              <p className="text-xs text-gray-600 dark:text-gray-400">Accepted formats: {accept}</p>
+              <Typography variant="xs" color="muted">
+                Accepted formats: {accept}
+              </Typography>
             )}
           </div>
         </div>

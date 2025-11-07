@@ -1,6 +1,7 @@
 import { RadioGroup as HeadlessRadioGroup } from '@headlessui/react';
 import { cn } from '~/src/lib/utils';
 import { IconCheck } from './icons';
+import { Typography } from './typography';
 
 export interface RadioOption<T extends string = string> {
   value: T;
@@ -31,9 +32,15 @@ export function RadioGroup<T extends string = string>({
   return (
     <div className={className}>
       {label && (
-        <label className="mb-3 block text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <Typography
+          as="label"
+          variant="sm"
+          weight="semibold"
+          color="primary"
+          className="mb-3 block"
+        >
           {label}
-        </label>
+        </Typography>
       )}
 
       <HeadlessRadioGroup value={value} onChange={onChange}>

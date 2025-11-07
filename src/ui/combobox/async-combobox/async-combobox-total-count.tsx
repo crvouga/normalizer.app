@@ -1,3 +1,5 @@
+import { Typography } from '../../typography';
+
 export interface AsyncComboboxTotalCountProps {
   total?: number;
   hasError: boolean;
@@ -18,8 +20,8 @@ export function AsyncComboboxTotalCount({
   }
 
   return (
-    <p className="mt-1 text-xs text-gray-500">
+    <Typography variant="xs" color="muted" className="mt-1">
       {total} {total === 1 ? 'result' : 'results'}
-    </p>
+    </Typography>
   );
 }

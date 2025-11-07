@@ -1,3 +1,5 @@
+import { Typography } from '../../typography';
+
 export interface ComboboxLabelProps {
   label?: string;
 }
@@ -12,8 +14,8 @@ export function ComboboxLabel({ label }: ComboboxLabelProps) {
   }
 
   return (
-    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <Typography as="label" variant="sm" weight="medium" color="secondary" className="mb-2 block">
       {label}
-    </label>
+    </Typography>
   );
 }

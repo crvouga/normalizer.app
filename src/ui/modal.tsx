@@ -2,6 +2,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@
 import { Fragment } from 'react';
 import { cn } from '~/src/lib/utils';
 import { IconX } from './icons';
+import { Typography } from './typography';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -57,8 +58,10 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
               {/* Header with title and close button */}
               {title && (
                 <div className="mb-4 flex items-center justify-between">
-                  <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {title}
+                  <DialogTitle as="div">
+                    <Typography as="h2" variant="lg" weight="semibold" color="primary">
+                      {title}
+                    </Typography>
                   </DialogTitle>
                   <button
                     onClick={onClose}
@@ -71,7 +74,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
               )}
 
               {/* Content */}
-              <div className="text-gray-900 dark:text-gray-100">{children}</div>
+              <Typography as="div" color="primary">
+                {children}
+              </Typography>
             </DialogPanel>
           </TransitionChild>
         </div>

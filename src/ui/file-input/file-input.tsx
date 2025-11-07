@@ -2,6 +2,7 @@ import * as React from 'react';
 import { DropZone } from './drop-zone';
 import { FileList } from './file-list';
 import { validateFiles, createFileListFromFiles } from './file-utils';
+import { Typography } from '../typography';
 
 export interface FileInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
@@ -142,7 +143,11 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
         )}
 
         {/* Error Message */}
-        {error && <p className="text-destructive mt-2 text-sm">{error}</p>}
+        {error && (
+          <Typography variant="sm" color="error" className="mt-2">
+            {error}
+          </Typography>
+        )}
 
         {/* Selected Files */}
         <FileList

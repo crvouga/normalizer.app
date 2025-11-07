@@ -1,3 +1,5 @@
+import { Typography } from '../../typography';
+
 export interface ComboboxEmptyStateProps {
   query: string;
 }
@@ -9,8 +11,10 @@ export interface ComboboxEmptyStateProps {
  */
 export function ComboboxEmptyState({ query }: ComboboxEmptyStateProps) {
   return (
-    <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-      {query ? `No results found for "${query}"` : 'No options available'}
+    <div className="px-4 py-8 text-center">
+      <Typography variant="sm" color="muted">
+        {query ? `No results found for "${query}"` : 'No options available'}
+      </Typography>
     </div>
   );
 }
