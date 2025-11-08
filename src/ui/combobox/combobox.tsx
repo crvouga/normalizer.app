@@ -3,7 +3,6 @@ import * as React from 'react';
 import { cn } from '~/src/lib/utils';
 import { ComboboxEmptyState } from './combobox/combobox-empty-state';
 import { ComboboxErrorState } from './combobox/combobox-error-state';
-import { ComboboxHelperText } from './combobox/combobox-helper-text';
 import { ComboboxInputField } from './combobox/combobox-input-field';
 import { ComboboxLabel } from './combobox/combobox-label';
 import { ComboboxOptionsContent } from './combobox/combobox-options-content';
@@ -81,7 +80,6 @@ export function Combobox<T extends string | number>({
   inputClassName,
   optionsClassName,
   label,
-  helperText,
   actionButton,
 }: ComboboxProps<T>) {
   // Use extracted hooks

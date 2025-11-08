@@ -1,4 +1,5 @@
 import { ComboboxButton, ComboboxInput } from '@headlessui/react';
+import * as React from 'react';
 import { cn } from '~/src/lib/utils';
 import { IconChevronDown, IconSpinner } from '../../icons';
 
@@ -16,6 +17,7 @@ export interface ComboboxInputFieldProps<T> {
  * Input field for the combobox with loading indicator and dropdown button.
  * Handles text input and displays current value.
  * Supports dark mode with appropriate colors.
+ * Opens dropdown on focus similar to MUI Autocomplete.
  */
 export function ComboboxInputField<T extends string | number>({
   displayValue,
@@ -26,6 +28,14 @@ export function ComboboxInputField<T extends string | number>({
   inputClassName,
   hasActionButton = false,
 }: ComboboxInputFieldProps<T>) {
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+  const handleFocus = () => {
+    // Trigger the dropdown to open when input is focused
+    // by programmatically clicking the button
+    buttonRef.current?.click();
+  };
+
   return (
     <div className="relative">
       <ComboboxInput
@@ -44,10 +54,11 @@ export function ComboboxInputField<T extends string | number>({
         )}
         displayValue={displayValue}
         onChange={(event) => onQueryChange(event.target.value)}
+        onFocus={handleFocus}
         placeholder={placeholder}
       />
 
-      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
+      <ComboboxButton ref={buttonRef} className="absolute inset-y-0 right-0 flex items-center pr-3">
         {isLoading ? (
           <IconSpinner className="text-gray-400 dark:text-gray-500" />
         ) : (

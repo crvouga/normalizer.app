@@ -25,7 +25,9 @@ function getButtonClasses(
     "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
     'ring-ring/10 dark:ring-ring/20',
     'dark:outline-ring/40 outline-ring/50',
-    'focus-visible:ring-4 focus-visible:outline-1',
+    // Make the focus-visible rings much less pronounced:
+    // Reduce ring width and outline thickness, and tone down ring color strength
+    'focus-visible:ring-2 focus-visible:outline-[0.5px] focus-visible:ring-ring/10 dark:focus-visible:ring-ring/20',
     'aria-invalid:focus-visible:ring-0',
     'cursor-pointer',
     'active:opacity-80',
