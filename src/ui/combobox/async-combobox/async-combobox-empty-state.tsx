@@ -12,13 +12,15 @@ export interface AsyncComboboxEmptyStateProps {
 export function AsyncComboboxEmptyState({ query, minQueryLength }: AsyncComboboxEmptyStateProps) {
   if (query.length < minQueryLength) {
     return (
-      <div className="px-4 py-8 text-center">
-        <Typography variant="sm" color="muted">
-          Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
-        </Typography>
-      </div>
+      <Typography variant="sm" color="muted" className="p-4">
+        Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
+      </Typography>
     );
   }
 
-  return null; // Use default from base Combobox
+  return (
+    <Typography variant="sm" color="muted" className="p-4">
+      No results found for "{query}"
+    </Typography>
+  );
 }

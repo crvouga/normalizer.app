@@ -136,29 +136,27 @@ export function Combobox<T extends string | number>({
       <div className="flex">
         <div className="flex-1">
           <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
-            <div className="relative">
-              <ComboboxInputField
-                displayValue={getDisplayValue}
-                onQueryChange={setQuery}
-                placeholder={placeholder}
-                isLoading={isLoading}
-                hasError={hasError}
-                inputClassName={inputClassName}
-                hasActionButton={Boolean(actionButton)}
-              />
+            <ComboboxInputField
+              displayValue={getDisplayValue}
+              onQueryChange={setQuery}
+              placeholder={placeholder}
+              isLoading={isLoading}
+              hasError={hasError}
+              inputClassName={inputClassName}
+              hasActionButton={Boolean(actionButton)}
+            />
 
-              <ComboboxOptionsWrapper optionsClassName={optionsClassName}>
-                <ComboboxOptionsContent
-                  error={error}
-                  filteredOptions={filteredOptions}
-                  isLoading={isLoading}
-                  renderOption={renderOption}
-                  renderEmptyState={renderEmptyState}
-                  renderErrorState={renderErrorState}
-                  renderFooter={renderFooter}
-                />
-              </ComboboxOptionsWrapper>
-            </div>
+            <ComboboxOptionsWrapper optionsClassName={optionsClassName}>
+              <ComboboxOptionsContent
+                error={error}
+                filteredOptions={filteredOptions}
+                isLoading={isLoading}
+                renderOption={renderOption}
+                renderEmptyState={renderEmptyState}
+                renderErrorState={renderErrorState}
+                renderFooter={renderFooter}
+              />
+            </ComboboxOptionsWrapper>
           </HeadlessCombobox>
         </div>
         {actionButton && <div className="h-full shrink-0">{actionButton}</div>}
