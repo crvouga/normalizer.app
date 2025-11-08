@@ -164,7 +164,7 @@ export function Combobox<T extends string | number>({
             </div>
           </HeadlessCombobox>
         </div>
-        {actionButton && <div className="flex-shrink-0 h-full">{actionButton}</div>}
+        {actionButton && <div className="h-full shrink-0">{actionButton}</div>}
       </div>
 
       <ComboboxHelperText helperText={helperText} error={error} />

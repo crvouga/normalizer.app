@@ -62,7 +62,7 @@ export function ArtifactUploadButton({
         disabled={isUploading}
         variant={variant}
         size="default"
-        startIcon={<UploadIcon className="size-4" />}
+        startIcon={<UploadIcon className="size-6" />}
         text={isUploading ? t('artifact.uploading') : t('artifact.uploadButton')}
         className={className}
       />

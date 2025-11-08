@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useCallback, useMemo } from 'react';
 import { AsyncCombobox } from '~/src/ui/combobox/async-combobox';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
@@ -30,7 +30,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
   const { fetchArtifacts } = useFetchArtifacts();
 
   // Handle upload complete - add artifact to selection
-  const handleUploadComplete = React.useCallback(
+  const handleUploadComplete = useCallback(
     (artifact: Artifact) => {
       // Add the uploaded artifact to selection
       if (!props.value.includes(artifact.id as ArtifactId)) {
@@ -41,12 +41,12 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
   );
 
   // Handle upload error
-  const handleUploadError = React.useCallback((error: Error) => {
+  const handleUploadError = useCallback((error: Error) => {
     console.error('Upload failed:', error);
   }, []);
 
   // Memoized render function for artifact options
-  const renderOption = React.useCallback(
+  const renderOption = useCallback(
     (option: Parameters<typeof ArtifactOptionItem>[0]['option'], selected: boolean) => (
       <ArtifactOptionItem option={option} selected={selected} />
     ),
@@ -54,13 +54,13 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
   );
 
   // Memoized upload button with connected styling
-  const uploadButton = React.useMemo(
+  const uploadButton = useMemo(
     () => (
       <ArtifactUploadButton
         onUploadComplete={handleUploadComplete}
         onUploadError={handleUploadError}
         variant="default"
-        className="h-full py-3 px-4 rounded-l-none rounded-r-lg whitespace-nowrap border border-l-0 border-transparent"
+        className="h-[50px] rounded-l-none rounded-r-lg border border-l-0 border-transparent px-4 py-3 whitespace-nowrap"
       />
     ),
     [handleUploadComplete, handleUploadError],

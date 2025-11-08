@@ -27,6 +27,7 @@ function AppSidebar() {
           startIcon={<IconPlus className="size-6" />}
         />
       </div>
+      <div className="w-full flex-1"></div>
       <SidebarFooter
         content={
           <div className="flex w-full items-center justify-end">

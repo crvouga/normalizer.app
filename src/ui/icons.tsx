@@ -68,7 +68,7 @@ export const UploadIcon = React.forwardRef<SVGSVGElement, IconProps>(
   ({ className, ...props }, ref) => (
     <svg
       ref={ref}
-      className={cn('text-muted-foreground h-8 w-8', className)}
+      className={cn('text-muted-foreground', className)}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
