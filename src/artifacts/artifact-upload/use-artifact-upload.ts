@@ -13,14 +13,11 @@ export function useArtifactUpload({
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
 }) {
-  // Use RemoteResult for the main upload state
-  const [uploadState, setUploadState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [state, setState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const entityStore = useEntityStore();
 
-  const uploadFile = async (file: File) => {
-    setUploadState(Loading);
-    setUploadProgress(0);
+  const uploadArtifact = async (file: File) => {
+    setState(Loading);
 
     // Generate client-side artifact ID
     const artifactId = ArtifactId.generate();
@@ -77,6 +74,7 @@ export function useArtifactUpload({
       await trpcClient.artifactUpload.finish.mutate({
         key: artifactId,
         size: file.size,
+        artifactId,
       });
 
       // Fetch updated artifact
@@ -84,36 +82,33 @@ export function useArtifactUpload({
         key: artifactId,
       });
 
-      setUploadProgress(100);
-
       if (!artifact) {
         throw new Error('Failed to fetch file after upload');
       }
 
       // Update entity store with uploaded status
-      entityStore.updateEntity('artifacts', artifactId as ArtifactId, {
+      entityStore.updateEntity('artifacts', artifactId, {
         status: 'uploaded',
         size: file.size,
         updated_at: artifact.updated_at,
       });
 
-      setUploadState(Success(artifact));
+      setState(Success(artifact));
       onUploadComplete?.(artifact);
     } catch (error) {
       // Remove the optimistic entity on error
       entityStore.removeEntity('artifacts', artifactId);
 
-      setUploadState(Failure(error as Error));
+      setState(Failure(error as Error));
       onUploadError?.(error as Error);
     }
   };
 
-  const isUploading = useMemo(() => uploadState.tag === 'loading', [uploadState]);
+  const isUploading = useMemo(() => state.tag === 'loading', [state]);
 
   return {
-    uploadFile,
-    uploadState,
-    uploadProgress,
+    uploadArtifact,
+    state,
     isUploading,
   };
 }

@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { ArtifactOptionItem } from './artifact-option-item';
-import { ArtifactUploadButton } from './artifact-upload-button';
+import { ArtifactUploadComboboxActionButton } from '../artifact-upload/artifact-upload-combobox-action-button';
 import { SelectedArtifactsList } from './selected-artifacts-list';
 import { useArtifactSelection } from './use-artifact-selection';
 import { useFetchArtifacts } from './use-fetch-artifacts';
@@ -67,7 +67,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         debounceMs={300}
         pageSize={20}
         actionButton={
-          <ArtifactUploadButton
+          <ArtifactUploadComboboxActionButton
             onUploadComplete={handleUploadComplete}
             onUploadError={handleUploadError}
             variant="default"

@@ -30,6 +30,9 @@
     "helperText": "Search by name or type",
     "selectedArtifacts": "Selected Artifacts:",
     "uploadButton": "Upload",
+    "uploadDialogTitle": "Upload Artifact",
+    "uploadPlaceholder": "Drag and drop or click to select a file",
+    "upload": "Upload",
     "uploadError": "Upload failed",
     "uploading": "Uploading..."
   },
@@ -37,6 +40,7 @@
     "close": "Close"
   },
   "common": {
-    "search": "Search..."
+    "search": "Search...",
+    "cancel": "Cancel"
   }
 }
