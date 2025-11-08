@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { useArtifactUploadForm } from '~/src/artifacts/artifact-upload-form';
+import { useArtifactUpload } from '~/src/artifacts/artifact-upload/use-artifact-upload';
 
 export const useStartSessionForm = () => {
   const [prompt, setPrompt] = useState('');
   const [inputFile, setInputFile] = useState<File | null>(null);
   const [targetFile, setTargetFile] = useState<File | null>(null);
 
-  const { uploadFile, isUploading } = useArtifactUploadForm({
+  const { uploadFile, isUploading } = useArtifactUpload({
     onUploadComplete: (file) => {
       console.log('File uploaded:', file);
     },

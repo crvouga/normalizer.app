@@ -1,0 +1,42 @@
+{
+  "app": {
+    "title": "normalizer.app",
+    "newSession": "New Session"
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "theme": {
+    "label": "Appearance",
+    "system": "System",
+    "systemDescription": "Matches your system preference",
+    "light": "Light",
+    "lightDescription": "Light mode",
+    "dark": "Dark",
+    "darkDescription": "Dark mode"
+  },
+  "session": {
+    "startButton": "Start Session",
+    "targetFiles": "Target Files",
+    "uploadPlaceholder": "Upload target files"
+  },
+  "prompt": {
+    "label": "Prompt",
+    "placeholder": "Enter your prompt here..."
+  },
+  "artifact": {
+    "label": "Select Artifact",
+    "searchPlaceholder": "Search artifacts...",
+    "helperText": "Search by name or type",
+    "selectedArtifacts": "Selected Artifacts:",
+    "uploadButton": "Upload",
+    "uploadError": "Upload failed",
+    "uploading": "Uploading..."
+  },
+  "modal": {
+    "close": "Close"
+  },
+  "common": {
+    "search": "Search..."
+  }
+}

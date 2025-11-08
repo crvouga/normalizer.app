@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 
 interface PromptInputFieldProps {
   id?: string;
@@ -11,22 +13,23 @@ interface PromptInputFieldProps {
 
 export const PromptInputField: React.FC<PromptInputFieldProps> = ({
   id = 'prompt',
-  label = 'Prompt',
+  label,
   value,
   onChange,
-  placeholder = 'Enter your prompt here...',
+  placeholder,
   rows = 4,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-medium">
-        {label}
-      </label>
+      <Typography as="label" weight="medium" color="primary" {...({ htmlFor: id } as any)}>
+        {label ?? t('prompt.label')}
+      </Typography>
       <textarea
         id={id}
         rows={rows}
-        className="resize-y rounded border p-2"
-        placeholder={placeholder}
+        className="resize-y rounded border border-gray-300 bg-white p-2 text-base text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+        placeholder={placeholder ?? t('prompt.placeholder')}
         value={value}
         onChange={onChange}
       />

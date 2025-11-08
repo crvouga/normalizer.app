@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { FileItem } from './file-item';
+import { Typography } from '../typography';
 
 export interface FileListProps {
   files: File[];
@@ -25,21 +26,23 @@ export const FileList: React.FC<FileListProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-foreground text-sm font-medium">Selected Files ({files.length})</h4>
+        <Typography as="h4" variant="sm" weight="medium" color="primary">
+          Selected Files ({files.length})
+        </Typography>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onAddMore}
-            className="text-primary hover:text-primary/80 text-xs transition-colors"
-          >
-            Add more
+          <button type="button" onClick={onAddMore} className="transition-colors">
+            <Typography variant="xs" color="info" className="hover:opacity-80">
+              Add more
+            </Typography>
           </button>
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="text-muted-foreground hover:text-destructive text-xs transition-colors"
-          >
-            Clear all
+          <button type="button" onClick={onClearAll} className="transition-colors">
+            <Typography
+              variant="xs"
+              color="muted"
+              className="hover:text-red-600 dark:hover:text-red-400"
+            >
+              Clear all
+            </Typography>
           </button>
         </div>
       </div>

@@ -19,7 +19,7 @@ function getButtonClasses(
 ) {
   const baseClasses = [
     'inline-flex items-center justify-center gap-2',
-    'whitespace-nowrap rounded-md text-sm font-medium',
+    'whitespace-nowrap rounded-md text-base font-medium',
     'transition-[color,box-shadow]',
     'disabled:pointer-events-none disabled:opacity-50',
     "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
@@ -32,11 +32,12 @@ function getButtonClasses(
   ].join(' ');
 
   const colorClasses = {
-    blue: 'bg-blue-600 text-white hover:bg-blue-700',
-    red: 'bg-red-600 text-white hover:bg-red-700',
-    green: 'bg-green-600 text-white hover:bg-green-700',
-    yellow: 'bg-yellow-600 text-white hover:bg-yellow-700',
-    gray: 'bg-gray-600 text-white hover:bg-gray-700',
+    blue: 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+    red: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
+    green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
+    yellow:
+      'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600',
+    gray: 'bg-gray-600 text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600',
   };
 
   const variantClasses = {
@@ -47,7 +48,8 @@ function getButtonClasses(
     secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
     ghost: 'hover:bg-accent hover:text-accent-foreground',
     link: 'text-primary underline-offset-4 hover:underline',
-    contained: 'bg-white text-black shadow-md hover:bg-gray-50 border border-gray-200',
+    contained:
+      'bg-white dark:bg-gray-800 text-black dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
   };
 
   const sizeClasses = {
