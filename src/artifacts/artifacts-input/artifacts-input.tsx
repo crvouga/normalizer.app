@@ -60,7 +60,6 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         onUploadComplete={handleUploadComplete}
         onUploadError={handleUploadError}
         variant="default"
-        className="h-[50px] rounded-l-none rounded-r-lg border border-l-0 border-transparent px-4 py-3 whitespace-nowrap"
       />
     ),
     [handleUploadComplete, handleUploadError],

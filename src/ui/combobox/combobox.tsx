@@ -135,7 +135,6 @@ export function Combobox<T extends string | number>({
   return (
     <div className={cn('w-full', className)}>
       <ComboboxLabel label={label} />
-
       <div className="flex">
         <div className="flex-1">
           <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
@@ -166,8 +165,6 @@ export function Combobox<T extends string | number>({
         </div>
         {actionButton && <div className="h-full shrink-0">{actionButton}</div>}
       </div>
-
-      <ComboboxHelperText helperText={helperText} error={error} />
     </div>
   );
 }

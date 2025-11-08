@@ -1,14 +1,13 @@
 import * as React from 'react';
-import { Button } from '~/src/ui/button';
+import { ComboboxActionButton } from '~/src/ui/combobox/combobox-action-button';
 import { UploadIcon } from '~/src/ui/icons';
 import { useI18n } from '../../i18n/use-i18n';
-import { useArtifactUpload } from '../artifact-upload/use-artifact-upload';
 import type { Artifact } from '../artifact';
+import { useArtifactUpload } from '../artifact-upload/use-artifact-upload';
 
 export interface ArtifactUploadButtonProps {
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
-  className?: string;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'contained';
 }
 
@@ -19,7 +18,6 @@ export interface ArtifactUploadButtonProps {
 export function ArtifactUploadButton({
   onUploadComplete,
   onUploadError,
-  className,
   variant = 'outline',
 }: ArtifactUploadButtonProps) {
   const { t } = useI18n();
@@ -56,15 +54,12 @@ export function ArtifactUploadButton({
         onChange={handleFileChange}
         disabled={isUploading}
       />
-      <Button
-        type="button"
+      <ComboboxActionButton
         onClick={handleButtonClick}
         disabled={isUploading}
         variant={variant}
-        size="default"
         startIcon={<UploadIcon className="size-6" />}
         text={isUploading ? t('artifact.uploading') : t('artifact.uploadButton')}
-        className={className}
       />
     </>
   );
