@@ -1,17 +1,17 @@
 import * as React from 'react';
-import type { FilePreviewResult, FileType } from './types';
+import type { TabularFilePreviewResult, FileType } from './types';
 
-interface UseFilePreviewBaseParams {
+interface UseTabularFilePreviewBaseParams {
   file: File;
   parser: (file: File) => Promise<any[]>;
   fileType: FileType;
 }
 
-export const useFilePreviewBase = ({
+export const useTabularFilePreviewBase = ({
   file,
   parser,
   fileType,
-}: UseFilePreviewBaseParams): FilePreviewResult => {
+}: UseTabularFilePreviewBaseParams): TabularFilePreviewResult => {
   const [data, setData] = React.useState<any[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);

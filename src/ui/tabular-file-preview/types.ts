@@ -1,4 +1,4 @@
-export interface FilePreviewResult {
+export interface TabularFilePreviewResult {
   data: any[] | null;
   error: string | null;
   isLoading: boolean;

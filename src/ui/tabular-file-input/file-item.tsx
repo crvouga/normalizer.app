@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { FilePreview } from '../file-preview/file-preview';
+import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { FileIcon, ImageIcon, IconX } from '../icons';
 import { formatFileSize } from './file-utils';
 import { Typography } from '../typography';
@@ -104,7 +104,7 @@ export const FileItem: React.FC<FileItemProps> = ({
       />
 
       {isPreviewVisible && showPreview && (
-        <FilePreview file={file} maxRows={3} maxColumns={Infinity} className="text-sm" />
+        <TabularFilePreview file={file} maxRows={3} maxColumns={Infinity} className="text-sm" />
       )}
     </div>
   );

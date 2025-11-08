@@ -4,7 +4,7 @@ import { FileList } from './file-list';
 import { validateFiles, createFileListFromFiles } from './file-utils';
 import { Typography } from '../typography';
 
-export interface FileInputProps
+export interface TabularFileInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
   onFilesChange?: (files: FileList | null) => void;
   accept?: string;
@@ -16,7 +16,7 @@ export interface FileInputProps
   showPreview?: boolean;
 }
 
-const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
+const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProps>(
   (
     {
       className,
@@ -164,6 +164,6 @@ const FileInput = React.forwardRef<HTMLInputElement, FileInputProps>(
   },
 );
 
-FileInput.displayName = 'FileInput';
+TabularFileInput.displayName = 'TabularFileInput';
 
-export { FileInput };
+export { TabularFileInput };

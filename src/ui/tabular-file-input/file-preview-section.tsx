@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { FilePreview } from '../file-preview/file-preview';
+import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { formatFileSize } from './file-utils';
 import { Typography } from '../typography';
 
@@ -26,7 +26,7 @@ export const FilePreviewSection: React.FC<FilePreviewSectionProps> = ({
           {formatFileSize(file.size)}
         </Typography>
       </div>
-      <FilePreview file={file} maxRows={5} maxColumns={8} className="text-sm" />
+      <TabularFilePreview file={file} maxRows={5} maxColumns={8} className="text-sm" />
     </div>
   );
 };

@@ -2,14 +2,14 @@ import * as React from 'react';
 import { cn } from '~/src/lib/utils';
 import { Typography } from '../typography';
 
-interface FilePreviewTableProps {
+interface TabularFilePreviewTableProps {
   data: any[] | null;
   className?: string;
   maxRows?: number;
   maxColumns?: number;
 }
 
-export const FilePreviewTable: React.FC<FilePreviewTableProps> = ({
+export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = ({
   data,
   className,
   maxRows = 10,

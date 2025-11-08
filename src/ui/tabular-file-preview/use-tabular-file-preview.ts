@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { getFileType, parseCSV, parseExcel, parseJSON } from './parsers';
-import type { FilePreviewResult } from './types';
-import { useFilePreviewBase } from './use-file-preview-base';
+import type { TabularFilePreviewResult } from './types';
+import { useTabularFilePreviewBase } from './use-tabular-file-preview-base';
 
-export const useFilePreview = (file: File): FilePreviewResult => {
+export const useTabularFilePreview = (file: File): TabularFilePreviewResult => {
   const fileType = getFileType(file);
 
   const parser = useMemo(() => {
@@ -28,5 +28,5 @@ export const useFilePreview = (file: File): FilePreviewResult => {
     };
   }
 
-  return useFilePreviewBase({ file, parser, fileType });
+  return useTabularFilePreviewBase({ file, parser, fileType });
 };

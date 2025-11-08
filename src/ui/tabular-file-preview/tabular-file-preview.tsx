@@ -1,22 +1,22 @@
 import * as React from 'react';
-import { useFilePreview } from './use-file-preview';
-import { FilePreviewTable } from './file-preview-table';
+import { useTabularFilePreview } from './use-tabular-file-preview';
+import { TabularFilePreviewTable } from './tabular-file-preview-table';
 import { Typography } from '../typography';
 
-interface FilePreviewProps {
+interface TabularFilePreviewProps {
   file: File;
   className?: string;
   maxRows?: number;
   maxColumns?: number;
 }
 
-export const FilePreview: React.FC<FilePreviewProps> = ({
+export const TabularFilePreview: React.FC<TabularFilePreviewProps> = ({
   file,
   className,
   maxRows = 10,
   maxColumns = 10,
 }) => {
-  const { data, error, isLoading, fileType } = useFilePreview(file);
+  const { data, error, isLoading, fileType } = useTabularFilePreview(file);
 
   if (isLoading) {
     return (
@@ -39,6 +39,11 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   }
 
   return (
-    <FilePreviewTable data={data} className={className} maxRows={maxRows} maxColumns={maxColumns} />
+    <TabularFilePreviewTable
+      data={data}
+      className={className}
+      maxRows={maxRows}
+      maxColumns={maxColumns}
+    />
   );
 };

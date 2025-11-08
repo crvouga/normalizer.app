@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { FileInput } from './file-input';
+import { TabularFileInput } from './tabular-file-input';
 
-interface FileInputFieldProps {
+interface TabularFileInputFieldProps {
   id: string;
   label: string;
   maxFiles?: number;
@@ -12,7 +12,7 @@ interface FileInputFieldProps {
   multiple?: boolean;
 }
 
-export const FileInputField: React.FC<FileInputFieldProps> = ({
+export const TabularFileInputField: React.FC<TabularFileInputFieldProps> = ({
   id,
   label,
   maxFiles,
@@ -27,7 +27,7 @@ export const FileInputField: React.FC<FileInputFieldProps> = ({
       <label htmlFor={id} className="font-medium">
         {label}
       </label>
-      <FileInput
+      <TabularFileInput
         id={id}
         multiple={multiple}
         maxFiles={maxFiles}

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Modal } from '~/src/ui/modal';
 import { Button } from '~/src/ui/button';
-import { FileInput } from '~/src/ui/file-input/file-input';
+import { TabularFileInput } from '~/src/ui/tabular-file-input/tabular-file-input';
 import { useI18n } from '../../i18n/use-i18n';
 import { useArtifactUpload } from './use-artifact-upload';
 import type { Artifact } from '../artifact';
@@ -55,7 +55,7 @@ export function ArtifactUploadModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')} size="xl">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FileInput
+        <TabularFileInput
           onFilesChange={handleFilesChange}
           accept="*/*"
           maxFiles={1}
