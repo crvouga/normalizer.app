@@ -14,9 +14,7 @@ export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
   };
-  indexes: {
-    searchResults: Record<string, string[]>;
-  };
+  // Removed indexes/searchResults
 };
 
 // Helper type to extract entity type from a slice
@@ -66,24 +64,14 @@ type EntityResetAction = {
   };
 }[keyof EntityStore['entities']];
 
-type IndexSetSearchResultsAction = {
-  type: 'index/SET_SEARCH_RESULTS';
-  searchKey: string;
-  ids: string[];
-};
-
-type IndexClearSearchResultsAction = {
-  type: 'index/CLEAR_SEARCH_RESULTS';
-};
+// Remove IndexSetSearchResultsAction and IndexClearSearchResultsAction
 
 export type EntityStoreAction =
   | EntityAddAction
   | EntityAddManyAction
   | EntityUpdateAction
   | EntityRemoveAction
-  | EntityResetAction
-  | IndexSetSearchResultsAction
-  | IndexClearSearchResultsAction;
+  | EntityResetAction;
 
 // Initial state
 const initialEntityStore: EntityStore = {
@@ -93,9 +81,7 @@ const initialEntityStore: EntityStore = {
       allIds: [],
     },
   },
-  indexes: {
-    searchResults: {},
-  },
+  // No indexes/searchResults
 };
 
 // Generic reducer that works with any entity
@@ -206,29 +192,7 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
       };
     }
 
-    case 'index/SET_SEARCH_RESULTS': {
-      const { searchKey, ids } = action;
-      return {
-        ...state,
-        indexes: {
-          ...state.indexes,
-          searchResults: {
-            ...state.indexes.searchResults,
-            [searchKey]: ids,
-          },
-        },
-      };
-    }
-
-    case 'index/CLEAR_SEARCH_RESULTS': {
-      return {
-        ...state,
-        indexes: {
-          ...state.indexes,
-          searchResults: {},
-        },
-      };
-    }
+    // Removed search results index actions
 
     default:
       return state;
@@ -261,6 +225,82 @@ function dispatch(action: EntityStoreAction): void {
   store.updateState((state) => entityStoreReducer(state, action));
 }
 
-export const useEntityStoreDispatch = (): ((action: EntityStoreAction) => void) => {
-  return useCallback(dispatch, []);
-};
+export function useEntityStore() {
+  const optimizedDispatch = useCallback(dispatch, []);
+
+  const addEntity = useCallback(
+    <K extends keyof EntityStore['entities']>(
+      entityType: K,
+      entity: EntityFromSlice<EntityStore['entities'][K]>,
+    ) => {
+      optimizedDispatch({
+        type: 'entity/ADD',
+        entityType,
+        entity,
+      } as EntityAddAction);
+    },
+    [optimizedDispatch],
+  );
+
+  const addManyEntities = useCallback(
+    <K extends keyof EntityStore['entities']>(
+      entityType: K,
+      entities: EntityFromSlice<EntityStore['entities'][K]>[],
+    ) => {
+      optimizedDispatch({
+        type: 'entity/ADD_MANY',
+        entityType,
+        entities,
+      } as EntityAddManyAction);
+    },
+    [optimizedDispatch],
+  );
+
+  const updateEntity = useCallback(
+    <K extends keyof EntityStore['entities']>(
+      entityType: K,
+      id: IdFromSlice<EntityStore['entities'][K]>,
+      changes: Partial<EntityFromSlice<EntityStore['entities'][K]>>,
+    ) => {
+      optimizedDispatch({
+        type: 'entity/UPDATE',
+        entityType,
+        id,
+        changes,
+      } as EntityUpdateAction);
+    },
+    [optimizedDispatch],
+  );
+
+  const removeEntity = useCallback(
+    <K extends keyof EntityStore['entities']>(
+      entityType: K,
+      id: IdFromSlice<EntityStore['entities'][K]>,
+    ) => {
+      optimizedDispatch({
+        type: 'entity/REMOVE',
+        entityType,
+        id,
+      } as EntityRemoveAction);
+    },
+    [optimizedDispatch],
+  );
+
+  const resetEntity = useCallback(
+    <K extends keyof EntityStore['entities']>(entityType: K) => {
+      optimizedDispatch({
+        type: 'entity/RESET',
+        entityType,
+      } as EntityResetAction);
+    },
+    [optimizedDispatch],
+  );
+
+  return {
+    addEntity,
+    addManyEntities,
+    updateEntity,
+    removeEntity,
+    resetEntity,
+  };
+}

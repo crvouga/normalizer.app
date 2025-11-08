@@ -7,7 +7,7 @@ import type { ComboboxOption } from '~/src/ui/combobox/combobox';
 import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { trpcClient } from '../../trpc-client';
-import { useEntityStoreSelector, useEntityStoreDispatch } from '../../store/entity-store';
+import { useEntityStoreSelector, useEntityStore } from '../../store/entity-store';
 
 /**
  * Hook for fetching artifacts with pagination and search.
@@ -19,7 +19,7 @@ import { useEntityStoreSelector, useEntityStoreDispatch } from '../../store/enti
  */
 export function useFetchArtifacts() {
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
-  const dispatch = useEntityStoreDispatch();
+  const entityStore = useEntityStore();
 
   /**
    * Fetches artifacts from the API, stores them in the entity store,
@@ -50,11 +50,7 @@ export function useFetchArtifacts() {
       }
 
       // Store all artifacts in entity store
-      dispatch({
-        type: 'entity/ADD_MANY',
-        entityType: 'artifacts',
-        entities: allArtifacts,
-      });
+      entityStore.addManyEntities('artifacts', allArtifacts);
 
       // Filter based on query
       const filtered = allArtifacts.filter(
@@ -74,7 +70,7 @@ export function useFetchArtifacts() {
         total: filtered.length,
       };
     },
-    [dispatch],
+    [entityStore],
   );
 
   /**

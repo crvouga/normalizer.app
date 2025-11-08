@@ -1,22 +1,22 @@
 import { useMemo, useState } from 'react';
 import type { RemoteResult } from '../../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../../lib/result';
-import { useEntityStoreDispatch } from '../../store/entity-store';
+import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import { Artifact } from '../artifact';
 import { ArtifactId } from '../artifact-id';
 
-export const useArtifactUpload = ({
+export function useArtifactUpload({
   onUploadComplete,
   onUploadError,
 }: {
   onUploadComplete?: (artifact: Artifact) => void;
   onUploadError?: (error: Error) => void;
-}) => {
+}) {
   // Use RemoteResult for the main upload state
   const [uploadState, setUploadState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const dispatch = useEntityStoreDispatch();
+  const entityStore = useEntityStore();
 
   const uploadFile = async (file: File) => {
     setUploadState(Loading);
@@ -34,11 +34,7 @@ export const useArtifactUpload = ({
       });
 
       // Optimistically insert into entity store
-      dispatch({
-        type: 'entity/ADD',
-        entityType: 'artifacts',
-        entity: optimisticArtifact,
-      });
+      entityStore.addEntity('artifacts', optimisticArtifact);
 
       // Get presigned URL
       await trpcClient.artifactUpload.start.mutate({
@@ -50,11 +46,7 @@ export const useArtifactUpload = ({
       // If server ID differs from client ID, update the entity
       if (artifactId !== artifactId) {
         // Remove the optimistic entity
-        dispatch({
-          type: 'entity/REMOVE',
-          entityType: 'artifacts',
-          id: artifactId,
-        });
+        entityStore.removeEntity('artifacts', artifactId);
       }
 
       const before: Artifact | null = await trpcClient.artifact.get.query({
@@ -66,11 +58,7 @@ export const useArtifactUpload = ({
       }
 
       // Add or update with server data
-      dispatch({
-        type: 'entity/ADD',
-        entityType: 'artifacts',
-        entity: before,
-      });
+      entityStore.addEntity('artifacts', before);
 
       // Upload to S3
       const response = await fetch(before.upload_url, {
@@ -103,26 +91,17 @@ export const useArtifactUpload = ({
       }
 
       // Update entity store with uploaded status
-      dispatch({
-        type: 'entity/UPDATE',
-        entityType: 'artifacts',
-        id: artifactId as ArtifactId,
-        changes: {
-          status: 'uploaded',
-          size: file.size,
-          updated_at: artifact.updated_at,
-        },
+      entityStore.updateEntity('artifacts', artifactId as ArtifactId, {
+        status: 'uploaded',
+        size: file.size,
+        updated_at: artifact.updated_at,
       });
 
       setUploadState(Success(artifact));
       onUploadComplete?.(artifact);
     } catch (error) {
       // Remove the optimistic entity on error
-      dispatch({
-        type: 'entity/REMOVE',
-        entityType: 'artifacts',
-        id: artifactId,
-      });
+      entityStore.removeEntity('artifacts', artifactId);
 
       setUploadState(Failure(error as Error));
       onUploadError?.(error as Error);
@@ -137,4 +116,4 @@ export const useArtifactUpload = ({
     uploadProgress,
     isUploading,
   };
-};
+}
