@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { ArtifactId } from '../artifact-id';
-import { useEntityStore } from '../../store/entity-store';
+import { useEntityStoreSelector } from '../../store/entity-store';
 import {
   loadArtifactFile,
   useArtifactFile,
@@ -12,7 +12,7 @@ import {
  * Returns the current load state and a function to trigger loading
  */
 export function useLoadArtifactFile(artifactId: ArtifactId) {
-  const artifact = useEntityStore((state) => state.entities.artifacts.byId[artifactId]);
+  const artifact = useEntityStoreSelector((state) => state.entities.artifacts.byId[artifactId]);
   const fileState = useArtifactFile(artifactId);
 
   const loadFile = useCallback(async (): Promise<File> => {
@@ -44,7 +44,7 @@ export function useLoadArtifactFile(artifactId: ArtifactId) {
  * Returns a map of artifact IDs to their load states
  */
 export function useLoadArtifactFiles(artifactIds: ArtifactId[]) {
-  const artifacts = useEntityStore((state) =>
+  const artifacts = useEntityStoreSelector((state) =>
     artifactIds.map((id) => state.entities.artifacts.byId[id]).filter(Boolean),
   );
 

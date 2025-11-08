@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
 import { Store } from '../lib/store';
@@ -239,7 +239,7 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
 const store = new Store<EntityStore>(initialEntityStore);
 
 // Hook with selector for optimized re-renders
-export function useEntityStore<T>(selector: (state: EntityStore) => T): T {
+export function useEntityStoreSelector<T>(selector: (state: EntityStore) => T): T {
   return useSyncExternalStore(
     store.subscribe,
     () => selector(store.getState()),
@@ -248,6 +248,10 @@ export function useEntityStore<T>(selector: (state: EntityStore) => T): T {
 }
 
 // Dispatch function for actions
-export function dispatch(action: EntityStoreAction): void {
+function dispatch(action: EntityStoreAction): void {
   store.updateState((state) => entityStoreReducer(state, action));
 }
+
+export const useEntityStoreDispatch = (): ((action: EntityStoreAction) => void) => {
+  return useCallback(dispatch, []);
+};

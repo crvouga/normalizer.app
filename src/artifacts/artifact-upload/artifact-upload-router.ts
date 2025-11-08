@@ -12,11 +12,12 @@ export const artifactUploadRouter = router({
       z.object({
         filename: z.string(),
         contentType: z.string(),
+        artifactId: ArtifactId.schema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const id = ArtifactId.generate();
-      const s3Key = `artifacts/${id}/${input.filename}`;
+      const { artifactId } = input;
+      const s3Key = `artifacts/${artifactId}/${input.filename}`;
       const { s3Bucket } = getS3Config();
 
       const expiresIn = 60 * 60 * 24 * 30; // 30 days
@@ -32,7 +33,7 @@ export const artifactUploadRouter = router({
 
       // Insert directly into database
       await ctx.db.insert(schema.artifacts).values({
-        id,
+        id: artifactId,
         filename: input.filename,
         content_type: input.contentType,
         size: 0,
@@ -47,7 +48,7 @@ export const artifactUploadRouter = router({
       });
 
       return {
-        fileId: id,
+        artifactId,
       };
     }),
 
@@ -57,6 +58,7 @@ export const artifactUploadRouter = router({
       z.object({
         key: z.string(),
         size: z.number(),
+        artifactId: ArtifactId.schema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -67,6 +69,6 @@ export const artifactUploadRouter = router({
           size: input.size,
           updated_at: new Date(),
         })
-        .where(eq(schema.artifacts.id, input.key));
+        .where(eq(schema.artifacts.id, input.artifactId));
     }),
 });

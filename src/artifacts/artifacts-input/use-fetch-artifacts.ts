@@ -6,7 +6,7 @@ import type {
 import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { trpcClient } from '../../trpc-client';
-import { useEntityStore, dispatch } from '../../store/entity-store';
+import { useEntityStoreSelector, useEntityStoreDispatch } from '../../store/entity-store';
 import { generateSearchHash } from './search-hash';
 
 /**
@@ -14,8 +14,9 @@ import { generateSearchHash } from './search-hash';
  * Uses entity store for caching and the artifact router for data fetching.
  */
 export function useFetchArtifacts() {
-  const searchResults = useEntityStore((state) => state.indexes.searchResults);
-  const artifactsById = useEntityStore((state) => state.entities.artifacts.byId);
+  const searchResults = useEntityStoreSelector((state) => state.indexes.searchResults);
+  const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
+  const dispatch = useEntityStoreDispatch();
 
   const fetchArtifacts = React.useCallback(
     async ({

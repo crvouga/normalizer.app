@@ -1,6 +1,6 @@
 import { Typography } from '~/src/ui/typography';
 import type { ArtifactId } from '../artifact-id';
-import { useEntityStore } from '../../store/entity-store';
+import { useEntityStoreSelector } from '../../store/entity-store';
 import { SelectedArtifactBadge } from './selected-artifact-badge';
 
 export interface SelectedArtifactsListProps {
@@ -15,7 +15,7 @@ export interface SelectedArtifactsListProps {
  * Fetches artifact entities from the entity store to display details.
  */
 export function SelectedArtifactsList({ artifacts, onRemove, title }: SelectedArtifactsListProps) {
-  const artifactsById = useEntityStore((state) => state.entities.artifacts.byId);
+  const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
 
   if (artifacts.length === 0) {
     return null;
