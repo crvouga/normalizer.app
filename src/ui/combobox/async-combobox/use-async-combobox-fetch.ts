@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { ComboboxOption } from '../combobox';
 import type { AsyncComboboxAction } from './use-async-combobox-state';
+import { generateSearchHash } from './generate-search-hash';
 
 export interface AsyncComboboxFetchOptions {
   query: string;
@@ -9,37 +10,50 @@ export interface AsyncComboboxFetchOptions {
   signal?: AbortSignal;
 }
 
-export interface AsyncComboboxFetchResult<T> {
-  items: ComboboxOption<T>[];
+export interface AsyncComboboxFetchIdsResult<T> {
+  ids: T[];
   hasMore: boolean;
   total?: number;
 }
 
 export interface UseAsyncComboboxFetchParams<T extends string | number> {
-  fetchOptions: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchResult<T>>;
+  fetchIds: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchIdsResult<T>>;
+  getOptions: (ids: T[]) => ComboboxOption<T>[];
   pageSize: number;
   minQueryLength: number;
   debouncedQuery: string;
+  idsBySearchHash: Record<string, T[]>;
   dispatch: React.Dispatch<AsyncComboboxAction<T>>;
 }
 
 /**
  * Handles data fetching for async combobox including:
+ * - ID caching by search hash
  * - Debounced query handling
  * - Abort controller management
  * - Initial fetch and load more pagination
+ * - Separation of data fetching (fetchIds) and data hydration (getOptions)
  * - Error handling
  *
  * Uses reducer dispatch for better performance by batching state updates.
  */
 export function useAsyncComboboxFetch<T extends string | number>({
-  fetchOptions,
+  fetchIds,
+  getOptions,
   pageSize,
   minQueryLength,
   debouncedQuery,
+  idsBySearchHash,
   dispatch,
 }: UseAsyncComboboxFetchParams<T>) {
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Use ref to track latest idsBySearchHash without causing re-renders
+  const idsBySearchHashRef = useRef(idsBySearchHash);
+
+  // Update ref when idsBySearchHash changes
+  useEffect(() => {
+    idsBySearchHashRef.current = idsBySearchHash;
+  }, [idsBySearchHash]);
 
   // Fetch function
   const fetchData = useCallback(
@@ -58,6 +72,32 @@ export function useAsyncComboboxFetch<T extends string | number>({
         return;
       }
 
+      // Generate search hash for caching
+      const searchHash = generateSearchHash({
+        query: searchQuery,
+        page: pageNum,
+        pageSize,
+      });
+
+      // Check if we have cached IDs for this search (use ref to get latest value)
+      const cachedIds = idsBySearchHashRef.current[searchHash];
+      if (cachedIds) {
+        // Hydrate options from cached IDs
+        const items = getOptions(cachedIds);
+        dispatch({
+          type: 'FETCH_SUCCESS',
+          payload: {
+            items,
+            hasMore: false, // Cached results represent a complete page
+            total: items.length,
+            isLoadingMore: isLoadingMoreData,
+            searchHash,
+            ids: cachedIds,
+          },
+        });
+        return;
+      }
+
       // Create new abort controller
       abortControllerRef.current = new AbortController();
 
@@ -65,21 +105,26 @@ export function useAsyncComboboxFetch<T extends string | number>({
         // Dispatch fetch start - batches loading state updates
         dispatch({ type: 'FETCH_START', payload: { isLoadingMore: isLoadingMoreData } });
 
-        const result = await fetchOptions({
+        const result = await fetchIds({
           query: searchQuery,
           page: pageNum,
           pageSize,
           signal: abortControllerRef.current.signal,
         });
 
-        // Dispatch fetch success - batches all success state updates
+        // Hydrate IDs into options
+        const items = getOptions(result.ids);
+
+        // Dispatch fetch success - batches all success state updates and caches IDs
         dispatch({
           type: 'FETCH_SUCCESS',
           payload: {
-            items: result.items,
+            items,
             hasMore: result.hasMore,
             total: result.total,
             isLoadingMore: isLoadingMoreData,
+            searchHash,
+            ids: result.ids,
           },
         });
       } catch (err) {
@@ -95,7 +140,7 @@ export function useAsyncComboboxFetch<T extends string | number>({
         });
       }
     },
-    [fetchOptions, pageSize, minQueryLength, dispatch],
+    [fetchIds, getOptions, pageSize, minQueryLength, dispatch],
   );
 
   // Effect to fetch data when query changes

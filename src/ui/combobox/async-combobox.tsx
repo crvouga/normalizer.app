@@ -3,7 +3,7 @@ import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-s
 import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
 import {
   type AsyncComboboxFetchOptions,
-  type AsyncComboboxFetchResult,
+  type AsyncComboboxFetchIdsResult,
   useAsyncComboboxFetch,
 } from './async-combobox/use-async-combobox-fetch';
 import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
@@ -16,12 +16,13 @@ import { Combobox } from './combobox';
 export type AsyncComboboxOption<T> = ComboboxOption<T>;
 
 // Re-export types for consumers
-export type { AsyncComboboxFetchOptions, AsyncComboboxFetchResult };
+export type { AsyncComboboxFetchOptions, AsyncComboboxFetchIdsResult };
 
 export interface AsyncComboboxProps<T>
   extends Omit<ComboboxProps<T>, 'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'> {
-  // Data fetching
-  fetchOptions: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchResult<T>>;
+  // Data fetching and hydration
+  fetchIds: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchIdsResult<T>>;
+  getOptions: (ids: T[]) => ComboboxOption<T>[];
 
   // Async-specific behavior
   debounceMs?: number;
@@ -30,7 +31,8 @@ export interface AsyncComboboxProps<T>
 }
 
 export function AsyncCombobox<T extends string | number>({
-  fetchOptions,
+  fetchIds,
+  getOptions,
   debounceMs = 300,
   pageSize = 20,
   minQueryLength = 0,
@@ -39,15 +41,27 @@ export function AsyncCombobox<T extends string | number>({
 }: AsyncComboboxProps<T>) {
   // Use reducer for better performance - single state object reduces re-renders
   const { state, dispatch } = useAsyncComboboxState<T>();
-  const { query, options, isLoading, isLoadingMore, fetchError, page, hasMore, total } = state;
+  const {
+    query,
+    options,
+    idsBySearchHash,
+    isLoading,
+    isLoadingMore,
+    fetchError,
+    page,
+    hasMore,
+    total,
+  } = state;
 
   const debouncedQuery = useDebounce(query, debounceMs);
 
   const { fetchData } = useAsyncComboboxFetch({
-    fetchOptions,
+    fetchIds,
+    getOptions,
     pageSize,
     minQueryLength,
     debouncedQuery,
+    idsBySearchHash,
     dispatch,
   });
 

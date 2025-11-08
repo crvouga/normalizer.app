@@ -27,7 +27,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
     onChange: props.onChange,
   });
 
-  const { fetchArtifacts } = useFetchArtifacts();
+  const { fetchArtifactIds, getArtifactOptions } = useFetchArtifacts();
 
   // Handle upload complete - add artifact to selection
   const handleUploadComplete = useCallback(
@@ -53,31 +53,26 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
     [],
   );
 
-  // Memoized upload button with connected styling
-  const uploadButton = useMemo(
-    () => (
-      <ArtifactUploadButton
-        onUploadComplete={handleUploadComplete}
-        onUploadError={handleUploadError}
-        variant="default"
-      />
-    ),
-    [handleUploadComplete, handleUploadError],
-  );
-
   return (
     <div className="space-y-4">
       <AsyncCombobox
         value={currentSelection}
         onChange={addArtifact}
-        fetchOptions={fetchArtifacts}
+        fetchIds={fetchArtifactIds}
+        getOptions={getArtifactOptions}
         placeholder={t('artifact.searchPlaceholder')}
         label={t('artifact.label')}
         helperText={t('artifact.helperText')}
         renderOption={renderOption}
         debounceMs={300}
         pageSize={20}
-        actionButton={uploadButton}
+        actionButton={
+          <ArtifactUploadButton
+            onUploadComplete={handleUploadComplete}
+            onUploadError={handleUploadError}
+            variant="default"
+          />
+        }
       />
 
       <SelectedArtifactsList

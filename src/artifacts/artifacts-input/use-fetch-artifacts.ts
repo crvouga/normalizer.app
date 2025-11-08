@@ -1,57 +1,42 @@
 import * as React from 'react';
 import type {
   AsyncComboboxFetchOptions,
-  AsyncComboboxFetchResult,
+  AsyncComboboxFetchIdsResult,
 } from '~/src/ui/combobox/async-combobox';
+import type { ComboboxOption } from '~/src/ui/combobox/combobox';
 import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { trpcClient } from '../../trpc-client';
 import { useEntityStoreSelector, useEntityStoreDispatch } from '../../store/entity-store';
-import { generateSearchHash } from './search-hash';
 
 /**
  * Hook for fetching artifacts with pagination and search.
  * Uses entity store for caching and the artifact router for data fetching.
+ *
+ * Separates concerns:
+ * - fetchArtifactIds: Fetches from API, stores in entity store, returns IDs
+ * - getArtifactOptions: Reads from entity store and hydrates IDs into options
  */
 export function useFetchArtifacts() {
-  const searchResults = useEntityStoreSelector((state) => state.indexes.searchResults);
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
   const dispatch = useEntityStoreDispatch();
 
-  const fetchArtifacts = React.useCallback(
+  /**
+   * Fetches artifacts from the API, stores them in the entity store,
+   * and returns only the IDs for the requested page.
+   */
+  const fetchArtifactIds = React.useCallback(
     async ({
       query,
       page,
       pageSize,
       signal,
-    }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchResult<ArtifactId>> => {
+    }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchIdsResult<ArtifactId>> => {
       // Check if request was aborted
       if (signal?.aborted) {
         const abortError = new Error('Request aborted');
         abortError.name = 'AbortError';
         throw abortError;
-      }
-
-      // Generate search hash for caching
-      const searchHash = generateSearchHash({ query, page, pageSize });
-
-      // Check if we have cached results
-      const cachedIds = searchResults[searchHash];
-      if (cachedIds) {
-        // Materialize artifacts from entity store
-        const artifacts = cachedIds
-          .map((id) => artifactsById[id as ArtifactId])
-          .filter((artifact): artifact is Artifact => artifact !== undefined);
-
-        return {
-          items: artifacts.map((artifact) => ({
-            value: artifact.id as ArtifactId,
-            label: artifact.filename,
-            metadata: { type: artifact.file_type, size: artifact.size },
-          })),
-          hasMore: false, // For cached results, we return full page
-          total: artifacts.length,
-        };
       }
 
       // Fetch artifacts from the API
@@ -83,25 +68,32 @@ export function useFetchArtifacts() {
       const end = start + pageSize;
       const items = filtered.slice(start, end);
 
-      // Cache the search results
-      dispatch({
-        type: 'index/SET_SEARCH_RESULTS',
-        searchKey: searchHash,
-        ids: items.map((artifact) => artifact.id as string),
-      });
-
       return {
-        items: items.map((artifact) => ({
-          value: artifact.id as ArtifactId,
-          label: artifact.filename,
-          metadata: { type: artifact.file_type, size: artifact.size },
-        })),
+        ids: items.map((artifact) => artifact.id as ArtifactId),
         hasMore: end < filtered.length,
         total: filtered.length,
       };
     },
-    [searchResults, artifactsById],
+    [dispatch],
   );
 
-  return { fetchArtifacts };
+  /**
+   * Reads artifacts from the entity store and hydrates IDs into ComboboxOptions.
+   * This function is synchronous and relies on data already being in the store.
+   */
+  const getArtifactOptions = React.useCallback(
+    (ids: ArtifactId[]): ComboboxOption<ArtifactId>[] => {
+      return ids
+        .map((id) => artifactsById[id])
+        .filter((artifact): artifact is Artifact => artifact !== undefined)
+        .map((artifact) => ({
+          value: artifact.id as ArtifactId,
+          label: artifact.filename,
+          metadata: { type: artifact.file_type, size: artifact.size },
+        }));
+    },
+    [artifactsById],
+  );
+
+  return { fetchArtifactIds, getArtifactOptions };
 }

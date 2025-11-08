@@ -4,6 +4,7 @@ import type { ComboboxOption } from '../combobox';
 export interface AsyncComboboxState<T> {
   query: string;
   options: ComboboxOption<T>[];
+  idsBySearchHash: Record<string, T[]>; // Cache IDs by search hash
   isLoading: boolean;
   isLoadingMore: boolean;
   fetchError: Error | null;
@@ -22,6 +23,7 @@ export type AsyncComboboxAction<T> =
   | { type: 'SET_PAGE'; payload: number }
   | { type: 'SET_HAS_MORE'; payload: boolean }
   | { type: 'SET_TOTAL'; payload: number | undefined }
+  | { type: 'CACHE_IDS'; payload: { searchHash: string; ids: T[] } }
   | { type: 'FETCH_START'; payload: { isLoadingMore: boolean } }
   | {
       type: 'FETCH_SUCCESS';
@@ -30,6 +32,8 @@ export type AsyncComboboxAction<T> =
         hasMore: boolean;
         total?: number;
         isLoadingMore: boolean;
+        searchHash: string;
+        ids: T[];
       };
     }
   | { type: 'FETCH_ERROR'; payload: Error }
@@ -39,6 +43,7 @@ function createInitialState<T>(): AsyncComboboxState<T> {
   return {
     query: '',
     options: [],
+    idsBySearchHash: {},
     isLoading: false,
     isLoadingMore: false,
     fetchError: null,
@@ -80,6 +85,15 @@ function asyncComboboxReducer<T>(
     case 'SET_TOTAL':
       return { ...state, total: action.payload };
 
+    case 'CACHE_IDS':
+      return {
+        ...state,
+        idsBySearchHash: {
+          ...state.idsBySearchHash,
+          [action.payload.searchHash]: action.payload.ids,
+        },
+      };
+
     case 'FETCH_START':
       return {
         ...state,
@@ -98,6 +112,10 @@ function asyncComboboxReducer<T>(
         total: action.payload.total,
         isLoading: false,
         isLoadingMore: false,
+        idsBySearchHash: {
+          ...state.idsBySearchHash,
+          [action.payload.searchHash]: action.payload.ids,
+        },
       };
 
     case 'FETCH_ERROR':
