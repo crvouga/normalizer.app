@@ -1,17 +1,16 @@
 import { useCallback } from 'react';
-import type { ComboboxOption, ComboboxProps } from './combobox';
-import { Combobox } from './combobox';
 import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-state';
 import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
-import { AsyncComboboxTotalCount } from './async-combobox/async-combobox-total-count';
-import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
 import {
   type AsyncComboboxFetchOptions,
   type AsyncComboboxFetchResult,
   useAsyncComboboxFetch,
 } from './async-combobox/use-async-combobox-fetch';
+import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
 import { useDebounce } from './async-combobox/use-debounce';
 import { useInfiniteScroll } from './async-combobox/use-infinite-scroll';
+import type { ComboboxOption, ComboboxProps } from './combobox';
+import { Combobox } from './combobox';
 
 // Re-export the base ComboboxOption type as AsyncComboboxOption for backwards compatibility
 export type AsyncComboboxOption<T> = ComboboxOption<T>;
@@ -104,7 +103,7 @@ export function AsyncCombobox<T extends string | number>({
         actionButton={actionButton}
       />
 
-      <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} />
+      {/* <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} /> */}
     </>
   );
 }

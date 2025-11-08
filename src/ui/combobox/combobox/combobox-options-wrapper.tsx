@@ -18,8 +18,9 @@ export function ComboboxOptionsWrapper({
 }: ComboboxOptionsWrapperProps) {
   return (
     <ComboboxOptions
+      anchor="bottom start"
       className={cn(
-        'ring-opacity-5 absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black focus:outline-none',
+        'ring-opacity-5 z-50 mt-1 max-h-60 w-(--input-width) overflow-auto rounded-lg bg-white text-base shadow-lg ring-1 ring-black focus:outline-none',
         'dark:bg-gray-800 dark:ring-gray-700',
         optionsClassName,
       )}

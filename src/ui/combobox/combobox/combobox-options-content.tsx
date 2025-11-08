@@ -27,13 +27,13 @@ export function ComboboxOptionsContent<T extends string | number>({
 }: ComboboxOptionsContentProps<T>) {
   // Error state takes highest priority
   if (error) {
-    return <>{renderErrorState(error)}</>;
+    return <div className="py-1">{renderErrorState(error)}</div>;
   }
 
   // Show empty state when no options and not loading
   const hasNoOptions = filteredOptions.length === 0;
   if (hasNoOptions && !isLoading) {
-    return <>{renderEmptyState()}</>;
+    return <div className="py-1">{renderEmptyState()}</div>;
   }
 
   // Show options list
