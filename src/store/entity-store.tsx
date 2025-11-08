@@ -238,6 +238,15 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
 // Create the store instance
 const store = new Store<EntityStore>(initialEntityStore);
 
+declare global {
+  interface Window {
+    entityStore: Store<EntityStore>;
+  }
+}
+if (typeof window !== 'undefined') {
+  window.entityStore = store;
+}
+
 // Hook with selector for optimized re-renders
 export function useEntityStoreSelector<T>(selector: (state: EntityStore) => T): T {
   return useSyncExternalStore(
