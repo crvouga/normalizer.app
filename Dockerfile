@@ -18,5 +18,4 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-# Run migrations before starting the server
 CMD ["bun", "run", "src/server.tsx"]
