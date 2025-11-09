@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { type FormEvent, useState } from 'react';
 import { isOk, type Result } from '~/src/lib/result';
 import { Button } from '~/src/ui/button';
 import { Modal } from '~/src/ui/modal';
@@ -19,13 +19,13 @@ export function ArtifactUploadModal({
   onUploadComplete,
 }: ArtifactUploadModalProps) {
   const { t } = useI18n();
-  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { uploadArtifact, isUploading, state } = useArtifactUpload({
     onUploadComplete: (result) => {
       onUploadComplete?.(result);
-      setSelectedFile(null);
       if (isOk(result)) {
+        setSelectedFile(null);
         onClose();
       }
     },
@@ -39,7 +39,7 @@ export function ArtifactUploadModal({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (selectedFile) {
       await uploadArtifact(selectedFile);

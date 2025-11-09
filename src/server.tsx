@@ -35,19 +35,30 @@ const main = async () => {
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
     routes: {
-      '/*': clientHtml,
-
       // tRPC endpoint
-      async '/api/trpc/*'(req) {
-        logger.info(`[HTTP Req] ${req.method} ${req.url}`);
-        const res = await fetchRequestHandler({
-          endpoint: '/api/trpc',
-          req,
-          router: appRouter,
-          createContext: () => trpcContext,
-        });
-        logger.info(`[HTTP Res] ${res.status} ${res.statusText}`);
-        return res;
+      '/api/trpc/*': {
+        async GET(req) {
+          logger.info(`[HTTP Req] GET ${req.url}`);
+          const res = await fetchRequestHandler({
+            endpoint: '/api/trpc',
+            req,
+            router: appRouter,
+            createContext: () => trpcContext,
+          });
+          logger.info(`[HTTP Res] ${res.status} ${res.statusText}`);
+          return res;
+        },
+        async POST(req) {
+          logger.info(`[HTTP Req] POST ${req.url}`);
+          const res = await fetchRequestHandler({
+            endpoint: '/api/trpc',
+            req,
+            router: appRouter,
+            createContext: () => trpcContext,
+          });
+          logger.info(`[HTTP Res] ${res.status} ${res.statusText}`);
+          return res;
+        },
       },
 
       '/api/hello': {
@@ -75,6 +86,8 @@ const main = async () => {
       async '/health'() {
         return Response.json({ status: 'ok' });
       },
+
+      '/*': clientHtml,
     },
 
     development: process.env.NODE_ENV !== 'production',
