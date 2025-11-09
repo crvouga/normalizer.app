@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { FileItem } from './file-item';
+import { TabularFileItem } from './tabular-file-item';
 import { Typography } from '../typography';
 
 export interface FileListProps {
@@ -13,7 +13,7 @@ export interface FileListProps {
   onClearAll: () => void;
 }
 
-export const FileList: React.FC<FileListProps> = ({
+export const TabularFileList: React.FC<FileListProps> = ({
   files,
   showPreview = true,
   showPreviews,
@@ -51,7 +51,7 @@ export const FileList: React.FC<FileListProps> = ({
 
       <div className="space-y-3">
         {files.map((file, index) => (
-          <FileItem
+          <TabularFileItem
             key={`${file.name}-${index}`}
             file={file}
             index={index}

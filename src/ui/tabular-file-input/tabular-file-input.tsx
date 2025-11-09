@@ -1,7 +1,11 @@
 import * as React from 'react';
 import { DropZone } from './drop-zone';
-import { FileList } from './file-list';
-import { validateFiles, createFileListFromFiles, renameFile as renameFileUtil } from './file-utils';
+import { TabularFileList } from './tabular-file-list';
+import {
+  validateFiles,
+  createFileListFromFiles,
+  renameFile as renameFileUtil,
+} from './tabular-file-utils';
 import { Typography } from '../typography';
 
 export interface TabularFileInputProps
@@ -161,7 +165,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
         )}
 
         {/* Selected Files */}
-        <FileList
+        <TabularFileList
           files={selectedFiles}
           showPreview={showPreview}
           showPreviews={showPreviews}

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
-import { formatFileSize } from './file-utils';
+import { formatFileSize } from './tabular-file-utils';
 import { Typography } from '../typography';
 
 export interface FilePreviewSectionProps {

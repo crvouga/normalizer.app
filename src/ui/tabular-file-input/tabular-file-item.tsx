@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { FileIcon, ImageIcon, IconX, IconPencil } from '../icons';
-import { formatFileSize } from './file-utils';
+import { formatFileSize } from './tabular-file-utils';
 import { Typography } from '../typography';
 import { cn } from '~/src/lib/cn';
 
-export interface FileItemHeaderProps {
+export interface TabularFileItemHeaderProps {
   file: File;
   index: number;
   showPreview?: boolean;
@@ -15,7 +15,7 @@ export interface FileItemHeaderProps {
   onRename: (index: number, newName: string) => void;
 }
 
-export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
+export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   file,
   index,
   showPreview = true,
@@ -160,7 +160,7 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
   );
 };
 
-export interface FileItemProps {
+export interface TabularFileItemProps {
   file: File;
   index: number;
   showPreview?: boolean;
@@ -170,7 +170,7 @@ export interface FileItemProps {
   onRename: (index: number, newName: string) => void;
 }
 
-export const FileItem: React.FC<FileItemProps> = ({
+export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   file,
   index,
   showPreview = true,
@@ -181,7 +181,7 @@ export const FileItem: React.FC<FileItemProps> = ({
 }) => {
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-      <FileItemHeader
+      <TabularFileItemHeader
         file={file}
         index={index}
         showPreview={showPreview}
