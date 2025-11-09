@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeAll } from 'bun:test';
 import { createMinioClient } from './minio-client';
 import { createLogger } from '../logger';
 import { getS3Config } from '~/src/s3-config';
@@ -13,7 +13,11 @@ describe.skip('MinioClient', () => {
     logger,
   });
 
-  const testBucket = 'test-bucket-' + Math.random().toString(36).substring(7);
+  const testBucket = 'test';
+
+  beforeAll(async () => {
+    await minioClient.ensureBucketExists(testBucket);
+  });
 
   test('should check if bucket exists', async () => {
     const exists = await minioClient.checkBucketExists(testBucket);
@@ -27,7 +31,7 @@ describe.skip('MinioClient', () => {
   });
 
   test('should ensure bucket exists - create if not exists', async () => {
-    const newBucket = 'test-bucket-' + Math.random().toString(36).substring(7);
+    const newBucket = 'test';
     await minioClient.ensureBucketExists(newBucket);
     const exists = await minioClient.checkBucketExists(newBucket);
     expect(exists).toBe(true);
