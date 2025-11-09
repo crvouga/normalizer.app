@@ -20,16 +20,10 @@ export const artifactUploadRouter = router({
       const s3Key = `artifacts/${artifactId}/${input.filename}`;
       const { s3Bucket } = getS3Config();
 
-      const expiresIn = 60 * 60 * 24 * 30; // 30 days
+      const expiresIn = 60 * 60 * 24 * 7; // 7 days (maximum allowed)
 
-      // Generate presigned URL with S3 client
-      const uploadUrl = ctx.s3
-        .file(s3Key, {
-          bucket: s3Bucket,
-        })
-        .presign({
-          expiresIn: expiresIn,
-        });
+      // Generate presigned URL with MinIO client
+      const uploadUrl = await ctx.minioClient.generatePresignedUrl(s3Bucket, s3Key, expiresIn);
 
       // Insert directly into database
       await ctx.db.insert(schema.artifacts).values({

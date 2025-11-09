@@ -7,7 +7,7 @@ describe('S3 Client', () => {
   const logger = createLogger();
 
   test('should support put and get flow', async () => {
-    const s3Client = await createS3({ logger });
+    const { s3Client } = await createS3({ logger });
     const key = `test-key-${Math.random()}`;
     const value = new TextEncoder().encode('Hello S3!');
     const { s3Bucket: bucket } = getS3Config();

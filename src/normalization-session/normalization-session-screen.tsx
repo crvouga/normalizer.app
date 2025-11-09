@@ -14,8 +14,6 @@ export const NormalizationSessionScreen = (props: { normalizationSessionId: stri
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <ArtifactsInput value={targetArtifactIds} onChange={setTargetArtifactIds} />
 
-        {JSON.stringify(targetArtifactIds)}
-
         <div className="flex justify-end">
           <Button
             size="lg"
