@@ -58,6 +58,12 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
 
   return (
     <div className="space-y-4">
+      <SelectedArtifactsList
+        artifacts={props.value}
+        onRemove={removeArtifact}
+        title={t('artifact.selectedArtifacts')}
+      />
+
       <AsyncCombobox
         value={currentSelection}
         onChange={addArtifact}
@@ -75,12 +81,6 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
             variant="default"
           />
         }
-      />
-
-      <SelectedArtifactsList
-        artifacts={props.value}
-        onRemove={removeArtifact}
-        title={t('artifact.selectedArtifacts')}
       />
     </div>
   );

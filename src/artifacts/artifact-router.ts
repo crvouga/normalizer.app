@@ -4,19 +4,14 @@ import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { Artifact } from './artifact';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-router';
-
-// Common filter: uploaded and not deleted
-const uploadedNotDeletedFilter = and(
-  eq(schema.artifacts.status, 'uploaded'),
-  isNull(schema.artifacts.deleted),
-);
+import { ArtifactId } from './artifact-id';
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
   get: procedure
     .input(
       z.object({
-        key: z.string(),
+        artifactId: ArtifactId.schema,
       }),
     )
     .output(Artifact.schema.nullable())
@@ -24,7 +19,7 @@ export const artifactRouter = router({
       const artifact = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.id, input.key), uploadedNotDeletedFilter))
+        .where(and(eq(schema.artifacts.id, input.artifactId), isNull(schema.artifacts.deleted)))
         .limit(1)
         .then((rows) => rows[0]);
 
@@ -52,7 +47,7 @@ export const artifactRouter = router({
             download_url_expires_at: artifactWithUrls.download_url_expires_at,
             updated_at: new Date(),
           })
-          .where(eq(schema.artifacts.id, input.key));
+          .where(eq(schema.artifacts.id, input.artifactId));
       }
 
       return artifactWithUrls;
@@ -66,7 +61,7 @@ export const artifactRouter = router({
       const files = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(uploadedNotDeletedFilter)
+        .where(and(eq(schema.artifacts.status, 'uploaded'), isNull(schema.artifacts.deleted)))
         .orderBy(schema.artifacts.created_at);
 
       // Validate and transform to Artifact type array

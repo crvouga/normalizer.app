@@ -45,7 +45,7 @@ export function useArtifactUpload({
       }
 
       const before: Artifact | null = await trpcClient.artifact.get.mutate({
-        key: artifactId,
+        artifactId: artifactId,
       });
 
       if (!before?.upload_url) {
@@ -77,7 +77,7 @@ export function useArtifactUpload({
 
       // Fetch updated artifact
       const artifact: Artifact | null = await trpcClient.artifact.get.mutate({
-        key: artifactId,
+        artifactId: artifactId,
       });
 
       if (!artifact) {
