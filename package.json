@@ -7,6 +7,7 @@
   "module": "src/server.tsx",
   "scripts": {
     "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
+    "db:fix-migration-state": "bun run scripts/fix-migration-state.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/run-migrations.ts",
     "db:push": "drizzle-kit push",

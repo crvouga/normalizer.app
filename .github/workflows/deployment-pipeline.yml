@@ -127,6 +127,11 @@ jobs:
           fi
           echo "✅ DATABASE_URL secret is configured"
 
+      - name: Fix migration state (one-time fix)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bun run db:fix-migration-state
+
       - name: Run production database migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
