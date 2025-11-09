@@ -1,65 +1,76 @@
-import { Typography } from '~/src/ui/typography';
+import * as React from 'react';
 import type { ArtifactId } from '../artifact-id';
 import { useEntityStoreSelector } from '../../store/entity-store';
-import { SelectedArtifactBadge } from './selected-artifact-badge';
+import { TabularFileList } from '~/src/ui/tabular-file-input/tabular-file-list';
+import { artifactToTabularFile } from './artifact-to-tabular-file';
 
 export interface SelectedArtifactsListProps {
   artifacts: ArtifactId[];
   onRemove: (artifactId: ArtifactId) => void;
   onClearAll?: () => void;
   title: string;
+  showPreview?: boolean;
 }
 
 /**
- * Component for displaying a list of selected artifacts as removable badges.
+ * Component for displaying a list of selected artifacts using TabularFileList.
  * Only renders when there are artifacts to display.
- * Fetches artifact entities from the entity store to display details.
- * Uses a similar structure to TabularFileList with header and action buttons.
+ * Fetches artifact entities from the entity store and converts them to TabularFiles.
+ * Files are lazy-loaded on-demand when previews are requested.
  */
 export function SelectedArtifactsList({
   artifacts,
   onRemove,
   onClearAll,
   title,
+  showPreview = true,
 }: SelectedArtifactsListProps) {
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
+  const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
+
+  // Convert artifacts to TabularFiles
+  const tabularFiles = React.useMemo(() => {
+    return artifacts
+      .map((id) => artifactsById[id])
+      .filter(Boolean)
+      .map(artifactToTabularFile);
+  }, [artifacts, artifactsById]);
+
+  const handleTogglePreview = React.useCallback((index: number) => {
+    setShowPreviews((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  }, []);
+
+  const handleRemoveFile = React.useCallback(
+    (index: number) => {
+      const artifactId = artifacts[index];
+      if (artifactId) {
+        onRemove(artifactId);
+      }
+    },
+    [artifacts, onRemove],
+  );
+
+  const handleClearAll = React.useCallback(() => {
+    setShowPreviews({});
+    onClearAll?.();
+  }, [onClearAll]);
 
   if (artifacts.length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Typography as="h4" variant="sm" weight="medium" color="primary">
-          {title} ({artifacts.length})
-        </Typography>
-        {onClearAll && (
-          <button type="button" onClick={onClearAll} className="transition-colors">
-            <Typography
-              variant="xs"
-              color="muted"
-              className="hover:text-red-600 dark:hover:text-red-400"
-            >
-              Clear all
-            </Typography>
-          </button>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {artifacts.map((id) => {
-          const artifact = artifactsById[id];
-          return (
-            <SelectedArtifactBadge
-              key={id}
-              artifact={artifact}
-              artifactId={id}
-              onRemove={onRemove}
-            />
-          );
-        })}
-      </div>
-    </div>
+    <TabularFileList
+      files={tabularFiles}
+      title={title}
+      showPreview={showPreview}
+      showPreviews={showPreviews}
+      onTogglePreview={handleTogglePreview}
+      onRemoveFile={handleRemoveFile}
+      onClearAll={handleClearAll}
+    />
   );
 }

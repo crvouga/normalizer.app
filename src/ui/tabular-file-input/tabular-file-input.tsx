@@ -1,12 +1,9 @@
 import * as React from 'react';
 import { DropZone } from './drop-zone';
 import { TabularFileList } from './tabular-file-list';
-import {
-  validateFiles,
-  createFileListFromFiles,
-  renameFile as renameFileUtil,
-} from './tabular-file-utils';
+import { validateFiles, createFileListFromFiles } from './tabular-file-utils';
 import { Typography } from '../typography';
+import type { TabularFile } from './tabular-file';
 
 export interface TabularFileInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
@@ -18,6 +15,18 @@ export interface TabularFileInputProps
   className?: string;
   placeholder?: string;
   showPreview?: boolean;
+}
+
+/**
+ * Converts a local File to a TabularFile with a blob URL
+ */
+function fileToTabularFile(file: File): TabularFile {
+  return {
+    name: file.name,
+    downloadUrl: URL.createObjectURL(file),
+    size: file.size,
+    contentType: file.type,
+  };
 }
 
 const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProps>(
@@ -37,11 +46,23 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
   ) => {
     const [isDragOver, setIsDragOver] = React.useState(false);
     const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+    const [tabularFiles, setTabularFiles] = React.useState<TabularFile[]>([]);
     const [error, setError] = React.useState<string | null>(null);
     const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useImperativeHandle(ref, () => fileInputRef.current!);
+
+    // Clean up blob URLs on unmount
+    React.useEffect(() => {
+      return () => {
+        tabularFiles.forEach((file) => {
+          if (file.downloadUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(file.downloadUrl);
+          }
+        });
+      };
+    }, [tabularFiles]);
 
     const handleFiles = (files: FileList | null) => {
       if (!files) return;
@@ -54,7 +75,12 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
 
       setError(null);
       const fileArray = Array.from(files);
-      setSelectedFiles((prev) => (multiple ? [...prev, ...fileArray] : fileArray));
+      const newSelectedFiles = multiple ? [...selectedFiles, ...fileArray] : fileArray;
+      const newTabularFiles = newSelectedFiles.map(fileToTabularFile);
+
+      setSelectedFiles(newSelectedFiles);
+      setTabularFiles(newTabularFiles);
+
       // Initialize previews as open for new files
       const newPreviews = fileArray.reduce(
         (acc, _, index) => {
@@ -93,8 +119,17 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
     };
 
     const removeFile = (index: number) => {
+      // Revoke the blob URL for the removed file
+      const removedFile = tabularFiles[index];
+      if (removedFile?.downloadUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(removedFile.downloadUrl);
+      }
+
       const newFiles = selectedFiles.filter((_, i) => i !== index);
+      const newTabularFiles = tabularFiles.filter((_, i) => i !== index);
+
       setSelectedFiles(newFiles);
+      setTabularFiles(newTabularFiles);
 
       // Create a new FileList-like object for the callback
       const newFileList = createFileListFromFiles(newFiles);
@@ -109,24 +144,21 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
     };
 
     const clearAllFiles = () => {
+      // Revoke all blob URLs
+      tabularFiles.forEach((file) => {
+        if (file.downloadUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(file.downloadUrl);
+        }
+      });
+
       setSelectedFiles([]);
+      setTabularFiles([]);
       setError(null);
       setShowPreviews({});
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       onFilesChange?.(null);
-    };
-
-    const renameFile = (index: number, newName: string) => {
-      const updatedFiles = selectedFiles.map((file, i) =>
-        i === index ? renameFileUtil(file, newName) : file,
-      );
-      setSelectedFiles(updatedFiles);
-
-      // Create a new FileList-like object for the callback
-      const newFileList = createFileListFromFiles(updatedFiles);
-      onFilesChange?.(newFileList);
     };
 
     return (
@@ -166,12 +198,11 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
 
         {/* Selected Files */}
         <TabularFileList
-          files={selectedFiles}
+          files={tabularFiles}
           showPreview={showPreview}
           showPreviews={showPreviews}
           onTogglePreview={togglePreview}
           onRemoveFile={removeFile}
-          onRenameFile={renameFile}
           onAddMore={handleClick}
           onClearAll={clearAllFiles}
         />
