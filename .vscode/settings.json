@@ -19,8 +19,10 @@
     "plpgsql",
     "presign",
     "psql",
+    "schemaname",
     "spreadsheetml",
     "sslmode",
+    "tablename",
     "timestamptz"
   ],
   "cursor.cpp.disabledLanguages": [],
