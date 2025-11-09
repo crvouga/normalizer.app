@@ -8,6 +8,7 @@ import { ArtifactUploadComboboxActionButton } from '../artifact-upload/artifact-
 import { SelectedArtifactsList } from './selected-artifacts-list';
 import { useArtifactSelection } from './use-artifact-selection';
 import { useFetchArtifacts } from './use-fetch-artifacts';
+import type { Result } from '~/src/lib/result';
 
 export type ArtifactsInputProps = {
   value: ArtifactId[];
@@ -31,19 +32,21 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
 
   // Handle upload complete - add artifact to selection
   const handleUploadComplete = useCallback(
-    (artifact: Artifact) => {
-      // Add the uploaded artifact to selection
-      if (!props.value.includes(artifact.id as ArtifactId)) {
-        props.onChange([...props.value, artifact.id as ArtifactId]);
+    (artifact: Result<Artifact, Error>) => {
+      switch (artifact.tag) {
+        case 'ok': {
+          if (!props.value.includes(artifact.value.id)) {
+            props.onChange([...props.value, artifact.value.id]);
+          }
+          break;
+        }
+        case 'err': {
+          break;
+        }
       }
     },
     [props],
   );
-
-  // Handle upload error
-  const handleUploadError = useCallback((error: Error) => {
-    console.error('Upload failed:', error);
-  }, []);
 
   // Memoized render function for artifact options
   const renderOption = useCallback(
@@ -69,7 +72,6 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         actionButton={
           <ArtifactUploadComboboxActionButton
             onUploadComplete={handleUploadComplete}
-            onUploadError={handleUploadError}
             variant="default"
           />
         }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { RemoteResult } from '../../lib/result';
-import { Failure, Loading, NotAsked, Success } from '../../lib/result';
+import type { RemoteResult, Result } from '../../lib/result';
+import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import { Artifact } from '../artifact';
@@ -8,10 +8,8 @@ import { ArtifactId } from '../artifact-id';
 
 export function useArtifactUpload({
   onUploadComplete,
-  onUploadError,
 }: {
-  onUploadComplete?: (artifact: Artifact) => void;
-  onUploadError?: (error: Error) => void;
+  onUploadComplete?: (artifact: Result<Artifact, Error>) => void;
 }) {
   const [state, setState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const entityStore = useEntityStore();
@@ -94,13 +92,13 @@ export function useArtifactUpload({
       });
 
       setState(Success(artifact));
-      onUploadComplete?.(artifact);
+      onUploadComplete?.(Ok(artifact));
     } catch (error) {
       // Remove the optimistic entity on error
       entityStore.removeEntity('artifacts', artifactId);
 
       setState(Failure(error as Error));
-      onUploadError?.(error as Error);
+      onUploadComplete?.(Err(error as Error));
     }
   };
 

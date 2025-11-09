@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { Result } from '~/src/lib/result';
 import { ComboboxActionButton } from '~/src/ui/combobox/combobox-action-button';
 import { UploadIcon } from '~/src/ui/icons';
 import { useI18n } from '../../i18n/use-i18n';
@@ -6,8 +7,7 @@ import type { Artifact } from '../artifact';
 import { ArtifactUploadModal } from './artifact-upload-modal';
 
 export interface ArtifactUploadComboboxActionButtonProps {
-  onUploadComplete?: (artifact: Artifact) => void;
-  onUploadError?: (error: Error) => void;
+  onUploadComplete?: (artifact: Result<Artifact, Error>) => void;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'contained';
 }
 
@@ -16,7 +16,6 @@ export interface ArtifactUploadComboboxActionButtonProps {
  */
 export function ArtifactUploadComboboxActionButton({
   onUploadComplete,
-  onUploadError,
   variant = 'outline',
 }: ArtifactUploadComboboxActionButtonProps) {
   const { t } = useI18n();
@@ -38,7 +37,6 @@ export function ArtifactUploadComboboxActionButton({
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onUploadComplete={onUploadComplete}
-        onUploadError={onUploadError}
       />
     </>
   );

@@ -1,35 +1,31 @@
 import * as React from 'react';
-import { Modal } from '~/src/ui/modal';
+import type { Result } from '~/src/lib/result';
 import { Button } from '~/src/ui/button';
+import { Modal } from '~/src/ui/modal';
 import { TabularFileInput } from '~/src/ui/tabular-file-input/tabular-file-input';
 import { useI18n } from '../../i18n/use-i18n';
-import { useArtifactUpload } from './use-artifact-upload';
 import type { Artifact } from '../artifact';
+import { useArtifactUpload } from './use-artifact-upload';
 
 export interface ArtifactUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUploadComplete?: (artifact: Artifact) => void;
-  onUploadError?: (error: Error) => void;
+  onUploadComplete?: (artifact: Result<Artifact, Error>) => void;
 }
 
 export function ArtifactUploadModal({
   isOpen,
   onClose,
   onUploadComplete,
-  onUploadError,
 }: ArtifactUploadModalProps) {
   const { t } = useI18n();
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 
   const { uploadArtifact, isUploading, state } = useArtifactUpload({
-    onUploadComplete: (artifact) => {
+    onUploadComplete: (result) => {
+      onUploadComplete?.(result);
       setSelectedFile(null);
-      onUploadComplete?.(artifact);
       onClose();
-    },
-    onUploadError: (error) => {
-      onUploadError?.(error);
     },
   });
 
@@ -60,7 +56,7 @@ export function ArtifactUploadModal({
           showPreview={true}
           multiple={false}
         />
-        {state.tag === 'failure' && (
+        {state.tag === 'err' && (
           <div className="mt-2 text-sm text-red-600 dark:text-red-400">
             {state.error?.message || t('artifact.uploadError')}
           </div>

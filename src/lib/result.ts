@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 /**
- * Result type for representing success (Ok) or failure (Err).
- * This mirrors Elm/Rust's Result type: Result<T, E>
+ * Discriminated union Result type for representing success (ok) or failure (err).
+ * Uses `tag` as discriminator for compatibility with RemoteResult.
  */
-export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
+export type Result<T, E> = { tag: 'ok'; value: T } | { tag: 'err'; error: E };
 
 // Convenient constructors
-export const Ok = <T, E = never>(value: T): Result<T, E> => ({ ok: true, value });
-export const Err = <T = never, E = unknown>(error: E): Result<T, E> => ({ ok: false, error });
+export const Ok = <T, E = never>(value: T): Result<T, E> => ({ tag: 'ok', value });
+export const Err = <T = never, E = unknown>(error: E): Result<T, E> => ({ tag: 'err', error });
 
 /**
  * Zod schema generator for Result<T, E>
@@ -18,27 +18,32 @@ export function resultSchema<T, E>(
   errorSchema: z.ZodType<E, any, any>,
 ) {
   return z.union([
-    z.object({ ok: z.literal(true), value: valueSchema }),
-    z.object({ ok: z.literal(false), error: errorSchema }),
+    z.object({ tag: z.literal('ok'), value: valueSchema }),
+    z.object({ tag: z.literal('err'), error: errorSchema }),
   ]);
 }
 
 /**
  * RemoteResult type for tracking async/remote resource states,
- * like Elm's RemoteData or rust yew's use_mut_remote_data.
+ * like Elm's RemoteData or rust yew's use_mut_remote_data,
+ * and as a superset of Result<T, E>.
+ * - 'notAsked': initial state
+ * - 'loading': in progress
+ * - 'ok': success (same as Result)
+ * - 'err': failure (same as Result)
  */
 export type RemoteResult<T, E = unknown> =
   | { tag: 'notAsked' }
   | { tag: 'loading' }
-  | { tag: 'success'; data: T }
-  | { tag: 'failure'; error: E };
+  | { tag: 'ok'; value: T }
+  | { tag: 'err'; error: E };
 
 // Convenient constructors
 export const NotAsked: RemoteResult<never, never> = { tag: 'notAsked' };
 export const Loading: RemoteResult<never, never> = { tag: 'loading' };
-export const Success = <T, E = unknown>(data: T): RemoteResult<T, E> => ({ tag: 'success', data });
+export const Success = <T, E = unknown>(value: T): RemoteResult<T, E> => ({ tag: 'ok', value });
 export const Failure = <T = never, E = unknown>(error: E): RemoteResult<T, E> => ({
-  tag: 'failure',
+  tag: 'err',
   error,
 });
 
@@ -52,7 +57,7 @@ export function remoteResultSchema<T, E>(
   return z.union([
     z.object({ tag: z.literal('notAsked') }),
     z.object({ tag: z.literal('loading') }),
-    z.object({ tag: z.literal('success'), data: valueSchema }),
-    z.object({ tag: z.literal('failure'), error: errorSchema }),
+    z.object({ tag: z.literal('ok'), value: valueSchema }),
+    z.object({ tag: z.literal('err'), error: errorSchema }),
   ]);
 }
