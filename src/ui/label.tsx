@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 import { Typography } from './typography';
 
 function Label({ className, color, ...props }: React.ComponentProps<'label'>) {

@@ -1,6 +1,6 @@
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { Fragment } from 'react';
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 import { IconX } from './icons';
 import { Typography } from './typography';
 import { useI18n } from '../i18n/use-i18n';

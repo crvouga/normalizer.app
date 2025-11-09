@@ -3,7 +3,7 @@ import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview
 import { FileIcon, ImageIcon, IconX, IconPencil } from '../icons';
 import { formatFileSize } from './file-utils';
 import { Typography } from '../typography';
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 
 export interface FileItemHeaderProps {
   file: File;

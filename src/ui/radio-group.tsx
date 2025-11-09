@@ -1,5 +1,5 @@
 import { RadioGroup as HeadlessRadioGroup } from '@headlessui/react';
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 import { IconCheck } from './icons';
 import { Typography } from './typography';
 

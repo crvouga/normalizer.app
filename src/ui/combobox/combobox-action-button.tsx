@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button } from '~/src/ui/button';
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 
 export interface ComboboxActionButtonProps {
   onClick: () => void;

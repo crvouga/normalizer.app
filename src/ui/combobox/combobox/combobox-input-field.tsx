@@ -1,6 +1,6 @@
 import { ComboboxButton, ComboboxInput } from '@headlessui/react';
 import * as React from 'react';
-import { cn } from '~/src/lib/utils';
+import { cn } from '~/src/lib/cn';
 import { IconChevronDown, IconSpinner } from '../../icons';
 
 export interface ComboboxInputFieldProps<T> {
