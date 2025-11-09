@@ -50,6 +50,8 @@ services:
       timeout: 3s
       retries: 2
 
+  
+
 volumes:
   postgres_data:
   s3_data:

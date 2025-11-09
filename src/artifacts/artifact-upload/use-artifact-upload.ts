@@ -44,7 +44,7 @@ export function useArtifactUpload({
         entityStore.removeEntity('artifacts', artifactId);
       }
 
-      const before: Artifact | null = await trpcClient.artifact.get.query({
+      const before: Artifact | null = await trpcClient.artifact.get.mutate({
         key: artifactId,
       });
 
@@ -76,7 +76,7 @@ export function useArtifactUpload({
       });
 
       // Fetch updated artifact
-      const artifact: Artifact | null = await trpcClient.artifact.get.query({
+      const artifact: Artifact | null = await trpcClient.artifact.get.mutate({
         key: artifactId,
       });
 

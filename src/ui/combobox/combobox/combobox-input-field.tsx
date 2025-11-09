@@ -56,6 +56,7 @@ export function ComboboxInputField<T extends string | number>({
         onChange={(event) => onQueryChange(event.target.value)}
         onFocus={handleFocus}
         placeholder={placeholder}
+        autoComplete="off"
       />
 
       <ComboboxButton ref={buttonRef} className="absolute inset-y-0 right-0 flex items-center pr-3">

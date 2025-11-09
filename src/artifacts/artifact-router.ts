@@ -1,9 +1,15 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { Artifact } from './artifact';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-router';
+
+// Common filter: uploaded and not deleted
+const uploadedNotDeletedFilter = and(
+  eq(schema.artifacts.status, 'uploaded'),
+  isNull(schema.artifacts.deleted),
+);
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
@@ -14,11 +20,11 @@ export const artifactRouter = router({
       }),
     )
     .output(Artifact.schema.nullable())
-    .query(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       const artifact = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(eq(schema.artifacts.id, input.key))
+        .where(and(eq(schema.artifacts.id, input.key), uploadedNotDeletedFilter))
         .limit(1)
         .then((rows) => rows[0]);
 
@@ -27,15 +33,71 @@ export const artifactRouter = router({
       }
 
       // Validate and transform to Artifact type
-      return Artifact.schema.parse(artifact);
+      const validatedArtifact = Artifact.schema.parse(artifact);
+
+      // Populate URLs and get update metadata
+      const {
+        artifacts: [artifactWithUrls],
+        updated,
+      } = await Artifact.populateUrls([validatedArtifact], ctx.s3);
+
+      // If URLs were updated, persist to database
+      if (updated.has(String(validatedArtifact.id))) {
+        await ctx.db
+          .update(schema.artifacts)
+          .set({
+            upload_url: artifactWithUrls.upload_url,
+            upload_url_expires_at: artifactWithUrls.upload_url_expires_at,
+            download_url: artifactWithUrls.download_url,
+            download_url_expires_at: artifactWithUrls.download_url_expires_at,
+            updated_at: new Date(),
+          })
+          .where(eq(schema.artifacts.id, input.key));
+      }
+
+      return artifactWithUrls;
     }),
 
   // List files for user
-  list: procedure.output(z.array(Artifact.schema)).query(async ({ ctx }): Promise<Artifact[]> => {
-    // You may want to filter by user or other logic in a real app
-    const files = await ctx.db.select().from(schema.artifacts).orderBy(schema.artifacts.created_at);
+  list: procedure
+    .output(z.array(Artifact.schema))
+    .mutation(async ({ ctx }): Promise<Artifact[]> => {
+      // Only select artifacts that are uploaded and not deleted
+      const files = await ctx.db
+        .select()
+        .from(schema.artifacts)
+        .where(uploadedNotDeletedFilter)
+        .orderBy(schema.artifacts.created_at);
 
-    // Validate and transform to Artifact type array
-    return z.array(Artifact.schema).parse(files);
-  }),
+      // Validate and transform to Artifact type array
+      const validatedArtifacts = z.array(Artifact.schema).parse(files);
+
+      // Populate URLs and get update metadata
+      const { artifacts: artifactsWithUrls, updated } = await Artifact.populateUrls(
+        validatedArtifacts,
+        ctx.s3,
+      );
+
+      // Update database for artifacts with refreshed URLs
+      if (updated.size > 0) {
+        await Promise.all(
+          artifactsWithUrls
+            .filter((artifact) => updated.has(String(artifact.id)))
+            .map((artifact) =>
+              ctx.db
+                .update(schema.artifacts)
+                .set({
+                  upload_url: artifact.upload_url,
+                  upload_url_expires_at: artifact.upload_url_expires_at,
+                  download_url: artifact.download_url,
+                  download_url_expires_at: artifact.download_url_expires_at,
+                  updated_at: new Date(),
+                })
+                .where(eq(schema.artifacts.id, String(artifact.id))),
+            ),
+        );
+      }
+
+      return artifactsWithUrls;
+    }),
 });

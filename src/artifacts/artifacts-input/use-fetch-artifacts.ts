@@ -40,7 +40,7 @@ export function useFetchArtifacts() {
       }
 
       // Fetch artifacts from the API
-      const allArtifacts: Artifact[] = await trpcClient.artifact.list.query();
+      const allArtifacts: Artifact[] = await trpcClient.artifact.list.mutate();
 
       // Check if request was aborted after fetch
       if (signal?.aborted) {

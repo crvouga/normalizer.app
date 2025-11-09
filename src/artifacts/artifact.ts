@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ArtifactId } from './artifact-id';
+import type { S3Client } from 'bun';
 
 /**
  * Zod schema for the Artifact entity, matching the database schema.
@@ -60,7 +61,72 @@ const create = (input: { id: ArtifactId; filename: string; content_type: string 
   };
 };
 
+/**
+ * Populates the S3 signed upload and download URLs for a list of artifacts,
+ * and sets their expiration timestamps, but only if missing or expired.
+ *
+ * @param artifacts - Array of Artifact objects.
+ * @param s3 - S3 client for presigning URLs.
+ * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
+ */
+async function populateUrls(
+  artifacts: Artifact[],
+  s3: S3Client,
+): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
+  const expiresIn = 60 * 60 * 24 * 7; // 7 days
+  const now = Date.now();
+  const expiresAt = new Date(now + expiresIn * 1000);
+  const updated = new Set<string>();
+
+  function isMissingOrExpired(url: string | null | undefined, expiresAt: Date | null | undefined) {
+    if (!url || !expiresAt) return true;
+    return new Date(expiresAt).getTime() < now;
+  }
+
+  const updatedArtifacts = await Promise.all(
+    artifacts.map(async (artifact) => {
+      let upload_url = artifact.upload_url ?? null;
+      let download_url = artifact.download_url ?? null;
+      let upload_url_expires_at = artifact.upload_url_expires_at ?? null;
+      let download_url_expires_at = artifact.download_url_expires_at ?? null;
+
+      const key = String(artifact.id);
+
+      const shouldUpdateUpload = isMissingOrExpired(upload_url, upload_url_expires_at);
+      const shouldUpdateDownload = isMissingOrExpired(download_url, download_url_expires_at);
+
+      let newUploadUrl: string | undefined;
+      let newDownloadUrl: string | undefined;
+
+      if (shouldUpdateUpload) {
+        newUploadUrl = s3.presign(key, { method: 'PUT', expiresIn });
+        upload_url_expires_at = expiresAt;
+      }
+      if (shouldUpdateDownload) {
+        newDownloadUrl = s3.presign(key, { method: 'GET', expiresIn });
+        download_url_expires_at = expiresAt;
+      }
+
+      // Track if this artifact was modified
+      if (shouldUpdateUpload || shouldUpdateDownload) {
+        updated.add(String(artifact.id));
+      }
+
+      return {
+        ...artifact,
+        upload_url: shouldUpdateUpload ? newUploadUrl : upload_url,
+        upload_url_expires_at,
+        download_url: shouldUpdateDownload ? newDownloadUrl : download_url,
+        download_url_expires_at,
+      };
+    }),
+  );
+
+  return { artifacts: updatedArtifacts, updated };
+}
+
 export const Artifact = {
   schema,
   create,
+  populateUrls,
 };
