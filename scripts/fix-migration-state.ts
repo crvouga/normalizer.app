@@ -86,13 +86,23 @@ async function fixMigrationState() {
       logger.info('This suggests the table was created outside of migrations');
       logger.info('Inserting migration 0000 record...');
 
-      // Insert the missing migration 0000 record
-      await sql`
-        INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-        VALUES ('5a9c27ec07ffe59d6e5abe57e9c1f7ca6f10c8e8b9d4f0a1c2e3d4f5a6b7c8d9', 1762334168372)
-        ON CONFLICT (hash) DO NOTHING
+      // First check if migration 0000 already exists
+      const migration0000Hash = '5a9c27ec07ffe59d6e5abe57e9c1f7ca6f10c8e8b9d4f0a1c2e3d4f5a6b7c8d9';
+      const existingMigration = await sql`
+        SELECT 1 FROM drizzle.__drizzle_migrations 
+        WHERE hash = ${migration0000Hash}
       `;
-      logger.info('✅ Migration 0000 record added');
+
+      if (existingMigration.length === 0) {
+        // Insert the missing migration 0000 record
+        await sql`
+          INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+          VALUES (${migration0000Hash}, 1762334168372)
+        `;
+        logger.info('✅ Migration 0000 record added');
+      } else {
+        logger.info('✅ Migration 0000 record already exists');
+      }
     }
 
     logger.info('🎉 Database state fixed!');
