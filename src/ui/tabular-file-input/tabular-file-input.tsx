@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { DropZone } from './drop-zone';
 import { FileList } from './file-list';
-import { validateFiles, createFileListFromFiles } from './file-utils';
+import { validateFiles, createFileListFromFiles, renameFile as renameFileUtil } from './file-utils';
 import { Typography } from '../typography';
 
 export interface TabularFileInputProps
@@ -114,6 +114,17 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
       onFilesChange?.(null);
     };
 
+    const renameFile = (index: number, newName: string) => {
+      const updatedFiles = selectedFiles.map((file, i) =>
+        i === index ? renameFileUtil(file, newName) : file,
+      );
+      setSelectedFiles(updatedFiles);
+
+      // Create a new FileList-like object for the callback
+      const newFileList = createFileListFromFiles(updatedFiles);
+      onFilesChange?.(newFileList);
+    };
+
     return (
       <div className="w-full">
         {/* Hidden file input */}
@@ -156,6 +167,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
           showPreviews={showPreviews}
           onTogglePreview={togglePreview}
           onRemoveFile={removeFile}
+          onRenameFile={renameFile}
           onAddMore={handleClick}
           onClearAll={clearAllFiles}
         />

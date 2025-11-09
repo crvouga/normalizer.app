@@ -48,12 +48,8 @@ export function ArtifactUploadModal({
     }
   };
 
-  const handleClear = () => {
-    setSelectedFile(null);
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <TabularFileInput
           onFilesChange={handleFilesChange}

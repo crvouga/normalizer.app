@@ -34,3 +34,11 @@ export const createFileListFromFiles = (files: File[]): FileList => {
   files.forEach((file) => dataTransfer.items.add(file));
   return dataTransfer.files;
 };
+
+/**
+ * Creates a new File object with a different name while preserving content and type.
+ * Since File objects are immutable, this creates a new instance.
+ */
+export const renameFile = (file: File, newName: string): File => {
+  return new File([file], newName, { type: file.type, lastModified: file.lastModified });
+};

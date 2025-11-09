@@ -47,9 +47,8 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
         <input ref={ref} type="file" accept={accept} className="hidden" />
 
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-            <UploadIcon />
-          </div>
+          <UploadIcon className="size-12" />
+
           <div className="space-y-1">
             <Typography variant="sm" weight="medium" color="primary">
               {placeholder}

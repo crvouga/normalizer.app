@@ -8,6 +8,7 @@ export interface FileListProps {
   showPreviews: Record<number, boolean>;
   onTogglePreview: (index: number) => void;
   onRemoveFile: (index: number) => void;
+  onRenameFile: (index: number, newName: string) => void;
   onAddMore: () => void;
   onClearAll: () => void;
 }
@@ -18,6 +19,7 @@ export const FileList: React.FC<FileListProps> = ({
   showPreviews,
   onTogglePreview,
   onRemoveFile,
+  onRenameFile,
   onAddMore,
   onClearAll,
 }) => {
@@ -57,6 +59,7 @@ export const FileList: React.FC<FileListProps> = ({
             isPreviewVisible={showPreviews[index] || false}
             onTogglePreview={onTogglePreview}
             onRemove={onRemoveFile}
+            onRename={onRenameFile}
           />
         ))}
       </div>

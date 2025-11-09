@@ -31,7 +31,7 @@ export function ArtifactUploadComboboxActionButton({
         onClick={handleButtonClick}
         disabled={isModalOpen}
         variant={variant}
-        startIcon={<UploadIcon className="size-6" />}
+        startIcon={<UploadIcon className="size-6 shrink-0" />}
         text={t('artifact.uploadButton')}
       />
       <ArtifactUploadModal

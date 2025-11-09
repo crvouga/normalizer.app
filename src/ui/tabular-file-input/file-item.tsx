@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
-import { FileIcon, ImageIcon, IconX } from '../icons';
+import { FileIcon, ImageIcon, IconX, IconPencil } from '../icons';
 import { formatFileSize } from './file-utils';
 import { Typography } from '../typography';
+import { cn } from '~/src/lib/utils';
 
 export interface FileItemHeaderProps {
   file: File;
@@ -11,6 +12,7 @@ export interface FileItemHeaderProps {
   isPreviewVisible: boolean;
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
+  onRename: (index: number, newName: string) => void;
 }
 
 export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
@@ -20,9 +22,64 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
   isPreviewVisible,
   onTogglePreview,
   onRemove,
+  onRename,
 }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState(file.name);
+  const [isHovering, setIsHovering] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Reset edit value when file name changes
+  React.useEffect(() => {
+    setEditValue(file.name);
+  }, [file.name]);
+
+  // Focus input when entering edit mode
+  React.useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditValue(file.name);
+  };
+
+  const handleSaveEdit = () => {
+    const trimmedValue = editValue.trim();
+    if (trimmedValue && trimmedValue !== file.name) {
+      onRename(index, trimmedValue);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditValue(file.name);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+    }
+  };
+
+  const handleBlur = () => {
+    handleSaveEdit();
+  };
+
   return (
-    <div className="flex items-center justify-between p-3">
+    <div
+      className="flex items-center justify-between p-3"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="shrink-0">
           {file.type.startsWith('image/') ? (
@@ -36,9 +93,37 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <Typography variant="sm" weight="medium" color="primary" className="truncate">
-            {file.name}
-          </Typography>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
+              className={cn(
+                'w-full rounded border border-blue-500 bg-white px-2 py-1 text-sm font-medium',
+                'text-gray-900 ring-2 ring-blue-500/20 outline-none',
+                'dark:border-blue-400 dark:bg-gray-800 dark:text-white dark:ring-blue-400/20',
+              )}
+            />
+          ) : (
+            <div className="group flex items-center gap-1">
+              <Typography variant="sm" weight="medium" color="primary" className="truncate">
+                {file.name}
+              </Typography>
+              {(isHovering || isEditing) && (
+                <button
+                  type="button"
+                  onClick={handleStartEdit}
+                  className="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+                  aria-label="Rename file"
+                >
+                  <IconPencil className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )}
           <Typography variant="xs" color="muted">
             {formatFileSize(file.size)}
           </Typography>
@@ -82,6 +167,7 @@ export interface FileItemProps {
   isPreviewVisible: boolean;
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
+  onRename: (index: number, newName: string) => void;
 }
 
 export const FileItem: React.FC<FileItemProps> = ({
@@ -91,6 +177,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   isPreviewVisible,
   onTogglePreview,
   onRemove,
+  onRename,
 }) => {
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
@@ -101,6 +188,7 @@ export const FileItem: React.FC<FileItemProps> = ({
         isPreviewVisible={isPreviewVisible}
         onTogglePreview={onTogglePreview}
         onRemove={onRemove}
+        onRename={onRename}
       />
 
       {isPreviewVisible && showPreview && (
