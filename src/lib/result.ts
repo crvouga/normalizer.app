@@ -61,3 +61,19 @@ export function remoteResultSchema<T, E>(
     z.object({ tag: z.literal('err'), error: errorSchema }),
   ]);
 }
+
+export function isOk<T, E>(result: Result<T, E>): result is { tag: 'ok'; value: T } {
+  return result.tag === 'ok';
+}
+
+export function isErr<T, E>(result: Result<T, E>): result is { tag: 'err'; error: E } {
+  return result.tag === 'err';
+}
+
+export function isNotAsked<T, E>(result: RemoteResult<T, E>): result is { tag: 'notAsked' } {
+  return result.tag === 'notAsked';
+}
+
+export function isLoading<T, E>(result: RemoteResult<T, E>): result is { tag: 'loading' } {
+  return result.tag === 'loading';
+}

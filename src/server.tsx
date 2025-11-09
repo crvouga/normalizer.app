@@ -29,6 +29,8 @@ const main = async () => {
 
   const s3 = await createS3({ logger });
 
+  const trpcContext = createContext({ db, s3, logger });
+
   logger.info('Starting server...');
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
@@ -36,13 +38,16 @@ const main = async () => {
       '/*': clientHtml,
 
       // tRPC endpoint
-      '/api/trpc/*': async (req) => {
-        return fetchRequestHandler({
+      async '/api/trpc/*'(req) {
+        logger.info(`[HTTP Req] ${req.method} ${req.url}`);
+        const res = await fetchRequestHandler({
           endpoint: '/api/trpc',
           req,
           router: appRouter,
-          createContext: () => createContext({ db, s3, logger }),
+          createContext: () => trpcContext,
         });
+        logger.info(`[HTTP Res] ${res.status} ${res.statusText}`);
+        return res;
       },
 
       '/api/hello': {
@@ -60,14 +65,14 @@ const main = async () => {
         },
       },
 
-      '/api/hello/:name': async (req) => {
+      async '/api/hello/:name'(req) {
         const name = req.params.name;
         return Response.json({
           message: `Hello, ${name}!`,
         });
       },
 
-      '/health': async () => {
+      async '/health'() {
         return Response.json({ status: 'ok' });
       },
     },

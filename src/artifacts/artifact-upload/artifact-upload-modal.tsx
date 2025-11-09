@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { Result } from '~/src/lib/result';
+import { isOk, type Result } from '~/src/lib/result';
 import { Button } from '~/src/ui/button';
 import { Modal } from '~/src/ui/modal';
 import { TabularFileInput } from '~/src/ui/tabular-file-input/tabular-file-input';
@@ -25,7 +25,9 @@ export function ArtifactUploadModal({
     onUploadComplete: (result) => {
       onUploadComplete?.(result);
       setSelectedFile(null);
-      onClose();
+      if (isOk(result)) {
+        onClose();
+      }
     },
   });
 

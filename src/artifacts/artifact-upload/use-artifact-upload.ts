@@ -32,7 +32,7 @@ export function useArtifactUpload({
       entityStore.addEntity('artifacts', optimisticArtifact);
 
       // Get presigned URL
-      await trpcClient.artifactUpload.start.mutate({
+      await trpcClient.artifact.upload.start.mutate({
         filename: file.name,
         contentType: file.type,
         artifactId,
@@ -69,7 +69,7 @@ export function useArtifactUpload({
       }
 
       // Mark as uploaded in database
-      await trpcClient.artifactUpload.finish.mutate({
+      await trpcClient.artifact.upload.finish.mutate({
         key: artifactId,
         size: file.size,
         artifactId,
