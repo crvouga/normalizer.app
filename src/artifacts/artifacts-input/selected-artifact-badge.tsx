@@ -25,7 +25,7 @@ export function SelectedArtifactBadge({
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-        isUploading ? 'bg-gray-100 opacity-75 dark:bg-gray-700' : 'bg-blue-100 dark:bg-blue-900'
+        isUploading ? 'bg-gray-100 opacity-75 dark:bg-gray-700' : ''
       }`}
     >
       {isUploading && <IconSpinner className="size-4 text-gray-600 dark:text-gray-400" />}

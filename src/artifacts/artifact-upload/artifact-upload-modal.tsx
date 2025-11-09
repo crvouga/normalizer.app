@@ -49,7 +49,7 @@ export function ArtifactUploadModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')}>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')} size="2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <TabularFileInput
           onFilesChange={handleFilesChange}

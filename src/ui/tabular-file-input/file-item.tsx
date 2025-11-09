@@ -83,11 +83,11 @@ export const FileItemHeader: React.FC<FileItemHeaderProps> = ({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="shrink-0">
           {file.type.startsWith('image/') ? (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
               <ImageIcon />
             </div>
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
               <FileIcon />
             </div>
           )}
