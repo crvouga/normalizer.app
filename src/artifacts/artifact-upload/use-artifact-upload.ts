@@ -60,8 +60,12 @@ export function useArtifactUpload({
       // Add or update with server data
       entityStore.addEntity('artifacts', before);
 
+      // Ensure upload URL protocol matches the client app's protocol to avoid mixed content errors
+      const uploadUrl = new URL(before.upload_url);
+      uploadUrl.protocol = window.location.protocol;
+
       // Upload to S3
-      const response = await fetch(before.upload_url, {
+      const response = await fetch(uploadUrl.toString(), {
         method: 'PUT',
         body: file,
         headers: {
