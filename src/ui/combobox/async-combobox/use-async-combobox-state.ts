@@ -14,19 +14,13 @@ export interface AsyncComboboxState<T> {
 }
 
 export type AsyncComboboxAction<T> =
-  | { type: 'SET_QUERY'; payload: string }
-  | { type: 'SET_OPTIONS'; payload: ComboboxOption<T>[] }
-  | { type: 'APPEND_OPTIONS'; payload: ComboboxOption<T>[] }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_LOADING_MORE'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: Error | null }
-  | { type: 'SET_PAGE'; payload: number }
-  | { type: 'SET_HAS_MORE'; payload: boolean }
-  | { type: 'SET_TOTAL'; payload: number | undefined }
-  | { type: 'CACHE_IDS'; payload: { searchHash: string; ids: T[] } }
-  | { type: 'FETCH_START'; payload: { isLoadingMore: boolean } }
+  // Event-driven actions (what happened)
+  | { type: 'SEARCH_QUERY_CHANGED'; payload: string }
+  | { type: 'NEW_SEARCH_INITIATED' }
+  | { type: 'LOAD_MORE_REQUESTED' }
+  | { type: 'SEARCH_STARTED'; payload: { isLoadingMore: boolean } }
   | {
-      type: 'FETCH_SUCCESS';
+      type: 'SEARCH_COMPLETED';
       payload: {
         items: ComboboxOption<T>[];
         hasMore: boolean;
@@ -36,8 +30,11 @@ export type AsyncComboboxAction<T> =
         ids: T[];
       };
     }
-  | { type: 'FETCH_ERROR'; payload: Error }
-  | { type: 'RESET_FOR_NEW_QUERY' };
+  | { type: 'SEARCH_FAILED'; payload: Error }
+  | { type: 'CACHED_RESULTS_FOUND'; payload: { items: ComboboxOption<T>[] } }
+  // CRUD-style actions (kept where they're the best fit for direct state manipulation)
+  | { type: 'SET_OPTIONS'; payload: ComboboxOption<T>[] }
+  | { type: 'SET_HAS_MORE'; payload: boolean };
 
 function createInitialState<T>(): AsyncComboboxState<T> {
   return {
@@ -58,43 +55,25 @@ function asyncComboboxReducer<T>(
   action: AsyncComboboxAction<T>,
 ): AsyncComboboxState<T> {
   switch (action.type) {
-    case 'SET_QUERY':
+    // Event-driven actions
+    case 'SEARCH_QUERY_CHANGED':
       return { ...state, query: action.payload };
 
-    case 'SET_OPTIONS':
-      return { ...state, options: action.payload };
-
-    case 'APPEND_OPTIONS':
-      return { ...state, options: [...state.options, ...action.payload] };
-
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
-
-    case 'SET_LOADING_MORE':
-      return { ...state, isLoadingMore: action.payload };
-
-    case 'SET_ERROR':
-      return { ...state, fetchError: action.payload };
-
-    case 'SET_PAGE':
-      return { ...state, page: action.payload };
-
-    case 'SET_HAS_MORE':
-      return { ...state, hasMore: action.payload };
-
-    case 'SET_TOTAL':
-      return { ...state, total: action.payload };
-
-    case 'CACHE_IDS':
+    case 'NEW_SEARCH_INITIATED':
       return {
         ...state,
-        idsBySearchHash: {
-          ...state.idsBySearchHash,
-          [action.payload.searchHash]: action.payload.ids,
-        },
+        page: 0,
+        options: [],
+        hasMore: true,
       };
 
-    case 'FETCH_START':
+    case 'LOAD_MORE_REQUESTED':
+      return {
+        ...state,
+        page: state.page + 1,
+      };
+
+    case 'SEARCH_STARTED':
       return {
         ...state,
         isLoading: !action.payload.isLoadingMore,
@@ -102,7 +81,7 @@ function asyncComboboxReducer<T>(
         fetchError: null,
       };
 
-    case 'FETCH_SUCCESS':
+    case 'SEARCH_COMPLETED':
       return {
         ...state,
         options: action.payload.isLoadingMore
@@ -118,7 +97,7 @@ function asyncComboboxReducer<T>(
         },
       };
 
-    case 'FETCH_ERROR':
+    case 'SEARCH_FAILED':
       return {
         ...state,
         fetchError: action.payload,
@@ -128,13 +107,20 @@ function asyncComboboxReducer<T>(
         isLoadingMore: false,
       };
 
-    case 'RESET_FOR_NEW_QUERY':
+    case 'CACHED_RESULTS_FOUND':
       return {
         ...state,
-        page: 0,
-        options: [],
-        hasMore: true,
+        options: action.payload.items,
+        isLoading: false,
+        isLoadingMore: false,
       };
+
+    // CRUD-style actions (kept where appropriate)
+    case 'SET_OPTIONS':
+      return { ...state, options: action.payload };
+
+    case 'SET_HAS_MORE':
+      return { ...state, hasMore: action.payload };
 
     default:
       return state;
@@ -142,14 +128,20 @@ function asyncComboboxReducer<T>(
 }
 
 /**
- * Manages the state for an async combobox using useReducer for better performance.
+ * Manages the state for an async combobox using useReducer with event-driven actions.
  * This approach batches related state updates and prevents unnecessary re-renders.
  *
  * Benefits over multiple useState:
  * - Single state object reduces re-renders
+ * - Event-driven actions provide semantic meaning (what happened vs. what to set)
  * - Actions provide clear state transition logic
  * - Easier to test and reason about state changes
  * - Better for complex state with multiple interdependencies
+ *
+ * Action Design Philosophy:
+ * - Event-driven actions describe what happened (e.g., SEARCH_STARTED, SEARCH_COMPLETED)
+ * - CRUD actions (SET_X) are kept only where they're the best fit for direct state manipulation
+ * - This makes the code more maintainable and easier to understand the flow of events
  */
 export function useAsyncComboboxState<T extends string | number>() {
   const [state, dispatch] = useReducer(asyncComboboxReducer<T>, createInitialState<T>());

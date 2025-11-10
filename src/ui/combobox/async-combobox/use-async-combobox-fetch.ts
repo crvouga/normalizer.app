@@ -67,8 +67,6 @@ export function useAsyncComboboxFetch<T extends string | number>({
       if (searchQuery.length < minQueryLength) {
         dispatch({ type: 'SET_OPTIONS', payload: [] });
         dispatch({ type: 'SET_HAS_MORE', payload: false });
-        dispatch({ type: 'SET_LOADING', payload: false });
-        dispatch({ type: 'SET_LOADING_MORE', payload: false });
         return;
       }
 
@@ -85,7 +83,7 @@ export function useAsyncComboboxFetch<T extends string | number>({
         // Hydrate options from cached IDs
         const items = getOptions(cachedIds);
         dispatch({
-          type: 'FETCH_SUCCESS',
+          type: 'SEARCH_COMPLETED',
           payload: {
             items,
             hasMore: false, // Cached results represent a complete page
@@ -102,8 +100,8 @@ export function useAsyncComboboxFetch<T extends string | number>({
       abortControllerRef.current = new AbortController();
 
       try {
-        // Dispatch fetch start - batches loading state updates
-        dispatch({ type: 'FETCH_START', payload: { isLoadingMore: isLoadingMoreData } });
+        // Signal search has started - batches loading state updates
+        dispatch({ type: 'SEARCH_STARTED', payload: { isLoadingMore: isLoadingMoreData } });
 
         const result = await fetchIds({
           query: searchQuery,
@@ -115,9 +113,9 @@ export function useAsyncComboboxFetch<T extends string | number>({
         // Hydrate IDs into options
         const items = getOptions(result.ids);
 
-        // Dispatch fetch success - batches all success state updates and caches IDs
+        // Signal search completed successfully - batches all success state updates and caches IDs
         dispatch({
-          type: 'FETCH_SUCCESS',
+          type: 'SEARCH_COMPLETED',
           payload: {
             items,
             hasMore: result.hasMore,
@@ -133,9 +131,9 @@ export function useAsyncComboboxFetch<T extends string | number>({
           return;
         }
 
-        // Dispatch fetch error - batches all error state updates
+        // Signal search failed - batches all error state updates
         dispatch({
-          type: 'FETCH_ERROR',
+          type: 'SEARCH_FAILED',
           payload: err instanceof Error ? err : new Error('Failed to fetch options'),
         });
       }
@@ -145,7 +143,7 @@ export function useAsyncComboboxFetch<T extends string | number>({
 
   // Effect to fetch data when query changes
   useEffect(() => {
-    dispatch({ type: 'RESET_FOR_NEW_QUERY' });
+    dispatch({ type: 'NEW_SEARCH_INITIATED' });
     fetchData(debouncedQuery, 0, false);
   }, [debouncedQuery, fetchData, dispatch]);
 

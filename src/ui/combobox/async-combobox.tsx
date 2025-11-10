@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-state';
 import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
 import {
-  type AsyncComboboxFetchOptions,
   type AsyncComboboxFetchIdsResult,
+  type AsyncComboboxFetchOptions,
   useAsyncComboboxFetch,
 } from './async-combobox/use-async-combobox-fetch';
 import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
@@ -16,7 +16,7 @@ import { Combobox } from './combobox';
 export type AsyncComboboxOption<T> = ComboboxOption<T>;
 
 // Re-export types for consumers
-export type { AsyncComboboxFetchOptions, AsyncComboboxFetchIdsResult };
+export type { AsyncComboboxFetchIdsResult, AsyncComboboxFetchOptions };
 
 export interface AsyncComboboxProps<T>
   extends Omit<ComboboxProps<T>, 'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'> {
@@ -41,17 +41,8 @@ export function AsyncCombobox<T extends string | number>({
 }: AsyncComboboxProps<T>) {
   // Use reducer for better performance - single state object reduces re-renders
   const { state, dispatch } = useAsyncComboboxState<T>();
-  const {
-    query,
-    options,
-    idsBySearchHash,
-    isLoading,
-    isLoadingMore,
-    fetchError,
-    page,
-    hasMore,
-    total,
-  } = state;
+  const { query, options, idsBySearchHash, isLoading, isLoadingMore, fetchError, page, hasMore } =
+    state;
 
   const debouncedQuery = useDebounce(query, debounceMs);
 
@@ -66,8 +57,8 @@ export function AsyncCombobox<T extends string | number>({
   });
 
   const handleLoadMore = useCallback(() => {
+    dispatch({ type: 'LOAD_MORE_REQUESTED' });
     const nextPage = page + 1;
-    dispatch({ type: 'SET_PAGE', payload: nextPage });
     fetchData(debouncedQuery, nextPage, true);
   }, [page, dispatch, fetchData, debouncedQuery]);
 
@@ -104,20 +95,16 @@ export function AsyncCombobox<T extends string | number>({
   );
 
   return (
-    <>
-      <Combobox
-        {...comboboxProps}
-        options={options}
-        query={query}
-        onQueryChange={(newQuery) => dispatch({ type: 'SET_QUERY', payload: newQuery })}
-        isLoading={isLoading}
-        error={fetchError}
-        renderEmpty={renderEmpty}
-        renderFooter={renderFooter}
-        actionButton={actionButton}
-      />
-
-      {/* <AsyncComboboxTotalCount total={total} hasError={!!fetchError} isLoading={isLoading} /> */}
-    </>
+    <Combobox
+      {...comboboxProps}
+      options={options}
+      query={query}
+      onQueryChange={(newQuery) => dispatch({ type: 'SEARCH_QUERY_CHANGED', payload: newQuery })}
+      isLoading={isLoading}
+      error={fetchError}
+      renderEmpty={renderEmpty}
+      renderFooter={renderFooter}
+      actionButton={actionButton}
+    />
   );
 }
