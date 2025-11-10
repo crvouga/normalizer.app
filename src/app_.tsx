@@ -1,7 +1,7 @@
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionId } from './normalization-session/normalization-session-id';
-import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
+import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
 import { Button } from './ui/button';
