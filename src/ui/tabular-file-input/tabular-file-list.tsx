@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { TabularFileItem } from './tabular-file-item';
+import { TabularFileItem, type TabularFileAction } from './tabular-file-item';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
 
@@ -12,6 +12,7 @@ export interface FileListProps {
   onRemoveFile: (index: number) => void;
   onAddMore?: () => void;
   onClearAll: () => void;
+  customActions?: TabularFileAction[];
 }
 
 /**
@@ -27,6 +28,7 @@ export const TabularFileList: React.FC<FileListProps> = ({
   onRemoveFile,
   onAddMore,
   onClearAll,
+  customActions,
 }) => {
   if (files.length === 0) return null;
 
@@ -66,6 +68,7 @@ export const TabularFileList: React.FC<FileListProps> = ({
             isPreviewVisible={showPreviews[index] || false}
             onTogglePreview={onTogglePreview}
             onRemove={onRemoveFile}
+            customActions={customActions}
           />
         ))}
       </div>

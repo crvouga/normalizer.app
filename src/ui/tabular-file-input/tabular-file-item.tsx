@@ -5,6 +5,11 @@ import { formatFileSize } from './tabular-file-utils';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
 
+export interface TabularFileAction {
+  label: string;
+  onClick: (file: TabularFile, index: number) => void;
+}
+
 export interface TabularFileItemHeaderProps {
   tabularFile: TabularFile;
   index: number;
@@ -12,6 +17,7 @@ export interface TabularFileItemHeaderProps {
   isPreviewVisible: boolean;
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
+  customActions?: TabularFileAction[];
 }
 
 export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
@@ -21,6 +27,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   isPreviewVisible,
   onTogglePreview,
   onRemove,
+  customActions = [],
 }) => {
   const isImage = tabularFile.contentType?.startsWith('image/');
 
@@ -65,6 +72,25 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             </Typography>
           </button>
         )}
+        {customActions.map((action, actionIndex) => (
+          <button
+            key={`${action.label}-${actionIndex}`}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              action.onClick(tabularFile, index);
+            }}
+            className="rounded px-2 py-1 transition-colors"
+          >
+            <Typography
+              variant="xs"
+              color="muted"
+              className="hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              {action.label}
+            </Typography>
+          </button>
+        ))}
         <button
           type="button"
           onClick={(e) => {
@@ -87,6 +113,7 @@ export interface TabularFileItemProps {
   isPreviewVisible: boolean;
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
+  customActions?: TabularFileAction[];
 }
 
 /**
@@ -100,6 +127,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   isPreviewVisible,
   onTogglePreview,
   onRemove,
+  customActions,
 }) => {
   const [loadedFile, setLoadedFile] = React.useState<File | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -146,6 +174,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
         isPreviewVisible={isPreviewVisible}
         onTogglePreview={onTogglePreview}
         onRemove={onRemove}
+        customActions={customActions}
       />
 
       {isPreviewVisible && showPreview && (

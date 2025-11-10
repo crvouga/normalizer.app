@@ -2,7 +2,11 @@ import * as React from 'react';
 import type { ArtifactId } from '../artifact-id';
 import { useEntityStoreSelector } from '../../store/entity-store';
 import { TabularFileList } from '~/src/ui/tabular-file-input/tabular-file-list';
+import type { TabularFileAction } from '~/src/ui/tabular-file-input/tabular-file-item';
 import { artifactToTabularFile } from './artifact-to-tabular-file';
+import { EditArtifactModal } from '../edit-artifact/edit-artifact-modal';
+import type { Artifact } from '../artifact';
+import { useI18n } from '../../i18n/use-i18n';
 
 export interface SelectedArtifactsListProps {
   artifacts: ArtifactId[];
@@ -25,8 +29,11 @@ export function SelectedArtifactsList({
   title,
   showPreview = true,
 }: SelectedArtifactsListProps) {
+  const { t } = useI18n();
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
   const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [selectedArtifact, setSelectedArtifact] = React.useState<Artifact | null>(null);
 
   // Convert artifacts to TabularFiles
   const tabularFiles = React.useMemo(() => {
@@ -58,19 +65,55 @@ export function SelectedArtifactsList({
     onClearAll?.();
   }, [onClearAll]);
 
+  const handleEdit = React.useCallback(
+    (file: any, index: number) => {
+      const artifactId = artifacts[index];
+      const artifact = artifactId ? artifactsById[artifactId] : null;
+      if (artifact) {
+        setSelectedArtifact(artifact);
+        setIsEditModalOpen(true);
+      }
+    },
+    [artifacts, artifactsById],
+  );
+
+  const handleEditComplete = React.useCallback(() => {
+    setIsEditModalOpen(false);
+    setSelectedArtifact(null);
+  }, []);
+
+  const customActions: TabularFileAction[] = React.useMemo(
+    () => [
+      {
+        label: t('artifact.edit'),
+        onClick: handleEdit,
+      },
+    ],
+    [t, handleEdit],
+  );
+
   if (artifacts.length === 0) {
     return null;
   }
 
   return (
-    <TabularFileList
-      files={tabularFiles}
-      title={title}
-      showPreview={showPreview}
-      showPreviews={showPreviews}
-      onTogglePreview={handleTogglePreview}
-      onRemoveFile={handleRemoveFile}
-      onClearAll={handleClearAll}
-    />
+    <>
+      <TabularFileList
+        files={tabularFiles}
+        title={title}
+        showPreview={showPreview}
+        showPreviews={showPreviews}
+        onTogglePreview={handleTogglePreview}
+        onRemoveFile={handleRemoveFile}
+        onClearAll={handleClearAll}
+        customActions={customActions}
+      />
+      <EditArtifactModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        artifact={selectedArtifact}
+        onEditComplete={handleEditComplete}
+      />
+    </>
   );
 }

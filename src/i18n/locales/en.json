@@ -37,7 +37,13 @@
     "upload": "Upload",
     "uploadError": "Upload failed",
     "uploading": "Uploading...",
-    "fileLabel": "Artifact File"
+    "fileLabel": "Artifact File",
+    "edit": "Edit",
+    "editDialogTitle": "Edit Artifact",
+    "save": "Save",
+    "saving": "Saving...",
+    "editSuccess": "Artifact updated successfully",
+    "editError": "Failed to update artifact"
   },
   "modal": {
     "close": "Close"
