@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 import { IconSpinner } from './icons';
+import { ButtonBase } from './button-base';
 
 type ButtonVariant =
   | 'default'
@@ -10,7 +11,7 @@ type ButtonVariant =
   | 'ghost'
   | 'link'
   | 'contained'
-  | 'oauth';
+  | 'gradient';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 type ButtonColor = 'purple' | 'red' | 'green' | 'yellow' | 'gray';
 
@@ -31,13 +32,12 @@ function getButtonClasses(
     // Reduce ring width and outline thickness, and tone down ring color strength
     'focus-visible:ring-2 focus-visible:outline-[0.5px] focus-visible:ring-ring/10 dark:focus-visible:ring-ring/20',
     'aria-invalid:focus-visible:ring-0',
-    'cursor-pointer',
-    'active:opacity-80',
+    // Note: cursor-pointer and active:opacity-80 are now provided by ButtonBase
   ].join(' ');
 
   const colorClasses = {
     purple:
-      'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700',
+      'bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-md hover:shadow-lg hover:from-purple-600 hover:via-purple-700 hover:to-purple-800 dark:from-purple-600 dark:via-purple-700 dark:to-purple-800 dark:hover:from-purple-700 dark:hover:via-purple-800 dark:hover:to-purple-900',
     red: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
     green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
     yellow:
@@ -49,14 +49,12 @@ function getButtonClasses(
     default: colorClasses[color],
     destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
     outline:
-      'border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
+      'border border-input/40 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
     secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
     ghost: 'hover:bg-accent hover:text-accent-foreground',
     link: 'text-primary underline-offset-4 hover:underline',
     contained:
       'bg-white dark:bg-gray-800 text-black dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
-    oauth:
-      'border border-gray-300 bg-white hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800',
   };
 
   const sizeClasses = {
@@ -91,13 +89,12 @@ function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const Comp = asChild ? 'button' : 'button';
-
   return (
-    <Comp
+    <ButtonBase
       data-slot="button"
       className={cn(getButtonClasses(variant, size, color), 'relative', className)}
-      disabled={disabled || loading}
+      disabled={disabled}
+      busy={loading}
       {...props}
     >
       {loading && (
@@ -109,7 +106,7 @@ function Button({
         {startIcon}
         {text}
       </span>
-    </Comp>
+    </ButtonBase>
   );
 }
 

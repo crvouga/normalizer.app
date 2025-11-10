@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { MenuItem } from '@headlessui/react';
 import { Typography } from './typography';
+import { ButtonBase } from './button-base';
 
 type MenuItemButtonProps = {
   onClick: () => void;
@@ -12,7 +13,7 @@ type MenuItemButtonProps = {
 export function MenuItemButton({ onClick, icon, label, disabled = false }: MenuItemButtonProps) {
   return (
     <MenuItem disabled={disabled}>
-      <button
+      <ButtonBase
         onClick={onClick}
         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors data-disabled:opacity-50 data-focus:bg-gray-100 dark:data-focus:bg-gray-700"
         tabIndex={-1}
@@ -23,7 +24,7 @@ export function MenuItemButton({ onClick, icon, label, disabled = false }: MenuI
         <Typography variant="sm" color="secondary">
           {label}
         </Typography>
-      </button>
+      </ButtonBase>
     </MenuItem>
   );
 }

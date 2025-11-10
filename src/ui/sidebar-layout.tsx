@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { useKeyDown } from '../lib/use-key-down';
 import { IconBars2 } from './icons';
+import { ButtonBase } from './button-base';
 
 // Collapsible sidebar wrapper with row layout for desktop, column for mobile
 export const SidebarLayout: React.FC<{ sidebar: React.ReactNode; main: React.ReactNode }> = ({
@@ -27,13 +28,13 @@ export const SidebarLayout: React.FC<{ sidebar: React.ReactNode; main: React.Rea
 // Sidebar open button (mobile only)
 const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
   <div className="flex w-full items-center justify-start p-4 px-8 lg:hidden">
-    <button
+    <ButtonBase
       onClick={onOpen}
       className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-gray-100 p-2 text-gray-900 lg:hidden dark:bg-gray-800 dark:text-white"
       aria-label="Open sidebar"
     >
       <IconBars2 className="size-6" />
-    </button>
+    </ButtonBase>
   </div>
 );
 

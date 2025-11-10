@@ -1,5 +1,6 @@
 import React from 'react';
 import { Typography } from './typography';
+import { ButtonBase } from './button-base';
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <aside className="flex h-full w-sm shrink-0 flex-col border-r border-gray-200 bg-gray-100 text-gray-900 select-none dark:border-gray-800 dark:bg-gray-800 dark:text-white">
@@ -26,13 +27,13 @@ export const SidebarAction: React.FC<{
   className?: string;
 }> = ({ icon, label, onClick, className = '' }) => (
   <div className="p-4">
-    <button
-      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-100 px-4 py-2 font-medium text-gray-900 transition-colors hover:bg-gray-200 active:opacity-80 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 ${className}`}
+    <ButtonBase
+      className={`flex w-full items-center justify-center gap-2 rounded bg-gray-100 px-4 py-2 font-medium text-gray-900 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 ${className}`}
       onClick={onClick}
     >
       {icon}
       {label}
-    </button>
+    </ButtonBase>
   </div>
 );
 
@@ -88,10 +89,10 @@ export const SidebarFooterButton: React.FC<{
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   className?: string;
 }> = ({ content, onClick, className = '' }) => (
-  <button
+  <ButtonBase
     className={`ml-auto rounded px-2 py-1 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 ${className}`}
     onClick={onClick}
   >
     {content}
-  </button>
+  </ButtonBase>
 );

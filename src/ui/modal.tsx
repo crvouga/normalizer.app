@@ -4,6 +4,7 @@ import { cn } from '~/src/lib/cn';
 import { IconX } from './icons';
 import { Typography } from './typography';
 import { useI18n } from '../i18n/use-i18n';
+import { ButtonBase } from './button-base';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -85,14 +86,14 @@ export function Modal({
                       {title}
                     </Typography>
                   </DialogTitle>
-                  <button
+                  <ButtonBase
                     onClick={handleClose}
                     disabled={disabled}
-                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700 dark:disabled:hover:bg-transparent"
+                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700 dark:disabled:hover:bg-transparent"
                     aria-label={t('modal.close')}
                   >
                     <IconX className="size-5" />
-                  </button>
+                  </ButtonBase>
                 </div>
               )}
 

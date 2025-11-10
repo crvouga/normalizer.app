@@ -6,6 +6,7 @@ import { IconAlertCircle, IconCheck, IconX } from '../icons';
 import { Button } from '../button';
 import type { Toast as ToastType } from './toast-types';
 import { toastStore } from './toast-store';
+import { ButtonBase } from '../button-base';
 
 interface ToastProps {
   toast: ToastType;
@@ -76,24 +77,24 @@ export function Toast({ toast, onShowError }: ToastProps) {
 
               {/* Error details button */}
               {isError && toast.errorDetails && (
-                <button
+                <ButtonBase
                   onClick={handleShowError}
                   className="mt-2 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
                   {t('toast.seeError')}
-                </button>
+                </ButtonBase>
               )}
             </div>
 
             {/* Dismiss button */}
             {toast.dismissible && (
-              <button
+              <ButtonBase
                 onClick={handleDismiss}
                 className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                 aria-label={t('toast.dismiss')}
               >
                 <IconX className="size-4" />
-              </button>
+              </ButtonBase>
             )}
           </div>
         </div>

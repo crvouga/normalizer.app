@@ -2,6 +2,7 @@ import * as React from 'react';
 import { TabularFileItem, type TabularFileAction } from './tabular-file-item';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
+import { ButtonBase } from '../button-base';
 
 export interface FileListProps {
   files: TabularFile[];
@@ -49,17 +50,17 @@ export const TabularFileList: React.FC<FileListProps> = ({
       <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           {onAddMore && (
-            <button type="button" onClick={onAddMore} className="transition-colors">
+            <ButtonBase type="button" onClick={onAddMore} className="transition-colors">
               <Typography variant="xs" color="info" className="hover:opacity-80">
                 Add more
               </Typography>
-            </button>
+            </ButtonBase>
           )}
-          <button type="button" onClick={onClearAll} className="transition-colors">
+          <ButtonBase type="button" onClick={onClearAll} className="transition-colors">
             <Typography variant="xs" color="muted">
               Clear all
             </Typography>
-          </button>
+          </ButtonBase>
         </div>
       </div>
     </div>

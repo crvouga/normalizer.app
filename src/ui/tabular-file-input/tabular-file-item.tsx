@@ -4,6 +4,7 @@ import { FileIcon, ImageIcon, IconX } from '../icons';
 import { formatFileSize } from './tabular-file-utils';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
+import { ButtonBase } from '../button-base';
 
 export interface TabularFileAction {
   label: string;
@@ -58,7 +59,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
       </div>
       <div className="flex items-center gap-2">
         {showPreview && (
-          <button
+          <ButtonBase
             type="button"
             onClick={() => onTogglePreview(index)}
             className="rounded px-2 py-1 transition-colors"
@@ -70,10 +71,10 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             >
               {isPreviewVisible ? 'Hide' : 'Preview'}
             </Typography>
-          </button>
+          </ButtonBase>
         )}
         {customActions.map((action, actionIndex) => (
-          <button
+          <ButtonBase
             key={`${action.label}-${actionIndex}`}
             type="button"
             onClick={(e) => {
@@ -89,9 +90,9 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             >
               {action.label}
             </Typography>
-          </button>
+          </ButtonBase>
         ))}
-        <button
+        <ButtonBase
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -100,7 +101,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
           className="shrink-0 rounded p-1 text-gray-600 transition-colors dark:text-gray-400"
         >
           <IconX />
-        </button>
+        </ButtonBase>
       </div>
     </div>
   );

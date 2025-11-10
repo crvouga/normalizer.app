@@ -18,7 +18,8 @@ export function MenuItemsAnimated({
       anchor={anchor}
       transition
       className={cn(
-        'z-50 w-(--button-width) overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg focus:outline-none dark:border-gray-700 dark:bg-gray-800',
+        'py-2',
+        'z-50 w-(--button-width) overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg focus:outline-none dark:border-gray-600 dark:bg-gray-700',
         // Animation classes
         'origin-top transition duration-200 ease-out',
         'data-closed:scale-95 data-closed:opacity-0',
