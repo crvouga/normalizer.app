@@ -29,6 +29,13 @@
       "when": 1762734927400,
       "tag": "0003_fixed_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762738430911,
+      "tag": "0004_gigantic_selene",
+      "breakpoints": true
     }
   ]
 }

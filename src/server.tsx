@@ -6,8 +6,7 @@ import clientHtml from './client.html';
 import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
 import { cleanupDb, createDb } from './sql';
-import { setSessionCookie } from './lib/session-id-cookie';
-import { SessionId } from './lib/session-id';
+import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
 
 const main = async () => {
   const logger = createLogger();
@@ -29,8 +28,6 @@ const main = async () => {
 
   const { s3Client, minioClient } = await createS3({ logger });
 
-  const trpcContext = createContext({ db, s3: s3Client, minioClient, logger });
-
   logger.info('Starting server...');
 
   // DRY up tRPC handler
@@ -40,20 +37,22 @@ const main = async () => {
       endpoint: '/api/trpc',
       req,
       router: appRouter,
-      createContext: () => trpcContext,
+      createContext: async () => {
+        const context = await createContext({ db, s3: s3Client, minioClient, logger, req });
+        return context;
+      },
     });
-    logger.info(`[HTTP Res] ${res.status} ${res.statusText}`);
-    return res;
+
+    // Set session cookie if not already set
+    const finalRes = setSessionCookie(req, res, getSessionId(req));
+    logger.info(`[HTTP Res] ${finalRes.status} ${finalRes.statusText}`);
+    return finalRes;
   };
 
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
 
     routes: {
-      '/api/set-session-id-cookie': {
-        POST: async (req) => setSessionCookie(req, new Response(), SessionId.generate()),
-      },
-
       // tRPC endpoint
       '/api/trpc/*': {
         GET: trpcHandler('GET'),

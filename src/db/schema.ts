@@ -1,6 +1,7 @@
 import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
+export const userTypeEnum = pgEnum('user_type', ['anonymous', 'authenticated']);
 
 export const artifacts = pgTable('artifacts', {
   id: text('id').primaryKey(),
@@ -39,3 +40,25 @@ export const artifacts = pgTable('artifacts', {
 });
 
 export type IArtifact = typeof artifacts.$inferSelect;
+
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  type: userTypeEnum('type').notNull(),
+  name: text('name'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export type IUser = typeof users.$inferSelect;
+
+export const userSessions = pgTable('user_sessions', {
+  id: text('id').primaryKey(),
+  session_id: text('session_id').notNull().unique(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  started_at: timestamp('started_at').notNull().defaultNow(),
+  ended_at: timestamp('ended_at'),
+});
+
+export type IUserSession = typeof userSessions.$inferSelect;

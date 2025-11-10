@@ -6,8 +6,29 @@ import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
+import { SplashScreen } from './ui/splash-screen';
+import { useCurrentUser } from './users/use-current-user';
 
 export function App() {
+  const currentUserResult = useCurrentUser();
+
+  if (currentUserResult.tag === 'loading' || currentUserResult.tag === 'notAsked') {
+    return <SplashScreen />;
+  }
+
+  if (currentUserResult.tag === 'err') {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-white dark:bg-gray-900">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400">Failed to load user</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {currentUserResult.error.message}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
       <SidebarLayout sidebar={<AppSidebar />} main={<AppScreen />} />

@@ -4,6 +4,7 @@ import { App } from './app_';
 import { I18nProvider } from './i18n/i18n-context';
 import { ThemeProvider } from './ui/theme/theme-context';
 import { ToastProvider } from './ui/toast';
+import { UserProvider } from './users/user-context';
 
 const elem = document.getElementById('root');
 
@@ -12,11 +13,13 @@ if (!elem) throw new Error('Root element not found');
 const app = (
   <StrictMode>
     <I18nProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
-      </ThemeProvider>
+      <UserProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </ThemeProvider>
+      </UserProvider>
     </I18nProvider>
   </StrictMode>
 );

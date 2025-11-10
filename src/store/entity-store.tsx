@@ -1,6 +1,8 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
+import type { User } from '../users/user';
+import type { UserId } from '../users/user-id';
 import { Store } from '../lib/store';
 
 // Entity slice type
@@ -13,6 +15,7 @@ type EntitySlice<TId extends string = string, TEntity = unknown> = {
 export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
+    users: EntitySlice<UserId, User>;
   };
   // Removed indexes/searchResults
 };
@@ -80,6 +83,10 @@ const initialEntityStore: EntityStore = {
       byId: {},
       allIds: [],
     },
+    users: {
+      byId: {},
+      allIds: [],
+    },
   },
   // No indexes/searchResults
 };
@@ -110,15 +117,14 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
     case 'entity/ADD_MANY': {
       const { entityType, entities } = action;
       const slice = state.entities[entityType];
-      const newById = { ...slice.byId };
+      const newById = { ...slice.byId } as Record<string, unknown>;
       const newIds: IdFromSlice<typeof slice>[] = [];
 
       for (const entity of entities) {
         // Type guard to ensure entity has an id property
         if (!('id' in entity)) continue;
         if (!(entity.id in newById)) {
-          newById[entity.id as keyof typeof newById] =
-            entity as (typeof newById)[keyof typeof newById];
+          newById[entity.id as string] = entity;
           newIds.push(entity.id as IdFromSlice<typeof slice>);
         }
       }
@@ -128,7 +134,7 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
         entities: {
           ...state.entities,
           [entityType]: {
-            byId: newById,
+            byId: newById as typeof slice.byId,
             allIds: [...slice.allIds, ...newIds],
           } as EntityStore['entities'][typeof entityType],
         },
