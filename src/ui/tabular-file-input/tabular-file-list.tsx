@@ -5,7 +5,6 @@ import type { TabularFile } from './tabular-file';
 
 export interface FileListProps {
   files: TabularFile[];
-  title?: string;
   showPreview?: boolean;
   showPreviews: Record<number, boolean>;
   onTogglePreview: (index: number) => void;
@@ -21,7 +20,6 @@ export interface FileListProps {
  */
 export const TabularFileList: React.FC<FileListProps> = ({
   files,
-  title = 'Selected Files',
   showPreview = true,
   showPreviews,
   onTogglePreview,
@@ -34,10 +32,21 @@ export const TabularFileList: React.FC<FileListProps> = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Typography as="h4" variant="sm" weight="medium" color="primary">
-          {title} ({files.length})
-        </Typography>
+      <div className="space-y-3">
+        {files.map((file, index) => (
+          <TabularFileItem
+            key={file.id || `${file.name}-${index}`}
+            tabularFile={file}
+            index={index}
+            showPreview={showPreview}
+            isPreviewVisible={showPreviews[index] || false}
+            onTogglePreview={onTogglePreview}
+            onRemove={onRemoveFile}
+            customActions={customActions}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-2">
           {onAddMore && (
             <button type="button" onClick={onAddMore} className="transition-colors">
@@ -56,21 +65,6 @@ export const TabularFileList: React.FC<FileListProps> = ({
             </Typography>
           </button>
         </div>
-      </div>
-
-      <div className="space-y-3">
-        {files.map((file, index) => (
-          <TabularFileItem
-            key={file.id || `${file.name}-${index}`}
-            tabularFile={file}
-            index={index}
-            showPreview={showPreview}
-            isPreviewVisible={showPreviews[index] || false}
-            onTogglePreview={onTogglePreview}
-            onRemove={onRemoveFile}
-            customActions={customActions}
-          />
-        ))}
       </div>
     </div>
   );

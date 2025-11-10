@@ -18,7 +18,8 @@
   "session": {
     "startButton": "Start Session",
     "targetFiles": "Target Files",
-    "uploadPlaceholder": "Upload target files"
+    "uploadPlaceholder": "Upload target files",
+    "targetArtifact": "Target Artifact"
   },
   "prompt": {
     "label": "Prompt",

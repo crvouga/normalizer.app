@@ -12,7 +12,6 @@ export interface SelectedArtifactsListProps {
   artifacts: ArtifactId[];
   onRemove: (artifactId: ArtifactId) => void;
   onClearAll?: () => void;
-  title: string;
   showPreview?: boolean;
 }
 
@@ -23,7 +22,6 @@ export function SelectedArtifactsList({
   artifacts,
   onRemove,
   onClearAll,
-  title,
   showPreview = true,
 }: SelectedArtifactsListProps) {
   const { t } = useI18n();
@@ -94,7 +92,6 @@ export function SelectedArtifactsList({
     <>
       <TabularFileList
         files={tabularFiles}
-        title={title}
         showPreview={showPreview}
         showPreviews={showPreviews}
         onTogglePreview={handleTogglePreview}

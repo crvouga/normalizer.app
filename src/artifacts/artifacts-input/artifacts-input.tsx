@@ -60,11 +60,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
 
   return (
     <div className="space-y-4">
-      <SelectedArtifactsList
-        artifacts={props.value}
-        onRemove={removeArtifact}
-        title={t('artifact.selectedArtifacts')}
-      />
+      <SelectedArtifactsList artifacts={props.value} onRemove={removeArtifact} />
 
       {props.value.length < limit && (
         <AsyncCombobox
@@ -73,7 +69,6 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
           fetchIds={fetchArtifactIds}
           getOptions={getArtifactOptions}
           placeholder={t('artifact.searchPlaceholder')}
-          label={t('artifact.label')}
           helperText={t('artifact.helperText')}
           renderOption={renderOption}
           debounceMs={300}
