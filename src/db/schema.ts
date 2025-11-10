@@ -99,3 +99,12 @@ export const normalizationSessionEvents = pgTable(
 );
 
 export type INormalizationSessionEvent = typeof normalizationSessionEvents.$inferSelect;
+
+export const normalizationSessionProjections = pgTable('normalization_session_projections', {
+  normalization_session_id: text('normalization_session_id').primaryKey(),
+  projection: jsonb('projection').notNull(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export type INormalizationSessionProjection = typeof normalizationSessionProjections.$inferSelect;

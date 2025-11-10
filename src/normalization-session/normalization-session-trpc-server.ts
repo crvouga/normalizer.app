@@ -29,11 +29,58 @@ export const normalizationSessionRouter = router({
         userId: ctx.userId,
       });
 
-      await ctx.db.insert(schema.normalizationSessionEvents).values({
-        id: eventId,
-        normalization_session_id: input.sessionId,
-        event: input.event,
-        created_at: new Date(),
+      await ctx.db.transaction(async (tx) => {
+        // Insert the new event
+        await tx.insert(schema.normalizationSessionEvents).values({
+          id: eventId,
+          normalization_session_id: input.sessionId,
+          event: input.event,
+          created_at: new Date(),
+        });
+
+        // Query all events for this session (including the new one)
+        const events = await tx
+          .select()
+          .from(schema.normalizationSessionEvents)
+          .where(eq(schema.normalizationSessionEvents.normalization_session_id, input.sessionId))
+          .orderBy(schema.normalizationSessionEvents.created_at);
+
+        // Validate events
+        const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
+
+        // Compute projection by reducing all events
+        const initialState: NormalizationSessionProjection = {
+          id: input.sessionId,
+          targetArtifactIds: [],
+          startedAt: new Date(),
+          startedByUserId: ctx.userId,
+        };
+
+        const projection = validatedEvents.reduce((state, eventEntity) => {
+          return NormalizationSessionProjection.reducer(state, eventEntity.event);
+        }, initialState);
+
+        // Upsert the projection
+        await tx
+          .insert(schema.normalizationSessionProjections)
+          .values({
+            normalization_session_id: input.sessionId,
+            projection: projection,
+            created_at: new Date(),
+            updated_at: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: schema.normalizationSessionProjections.normalization_session_id,
+            set: {
+              projection: projection,
+              updated_at: new Date(),
+            },
+          });
+
+        ctx.logger.info('Normalization session projection updated', {
+          sessionId: input.sessionId,
+          eventCount: events.length,
+        });
       });
 
       return {
@@ -88,37 +135,24 @@ export const normalizationSessionRouter = router({
         userId: ctx.userId,
       });
 
-      const events = await ctx.db
+      const projectionRow = await ctx.db
         .select()
-        .from(schema.normalizationSessionEvents)
-        .where(eq(schema.normalizationSessionEvents.normalization_session_id, input.sessionId))
-        .orderBy(schema.normalizationSessionEvents.created_at);
+        .from(schema.normalizationSessionProjections)
+        .where(eq(schema.normalizationSessionProjections.normalization_session_id, input.sessionId))
+        .limit(1);
 
-      if (events.length === 0) {
-        ctx.logger.info('Normalization session not found', {
+      if (projectionRow.length === 0) {
+        ctx.logger.info('Normalization session projection not found', {
           sessionId: input.sessionId,
         });
         return null;
       }
 
-      // Validate events
-      const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
+      // Parse and return the stored projection
+      const projection = NormalizationSessionProjection.schema.parse(projectionRow[0].projection);
 
-      // Project the state by reducing all events
-      const initialState: NormalizationSessionProjection = {
-        id: input.sessionId,
-        targetArtifactIds: [],
-        startedAt: new Date(),
-        startedByUserId: ctx.userId,
-      };
-
-      const projection = validatedEvents.reduce((state, eventEntity) => {
-        return NormalizationSessionProjection.reducer(state, eventEntity.event);
-      }, initialState);
-
-      ctx.logger.info('Normalization session projection computed', {
+      ctx.logger.info('Normalization session projection retrieved', {
         sessionId: input.sessionId,
-        eventCount: events.length,
       });
 
       return projection;
