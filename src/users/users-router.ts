@@ -5,17 +5,18 @@ import { findActiveAuthenticatedSession, findCurrentUserSession } from './user-s
 
 export const usersRouter = router({
   /**
-   * Get or create current user
-   * This mutation ensures a user and user_session record exists for the current session
+   * Get current user
+   * Context creation already ensures a user exists
    */
   currentUser: procedure.mutation(async ({ ctx }) => {
-    const session = await findCurrentUserSession(ctx.db, ctx.sessionId);
+    // The context already has userId from an existing or newly created user
+    const user = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.userId),
+    });
 
-    if (!session?.user) {
+    if (!user) {
       throw new Error('User not found');
     }
-
-    const user = session.user;
 
     // Don't expose session_id to client
     return {
