@@ -6,6 +6,7 @@
   "main": "src/server.tsx",
   "module": "src/server.tsx",
   "scripts": {
+    "cloc": "bun x cloc src",
     "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/run-migrations.ts",

@@ -8,8 +8,8 @@ import { createS3 } from './s3';
 import { getS3Config } from './s3-config';
 import { cleanupDb, createDb } from './sql';
 import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
-import { createGoogleAuthEndpoints } from './auth/google-auth-endpoints';
-import { createUserProfilePictureEndpoints } from './users/user-profile-picture-router';
+import { createGoogleAuthEndpoints } from './auth/google-auth-http-server/google-auth-http-server-endpoints';
+import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
 
 const main = async () => {
   const logger = createLogger();

@@ -3,8 +3,8 @@ import { z } from 'zod';
 import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { Artifact } from './artifact';
-import { artifactUploadRouter } from './artifact-upload/artifact-upload-router';
-import { editArtifactRouter } from './edit-artifact/edit-artifact-router';
+import { artifactUploadRouter } from './artifact-upload/artifact-upload-trpc-server';
+import { editArtifactRouter } from './edit-artifact/edit-artifact-trpc-server';
 import { ArtifactId } from './artifact-id';
 
 export const artifactRouter = router({
