@@ -84,7 +84,7 @@ export function useFetchArtifacts() {
         .filter((artifact): artifact is Artifact => artifact !== undefined)
         .map((artifact) => ({
           value: artifact.id as ArtifactId,
-          label: artifact.filename,
+          label: artifact.name || artifact.filename,
           metadata: { type: artifact.file_type, size: artifact.size },
         }));
     },

@@ -26,10 +26,11 @@ export function useArtifactSelection({
 
   const addArtifact = React.useCallback(
     (artifactId: ArtifactId | null) => {
-      setCurrentSelection(artifactId);
       if (artifactId && !value.includes(artifactId)) {
         onChange([...value, artifactId]);
       }
+      // Clear selection after adding to allow selecting another item
+      setCurrentSelection(null);
     },
     [value, onChange],
   );

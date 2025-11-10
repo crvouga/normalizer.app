@@ -8,7 +8,7 @@ import type { TabularFile } from '~/src/ui/tabular-file-input/tabular-file';
 export function artifactToTabularFile(artifact: Artifact): TabularFile {
   return {
     id: artifact.id,
-    name: artifact.filename,
+    name: artifact.name || artifact.filename,
     downloadUrl: artifact.download_url || '',
     size: artifact.size,
     contentType: artifact.content_type,
