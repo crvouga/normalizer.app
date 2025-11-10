@@ -6,15 +6,6 @@ import { Artifact } from './artifact';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-router';
 import { editArtifactRouter } from './edit-artifact/edit-artifact-router';
 import { ArtifactId } from './artifact-id';
-import type { UserId } from '../users/user-id';
-
-// Helper to construct base user artifact filter
-function baseArtifactFilter(ctx: { userId: UserId }) {
-  return and(
-    eq(schema.artifacts.uploaded_by_user_id, ctx.userId),
-    isNull(schema.artifacts.deleted),
-  );
-}
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
@@ -27,16 +18,30 @@ export const artifactRouter = router({
     )
     .output(Artifact.schema.nullable())
     .mutation(async ({ input, ctx }) => {
+      ctx.logger.info('Artifact get', {
+        artifactId: input.artifactId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+      });
+
+      // For get operation, only filter by artifact ID and soft delete status
+      // Having the artifact ID (UUID) is sufficient authorization
       const artifact = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.id, input.artifactId), baseArtifactFilter(ctx)))
+        .where(and(eq(schema.artifacts.id, input.artifactId), isNull(schema.artifacts.deleted)))
         .limit(1)
         .then((rows) => rows[0]);
 
       if (!artifact) {
+        ctx.logger.info('Artifact not found', { artifactId: input.artifactId });
         return null;
       }
+
+      ctx.logger.info('Artifact found', {
+        artifactId: input.artifactId,
+        uploadedByUserId: artifact.uploaded_by_user_id,
+      });
 
       // Validate and transform to Artifact type
       const validatedArtifact = Artifact.schema.parse(artifact);
@@ -68,12 +73,25 @@ export const artifactRouter = router({
   list: procedure
     .output(z.array(Artifact.schema))
     .mutation(async ({ ctx }): Promise<Artifact[]> => {
-      // Only select artifacts that are uploaded and not deleted and belong to the user
+      ctx.logger.info('Artifact list', {
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+      });
+
+      // Only select artifacts that are uploaded and not deleted and belong to the current user
       const files = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.status, 'uploaded'), baseArtifactFilter(ctx)))
+        .where(
+          and(
+            eq(schema.artifacts.status, 'uploaded'),
+            eq(schema.artifacts.uploaded_by_user_id, ctx.userId),
+            isNull(schema.artifacts.deleted),
+          ),
+        )
         .orderBy(schema.artifacts.created_at);
+
+      ctx.logger.info('Artifact list result', { count: files.length });
 
       // Validate and transform to Artifact type array
       const validatedArtifacts = z.array(Artifact.schema).parse(files);

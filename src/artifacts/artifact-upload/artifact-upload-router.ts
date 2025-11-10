@@ -21,6 +21,12 @@ export const artifactUploadRouter = router({
       const s3Key = `artifacts/${artifactId}/${input.filename}`;
       const { s3Bucket } = getS3Config();
 
+      ctx.logger.info('Artifact upload start', {
+        artifactId,
+        userId: ctx.userId,
+        sessionId: ctx.sessionId,
+      });
+
       await ctx.db.insert(schema.artifacts).values({
         id: artifactId,
         filename: input.filename,
