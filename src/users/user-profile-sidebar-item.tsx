@@ -10,7 +10,7 @@ import { SettingsModal } from '~/src/settings/settings-modal';
 import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
 import { Avatar } from '~/src/ui/avatar';
 import { Divider } from '~/src/ui/divider';
-import { IconLogin, IconLogout, IconSettings, IconSpinner } from '~/src/ui/icons';
+import { IconLogin, IconLogout, IconSettings, IconSpinner, IconUser } from '~/src/ui/icons';
 import { MenuItemButton } from '~/src/ui/menu-item-button';
 import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
@@ -25,12 +25,18 @@ type UserProfileSidebarItemProps = {
 const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolean }) => {
   return (
     <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-gray-100 data-active:bg-gray-100 dark:hover:bg-gray-800 dark:data-active:bg-gray-800">
-      <Avatar
-        src={user.profile_picture}
-        alt={user.name || 'User'}
-        initials={getUserInitials(user)}
-        size="md"
-      />
+      {isAnonymous ? (
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+          <IconUser className="size-5 text-gray-600 dark:text-gray-400" />
+        </div>
+      ) : (
+        <Avatar
+          src={user.profile_picture}
+          alt={user.name || 'User'}
+          initials={getUserInitials(user)}
+          size="md"
+        />
+      )}
       <div className="min-w-0 flex-1 text-left">
         <Typography variant="sm" weight="medium" color="primary" className="truncate">
           {user.name || user.email || 'Anonymous User'}

@@ -20,7 +20,7 @@ export function ToastContainer() {
     <>
       {/* Toast container */}
       <div
-        className="pointer-events-none fixed top-0 right-0 z-50 flex max-h-screen w-full flex-col items-end gap-2 overflow-hidden p-4"
+        className="pointer-events-none fixed top-0 right-0 z-60 flex max-h-screen w-full flex-col items-end gap-2 overflow-hidden p-4"
         aria-live="polite"
         aria-atomic="false"
       >
