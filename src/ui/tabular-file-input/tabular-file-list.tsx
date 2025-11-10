@@ -56,11 +56,7 @@ export const TabularFileList: React.FC<FileListProps> = ({
             </button>
           )}
           <button type="button" onClick={onClearAll} className="transition-colors">
-            <Typography
-              variant="xs"
-              color="muted"
-              className="hover:text-red-600 dark:hover:text-red-400"
-            >
+            <Typography variant="xs" color="muted">
               Clear all
             </Typography>
           </button>

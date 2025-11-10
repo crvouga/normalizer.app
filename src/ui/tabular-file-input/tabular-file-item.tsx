@@ -97,7 +97,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             e.stopPropagation();
             onRemove(index);
           }}
-          className="shrink-0 rounded p-1 text-gray-600 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+          className="shrink-0 rounded p-1 text-gray-600 transition-colors dark:text-gray-400"
         >
           <IconX />
         </button>
