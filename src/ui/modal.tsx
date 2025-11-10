@@ -73,7 +73,7 @@ export function Modal({
           >
             <DialogPanel
               className={cn(
-                'w-full rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800',
+                'w-full rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-800',
                 sizeClasses[size],
                 className,
               )}
@@ -89,7 +89,7 @@ export function Modal({
                   <ButtonBase
                     onClick={handleClose}
                     disabled={disabled}
-                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700 dark:disabled:hover:bg-transparent"
+                    className="rounded p-1 text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-slate-700 dark:disabled:hover:bg-transparent"
                     aria-label={t('modal.close')}
                   >
                     <IconX className="size-5" />

@@ -20,7 +20,7 @@ export const TabularFilePreview: React.FC<TabularFilePreviewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg bg-gray-100 p-6 text-center dark:bg-gray-800">
+      <div className="rounded-lg bg-slate-100 p-6 text-center dark:bg-slate-800">
         <Typography variant="sm" color="muted">
           Loading {fileType} file...
         </Typography>

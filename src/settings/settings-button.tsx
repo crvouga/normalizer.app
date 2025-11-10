@@ -10,7 +10,7 @@ export function SettingsButton() {
     <>
       <ButtonBase
         onClick={() => setIsOpen(true)}
-        className="rounded p-2 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+        className="rounded p-2 text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         aria-label="Settings"
         title="Settings"
       >

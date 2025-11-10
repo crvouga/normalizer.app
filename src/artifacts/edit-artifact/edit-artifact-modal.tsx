@@ -95,7 +95,7 @@ export function EditArtifactModal({
         {/* Read-only file display */}
         {tabularFiles.length > 0 && (
           <div>
-            <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
               {t('artifact.fileLabel') || 'File'}
             </div>
             <div className="[&_.flex.items-center.justify-end]:hidden [&_button:has(svg)]:hidden">

@@ -24,10 +24,10 @@ type UserProfileSidebarItemProps = {
 
 const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolean }) => {
   return (
-    <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-gray-100 data-active:bg-gray-100 dark:hover:bg-gray-800 dark:data-active:bg-gray-800">
+    <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-slate-100 data-active:bg-slate-100 dark:hover:bg-slate-800 dark:data-active:bg-slate-800">
       {isAnonymous ? (
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-          <IconUser className="size-5 text-gray-600 dark:text-gray-400" />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
+          <IconUser className="size-5 text-slate-600 dark:text-slate-400" />
         </div>
       ) : (
         <Avatar
@@ -88,7 +88,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
         <MenuItemsAnimated anchor="top">
           {authState.type === 'loading' && (
             <div className="flex items-center justify-center px-4 py-6">
-              <IconSpinner className="size-5 text-gray-400" />
+              <IconSpinner className="size-5 text-slate-400" />
             </div>
           )}
 

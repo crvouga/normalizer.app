@@ -42,19 +42,19 @@ function getButtonClasses(
     green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
     yellow:
       'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600',
-    gray: 'bg-gray-600 text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600',
+    gray: 'bg-slate-600 text-white hover:bg-slate-700 dark:bg-slate-500 dark:hover:bg-slate-600',
   } as const;
 
   const variantClasses = {
     default: colorClasses[color],
     destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
     outline:
-      'border border-gray-500 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
+      'border border-slate-500 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
     secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
     ghost: 'hover:bg-accent hover:text-accent-foreground',
     link: 'text-primary underline-offset-4 hover:underline',
     contained:
-      'bg-white dark:bg-gray-800 text-black dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+      'bg-white dark:bg-slate-800 text-black dark:text-white shadow-md hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700',
   };
 
   const sizeClasses = {

@@ -33,10 +33,10 @@ const variantClasses: Record<TypographyVariant, string> = {
 };
 
 const colorClasses: Record<TypographyColor, string> = {
-  primary: 'text-gray-900 dark:text-gray-100',
-  secondary: 'text-gray-700 dark:text-gray-200',
-  muted: 'text-gray-600 dark:text-gray-400',
-  disabled: 'text-gray-500 dark:text-gray-500',
+  primary: 'text-slate-900 dark:text-slate-100',
+  secondary: 'text-slate-700 dark:text-slate-200',
+  muted: 'text-slate-600 dark:text-slate-400',
+  disabled: 'text-slate-500 dark:text-slate-500',
   error: 'text-red-600 dark:text-red-400',
   success: 'text-green-600 dark:text-green-400',
   info: 'text-purple-600 dark:text-purple-400',

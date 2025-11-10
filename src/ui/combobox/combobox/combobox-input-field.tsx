@@ -40,15 +40,15 @@ export function ComboboxInputField<T extends string | number>({
     <div className="relative">
       <ComboboxInput
         className={cn(
-          'w-full border border-gray-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-gray-900',
-          'dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100',
+          'w-full border border-slate-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-slate-900',
+          'dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
           'focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none',
           'dark:focus:border-purple-400 dark:focus:ring-purple-400',
-          'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-          'dark:disabled:bg-gray-900 dark:disabled:text-gray-600',
+          'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
+          'dark:disabled:bg-slate-900 dark:disabled:text-slate-600',
           hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500',
           hasError && 'dark:border-red-400 dark:focus:border-red-400 dark:focus:ring-red-400',
-          'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+          'placeholder:text-slate-400 dark:placeholder:text-slate-500',
           hasActionButton ? 'rounded-l-lg border-r-0' : 'rounded-lg',
           inputClassName,
         )}
@@ -61,9 +61,9 @@ export function ComboboxInputField<T extends string | number>({
 
       <ComboboxButton ref={buttonRef} className="absolute inset-y-0 right-0 flex items-center pr-3">
         {isLoading ? (
-          <IconSpinner className="text-gray-400 dark:text-gray-500" />
+          <IconSpinner className="text-slate-400 dark:text-slate-500" />
         ) : (
-          <IconChevronDown className="text-gray-400 dark:text-gray-500" />
+          <IconChevronDown className="text-slate-400 dark:text-slate-500" />
         )}
       </ComboboxButton>
     </div>

@@ -42,18 +42,18 @@ export function NormalizationSessionListItem({
     <button
       type="button"
       onClick={() => onClick(projection.id)}
-      className="dark:hover:bg-gray-750 w-full rounded-lg border border-gray-200 bg-white p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+      className="dark:hover:bg-slate-750 w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
     >
       <div className="flex flex-col gap-2">
         {/* Session ID */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
             Session {projection.id.slice(0, 8)}
           </span>
         </div>
 
         {/* Metadata */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
           {/* Target artifacts count */}
           <span>
             {projection.targetArtifactIds.length}{' '}

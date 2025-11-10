@@ -21,7 +21,7 @@ export function ComboboxOptionsWrapper({
       anchor="bottom start"
       className={cn(
         'ring-opacity-5 z-50 mt-1 max-h-60 w-(--input-width) overflow-auto rounded-lg bg-white text-base shadow-lg ring-1 ring-black focus:outline-none',
-        'dark:bg-gray-800 dark:ring-gray-700',
+        'dark:bg-slate-800 dark:ring-slate-700',
         optionsClassName,
       )}
     >

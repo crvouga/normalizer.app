@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { showToast, showErrorToast } from '../ui/toast';
+import { useI18n } from '../i18n/use-i18n';
 
 /**
  * Handles authentication redirect callbacks by checking URL parameters
@@ -8,13 +9,14 @@ import { showToast, showErrorToast } from '../ui/toast';
  * This component should be mounted once at the app root level.
  */
 export function AuthRedirectHandler() {
+  const { t } = useI18n();
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authSuccess = params.get('auth_success');
     const authError = params.get('auth_error');
 
     if (authSuccess) {
-      showToast('Successfully signed in with Google', 'success');
+      showToast(t('auth.signInSuccessGoogle'), 'success');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     } else if (authError) {

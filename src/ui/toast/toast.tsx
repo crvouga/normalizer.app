@@ -58,7 +58,7 @@ export function Toast({ toast, onShowError }: ToastProps) {
       <div
         className={cn(
           'pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg shadow-lg ring-1',
-          'bg-white dark:bg-gray-800',
+          'bg-white dark:bg-slate-800',
           isSuccess && 'ring-green-500/20 dark:ring-green-500/30',
           isError && 'ring-red-500/20 dark:ring-red-500/30',
         )}
@@ -81,7 +81,7 @@ export function Toast({ toast, onShowError }: ToastProps) {
 
             {/* Content */}
             <div className="flex-1 pt-0.5">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 {toast.message}
               </p>
 
@@ -100,7 +100,7 @@ export function Toast({ toast, onShowError }: ToastProps) {
             {toast.dismissible && (
               <ButtonBase
                 onClick={handleDismiss}
-                className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                className="shrink-0 rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                 aria-label={t('toast.dismiss')}
               >
                 <IconX className="size-4" />

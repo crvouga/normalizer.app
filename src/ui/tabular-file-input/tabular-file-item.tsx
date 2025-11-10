@@ -67,7 +67,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             <Typography
               variant="xs"
               color="muted"
-              className="hover:text-gray-900 dark:hover:text-gray-100"
+              className="hover:text-slate-900 dark:hover:text-slate-100"
             >
               {isPreviewVisible ? 'Hide' : 'Preview'}
             </Typography>
@@ -86,7 +86,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             <Typography
               variant="xs"
               color="muted"
-              className="hover:text-gray-900 dark:hover:text-gray-100"
+              className="hover:text-slate-900 dark:hover:text-slate-100"
             >
               {action.label}
             </Typography>
@@ -98,7 +98,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             e.stopPropagation();
             onRemove(index);
           }}
-          className="shrink-0 rounded p-1 text-gray-600 transition-colors dark:text-gray-400"
+          className="shrink-0 rounded p-1 text-slate-600 transition-colors dark:text-slate-400"
         >
           <IconX />
         </ButtonBase>
@@ -178,7 +178,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   }, [isPreviewVisible, tabularFile, loadedFile]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
       <TabularFileItemHeader
         tabularFile={tabularFile}
         index={index}
@@ -190,7 +190,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
       />
 
       {isPreviewVisible && showPreview && (
-        <div className="border-t border-gray-200 dark:border-gray-700">
+        <div className="border-t border-slate-200 dark:border-slate-700">
           {isLoading && (
             <div className="p-6 text-center">
               <Typography variant="sm" color="muted">

@@ -36,7 +36,7 @@ export function NormalizationSessionProjectionList({
           <p className="text-sm font-medium text-red-600 dark:text-red-400">
             Failed to load sessions
           </p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{state.error.message}</p>
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{state.error.message}</p>
         </div>
       </div>
     );
@@ -47,8 +47,8 @@ export function NormalizationSessionProjectionList({
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" />
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">Loading sessions...</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-blue-600 dark:border-slate-600 dark:border-t-blue-400" />
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Loading sessions...</p>
         </div>
       </div>
     );
@@ -59,10 +59,10 @@ export function NormalizationSessionProjectionList({
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
             No normalization sessions
           </p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             Start a new session to see it here
           </p>
         </div>
@@ -85,7 +85,7 @@ export function NormalizationSessionProjectionList({
         {hasMore && (
           <div ref={loadMoreRef} className="flex items-center justify-center py-4">
             {state.type === 'loading-more' && (
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-400" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600 dark:border-slate-600 dark:border-t-blue-400" />
             )}
           </div>
         )}
@@ -93,7 +93,7 @@ export function NormalizationSessionProjectionList({
         {/* No more results indicator */}
         {!hasMore && sessions.length > 0 && (
           <div className="py-4 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-500">No more sessions</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500">No more sessions</p>
           </div>
         )}
       </div>

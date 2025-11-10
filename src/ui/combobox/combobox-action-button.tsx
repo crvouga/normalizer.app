@@ -34,8 +34,8 @@ export function ComboboxActionButton({
       text={text}
       className={cn(
         'h-[50px] rounded-l-none rounded-r-lg border border-l-0 border-transparent px-4 py-3 whitespace-nowrap',
-        'border border-gray-300',
-        'dark:border-gray-600',
+        'border border-slate-300',
+        'dark:border-slate-600',
         className,
       )}
     />

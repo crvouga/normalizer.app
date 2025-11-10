@@ -14,8 +14,8 @@ export function ToastErrorModal({ isOpen, onClose, errorDetails }: ToastErrorMod
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('toast.errorDetails')} size="lg">
       <div className="space-y-4">
-        <div className="max-h-96 overflow-auto rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
-          <pre className="font-mono text-xs wrap-break-word whitespace-pre-wrap text-gray-800 dark:text-gray-200">
+        <div className="max-h-96 overflow-auto rounded-lg bg-slate-50 p-4 dark:bg-slate-900">
+          <pre className="font-mono text-xs wrap-break-word whitespace-pre-wrap text-slate-800 dark:text-slate-200">
             {errorDetails}
           </pre>
         </div>

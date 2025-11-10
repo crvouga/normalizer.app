@@ -55,7 +55,7 @@ export function RadioGroup<T extends string = string>({
                   'relative flex cursor-pointer rounded-lg border px-4 py-3 transition-colors',
                   checked
                     ? 'border-purple-500 bg-purple-50 dark:border-purple-400 dark:bg-purple-950'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700',
+                    : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700',
                   disabled && 'cursor-not-allowed opacity-50',
                 )
               }
@@ -69,7 +69,7 @@ export function RadioGroup<T extends string = string>({
                         'text-base font-medium',
                         checked
                           ? 'text-purple-900 dark:text-purple-100'
-                          : 'text-gray-900 dark:text-gray-100',
+                          : 'text-slate-900 dark:text-slate-100',
                       )}
                     >
                       {option.label}
@@ -81,7 +81,7 @@ export function RadioGroup<T extends string = string>({
                           'text-sm',
                           checked
                             ? 'text-purple-700 dark:text-purple-300'
-                            : 'text-gray-600 dark:text-gray-400',
+                            : 'text-slate-600 dark:text-slate-400',
                         )}
                       >
                         {option.description}

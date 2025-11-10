@@ -18,7 +18,7 @@ export function App() {
   return (
     <CurrentUserBoundary>
       <AuthRedirectHandler />
-      <div className="flex h-dvh flex-row overflow-hidden bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+      <div className="flex h-dvh flex-row overflow-hidden bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
         <SidebarLayout sidebar={<AppSidebar />} main={<AppScreen />} />
       </div>
     </CurrentUserBoundary>

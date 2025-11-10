@@ -17,7 +17,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
 }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-100 p-6 text-center dark:border-gray-700 dark:bg-gray-800">
+      <div className="rounded-lg border border-slate-200 bg-slate-100 p-6 text-center dark:border-slate-700 dark:bg-slate-800">
         <Typography variant="sm" color="muted">
           No data to preview
         </Typography>
@@ -34,7 +34,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
       <div className="overflow-x-auto">
         <table className="w-full min-w-full border-collapse">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
+            <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
               {headers.map((header, index) => (
                 <th key={index} className="min-w-0 p-3 text-left whitespace-nowrap">
                   <Typography
@@ -54,7 +54,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
             {truncatedData.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className="border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                className="border-b border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700"
               >
                 {headers.map((header, colIndex) => (
                   <td key={colIndex} className="min-w-0 p-3 whitespace-nowrap">
@@ -74,7 +74,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
         </table>
       </div>
       {data.length > maxRows && (
-        <div className="border-t border-gray-200 bg-gray-100 p-3 text-center dark:border-gray-700 dark:bg-gray-800">
+        <div className="border-t border-slate-200 bg-slate-100 p-3 text-center dark:border-slate-700 dark:bg-slate-800">
           <Typography variant="xs" color="muted">
             Showing {maxRows} of {data.length} rows
           </Typography>
