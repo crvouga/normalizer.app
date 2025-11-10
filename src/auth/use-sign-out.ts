@@ -8,23 +8,23 @@ import { useI18n } from '~/src/i18n/use-i18n';
  * Hook for handling user logout with confirmation dialog
  * Returns functions to control the logout flow
  */
-export function useLogout() {
+export function useSignOut() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { refetchCurrentUser } = useCurrentUser();
   const { t } = useI18n();
 
-  const openLogoutDialog = useCallback(() => {
+  const openSignOutDialog = useCallback(() => {
     setIsOpen(true);
   }, []);
 
-  const closeLogoutDialog = useCallback(() => {
+  const closeSignOutDialog = useCallback(() => {
     setIsOpen(false);
   }, []);
 
-  const confirmLogout = useCallback(async () => {
+  const confirmSignOut = useCallback(async () => {
     try {
-      setIsLoggingOut(true);
+      setIsSigningOut(true);
 
       // Call logout mutation
       await trpcClient.users.logout.mutate();
@@ -36,20 +36,20 @@ export function useLogout() {
       showSuccessToast(t('auth.signOutSuccess'));
 
       // Close the dialog
-      closeLogoutDialog();
+      closeSignOutDialog();
     } catch (error) {
       console.error('Logout failed:', error);
       showErrorToast('Failed to sign out', error);
     } finally {
-      setIsLoggingOut(false);
+      setIsSigningOut(false);
     }
-  }, [refetchCurrentUser, t, closeLogoutDialog]);
+  }, [refetchCurrentUser, t, closeSignOutDialog]);
 
   return {
     isOpen,
-    isLoggingOut,
-    openLogoutDialog,
-    closeLogoutDialog,
-    confirmLogout,
+    isSigningOut,
+    openSignOutDialog,
+    closeSignOutDialog,
+    confirmSignOut,
   };
 }

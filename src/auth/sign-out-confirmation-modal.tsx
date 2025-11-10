@@ -3,7 +3,7 @@ import { ModalActions } from '~/src/ui/modal-actions';
 import { Typography } from '~/src/ui/typography';
 import { useI18n } from '~/src/i18n/use-i18n';
 
-type LogoutConfirmationModalProps = {
+type SignOutConfirmationModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -13,12 +13,12 @@ type LogoutConfirmationModalProps = {
 /**
  * Confirmation modal for logout action
  */
-export function LogoutConfirmationModal({
+export function SignOutConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
   isLoggingOut,
-}: LogoutConfirmationModalProps) {
+}: SignOutConfirmationModalProps) {
   const { t } = useI18n();
 
   return (

@@ -1,9 +1,9 @@
 import { Menu, MenuButton } from '@headlessui/react';
 import { useState } from 'react';
-import { LogoutConfirmationModal } from '~/src/auth/logout-confirmation-modal';
+import { SignOutConfirmationModal } from '~/src/auth/sign-out-confirmation-modal';
 import { SignInModal } from '~/src/auth/sign-in-modal';
 import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
-import { useLogout } from '~/src/auth/use-logout';
+import { useSignOut } from '~/src/auth/use-sign-out';
 import { useSignIn } from '~/src/auth/use-sign-in';
 import { useI18n } from '~/src/i18n/use-i18n';
 import { SettingsModal } from '~/src/settings/settings-modal';
@@ -28,7 +28,13 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
   });
   const authState = useGoogleAuthEnabled();
   const { t } = useI18n();
-  const { isOpen, isLoggingOut, openLogoutDialog, closeLogoutDialog, confirmLogout } = useLogout();
+  const {
+    isOpen,
+    isSigningOut: isLoggingOut,
+    openSignOutDialog: openLogoutDialog,
+    closeSignOutDialog: closeLogoutDialog,
+    confirmSignOut: confirmLogout,
+  } = useSignOut();
   const {
     isOpen: isSignInOpen,
     openSignInDialog,
@@ -118,7 +124,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
         onClose={closeSignInDialog}
         onGoogleSignIn={handleGoogleSignIn}
       />
-      <LogoutConfirmationModal
+      <SignOutConfirmationModal
         isOpen={isOpen}
         onClose={closeLogoutDialog}
         onConfirm={confirmLogout}
