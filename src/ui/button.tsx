@@ -8,7 +8,8 @@ type ButtonVariant =
   | 'secondary'
   | 'ghost'
   | 'link'
-  | 'contained';
+  | 'contained'
+  | 'oauth';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
 type ButtonColor = 'blue' | 'red' | 'green' | 'yellow' | 'gray';
 
@@ -52,6 +53,8 @@ function getButtonClasses(
     link: 'text-primary underline-offset-4 hover:underline',
     contained:
       'bg-white dark:bg-gray-800 text-black dark:text-white shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700',
+    oauth:
+      'border border-gray-300 bg-white hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800',
   };
 
   const sizeClasses = {

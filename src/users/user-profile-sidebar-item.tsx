@@ -4,6 +4,9 @@ import { getUserInitials } from './user-initials';
 import { Avatar } from '~/src/ui/avatar';
 import { Typography } from '~/src/ui/typography';
 import { Dropdown } from '~/src/ui/dropdown';
+import { Divider } from '~/src/ui/divider';
+import { MenuItem } from '~/src/ui/menu-item';
+import { Button } from '~/src/ui/button';
 import { IconSettings, IconSpinner, IconGoogle } from '~/src/ui/icons';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
@@ -85,15 +88,13 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
             )}
 
             {authState.type === 'loaded' && isAnonymous && authState.isEnabled && (
-              <button
+              <Button
+                variant="oauth"
                 onClick={handleGoogleSignIn}
-                className="flex w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800"
-              >
-                <IconGoogle className="size-5 shrink-0" />
-                <Typography variant="sm" weight="medium" color="secondary">
-                  Sign in with Google
-                </Typography>
-              </button>
+                startIcon={<IconGoogle className="size-5" />}
+                text="Sign in with Google"
+                className="w-full"
+              />
             )}
 
             {authState.type === 'loaded' && isAnonymous && !authState.isEnabled && (
@@ -113,20 +114,17 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
             )}
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-gray-200 dark:border-gray-700" />
+          <Divider />
 
-          {/* Settings Menu Item */}
           <div className="p-2">
-            <button
+            <MenuItem
+              icon={<IconSettings className="size-5 text-gray-600 dark:text-gray-400" />}
               onClick={openSettings}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <IconSettings className="size-5 shrink-0 text-gray-600 dark:text-gray-400" />
               <Typography variant="sm" color="secondary">
                 Settings
               </Typography>
-            </button>
+            </MenuItem>
           </div>
         </Dropdown>
       </div>
