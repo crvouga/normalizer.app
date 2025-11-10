@@ -20,9 +20,8 @@ To enable Google Sign-In:
 # Google OAuth Credentials (optional)
 GOOGLE_CLIENT_ID=your_client_id_here
 GOOGLE_CLIENT_SECRET=your_client_secret_here
-
-# Optional: Custom redirect URI (defaults to http://localhost:PORT/api/auth/google/callback)
-# GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
 ```
+
+The redirect URI is automatically derived from your application's domain. Make sure to add all domains (dev, staging, production) to Google's Authorized redirect URIs list in the format: `https://yourdomain.com/api/auth/google/callback`
 
 If these credentials are not configured, the app will gracefully degrade and show "Authentication not configured" in the user menu.
