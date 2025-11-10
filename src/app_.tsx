@@ -35,7 +35,7 @@ function AppSidebar() {
         <Button
           className="w-full"
           text={t('app.newSession')}
-          onClick={() => currentScreen.setCurrentScreen({ type: 'normalization-session' }, 'push')}
+          onClick={() => currentScreen.setCurrentScreen({ type: 'normalization-session' })}
         />
       </div>
       <div className="w-full flex-1"></div>
