@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import { IconSpinner } from './icons';
 
 type ButtonVariant =
   | 'default'
@@ -75,6 +76,7 @@ interface ButtonProps extends Omit<React.ComponentProps<'button'>, 'children'> {
   asChild?: boolean;
   text?: string;
   startIcon?: React.ReactNode;
+  loading?: boolean;
 }
 
 function Button({
@@ -85,6 +87,8 @@ function Button({
   asChild = false,
   text,
   startIcon,
+  loading = false,
+  disabled,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? 'button' : 'button';
@@ -92,11 +96,19 @@ function Button({
   return (
     <Comp
       data-slot="button"
-      className={cn(getButtonClasses(variant, size, color), className)}
+      className={cn(getButtonClasses(variant, size, color), 'relative', className)}
+      disabled={disabled || loading}
       {...props}
     >
-      {startIcon}
-      {text}
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <IconSpinner />
+        </span>
+      )}
+      <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>
+        {startIcon}
+        {text}
+      </span>
     </Comp>
   );
 }
