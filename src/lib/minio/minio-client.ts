@@ -157,11 +157,23 @@ export const createMinioClient = ({
     expiresIn: number = 86400, // 24 hours default
   ): Promise<string> => {
     try {
-      const url = await minioClient.presignedPutObject(bucket, objectKey, expiresIn);
+      let url = await minioClient.presignedPutObject(bucket, objectKey, expiresIn);
+
+      // Ensure the URL uses HTTPS when SSL is enabled
+      // This fixes mixed content errors in production when the page is served over HTTPS
+      if (useSSL && url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+        logger.info('Converted presigned URL from HTTP to HTTPS', {
+          bucket,
+          objectKey,
+        });
+      }
+
       logger.info('Generated presigned URL', {
         bucket,
         objectKey,
         expiresIn,
+        useSSL,
       });
       return url;
     } catch (error) {

@@ -74,20 +74,37 @@ const create = (input: {
  *
  * @param artifacts - Array of Artifact objects.
  * @param s3 - S3 client for presigning URLs.
+ * @param s3Endpoint - S3 endpoint URL (optional, used to determine if HTTPS should be enforced).
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
 async function populateUrls(
   artifacts: Artifact[],
   s3: S3Client,
+  s3Endpoint?: string,
 ): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
   const expiresIn = 60 * 60 * 24 * 7; // 7 days
   const now = Date.now();
   const expiresAt = new Date(now + expiresIn * 1000);
   const updated = new Set<string>();
 
+  // Determine if we should use HTTPS based on the endpoint
+  const useHTTPS = s3Endpoint ? s3Endpoint.startsWith('https://') : false;
+
   function isMissingOrExpired(url: string | null | undefined, expiresAt: Date | null | undefined) {
     if (!url || !expiresAt) return true;
     return new Date(expiresAt).getTime() < now;
+  }
+
+  /**
+   * Ensures the URL uses HTTPS when the S3 endpoint is configured with HTTPS.
+   * This fixes mixed content errors when the page is served over HTTPS.
+   */
+  function ensureHTTPS(url: string | undefined): string | undefined {
+    if (!url || !useHTTPS) return url;
+    if (url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
+    }
+    return url;
   }
 
   const updatedArtifacts = await Promise.all(
@@ -106,11 +123,11 @@ async function populateUrls(
       let newDownloadUrl: string | undefined;
 
       if (shouldUpdateUpload) {
-        newUploadUrl = s3.presign(key, { method: 'PUT', expiresIn });
+        newUploadUrl = ensureHTTPS(s3.presign(key, { method: 'PUT', expiresIn }));
         upload_url_expires_at = expiresAt;
       }
       if (shouldUpdateDownload) {
-        newDownloadUrl = s3.presign(key, { method: 'GET', expiresIn });
+        newDownloadUrl = ensureHTTPS(s3.presign(key, { method: 'GET', expiresIn }));
         download_url_expires_at = expiresAt;
       }
 

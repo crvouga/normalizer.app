@@ -16,6 +16,7 @@ import { UserSessionId as UserSessionIdHelper } from '../users/user-session-id';
 export type Context = {
   db: Db;
   s3: S3Client;
+  s3Endpoint: string;
   minioClient: MinioClient;
   logger: Logger;
   sessionId: SessionId;
@@ -27,11 +28,12 @@ export type Context = {
 export const createContext = async (config: {
   db: Db;
   s3: S3Client;
+  s3Endpoint: string;
   minioClient: MinioClient;
   logger: Logger;
   req: Request;
 }): Promise<Context> => {
-  const { db, s3, minioClient, logger, req } = config;
+  const { db, s3, s3Endpoint, minioClient, logger, req } = config;
 
   // Get or generate session ID
   const sessionId = getSessionId(req);
@@ -76,6 +78,7 @@ export const createContext = async (config: {
   return {
     db,
     s3,
+    s3Endpoint,
     minioClient,
     logger,
     sessionId,

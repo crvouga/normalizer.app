@@ -5,6 +5,7 @@ import { createContext } from './lib/trpc-server';
 import clientHtml from './client.html';
 import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
+import { getS3Config } from './s3-config';
 import { cleanupDb, createDb } from './sql';
 import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
 import { createGoogleAuthEndpoints } from './auth/google-auth-endpoints';
@@ -27,6 +28,7 @@ const main = async () => {
 
   const db = await createDb({ logger });
 
+  const { s3Endpoint } = getS3Config();
   const { s3Client, minioClient } = await createS3({ logger });
 
   logger.info('Starting server...');
@@ -39,7 +41,14 @@ const main = async () => {
       req,
       router: appRouter,
       createContext: async () => {
-        const context = await createContext({ db, s3: s3Client, minioClient, logger, req });
+        const context = await createContext({
+          db,
+          s3: s3Client,
+          s3Endpoint,
+          minioClient,
+          logger,
+          req,
+        });
         return context;
       },
     });

@@ -45,7 +45,7 @@ export const artifactRouter = router({
       const {
         artifacts: [artifactWithUrls],
         updated,
-      } = await Artifact.populateUrls([validatedArtifact], ctx.s3);
+      } = await Artifact.populateUrls([validatedArtifact], ctx.s3, ctx.s3Endpoint);
 
       // If URLs were updated, persist to database
       if (updated.has(String(validatedArtifact.id))) {
@@ -82,6 +82,7 @@ export const artifactRouter = router({
       const { artifacts: artifactsWithUrls, updated } = await Artifact.populateUrls(
         validatedArtifacts,
         ctx.s3,
+        ctx.s3Endpoint,
       );
 
       // Update database for artifacts with refreshed URLs
