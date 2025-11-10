@@ -22,6 +22,33 @@ type UserProfileSidebarItemProps = {
   user: User;
 };
 
+const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolean }) => {
+  return (
+    <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-gray-100 data-active:bg-gray-100 dark:hover:bg-gray-800 dark:data-active:bg-gray-800">
+      <Avatar
+        src={user.profile_picture}
+        alt={user.name || 'User'}
+        initials={getUserInitials(user)}
+        size="md"
+      />
+      <div className="min-w-0 flex-1 text-left">
+        <Typography variant="sm" weight="medium" color="primary" className="truncate">
+          {user.name || user.email || 'Anonymous User'}
+        </Typography>
+        {isAnonymous ? (
+          <Typography variant="xs" color="muted">
+            Not signed in
+          </Typography>
+        ) : user.email ? (
+          <Typography variant="xs" color="muted" className="truncate">
+            {user.email}
+          </Typography>
+        ) : null}
+      </div>
+    </MenuButton>
+  );
+};
+
 export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
   const [settingsModalState, setSettingsModalState] = useState<SettingsModalState>({
     type: 'closed',
@@ -50,28 +77,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
   return (
     <>
       <Menu as="div" className="relative w-full">
-        <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-gray-100 data-active:bg-gray-100 dark:hover:bg-gray-800 dark:data-active:bg-gray-800">
-          <Avatar
-            src={user.profile_picture}
-            alt={user.name || 'User'}
-            initials={getUserInitials(user)}
-            size="md"
-          />
-          <div className="min-w-0 flex-1 text-left">
-            <Typography variant="sm" weight="medium" color="primary" className="truncate">
-              {user.name || user.email || 'Anonymous User'}
-            </Typography>
-            {isAnonymous ? (
-              <Typography variant="xs" color="muted">
-                Not signed in
-              </Typography>
-            ) : user.email ? (
-              <Typography variant="xs" color="muted" className="truncate">
-                {user.email}
-              </Typography>
-            ) : null}
-          </div>
-        </MenuButton>
+        <UserMenuButton user={user} isAnonymous={isAnonymous} />
 
         <MenuItemsAnimated anchor="top">
           {authState.type === 'loading' && (
@@ -119,11 +125,13 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
       </Menu>
 
       <SettingsModal isOpen={settingsModalState.type === 'open'} onClose={closeSettings} />
+
       <SignInModal
         isOpen={isSignInOpen}
         onClose={closeSignInDialog}
         onGoogleSignIn={handleGoogleSignIn}
       />
+
       <SignOutConfirmationModal
         isOpen={isOpen}
         onClose={closeLogoutDialog}
