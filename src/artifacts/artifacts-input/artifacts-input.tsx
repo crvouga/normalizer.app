@@ -58,9 +58,18 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
     [],
   );
 
+  // Handle clear all
+  const handleClearAll = useCallback(() => {
+    props.onChange([]);
+  }, [props]);
+
   return (
     <div className="space-y-4">
-      <SelectedArtifactsList artifacts={props.value} onRemove={removeArtifact} />
+      <SelectedArtifactsList
+        artifacts={props.value}
+        onRemove={removeArtifact}
+        onClearAll={handleClearAll}
+      />
 
       {props.value.length < limit && (
         <AsyncCombobox
