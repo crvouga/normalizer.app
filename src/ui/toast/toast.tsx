@@ -1,12 +1,11 @@
 import { Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
-import { cn } from '~/src/lib/cn';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useI18n } from '~/src/i18n/use-i18n';
-import { IconAlertCircle, IconCheck, IconX } from '../icons';
-import { Button } from '../button';
-import type { Toast as ToastType } from './toast-types';
-import { toastStore } from './toast-store';
+import { cn } from '~/src/lib/cn';
 import { ButtonBase } from '../button-base';
+import { IconAlertCircle, IconCheck, IconX } from '../icons';
+import { toastStore } from './toast-store';
+import type { Toast as ToastType } from './toast-types';
 
 interface ToastProps {
   toast: ToastType;
@@ -17,13 +16,24 @@ export function Toast({ toast, onShowError }: ToastProps) {
   const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(true);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsVisible(false);
     // Wait for animation to complete before removing from store
     setTimeout(() => {
       toastStore.removeToast(toast.id);
     }, 300);
-  };
+  }, [toast.id]);
+
+  // Auto-dismiss after duration
+  useEffect(() => {
+    if (toast.duration && toast.duration > 0) {
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, toast.duration);
+
+      return () => clearTimeout(timer);
+    }
+  }, [toast.duration, handleDismiss]);
 
   const handleShowError = () => {
     if (toast.errorDetails && onShowError) {

@@ -25,13 +25,6 @@ class ToastStore extends Store<ToastStoreState> {
       toasts: [...state.toasts, toast],
     }));
 
-    // Auto-dismiss if duration is set
-    if (toast.duration && toast.duration > 0) {
-      setTimeout(() => {
-        this.removeToast(id);
-      }, toast.duration);
-    }
-
     return id;
   }
 
