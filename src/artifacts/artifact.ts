@@ -28,6 +28,7 @@ const schema = z.object({
   upload_url: z.string().nullable().optional(),
   upload_url_expires_at: z.coerce.date().nullable().optional(),
 
+  name: z.string().nullable().optional(),
   tags: z.array(z.string()).optional().nullable(),
   description: z.string().nullable().optional(),
 
@@ -36,7 +37,12 @@ const schema = z.object({
 
 export type Artifact = z.infer<typeof schema>;
 
-const create = (input: { id: ArtifactId; filename: string; content_type: string }): Artifact => {
+const create = (input: {
+  id: ArtifactId;
+  filename: string;
+  content_type: string;
+  name?: string;
+}): Artifact => {
   return {
     id: input.id,
     filename: input.filename,
@@ -55,6 +61,7 @@ const create = (input: { id: ArtifactId; filename: string; content_type: string 
     download_url_expires_at: null,
     upload_url: null,
     upload_url_expires_at: null,
+    name: input.name ?? null,
     tags: null,
     description: null,
     deleted: null,

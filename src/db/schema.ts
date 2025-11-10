@@ -30,6 +30,7 @@ export const artifacts = pgTable('artifacts', {
   upload_url_expires_at: timestamp('upload_url_expires_at'),
 
   // Application/domain-specific
+  name: text('name'),
   tags: jsonb('tags').$type<string[]>(),
   description: text('description'),
 

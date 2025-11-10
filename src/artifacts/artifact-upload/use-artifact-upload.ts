@@ -14,7 +14,7 @@ export function useArtifactUpload({
   const [state, setState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const entityStore = useEntityStore();
 
-  const uploadArtifact = async (file: File) => {
+  const uploadArtifact = async (file: File, name?: string) => {
     setState(Loading);
 
     // Generate client-side artifact ID
@@ -26,6 +26,7 @@ export function useArtifactUpload({
         id: artifactId,
         filename: file.name,
         content_type: file.type,
+        name,
       });
 
       // Optimistically insert into entity store
@@ -36,6 +37,7 @@ export function useArtifactUpload({
         filename: file.name,
         contentType: file.type,
         artifactId,
+        name,
       });
 
       // If server ID differs from client ID, update the entity

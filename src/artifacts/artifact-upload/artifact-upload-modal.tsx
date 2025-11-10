@@ -1,8 +1,9 @@
 import { type FormEvent, useState } from 'react';
 import { isOk, type Result } from '~/src/lib/result';
-import { Button } from '~/src/ui/button';
 import { Modal } from '~/src/ui/modal';
-import { TabularFileInput } from '~/src/ui/tabular-file-input/tabular-file-input';
+import { ModalActions } from '~/src/ui/modal-actions';
+import { TabularFileField } from '~/src/ui/tabular-file-input/tabular-file-field';
+import { TextField } from '~/src/ui/text-field/text-field';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
 import { useArtifactUpload } from './use-artifact-upload';
@@ -20,12 +21,14 @@ export function ArtifactUploadModal({
 }: ArtifactUploadModalProps) {
   const { t } = useI18n();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [artifactName, setArtifactName] = useState<string>('');
 
   const { uploadArtifact, isUploading, state } = useArtifactUpload({
     onUploadComplete: (result) => {
       onUploadComplete?.(result);
       if (isOk(result)) {
         setSelectedFile(null);
+        setArtifactName('');
         onClose();
       }
     },
@@ -33,23 +36,28 @@ export function ArtifactUploadModal({
 
   const handleFilesChange = (files: FileList | null) => {
     if (files && files.length > 0) {
-      setSelectedFile(files[0]);
+      const file = files[0];
+      setSelectedFile(file);
+      // Pre-fill the artifact name with the filename
+      setArtifactName(file.name);
     } else {
       setSelectedFile(null);
+      setArtifactName('');
     }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (selectedFile) {
-      await uploadArtifact(selectedFile);
+      await uploadArtifact(selectedFile, artifactName || undefined);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')} size="2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <TabularFileInput
+        <TabularFileField
+          label={t('artifact.fileLabel')}
           onFilesChange={handleFilesChange}
           accept="*/*"
           maxFiles={1}
@@ -58,26 +66,27 @@ export function ArtifactUploadModal({
           showPreview={true}
           multiple={false}
         />
+        <TextField
+          id="artifact-name"
+          type="text"
+          label={t('artifact.nameLabel')}
+          value={artifactName}
+          onChange={(e) => setArtifactName(e.target.value)}
+          placeholder={t('artifact.namePlaceholder')}
+          disabled={isUploading}
+        />
         {state.tag === 'err' && (
           <div className="mt-2 text-sm text-red-600 dark:text-red-400">
             {state.error?.message || t('artifact.uploadError')}
           </div>
         )}
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            type="button"
-            variant="ghost"
-            text={t('common.cancel')}
-            onClick={onClose}
-            disabled={isUploading}
-          />
-          <Button
-            type="submit"
-            variant="default"
-            text={isUploading ? t('artifact.uploading') : t('artifact.upload')}
-            disabled={!selectedFile || isUploading}
-          />
-        </div>
+        <ModalActions
+          cancelText={t('common.cancel')}
+          onCancel={onClose}
+          cancelDisabled={isUploading}
+          submitText={isUploading ? t('artifact.uploading') : t('artifact.upload')}
+          submitDisabled={!selectedFile || isUploading}
+        />
       </form>
     </Modal>
   );

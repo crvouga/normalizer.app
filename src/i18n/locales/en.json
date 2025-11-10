@@ -32,9 +32,12 @@
     "uploadButton": "Upload",
     "uploadDialogTitle": "Upload Artifact",
     "uploadPlaceholder": "Drag and drop or click to select a file",
+    "nameLabel": "Artifact Name",
+    "namePlaceholder": "Enter artifact name",
     "upload": "Upload",
     "uploadError": "Upload failed",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "fileLabel": "Artifact File"
   },
   "modal": {
     "close": "Close"

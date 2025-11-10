@@ -13,6 +13,7 @@ export const artifactUploadRouter = router({
         filename: z.string(),
         contentType: z.string(),
         artifactId: ArtifactId.schema,
+        name: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -29,6 +30,7 @@ export const artifactUploadRouter = router({
         status: 'pending',
         s3_bucket: s3Bucket,
         s3_key: s3Key,
+        name: input.name ?? null,
         created_at: new Date(),
         updated_at: new Date(),
       });
