@@ -19,6 +19,15 @@ const sizeConfig = {
 export function AnimatedLogo({ size = 'lg', className }: AnimatedLogoProps) {
   return (
     <>
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="50%" stopColor="#9333ea" />
+            <stop offset="100%" stopColor="#7c3aed" />
+          </linearGradient>
+        </defs>
+      </svg>
       <span className={cn('relative inline-flex items-center justify-center', className)}>
         <span
           className={cn(
@@ -29,10 +38,8 @@ export function AnimatedLogo({ size = 'lg', className }: AnimatedLogoProps) {
           aria-hidden="true"
         />
         <IconSparkles
-          className={cn(
-            sizeConfig[size],
-            'relative text-purple-600 drop-shadow-[0_0_8px_rgba(139,92,246,0.3)]',
-          )}
+          className={cn(sizeConfig[size], 'relative drop-shadow-[0_0_8px_rgba(139,92,246,0.3)]')}
+          style={{ fill: 'url(#purple-gradient)' }}
         />
       </span>
       <style>

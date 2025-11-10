@@ -1,14 +1,14 @@
+import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { Button } from './ui/button';
-import { IconPlus, IconSparkles } from './ui/icons';
+import { IconSparkles } from './ui/icons';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
+import { CurrentUserBoundary } from './users/current-user-boundary';
 import { useCurrentUser } from './users/use-current-user';
 import { UserProfileSidebarItem } from './users/user-profile-sidebar-item';
-import { CurrentUserBoundary } from './users/current-user-boundary';
-import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 
 export function App() {
   return (
@@ -31,11 +31,7 @@ function AppSidebar() {
     <SidebarRoot>
       <SidebarHeader icon={<IconSparkles className="size-8" />} title={t('app.title')} />
       <div className="w-full p-4">
-        <Button
-          className="w-full"
-          text={t('app.newSession')}
-          startIcon={<IconPlus className="size-6" />}
-        />
+        <Button className="w-full" text={t('app.newSession')} />
       </div>
       <div className="w-full flex-1"></div>
       <SidebarFooter content={user && <UserProfileSidebarItem user={user} />} />
