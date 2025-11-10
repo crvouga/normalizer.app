@@ -114,7 +114,7 @@ async function populateUrls(
       let upload_url_expires_at = artifact.upload_url_expires_at ?? null;
       let download_url_expires_at = artifact.download_url_expires_at ?? null;
 
-      const key = String(artifact.id);
+      const key = artifact.s3_key;
 
       const shouldUpdateUpload = isMissingOrExpired(upload_url, upload_url_expires_at);
       const shouldUpdateDownload = isMissingOrExpired(download_url, download_url_expires_at);
