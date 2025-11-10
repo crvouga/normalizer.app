@@ -1,13 +1,12 @@
 import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
-import { SettingsButton } from './settings/settings-button';
 import { Button } from './ui/button';
 import { IconPlus, IconSparkles } from './ui/icons';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
 import { useCurrentUser } from './users/use-current-user';
-import { UserProfile } from './users/user-profile';
+import { UserProfileSidebarItem } from './users/user-profile-sidebar-item';
 import { CurrentUserBoundary } from './users/current-user-boundary';
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 
@@ -26,7 +25,6 @@ function AppSidebar() {
   const { t } = useI18n();
   const currentUserResult = useCurrentUser();
 
-  // Only show user profile if user is loaded
   const user = currentUserResult.tag === 'ok' ? currentUserResult.value : null;
 
   return (
@@ -40,16 +38,7 @@ function AppSidebar() {
         />
       </div>
       <div className="w-full flex-1"></div>
-      <SidebarFooter
-        content={
-          <div className="flex w-full flex-col gap-2">
-            {user && <UserProfile user={user} />}
-            <div className="flex w-full items-center justify-end">
-              <SettingsButton />
-            </div>
-          </div>
-        }
-      />
+      <SidebarFooter content={user && <UserProfileSidebarItem user={user} />} />
     </SidebarRoot>
   );
 }
