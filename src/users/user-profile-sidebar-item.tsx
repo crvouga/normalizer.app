@@ -1,16 +1,18 @@
+import { Menu, MenuButton } from '@headlessui/react';
 import { useState } from 'react';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { LogoutConfirmationModal } from '~/src/auth/logout-confirmation-modal';
+import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
+import { useLogout } from '~/src/auth/use-logout';
+import { useI18n } from '~/src/i18n/use-i18n';
+import { SettingsModal } from '~/src/settings/settings-modal';
+import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
+import { Avatar } from '~/src/ui/avatar';
+import { Divider } from '~/src/ui/divider';
+import { IconGoogle, IconLogout, IconSettings, IconSpinner } from '~/src/ui/icons';
+import { MenuItemButton } from '~/src/ui/menu-item-button';
+import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
 import { getUserInitials } from './user-initials';
-import { Avatar } from '~/src/ui/avatar';
-import { Typography } from '~/src/ui/typography';
-import { Divider } from '~/src/ui/divider';
-import { IconSettings, IconSpinner, IconGoogle, IconLogout } from '~/src/ui/icons';
-import { SettingsModal } from '~/src/settings/settings-modal';
-import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
-import { useI18n } from '~/src/i18n/use-i18n';
-import { useLogout } from '~/src/auth/use-logout';
-import { LogoutConfirmationModal } from '~/src/auth/logout-confirmation-modal';
 
 type SettingsModalState = { type: 'closed' } | { type: 'open' };
 
@@ -61,10 +63,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
           </div>
         </MenuButton>
 
-        <MenuItems
-          anchor="top"
-          className="z-50 w-(--button-width) overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg focus:outline-none dark:border-gray-700 dark:bg-gray-800"
-        >
+        <MenuItemsAnimated anchor="top">
           {authState.type === 'loading' && (
             <div className="flex items-center justify-center px-4 py-6">
               <IconSpinner className="size-5 text-gray-400" />
@@ -89,54 +88,24 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
 
           <Divider />
 
-          {/* Sign in with Google as a MenuItem rather than a Button */}
           {authState.type === 'loaded' && isAnonymous && authState.isEnabled && (
-            <MenuItem>
-              <button
-                onClick={handleGoogleSignIn}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors data-focus:bg-gray-100 dark:data-focus:bg-gray-700"
-                tabIndex={-1}
-                type="button"
-              >
-                <IconGoogle className="size-5 shrink-0 text-gray-600 dark:text-gray-400" />
-                <Typography variant="sm" color="secondary">
-                  Sign in with Google
-                </Typography>
-              </button>
-            </MenuItem>
+            <MenuItemButton
+              onClick={handleGoogleSignIn}
+              icon={<IconGoogle />}
+              label="Sign in with Google"
+            />
           )}
 
-          <MenuItem>
-            {/* Settings button */}
-            <button
-              onClick={openSettings}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors data-focus:bg-gray-100 dark:data-focus:bg-gray-700"
-              tabIndex={-1}
-              type="button"
-            >
-              <IconSettings className="size-5 shrink-0 text-gray-600 dark:text-gray-400" />
-              <Typography variant="sm" color="secondary">
-                Settings
-              </Typography>
-            </button>
-          </MenuItem>
+          <MenuItemButton onClick={openSettings} icon={<IconSettings />} label="Settings" />
 
           {!isAnonymous && (
-            <MenuItem>
-              <button
-                onClick={openLogoutDialog}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors data-focus:bg-gray-100 dark:data-focus:bg-gray-700"
-                tabIndex={-1}
-                type="button"
-              >
-                <IconLogout className="size-5 shrink-0 text-gray-600 dark:text-gray-400" />
-                <Typography variant="sm" color="secondary">
-                  {t('auth.signOut')}
-                </Typography>
-              </button>
-            </MenuItem>
+            <MenuItemButton
+              onClick={openLogoutDialog}
+              icon={<IconLogout />}
+              label={t('auth.signOut')}
+            />
           )}
-        </MenuItems>
+        </MenuItemsAnimated>
       </Menu>
 
       <SettingsModal isOpen={settingsModalState.type === 'open'} onClose={closeSettings} />
