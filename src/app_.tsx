@@ -1,11 +1,10 @@
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
-import type { NormalizationSessionId } from './normalization-session/normalization-session-id';
+import { NormalizationSessionId } from './normalization-session/normalization-session-id';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
 import { Button } from './ui/button';
-import { IconSparkles } from './ui/icons';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
 import { CurrentUserBoundary } from './users/current-user-boundary';
@@ -28,17 +27,19 @@ function AppSidebar() {
   const { currentUserResult } = useCurrentUser();
 
   const user = currentUserResult.tag === 'ok' ? currentUserResult.value : null;
-
+  const currentScreen = useCurrentScreen();
   return (
     <SidebarRoot>
-      {false && <SidebarHeader icon={<IconSparkles className="size-8" />} title={t('app.title')} />}
       <SidebarHeader icon={<AnimatedLogo size="sm" />} title={t('app.title')} />
-
       <div className="w-full p-4">
-        <Button className="w-full" text={t('app.newSession')} />
+        <Button
+          className="w-full"
+          text={t('app.newSession')}
+          onClick={() => currentScreen.setCurrentScreen({ type: 'normalization-session' }, 'push')}
+        />
       </div>
       <div className="w-full flex-1"></div>
-      <SidebarFooter content={user && <UserProfileSidebarItem user={user} />} />
+      <SidebarFooter content={<UserProfileSidebarItem user={user} />} />
     </SidebarRoot>
   );
 }
@@ -49,9 +50,9 @@ function AppScreen() {
     case 'normalization-session':
       return (
         <NormalizationSessionScreen
-          normalizationSessionId={
-            (currentScreen.normalizationSessionId ?? null) as NormalizationSessionId | null
-          }
+          normalizationSessionId={NormalizationSessionId.schema
+            .nullable()
+            .parse(currentScreen.normalizationSessionId ?? null)}
         />
       );
   }

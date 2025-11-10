@@ -49,7 +49,7 @@ function getButtonClasses(
     default: colorClasses[color],
     destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
     outline:
-      'border border-input/40 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
+      'border border-gray-500 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground',
     secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
     ghost: 'hover:bg-accent hover:text-accent-foreground',
     link: 'text-primary underline-offset-4 hover:underline',

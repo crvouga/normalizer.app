@@ -52,8 +52,15 @@ export function useQueryParam<T>({
       setValue(decodeParam(param));
     };
 
+    // Listen for both browser navigation and programmatic URL changes
     window.addEventListener('popstate', handleUrlChange);
-    return () => window.removeEventListener('popstate', handleUrlChange);
+    window.addEventListener('pushstate', handleUrlChange);
+    window.addEventListener('replacestate', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('pushstate', handleUrlChange);
+      window.removeEventListener('replacestate', handleUrlChange);
+    };
   }, [paramName, decodeParam]);
 
   // Update URL when state changes
@@ -73,9 +80,13 @@ export function useQueryParam<T>({
       switch (method ?? 'push') {
         case 'push':
           window.history.pushState({}, '', newUrl);
+          // Dispatch custom event to notify other components
+          window.dispatchEvent(new Event('pushstate'));
           break;
         case 'replace':
           window.history.replaceState({}, '', newUrl);
+          // Dispatch custom event to notify other components
+          window.dispatchEvent(new Event('replacestate'));
           break;
       }
     },

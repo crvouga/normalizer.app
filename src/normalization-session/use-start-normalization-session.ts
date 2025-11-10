@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
+import type { ArtifactId } from '../artifacts/artifact-id';
+import { useI18n } from '../i18n/use-i18n';
 import type { RemoteResult, Result } from '../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../lib/result';
 import { useEntityStore } from '../store/entity-store';
 import { trpcClient } from '../trpc-client';
-import { showErrorToast, showSuccessToast } from '../ui/toast';
-import { useI18n } from '../i18n/use-i18n';
-import type { ArtifactId } from '../artifacts/artifact-id';
+import { useCurrentUser } from '../users/use-current-user';
 import type { NormalizationSessionId } from './normalization-session-id';
 import { NormalizationSessionId as NormalizationSessionIdGenerator } from './normalization-session-id';
-import { useCurrentUser } from '../users/use-current-user';
 
 export interface StartNormalizationSessionParams {
   targetArtifactIds: ArtifactId[];
@@ -35,7 +34,6 @@ export function useStartNormalizationSession({
     if (currentUserResult.tag !== 'ok') {
       const error = new Error('User not loaded');
       setState(Failure(error));
-      showErrorToast(t('session.startError'), error);
       onStartComplete?.(Err(error));
       return;
     }
@@ -73,13 +71,11 @@ export function useStartNormalizationSession({
       const result: StartNormalizationSessionResult = { sessionId, eventId };
 
       setState(Success(result));
-      showSuccessToast(t('session.startSuccess'));
       onStartComplete?.(Ok(result));
 
       return result;
     } catch (error) {
       setState(Failure(error as Error));
-      showErrorToast(t('session.startError'), error);
       onStartComplete?.(Err(error as Error));
       throw error;
     }

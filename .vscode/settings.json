@@ -21,6 +21,8 @@
     "presign",
     "presigning",
     "psql",
+    "pushstate",
+    "replacestate",
     "schemaname",
     "spreadsheetml",
     "sslmode",
