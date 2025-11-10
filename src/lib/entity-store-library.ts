@@ -258,6 +258,13 @@ function updateIndexesForEntity<TStore extends StoreConfig<any>>(
   return newState;
 }
 
+// Type helpers to extract entity type info from store
+type ExtractEntityType<TStore extends StoreConfig<any>, TKey extends keyof TStore['entities']> =
+  TStore['entities'][TKey] extends EntitySlice<any, infer TEntity> ? TEntity : never;
+
+type ExtractEntityId<TStore extends StoreConfig<any>, TKey extends keyof TStore['entities']> =
+  TStore['entities'][TKey] extends EntitySlice<infer TId, any> ? TId : never;
+
 // Generic hook factory
 export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
   store: Store<TStore>,
@@ -275,10 +282,13 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
     const optimizedDispatch = useCallback(dispatch, []);
 
     const addEntity = useCallback(
-      (entityType: string, entity: unknown) => {
+      <TKey extends keyof TStore['entities']>(
+        entityType: TKey,
+        entity: ExtractEntityType<TStore, TKey>,
+      ) => {
         optimizedDispatch({
           type: 'entity/ADD',
-          entityType,
+          entityType: entityType as string,
           entity,
         });
       },
@@ -286,10 +296,13 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
     );
 
     const addManyEntities = useCallback(
-      (entityType: string, entities: unknown[]) => {
+      <TKey extends keyof TStore['entities']>(
+        entityType: TKey,
+        entities: ExtractEntityType<TStore, TKey>[],
+      ) => {
         optimizedDispatch({
           type: 'entity/ADD_MANY',
-          entityType,
+          entityType: entityType as string,
           entities,
         });
       },
@@ -297,11 +310,15 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
     );
 
     const updateEntity = useCallback(
-      (entityType: string, id: string, changes: Record<string, unknown> | unknown) => {
+      <TKey extends keyof TStore['entities']>(
+        entityType: TKey,
+        id: ExtractEntityId<TStore, TKey>,
+        changes: Partial<ExtractEntityType<TStore, TKey>>,
+      ) => {
         optimizedDispatch({
           type: 'entity/UPDATE',
-          entityType,
-          id,
+          entityType: entityType as string,
+          id: id as string,
           changes: changes as Record<string, unknown>,
         });
       },
@@ -309,21 +326,24 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
     );
 
     const removeEntity = useCallback(
-      (entityType: string, id: string) => {
+      <TKey extends keyof TStore['entities']>(
+        entityType: TKey,
+        id: ExtractEntityId<TStore, TKey>,
+      ) => {
         optimizedDispatch({
           type: 'entity/REMOVE',
-          entityType,
-          id,
+          entityType: entityType as string,
+          id: id as string,
         });
       },
       [optimizedDispatch],
     );
 
     const resetEntity = useCallback(
-      (entityType: string) => {
+      <TKey extends keyof TStore['entities']>(entityType: TKey) => {
         optimizedDispatch({
           type: 'entity/RESET',
-          entityType,
+          entityType: entityType as string,
         });
       },
       [optimizedDispatch],
