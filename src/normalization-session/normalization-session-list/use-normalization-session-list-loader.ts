@@ -79,10 +79,19 @@ export function useNormalizationSessionListLoader(
     [userId, cursor, entityStore],
   );
 
+  // Reset state when userId changes
+  useEffect(() => {
+    setCursor(null);
+    setHasMore(false);
+    setState({ type: 'idle' });
+  }, [userId]);
+
   // Initial load
   useEffect(() => {
-    loadSessions(false);
-  }, [userId]); // Only re-run when userId changes
+    if (state.type === 'idle') {
+      loadSessions(false);
+    }
+  }, [state.type, loadSessions]);
 
   const loadMore = useCallback(() => {
     if (hasMore && state.type !== 'loading' && state.type !== 'loading-more') {

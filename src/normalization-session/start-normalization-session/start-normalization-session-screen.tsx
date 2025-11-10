@@ -8,9 +8,9 @@ import { isOk } from '../../lib/result';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import { Form } from '../../ui/form';
 import { showErrorToast, showSuccessToast } from '../../ui/toast';
-import { useStartNormalizationSession } from '../use-start-normalization-session';
+import { useStartNormalizationSession } from './use-start-normalization-session';
 
-export const NormalizationSessionStartScreen = () => {
+export const StartNormalizationSessionScreen = () => {
   const { t } = useI18n();
   const [targetArtifactIds, setTargetArtifactIds] = useState<ArtifactId[]>([]);
   const currentScreen = useCurrentScreen();

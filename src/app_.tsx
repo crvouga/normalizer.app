@@ -3,6 +3,8 @@ import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionId } from './normalization-session/normalization-session-id';
 import { NormalizationSessionProjectionList } from './normalization-session/normalization-session-list/normalization-session-list';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
+import { StartNormalizationSessionScreen } from './normalization-session/start-normalization-session/start-normalization-session-screen';
+
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
 import { Button } from './ui/button';
@@ -44,7 +46,7 @@ function AppSidebar() {
         <Button
           className="w-full"
           text={t('app.newSession')}
-          onClick={() => currentScreen.setCurrentScreen({ type: 'normalization-session' })}
+          onClick={() => currentScreen.setCurrentScreen({ type: 'start-normalization-session' })}
         />
       </div>
       {user && (
@@ -64,13 +66,17 @@ function AppSidebar() {
 function AppScreen() {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
-    case 'normalization-session':
+    case 'start-normalization-session': {
+      return <StartNormalizationSessionScreen />;
+    }
+    case 'normalization-session': {
       return (
         <NormalizationSessionScreen
-          normalizationSessionId={NormalizationSessionId.schema
-            .nullable()
-            .parse(currentScreen.normalizationSessionId ?? null)}
+          normalizationSessionId={NormalizationSessionId.schema.parse(
+            currentScreen.normalizationSessionId,
+          )}
         />
       );
+    }
   }
 }

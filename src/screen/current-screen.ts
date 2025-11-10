@@ -3,8 +3,11 @@ import { NormalizationSessionId } from '../normalization-session/normalization-s
 
 export const CurrentScreen = z.discriminatedUnion('type', [
   z.object({
+    type: z.literal('start-normalization-session'),
+  }),
+  z.object({
     type: z.literal('normalization-session'),
-    normalizationSessionId: NormalizationSessionId.schema.nullable(),
+    normalizationSessionId: NormalizationSessionId.schema,
   }),
 ]);
 

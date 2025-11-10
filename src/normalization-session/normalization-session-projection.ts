@@ -38,7 +38,12 @@ const init = (input: {
   startedAt: Date;
   startedByUserId: UserId;
 }): NormalizationSessionProjection => {
-  return input;
+  return {
+    id: input.sessionId,
+    targetArtifactIds: input.targetArtifactIds,
+    startedAt: input.startedAt,
+    startedByUserId: input.startedByUserId,
+  };
 };
 
 const reduce = (

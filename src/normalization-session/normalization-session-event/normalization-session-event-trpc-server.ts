@@ -29,7 +29,7 @@ export const normalizationSessionEventRouter = router({
         userId: ctx.userId,
       });
 
-      await ctx.db.transaction(async (tx) => {
+      const projection = await ctx.db.transaction(async (tx) => {
         // Insert the new event
         await tx.insert(schema.normalizationSessionEvents).values({
           id: eventId,
@@ -78,10 +78,13 @@ export const normalizationSessionEventRouter = router({
           sessionId: input.sessionId,
           eventCount: events.length,
         });
+
+        return projection;
       });
 
       return {
         eventId,
+        projection,
       };
     }),
 

@@ -6,7 +6,7 @@ export const useCurrentScreen = () => {
     paramName: 'screen',
     parser: CurrentScreen,
     defaultValue: {
-      type: 'normalization-session',
+      type: 'start-normalization-session',
     },
   });
 

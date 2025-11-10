@@ -14,7 +14,21 @@ export function NormalizationSessionListItem({
   projection,
   onClick,
 }: NormalizationSessionListItemProps) {
-  const formatDate = (date: Date) => {
+  // Handles the known issue: RangeError: Invalid time value
+  // Accepts string, Date, or number
+  const formatDate = (dateLike: unknown): string => {
+    let date: Date | null = null;
+    if (dateLike instanceof Date && !isNaN(dateLike.valueOf())) {
+      date = dateLike;
+    } else if (typeof dateLike === 'string' || typeof dateLike === 'number') {
+      const d = new Date(dateLike);
+      if (!isNaN(d.valueOf())) {
+        date = d;
+      }
+    }
+
+    if (!date) return 'Invalid date';
+
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',

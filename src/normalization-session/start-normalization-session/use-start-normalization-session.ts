@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import type { ArtifactId } from '../artifacts/artifact-id';
-import { useI18n } from '../i18n/use-i18n';
-import type { RemoteResult, Result } from '../lib/result';
-import { Err, Failure, Loading, NotAsked, Ok, Success } from '../lib/result';
-import { useEntityStore } from '../store/entity-store';
-import { trpcClient } from '../trpc-client';
-import { useCurrentUser } from '../users/use-current-user';
-import type { NormalizationSessionId } from './normalization-session-id';
-import { NormalizationSessionId as NormalizationSessionIdGenerator } from './normalization-session-id';
+import type { ArtifactId } from '../../artifacts/artifact-id';
+import { useI18n } from '../../i18n/use-i18n';
+import type { RemoteResult, Result } from '../../lib/result';
+import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
+import { useEntityStore } from '../../store/entity-store';
+import { trpcClient } from '../../trpc-client';
+import { useCurrentUser } from '../../users/use-current-user';
+import type { NormalizationSessionId } from '../normalization-session-id';
+import { NormalizationSessionId as NormalizationSessionIdGenerator } from '../normalization-session-id';
 
 export interface StartNormalizationSessionParams {
   targetArtifactIds: ArtifactId[];
@@ -55,7 +55,7 @@ export function useStartNormalizationSession({
       };
 
       // Call the backend to append the event
-      const { eventId } = await trpcClient.normalizationSession.events.append.mutate({
+      const { eventId, projection } = await trpcClient.normalizationSession.events.append.mutate({
         sessionId,
         event,
       });
@@ -67,6 +67,9 @@ export function useStartNormalizationSession({
         event,
         created_at: startedAt,
       });
+
+      // Add the projection to the entity store
+      entityStore.addEntity('normalizationSessionProjections', projection);
 
       const result: StartNormalizationSessionResult = { sessionId, eventId };
 

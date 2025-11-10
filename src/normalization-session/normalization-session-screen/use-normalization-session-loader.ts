@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { trpcClient } from '../trpc-client';
-import { useEntityStore } from '../store/entity-store';
-import type { NormalizationSessionId } from './normalization-session-id';
-import type { RemoteResult } from '../lib/result';
-import { NotAsked, Loading as RemoteLoading, Success, Failure } from '../lib/result';
+import { trpcClient } from '../../trpc-client';
+import { useEntityStore } from '../../store/entity-store';
+import type { NormalizationSessionId } from '../normalization-session-id';
+import type { RemoteResult } from '../../lib/result';
+import { NotAsked, Loading as RemoteLoading, Success, Failure } from '../../lib/result';
 
 /**
  * Hook for loading normalization session events from the server and storing them in the entity store.
