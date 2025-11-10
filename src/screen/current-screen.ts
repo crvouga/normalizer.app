@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 
 export const CurrentScreen = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('normalization-session'),
-    normalizationSessionId: z.string().nullable(),
+    normalizationSessionId: NormalizationSessionId.schema.nullable(),
   }),
 ]);
 

@@ -1,5 +1,6 @@
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
+import type { NormalizationSessionId } from './normalization-session/normalization-session-id';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
@@ -47,7 +48,11 @@ function AppScreen() {
   switch (currentScreen.type) {
     case 'normalization-session':
       return (
-        <NormalizationSessionScreen normalizationSessionId={currentScreen.normalizationSessionId} />
+        <NormalizationSessionScreen
+          normalizationSessionId={
+            (currentScreen.normalizationSessionId ?? null) as NormalizationSessionId | null
+          }
+        />
       );
   }
 }

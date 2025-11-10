@@ -29,7 +29,9 @@
     "startButton": "Start Session",
     "targetFiles": "Target Files",
     "uploadPlaceholder": "Upload target files",
-    "targetArtifact": "Target Artifact"
+    "targetArtifact": "Target Artifact",
+    "startSuccess": "Session started successfully",
+    "startError": "Failed to start session"
   },
   "prompt": {
     "label": "Prompt",
