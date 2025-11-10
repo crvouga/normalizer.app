@@ -11,12 +11,12 @@ type ButtonVariant =
   | 'contained'
   | 'oauth';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
-type ButtonColor = 'blue' | 'red' | 'green' | 'yellow' | 'gray';
+type ButtonColor = 'purple' | 'red' | 'green' | 'yellow' | 'gray';
 
 function getButtonClasses(
   variant: ButtonVariant = 'default',
   size: ButtonSize = 'default',
-  color: ButtonColor = 'blue',
+  color: ButtonColor = 'purple',
 ) {
   const baseClasses = [
     'inline-flex items-center justify-center gap-2',
@@ -35,13 +35,14 @@ function getButtonClasses(
   ].join(' ');
 
   const colorClasses = {
-    blue: 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+    purple:
+      'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600',
     red: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
     green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
     yellow:
       'bg-yellow-600 text-white hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600',
     gray: 'bg-gray-600 text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600',
-  };
+  } as const;
 
   const variantClasses = {
     default: colorClasses[color],
@@ -80,7 +81,7 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
-  color = 'blue',
+  color = 'purple',
   asChild = false,
   text,
   startIcon,

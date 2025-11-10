@@ -33,7 +33,7 @@ export function ComboboxOptionItem<T extends string | number>({
         >
           {option.label}
         </span>
-        {selected && <IconCheck className="size-5 text-blue-600 dark:text-blue-400" />}
+        {selected && <IconCheck className="size-5 text-purple-600 dark:text-purple-400" />}
       </div>
     );
   };
@@ -46,8 +46,8 @@ export function ComboboxOptionItem<T extends string | number>({
       className={({ focus, selected }) =>
         cn(
           'relative cursor-pointer py-3 pr-10 pl-4 select-none',
-          focus && 'bg-blue-50 dark:bg-gray-700',
-          selected && 'bg-blue-100 dark:bg-gray-600',
+          focus && 'bg-purple-50 dark:bg-gray-700',
+          selected && 'bg-purple-100 dark:bg-gray-600',
           option.disabled && 'cursor-not-allowed opacity-50',
         )
       }

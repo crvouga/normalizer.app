@@ -23,7 +23,7 @@ export function ArtifactOptionItem({ option, selected }: ArtifactOptionItemProps
           </Typography>
         )}
       </div>
-      {selected && <IconCheck className="text-blue-600" />}
+      {selected && <IconCheck className="text-purple-600" />}
     </div>
   );
 }
