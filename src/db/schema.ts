@@ -1,4 +1,13 @@
-import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
@@ -73,3 +82,20 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const normalizationSessionEvents = pgTable(
+  'normalization_session_events',
+  {
+    id: text('id').primaryKey(),
+    normalization_session_id: text('normalization_session_id').notNull(),
+    event: jsonb('event').notNull(),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    normalizationSessionIdIdx: index('normalization_session_events_session_id_idx').on(
+      table.normalization_session_id,
+    ),
+  }),
+);
+
+export type INormalizationSessionEvent = typeof normalizationSessionEvents.$inferSelect;

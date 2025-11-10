@@ -50,6 +50,13 @@
       "when": 1762743608948,
       "tag": "0006_remove_session_id_unique_constraint",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1762760468412,
+      "tag": "0007_aspiring_guardian",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,9 @@ import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
 import type { User } from '../users/user';
 import type { UserId } from '../users/user-id';
+import type { NormalizationSessionEventEntity } from '../normalization-session/normalization-session-event-entity';
+import type { NormalizationSessionEventId } from '../normalization-session/normalization-session-event-id';
+import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import { Store } from '../lib/store';
 
 // Entity slice type
@@ -16,8 +19,17 @@ export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
     users: EntitySlice<UserId, User>;
+    normalizationSessionEvents: EntitySlice<
+      NormalizationSessionEventId,
+      NormalizationSessionEventEntity
+    >;
   };
-  // Removed indexes/searchResults
+  indexes: {
+    normalizationSessionEventsBySessionId: Record<
+      NormalizationSessionId,
+      NormalizationSessionEventId[]
+    >;
+  };
 };
 
 // Helper type to extract entity type from a slice
@@ -67,14 +79,25 @@ type EntityResetAction = {
   };
 }[keyof EntityStore['entities']];
 
-// Remove IndexSetSearchResultsAction and IndexClearSearchResultsAction
+type IndexAddToSessionIndexAction = {
+  type: 'index/ADD_TO_SESSION_INDEX';
+  sessionId: NormalizationSessionId;
+  eventId: NormalizationSessionEventId;
+};
+
+type IndexClearSessionIndexAction = {
+  type: 'index/CLEAR_SESSION_INDEX';
+  sessionId: NormalizationSessionId;
+};
 
 export type EntityStoreAction =
   | EntityAddAction
   | EntityAddManyAction
   | EntityUpdateAction
   | EntityRemoveAction
-  | EntityResetAction;
+  | EntityResetAction
+  | IndexAddToSessionIndexAction
+  | IndexClearSessionIndexAction;
 
 // Initial state
 const initialEntityStore: EntityStore = {
@@ -87,8 +110,14 @@ const initialEntityStore: EntityStore = {
       byId: {},
       allIds: [],
     },
+    normalizationSessionEvents: {
+      byId: {},
+      allIds: [],
+    },
   },
-  // No indexes/searchResults
+  indexes: {
+    normalizationSessionEventsBySessionId: {},
+  },
 };
 
 // Generic reducer that works with any entity
@@ -102,7 +131,7 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
       if (!('id' in entity)) return state;
       if (entity.id in slice.byId) return state;
 
-      return {
+      const newState = {
         ...state,
         entities: {
           ...state.entities,
@@ -112,6 +141,27 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
           } as EntityStore['entities'][typeof entityType],
         },
       };
+
+      // Automatically update index for normalization session events
+      if (entityType === 'normalizationSessionEvents' && 'normalization_session_id' in entity) {
+        const sessionId = (entity as NormalizationSessionEventEntity).normalization_session_id;
+        const eventId = entity.id as NormalizationSessionEventId;
+        const existingEvents =
+          newState.indexes.normalizationSessionEventsBySessionId[sessionId] || [];
+
+        return {
+          ...newState,
+          indexes: {
+            ...newState.indexes,
+            normalizationSessionEventsBySessionId: {
+              ...newState.indexes.normalizationSessionEventsBySessionId,
+              [sessionId]: [...existingEvents, eventId],
+            },
+          },
+        };
+      }
+
+      return newState;
     }
 
     case 'entity/ADD_MANY': {
@@ -129,7 +179,7 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
         }
       }
 
-      return {
+      const newState = {
         ...state,
         entities: {
           ...state.entities,
@@ -139,6 +189,30 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
           } as EntityStore['entities'][typeof entityType],
         },
       };
+
+      // Automatically update index for normalization session events
+      if (entityType === 'normalizationSessionEvents') {
+        const updatedIndex = { ...newState.indexes.normalizationSessionEventsBySessionId };
+
+        for (const entity of entities) {
+          if ('id' in entity && 'normalization_session_id' in entity) {
+            const sessionId = (entity as NormalizationSessionEventEntity).normalization_session_id;
+            const eventId = entity.id as NormalizationSessionEventId;
+            const existingEvents = updatedIndex[sessionId] || [];
+            updatedIndex[sessionId] = [...existingEvents, eventId];
+          }
+        }
+
+        return {
+          ...newState,
+          indexes: {
+            ...newState.indexes,
+            normalizationSessionEventsBySessionId: updatedIndex,
+          },
+        };
+      }
+
+      return newState;
     }
 
     case 'entity/UPDATE': {
@@ -198,7 +272,34 @@ function entityStoreReducer(state: EntityStore, action: EntityStoreAction): Enti
       };
     }
 
-    // Removed search results index actions
+    case 'index/ADD_TO_SESSION_INDEX': {
+      const { sessionId, eventId } = action;
+      const existingEvents = state.indexes.normalizationSessionEventsBySessionId[sessionId] || [];
+
+      return {
+        ...state,
+        indexes: {
+          ...state.indexes,
+          normalizationSessionEventsBySessionId: {
+            ...state.indexes.normalizationSessionEventsBySessionId,
+            [sessionId]: [...existingEvents, eventId],
+          },
+        },
+      };
+    }
+
+    case 'index/CLEAR_SESSION_INDEX': {
+      const { sessionId } = action;
+      const { [sessionId]: _, ...restIndex } = state.indexes.normalizationSessionEventsBySessionId;
+
+      return {
+        ...state,
+        indexes: {
+          ...state.indexes,
+          normalizationSessionEventsBySessionId: restIndex,
+        },
+      };
+    }
 
     default:
       return state;
@@ -302,11 +403,34 @@ export function useEntityStore() {
     [optimizedDispatch],
   );
 
+  const addToSessionIndex = useCallback(
+    (sessionId: NormalizationSessionId, eventId: NormalizationSessionEventId) => {
+      optimizedDispatch({
+        type: 'index/ADD_TO_SESSION_INDEX',
+        sessionId,
+        eventId,
+      });
+    },
+    [optimizedDispatch],
+  );
+
+  const clearSessionIndex = useCallback(
+    (sessionId: NormalizationSessionId) => {
+      optimizedDispatch({
+        type: 'index/CLEAR_SESSION_INDEX',
+        sessionId,
+      });
+    },
+    [optimizedDispatch],
+  );
+
   return {
     addEntity,
     addManyEntities,
     updateEntity,
     removeEntity,
     resetEntity,
+    addToSessionIndex,
+    clearSessionIndex,
   };
 }
