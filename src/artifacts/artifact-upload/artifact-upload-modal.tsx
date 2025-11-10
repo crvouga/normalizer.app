@@ -23,7 +23,7 @@ export function ArtifactUploadModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [artifactName, setArtifactName] = useState<string>('');
 
-  const { uploadArtifact, isUploading, state } = useArtifactUpload({
+  const { uploadArtifact, isUploading } = useArtifactUpload({
     onUploadComplete: (result) => {
       onUploadComplete?.(result);
       if (isOk(result)) {
@@ -75,11 +75,6 @@ export function ArtifactUploadModal({
           placeholder={t('artifact.namePlaceholder')}
           disabled={isUploading}
         />
-        {state.tag === 'err' && (
-          <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {state.error?.message || t('artifact.uploadError')}
-          </div>
-        )}
         <ModalActions
           cancelText={t('common.cancel')}
           onCancel={onClose}

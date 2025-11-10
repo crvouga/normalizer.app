@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app_';
 import { I18nProvider } from './i18n/i18n-context';
 import { ThemeProvider } from './ui/theme/theme-context';
+import { ToastProvider } from './ui/toast';
 
 const elem = document.getElementById('root');
 
@@ -12,7 +13,9 @@ const app = (
   <StrictMode>
     <I18nProvider>
       <ThemeProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </ThemeProvider>
     </I18nProvider>
   </StrictMode>

@@ -35,7 +35,8 @@
     "nameLabel": "Artifact Name",
     "namePlaceholder": "Enter artifact name",
     "upload": "Upload",
-    "uploadError": "Upload failed",
+    "uploadSuccess": "Artifact uploaded successfully",
+    "uploadError": "Failed to upload artifact",
     "uploading": "Uploading...",
     "fileLabel": "Artifact File",
     "edit": "Edit",
@@ -47,6 +48,11 @@
   },
   "modal": {
     "close": "Close"
+  },
+  "toast": {
+    "seeError": "See error",
+    "errorDetails": "Error Details",
+    "dismiss": "Dismiss"
   },
   "common": {
     "search": "Search...",

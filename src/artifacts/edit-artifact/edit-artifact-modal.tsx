@@ -30,7 +30,7 @@ export function EditArtifactModal({
     }
   }, [artifact]);
 
-  const { editArtifact, isEditing, state } = useEditArtifact({
+  const { editArtifact, isEditing } = useEditArtifact({
     onEditComplete: (result) => {
       onEditComplete?.(result);
       if (isOk(result)) {
@@ -67,11 +67,6 @@ export function EditArtifactModal({
           placeholder={t('artifact.namePlaceholder')}
           disabled={isEditing}
         />
-        {state.tag === 'err' && (
-          <div className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {state.error?.message || t('artifact.editError')}
-          </div>
-        )}
         <ModalActions
           cancelText={t('common.cancel')}
           onCancel={handleClose}

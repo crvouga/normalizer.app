@@ -3,6 +3,8 @@ import type { RemoteResult, Result } from '../../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
+import { showErrorToast, showSuccessToast } from '../../ui/toast';
+import { useI18n } from '../../i18n/use-i18n';
 import { Artifact } from '../artifact';
 import { ArtifactId } from '../artifact-id';
 
@@ -18,6 +20,7 @@ export function useEditArtifact({
 }) {
   const [state, setState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const entityStore = useEntityStore();
+  const { t } = useI18n();
 
   const editArtifact = async (params: EditArtifactParams) => {
     setState(Loading);
@@ -39,6 +42,7 @@ export function useEditArtifact({
       entityStore.updateEntity('artifacts', params.artifactId, updatedArtifact);
 
       setState(Success(updatedArtifact));
+      showSuccessToast(t('artifact.editSuccess'));
       onEditComplete?.(Ok(updatedArtifact));
     } catch (error) {
       // Revert optimistic update by fetching fresh data
@@ -54,6 +58,7 @@ export function useEditArtifact({
       }
 
       setState(Failure(error as Error));
+      showErrorToast(t('artifact.editError'), error);
       onEditComplete?.(Err(error as Error));
     }
   };

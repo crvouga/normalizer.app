@@ -3,6 +3,8 @@ import type { RemoteResult, Result } from '../../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
+import { showErrorToast, showSuccessToast } from '../../ui/toast';
+import { useI18n } from '../../i18n/use-i18n';
 import { Artifact } from '../artifact';
 import { ArtifactId } from '../artifact-id';
 
@@ -13,6 +15,7 @@ export function useArtifactUpload({
 }) {
   const [state, setState] = useState<RemoteResult<Artifact, Error>>(NotAsked);
   const entityStore = useEntityStore();
+  const { t } = useI18n();
 
   const uploadArtifact = async (file: File, name?: string) => {
     setState(Loading);
@@ -94,12 +97,14 @@ export function useArtifactUpload({
       });
 
       setState(Success(artifact));
+      showSuccessToast(t('artifact.uploadSuccess'));
       onUploadComplete?.(Ok(artifact));
     } catch (error) {
       // Remove the optimistic entity on error
       entityStore.removeEntity('artifacts', artifactId);
 
       setState(Failure(error as Error));
+      showErrorToast(t('artifact.uploadError'), error);
       onUploadComplete?.(Err(error as Error));
     }
   };
