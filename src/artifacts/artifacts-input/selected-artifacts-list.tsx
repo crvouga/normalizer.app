@@ -16,12 +16,9 @@ export interface SelectedArtifactsListProps {
   showPreview?: boolean;
 }
 
-/**
- * Component for displaying a list of selected artifacts using TabularFileList.
- * Only renders when there are artifacts to display.
- * Fetches artifact entities from the entity store and converts them to TabularFiles.
- * Files are lazy-loaded on-demand when previews are requested.
- */
+// Discriminated union for modal state
+type ModalState = { type: 'closed' } | { type: 'edit'; artifact: Artifact };
+
 export function SelectedArtifactsList({
   artifacts,
   onRemove,
@@ -32,8 +29,7 @@ export function SelectedArtifactsList({
   const { t } = useI18n();
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
   const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [selectedArtifact, setSelectedArtifact] = React.useState<Artifact | null>(null);
+  const [modalState, setModalState] = React.useState<ModalState>({ type: 'closed' });
 
   // Convert artifacts to TabularFiles
   const tabularFiles = React.useMemo(() => {
@@ -70,16 +66,14 @@ export function SelectedArtifactsList({
       const artifactId = artifacts[index];
       const artifact = artifactId ? artifactsById[artifactId] : null;
       if (artifact) {
-        setSelectedArtifact(artifact);
-        setIsEditModalOpen(true);
+        setModalState({ type: 'edit', artifact });
       }
     },
     [artifacts, artifactsById],
   );
 
   const handleEditComplete = React.useCallback(() => {
-    setIsEditModalOpen(false);
-    setSelectedArtifact(null);
+    setModalState({ type: 'closed' });
   }, []);
 
   const customActions: TabularFileAction[] = React.useMemo(
@@ -109,9 +103,9 @@ export function SelectedArtifactsList({
         customActions={customActions}
       />
       <EditArtifactModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        artifact={selectedArtifact}
+        isOpen={modalState.type === 'edit'}
+        onClose={() => setModalState({ type: 'closed' })}
+        artifact={modalState.type === 'edit' ? modalState.artifact : null}
         onEditComplete={handleEditComplete}
       />
     </>
