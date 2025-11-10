@@ -91,6 +91,9 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
             where: eq(users.google_id, googleUser.id),
           });
 
+          // Get session ID for use in transaction
+          const sessionId = getSessionId(req);
+
           if (!user) {
             // Check if user with same email exists (for account linking)
             const existingEmailUser = await db.query.users.findFirst({
@@ -98,53 +101,74 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
             });
 
             if (existingEmailUser) {
-              // Link Google account to existing user
-              await db
-                .update(users)
-                .set({
-                  google_id: googleUser.id,
-                  type: 'authenticated',
-                  name: googleUser.name,
-                  profile_picture: googleUser.picture,
-                  updated_at: new Date(),
-                })
-                .where(eq(users.id, existingEmailUser.id));
+              // Link Google account to existing user and update session in a transaction
+              user = await db.transaction(async (tx) => {
+                await tx
+                  .update(users)
+                  .set({
+                    google_id: googleUser.id,
+                    type: 'authenticated',
+                    name: googleUser.name,
+                    profile_picture: googleUser.picture,
+                    updated_at: new Date(),
+                  })
+                  .where(eq(users.id, existingEmailUser.id));
 
-              user = await db.query.users.findFirst({
-                where: eq(users.id, existingEmailUser.id),
+                const updatedUser = await tx.query.users.findFirst({
+                  where: eq(users.id, existingEmailUser.id),
+                });
+
+                // Update session with authenticated user
+                await tx
+                  .update(userSessions)
+                  .set({ user_id: updatedUser!.id, started_at: new Date() })
+                  .where(eq(userSessions.session_id, sessionId));
+
+                return updatedUser;
               });
 
               logger.info('Linked Google account to existing user', {
                 user_id: existingEmailUser.id,
               });
             } else {
-              // Create new authenticated user
+              // Create new authenticated user and update session in a transaction
               const userId = UserId.generate();
-              await db.insert(users).values({
-                id: userId,
-                type: 'authenticated',
-                email: googleUser.email,
-                google_id: googleUser.id,
-                name: googleUser.name,
-                profile_picture: googleUser.picture,
-                created_at: new Date(),
-                updated_at: new Date(),
-              });
+              user = await db.transaction(async (tx) => {
+                await tx.insert(users).values({
+                  id: userId,
+                  type: 'authenticated',
+                  email: googleUser.email,
+                  google_id: googleUser.id,
+                  name: googleUser.name,
+                  profile_picture: googleUser.picture,
+                  created_at: new Date(),
+                  updated_at: new Date(),
+                });
 
-              user = await db.query.users.findFirst({
-                where: eq(users.id, userId),
+                const newUser = await tx.query.users.findFirst({
+                  where: eq(users.id, userId),
+                });
+
+                // Update session with authenticated user
+                await tx
+                  .update(userSessions)
+                  .set({ user_id: newUser!.id, started_at: new Date() })
+                  .where(eq(userSessions.session_id, sessionId));
+
+                return newUser;
               });
 
               logger.info('Created new authenticated user', { user_id: userId });
             }
+          } else {
+            // Update existing Google user's session in a transaction
+            await db.transaction(async (tx) => {
+              await tx
+                .update(userSessions)
+                .set({ user_id: user!.id, started_at: new Date() })
+                .where(eq(userSessions.session_id, sessionId));
+            });
           }
-
-          // Update current session to point to authenticated user
-          const sessionId = getSessionId(req);
-          await db
-            .update(userSessions)
-            .set({ user_id: user!.id, started_at: new Date() })
-            .where(eq(userSessions.session_id, sessionId));
 
           logger.info('Updated session with authenticated user', {
             session_id: sessionId,

@@ -45,23 +45,29 @@ export const createContext = async (config: {
   let userSessionId: UserSessionId;
 
   if (!userSession) {
-    // Create new anonymous user
-    userId = UserIdHelper.generate();
-    await db.insert(users).values({
-      id: userId,
-      type: 'anonymous',
-      created_at: new Date(),
-      updated_at: new Date(),
+    // Create new anonymous user and session in a transaction
+    const result = await db.transaction(async (tx) => {
+      const newUserId = UserIdHelper.generate();
+      await tx.insert(users).values({
+        id: newUserId,
+        type: 'anonymous',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const newUserSessionId = UserSessionIdHelper.generate();
+      await tx.insert(userSessions).values({
+        id: newUserSessionId,
+        session_id: sessionId,
+        user_id: newUserId,
+        started_at: new Date(),
+      });
+
+      return { userId: newUserId, userSessionId: newUserSessionId };
     });
 
-    // Create new user session
-    userSessionId = UserSessionIdHelper.generate();
-    await db.insert(userSessions).values({
-      id: userSessionId,
-      session_id: sessionId,
-      user_id: userId,
-      started_at: new Date(),
-    });
+    userId = result.userId;
+    userSessionId = result.userSessionId;
   } else {
     userId = userSession.user_id as UserId;
     userSessionId = userSession.id as UserSessionId;

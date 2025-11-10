@@ -16,26 +16,29 @@ export const editArtifactRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { artifactId, name } = input;
 
-      // Update the artifact in the database
-      await ctx.db
-        .update(schema.artifacts)
-        .set({
-          name: name ?? undefined,
-          updated_at: new Date(),
-        })
-        .where(eq(schema.artifacts.id, artifactId));
+      // Update and fetch the artifact in a transaction
+      const updatedArtifact = await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(schema.artifacts)
+          .set({
+            name: name ?? undefined,
+            updated_at: new Date(),
+          })
+          .where(eq(schema.artifacts.id, artifactId));
 
-      // Fetch the updated artifact
-      const updatedArtifact = await ctx.db
-        .select()
-        .from(schema.artifacts)
-        .where(eq(schema.artifacts.id, artifactId))
-        .limit(1)
-        .then((rows) => rows[0]);
+        const artifact = await tx
+          .select()
+          .from(schema.artifacts)
+          .where(eq(schema.artifacts.id, artifactId))
+          .limit(1)
+          .then((rows) => rows[0]);
 
-      if (!updatedArtifact) {
-        throw new Error('Artifact not found after update');
-      }
+        if (!artifact) {
+          throw new Error('Artifact not found after update');
+        }
+
+        return artifact;
+      });
 
       // Validate and return
       return Artifact.schema.parse(updatedArtifact);
