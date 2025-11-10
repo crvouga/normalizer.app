@@ -22,6 +22,7 @@ const reducer = (
     case 'start-session':
       return {
         ...state,
+        id: event.sessionId,
         targetArtifactIds: event.targetArtifactIds,
         startedAt: event.startedAt,
         startedByUserId: event.startedByUserId,
