@@ -6,6 +6,15 @@ import { Artifact } from './artifact';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-router';
 import { editArtifactRouter } from './edit-artifact/edit-artifact-router';
 import { ArtifactId } from './artifact-id';
+import type { UserId } from '../users/user-id';
+
+// Helper to construct base user artifact filter
+function baseArtifactFilter(ctx: { userId: UserId }) {
+  return and(
+    eq(schema.artifacts.uploaded_by_user_id, ctx.userId),
+    isNull(schema.artifacts.deleted),
+  );
+}
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
@@ -21,7 +30,7 @@ export const artifactRouter = router({
       const artifact = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.id, input.artifactId), isNull(schema.artifacts.deleted)))
+        .where(and(eq(schema.artifacts.id, input.artifactId), baseArtifactFilter(ctx)))
         .limit(1)
         .then((rows) => rows[0]);
 
@@ -59,11 +68,11 @@ export const artifactRouter = router({
   list: procedure
     .output(z.array(Artifact.schema))
     .mutation(async ({ ctx }): Promise<Artifact[]> => {
-      // Only select artifacts that are uploaded and not deleted
+      // Only select artifacts that are uploaded and not deleted and belong to the user
       const files = await ctx.db
         .select()
         .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.status, 'uploaded'), isNull(schema.artifacts.deleted)))
+        .where(and(eq(schema.artifacts.status, 'uploaded'), baseArtifactFilter(ctx)))
         .orderBy(schema.artifacts.created_at);
 
       // Validate and transform to Artifact type array

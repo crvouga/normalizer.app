@@ -33,6 +33,7 @@ export const artifactUploadRouter = router({
         name: input.name ?? null,
         created_at: new Date(),
         updated_at: new Date(),
+        uploaded_by_user_id: ctx.userId,
       });
 
       return {
