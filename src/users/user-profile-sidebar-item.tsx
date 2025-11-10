@@ -8,8 +8,9 @@ import { Divider } from '~/src/ui/divider';
 import { IconSettings, IconSpinner, IconGoogle, IconLogout } from '~/src/ui/icons';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
-import { trpcClient } from '~/src/trpc-client';
 import { useI18n } from '~/src/i18n/use-i18n';
+import { useLogout } from '~/src/auth/use-logout';
+import { LogoutConfirmationModal } from '~/src/auth/logout-confirmation-modal';
 
 type SettingsModalState = { type: 'closed' } | { type: 'open' };
 
@@ -23,6 +24,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
   });
   const authState = useGoogleAuthEnabled();
   const { t } = useI18n();
+  const { isOpen, isLoggingOut, openLogoutDialog, closeLogoutDialog, confirmLogout } = useLogout();
 
   const isAnonymous = user.type === 'anonymous';
 
@@ -31,15 +33,6 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
 
   const handleGoogleSignIn = () => {
     window.location.href = '/api/auth/google';
-  };
-
-  const handleLogout = async () => {
-    try {
-      await trpcClient.users.logout.mutate();
-      window.location.reload();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
   };
 
   return (
@@ -131,7 +124,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
           {!isAnonymous && (
             <MenuItem>
               <button
-                onClick={handleLogout}
+                onClick={openLogoutDialog}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors data-focus:bg-gray-100 dark:data-focus:bg-gray-700"
                 tabIndex={-1}
                 type="button"
@@ -147,6 +140,12 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
       </Menu>
 
       <SettingsModal isOpen={settingsModalState.type === 'open'} onClose={closeSettings} />
+      <LogoutConfirmationModal
+        isOpen={isOpen}
+        onClose={closeLogoutDialog}
+        onConfirm={confirmLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </>
   );
 }

@@ -9,7 +9,7 @@ import { useCurrentUser } from './use-current-user';
  * Only renders children when the user is successfully loaded.
  */
 export function CurrentUserBoundary({ children }: { children: ReactNode }) {
-  const currentUserResult = useCurrentUser();
+  const { currentUserResult } = useCurrentUser();
 
   useEffect(() => {
     if (currentUserResult.tag === 'err') {

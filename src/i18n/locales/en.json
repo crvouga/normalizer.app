@@ -4,7 +4,10 @@
     "newSession": "New Session"
   },
   "auth": {
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "signOutConfirmTitle": "Sign Out",
+    "signOutConfirmMessage": "Are you sure you want to sign out?",
+    "signOutSuccess": "Successfully signed out"
   },
   "settings": {
     "title": "Settings"
@@ -60,6 +63,7 @@
   },
   "common": {
     "search": "Search...",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

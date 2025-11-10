@@ -23,7 +23,7 @@ export function App() {
 
 function AppSidebar() {
   const { t } = useI18n();
-  const currentUserResult = useCurrentUser();
+  const { currentUserResult } = useCurrentUser();
 
   const user = currentUserResult.tag === 'ok' ? currentUserResult.value : null;
 

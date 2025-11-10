@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useEffect, useState, useCallback } from 'react';
 import { trpcClient } from '../trpc-client';
 import { User, type User as UserType } from './user';
 import type { RemoteResult } from '../lib/result';
@@ -7,6 +7,7 @@ import { useEntityStore } from '../store/entity-store';
 
 type UserContextValue = {
   currentUserResult: RemoteResult<UserType, Error>;
+  refetchCurrentUser: () => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -20,28 +21,32 @@ export function UserProvider({ children }: UserProviderProps) {
     useState<RemoteResult<UserType, Error>>(Loading);
   const { addEntity } = useEntityStore();
 
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        setCurrentUserResult(Loading);
-        const response = await trpcClient.users.currentUser.mutate();
-        // Parse the response to ensure proper typing with branded types
-        const currentUser = User.schema.parse(response);
+  const fetchCurrentUser = useCallback(async () => {
+    try {
+      setCurrentUserResult(Loading);
+      const response = await trpcClient.users.currentUser.mutate();
+      // Parse the response to ensure proper typing with branded types
+      const currentUser = User.schema.parse(response);
 
-        // Store user in entity store
-        addEntity('users', currentUser);
+      // Store user in entity store
+      addEntity('users', currentUser);
 
-        setCurrentUserResult(Success(currentUser));
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('Failed to fetch user');
-        setCurrentUserResult(Failure(error));
-      }
-    };
-
-    fetchCurrentUser();
+      setCurrentUserResult(Success(currentUser));
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to fetch user');
+      setCurrentUserResult(Failure(error));
+    }
   }, [addEntity]);
 
-  return <UserContext.Provider value={{ currentUserResult }}>{children}</UserContext.Provider>;
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
+
+  return (
+    <UserContext.Provider value={{ currentUserResult, refetchCurrentUser: fetchCurrentUser }}>
+      {children}
+    </UserContext.Provider>
+  );
 }
 
 export { UserContext };
