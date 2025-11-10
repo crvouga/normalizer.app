@@ -22,6 +22,8 @@ export const usersRouter = router({
       id: user.id,
       type: user.type,
       name: user.name,
+      email: user.email,
+      profile_picture: user.profile_picture,
       created_at: user.created_at,
       updated_at: user.updated_at,
     };

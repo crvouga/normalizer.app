@@ -7,6 +7,7 @@ import { appRouter } from './trpc-server';
 import { createS3 } from './s3';
 import { cleanupDb, createDb } from './sql';
 import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
+import { createGoogleAuthEndpoints } from './auth/google-auth-endpoints';
 
 const main = async () => {
   const logger = createLogger();
@@ -49,10 +50,16 @@ const main = async () => {
     return finalRes;
   };
 
+  // Google OAuth endpoints
+  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, logger });
+
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
 
     routes: {
+      // Google OAuth endpoints
+      ...googleAuthEndpoints,
+
       // tRPC endpoint
       '/api/trpc/*': {
         GET: trpcHandler('GET'),

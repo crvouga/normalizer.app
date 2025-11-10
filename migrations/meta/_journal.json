@@ -36,6 +36,13 @@
       "when": 1762738430911,
       "tag": "0004_gigantic_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762740267562,
+      "tag": "0005_jazzy_puff_adder",
+      "breakpoints": true
     }
   ]
 }

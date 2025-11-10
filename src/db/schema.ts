@@ -45,6 +45,9 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(),
   type: userTypeEnum('type').notNull(),
   name: text('name'),
+  email: text('email').unique(),
+  google_id: text('google_id').unique(),
+  profile_picture: text('profile_picture'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });

@@ -6,6 +6,8 @@ const schema = z.object({
   id: UserId.schema,
   type: UserType.schema,
   name: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  profile_picture: z.string().nullable().optional(),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
