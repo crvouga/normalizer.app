@@ -1,0 +1,14 @@
+import { z } from 'zod';
+import { UserId } from './user-id';
+
+const schema = z.object({
+  id: UserId.schema,
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export type User = z.infer<typeof schema>;
+
+export const User = {
+  schema,
+};
