@@ -13,6 +13,7 @@ import type { Result } from '~/src/lib/result';
 export type ArtifactsInputProps = {
   value: ArtifactId[];
   onChange: (value: ArtifactId[]) => void;
+  limit?: number;
 };
 
 /**
@@ -21,6 +22,7 @@ export type ArtifactsInputProps = {
  */
 export function ArtifactsInput(props: ArtifactsInputProps) {
   const { t } = useI18n();
+  const limit = props.limit ?? 1;
 
   // Custom hooks for state management
   const { currentSelection, addArtifact, removeArtifact } = useArtifactSelection({
@@ -64,24 +66,26 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         title={t('artifact.selectedArtifacts')}
       />
 
-      <AsyncCombobox
-        value={currentSelection}
-        onChange={addArtifact}
-        fetchIds={fetchArtifactIds}
-        getOptions={getArtifactOptions}
-        placeholder={t('artifact.searchPlaceholder')}
-        label={t('artifact.label')}
-        helperText={t('artifact.helperText')}
-        renderOption={renderOption}
-        debounceMs={300}
-        pageSize={20}
-        actionButton={
-          <ArtifactUploadComboboxActionButton
-            onUploadComplete={handleUploadComplete}
-            variant="default"
-          />
-        }
-      />
+      {props.value.length < limit && (
+        <AsyncCombobox
+          value={currentSelection}
+          onChange={addArtifact}
+          fetchIds={fetchArtifactIds}
+          getOptions={getArtifactOptions}
+          placeholder={t('artifact.searchPlaceholder')}
+          label={t('artifact.label')}
+          helperText={t('artifact.helperText')}
+          renderOption={renderOption}
+          debounceMs={300}
+          pageSize={20}
+          actionButton={
+            <ArtifactUploadComboboxActionButton
+              onUploadComplete={handleUploadComplete}
+              variant="default"
+            />
+          }
+        />
+      )}
     </div>
   );
 }
