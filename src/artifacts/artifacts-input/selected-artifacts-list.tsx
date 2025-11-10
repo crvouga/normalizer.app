@@ -16,7 +16,10 @@ export interface SelectedArtifactsListProps {
 }
 
 // Discriminated union for modal state
-type ModalState = { type: 'closed' } | { type: 'edit'; artifact: Artifact };
+
+type ModalState =
+  | { type: 'closed'; artifact?: Artifact | null }
+  | { type: 'edit'; artifact: Artifact };
 
 export function SelectedArtifactsList({
   artifacts,
@@ -102,7 +105,7 @@ export function SelectedArtifactsList({
       <EditArtifactModal
         isOpen={modalState.type === 'edit'}
         onClose={() => setModalState({ type: 'closed' })}
-        artifact={modalState.type === 'edit' ? modalState.artifact : null}
+        artifact={modalState.artifact}
         onEditComplete={handleEditComplete}
       />
     </>
