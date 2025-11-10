@@ -1,14 +1,16 @@
 import { Menu, MenuButton } from '@headlessui/react';
 import { useState } from 'react';
 import { LogoutConfirmationModal } from '~/src/auth/logout-confirmation-modal';
+import { SignInModal } from '~/src/auth/sign-in-modal';
 import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
 import { useLogout } from '~/src/auth/use-logout';
+import { useSignIn } from '~/src/auth/use-sign-in';
 import { useI18n } from '~/src/i18n/use-i18n';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
 import { Avatar } from '~/src/ui/avatar';
 import { Divider } from '~/src/ui/divider';
-import { IconGoogle, IconLogout, IconSettings, IconSpinner } from '~/src/ui/icons';
+import { IconLogin, IconLogout, IconSettings, IconSpinner } from '~/src/ui/icons';
 import { MenuItemButton } from '~/src/ui/menu-item-button';
 import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
@@ -27,15 +29,17 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
   const authState = useGoogleAuthEnabled();
   const { t } = useI18n();
   const { isOpen, isLoggingOut, openLogoutDialog, closeLogoutDialog, confirmLogout } = useLogout();
+  const {
+    isOpen: isSignInOpen,
+    openSignInDialog,
+    closeSignInDialog,
+    handleGoogleSignIn,
+  } = useSignIn();
 
   const isAnonymous = user.type === 'anonymous';
 
   const openSettings = () => setSettingsModalState({ type: 'open' });
   const closeSettings = () => setSettingsModalState({ type: 'closed' });
-
-  const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google';
-  };
 
   return (
     <>
@@ -90,9 +94,9 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
 
           {authState.type === 'loaded' && isAnonymous && authState.isEnabled && (
             <MenuItemButton
-              onClick={handleGoogleSignIn}
-              icon={<IconGoogle />}
-              label="Sign in with Google"
+              onClick={openSignInDialog}
+              icon={<IconLogin />}
+              label={t('auth.signIn')}
             />
           )}
 
@@ -109,6 +113,11 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
       </Menu>
 
       <SettingsModal isOpen={settingsModalState.type === 'open'} onClose={closeSettings} />
+      <SignInModal
+        isOpen={isSignInOpen}
+        onClose={closeSignInDialog}
+        onGoogleSignIn={handleGoogleSignIn}
+      />
       <LogoutConfirmationModal
         isOpen={isOpen}
         onClose={closeLogoutDialog}

@@ -7,7 +7,11 @@
     "signOut": "Sign Out",
     "signOutConfirmTitle": "Sign Out",
     "signOutConfirmMessage": "Are you sure you want to sign out?",
-    "signOutSuccess": "Successfully signed out"
+    "signOutSuccess": "Successfully signed out",
+    "signIn": "Sign In",
+    "signInTitle": "Sign In",
+    "signInMessage": "Choose a sign-in method to continue",
+    "signInWithGoogle": "Sign in with Google"
   },
   "settings": {
     "title": "Settings"

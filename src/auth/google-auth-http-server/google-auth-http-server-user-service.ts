@@ -126,30 +126,59 @@ async function createAuthenticatedUser(
 }
 
 /**
- * Create session for existing Google user
+ * Create session for existing Google user and update profile
  */
 async function createSessionForExistingUser(
   db: Db,
   user: IUser,
+  googleUser: GoogleUserInfo,
   sessionId: SessionId,
+  s3: S3Client,
+  s3Endpoint: string,
   logger: Logger,
 ): Promise<IUser> {
-  await db.transaction(async (tx) => {
+  // Update profile picture from Google (in case it changed)
+  const profilePictureUrl = await storeProfilePictureFromUrl(
+    s3,
+    user.id as UserId,
+    googleUser.picture,
+    s3Endpoint,
+    logger,
+  );
+
+  // Update user info and create session in a transaction
+  const updatedUser = await db.transaction(async (tx) => {
+    // Update user profile with latest info from Google
+    await tx
+      .update(users)
+      .set({
+        name: googleUser.name,
+        profile_picture: profilePictureUrl,
+        updated_at: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    const refreshedUser = await tx.query.users.findFirst({
+      where: eq(users.id, user.id),
+    });
+
     await createUserSession(tx, user.id, sessionId);
+
+    return refreshedUser!;
   });
 
-  logger.info('Created session with authenticated user', {
+  logger.info('Created session with authenticated user and updated profile', {
     session_id: sessionId,
     user_id: user.id,
   });
 
-  return user;
+  return updatedUser;
 }
 
 /**
  * Find or create user based on Google account info
  * Handles three cases:
- * 1. Existing Google user - create new session
+ * 1. Existing Google user - create new session and update profile from Google
  * 2. Existing email user - link Google account
  * 3. New user - create authenticated user
  */
@@ -172,7 +201,15 @@ export async function findOrCreateUser(
   });
 
   if (existingGoogleUser) {
-    return createSessionForExistingUser(db, existingGoogleUser, sessionId, logger);
+    return createSessionForExistingUser(
+      db,
+      existingGoogleUser,
+      googleUser,
+      sessionId,
+      s3,
+      s3Endpoint,
+      logger,
+    );
   }
 
   // Check if user with same email exists (for account linking)
