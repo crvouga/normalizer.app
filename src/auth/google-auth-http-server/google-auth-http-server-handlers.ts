@@ -27,13 +27,13 @@ export type GoogleAuthConfig = {
  */
 export async function handleGoogleAuthStart(req: Request, logger: Logger): Promise<Response> {
   // Return 404 if Google Auth is not configured
-  if (!isGoogleAuthEnabled) {
+  if (!isGoogleAuthEnabled()) {
     logger.warn('Google OAuth not configured - returning 404');
     return new Response('Google OAuth not configured', { status: 404 });
   }
 
   try {
-    const { url, state } = generateAuthUrl();
+    const { url, state } = generateAuthUrl(req);
 
     // Set state in cookie for verification in callback
     const response = Response.redirect(url);
@@ -57,7 +57,7 @@ export async function handleGoogleAuthCallback(
   const { db, s3, s3Endpoint, logger } = config;
 
   // Return 404 if Google Auth is not configured
-  if (!isGoogleAuthEnabled) {
+  if (!isGoogleAuthEnabled()) {
     logger.warn('Google OAuth callback accessed but not configured');
     return createErrorRedirect('not_configured');
   }

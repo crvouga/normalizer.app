@@ -1,11 +1,12 @@
-import { generateState, generateCodeVerifier } from 'arctic';
-import { requireGoogleAuth } from './google-oauth-config';
+import { Google, generateState, generateCodeVerifier } from 'arctic';
+import { isGoogleAuthEnabled } from './google-oauth-config';
 
 // In-memory storage for OAuth state tokens (can be upgraded to Redis for production)
 const oauthStates = new Map<
   string,
   {
     codeVerifier: string;
+    redirectUri: string;
     expiresAt: number;
   }
 >();
@@ -23,15 +24,29 @@ function cleanupExpiredStates() {
 /**
  * Generate Google OAuth authorization URL with PKCE
  */
-export function generateAuthUrl(): { url: string; state: string } {
-  const google = requireGoogleAuth();
+export function generateAuthUrl(req: Request): { url: string; state: string } {
+  if (!isGoogleAuthEnabled()) {
+    throw new Error('Google OAuth is not configured');
+  }
+
+  // Extract redirect URI from request origin
+  const requestUrl = new URL(req.url);
+  const redirectUri = `${requestUrl.origin}/api/auth/google/callback`;
+
+  // Create Google client with dynamic redirect URI
+  const google = new Google(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    redirectUri,
+  );
 
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
 
-  // Store state and verifier for 10 minutes
+  // Store state, verifier, AND redirect URI
   oauthStates.set(state, {
     codeVerifier,
+    redirectUri,
     expiresAt: Date.now() + 10 * 60 * 1000,
   });
 
@@ -48,7 +63,9 @@ export function generateAuthUrl(): { url: string; state: string } {
  * Validate OAuth callback and exchange code for tokens
  */
 export async function validateCallback(code: string, state: string): Promise<string> {
-  const google = requireGoogleAuth();
+  if (!isGoogleAuthEnabled()) {
+    throw new Error('Google OAuth is not configured');
+  }
 
   // Retrieve stored state
   const stored = oauthStates.get(state);
@@ -61,6 +78,13 @@ export async function validateCallback(code: string, state: string): Promise<str
     oauthStates.delete(state);
     throw new Error('OAuth state expired');
   }
+
+  // Create Google client with the SAME redirect URI used during authorization
+  const google = new Google(
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+    stored.redirectUri,
+  );
 
   // Clean up used state
   oauthStates.delete(state);

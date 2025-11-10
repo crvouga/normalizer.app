@@ -16,6 +16,7 @@
     "officedocument",
     "openxmlformats",
     "orpc",
+    "PKCE",
     "pkey",
     "plpgsql",
     "presign",

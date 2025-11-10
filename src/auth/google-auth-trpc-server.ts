@@ -6,6 +6,6 @@ export const authRouter = router({
    * Check if Google authentication is enabled
    */
   isEnabled: procedure.query(() => {
-    return { enabled: isGoogleAuthEnabled };
+    return { enabled: isGoogleAuthEnabled() };
   }),
 });
