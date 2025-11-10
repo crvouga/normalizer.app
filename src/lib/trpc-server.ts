@@ -7,10 +7,10 @@ import { getSessionId } from './session-id-cookie';
 import type { SessionId } from './session-id';
 import type { UserId } from '../users/user-id';
 import type { UserSessionId } from '../users/user-session-id';
-import { and, eq, isNull } from 'drizzle-orm';
 import { users, userSessions } from '../db/schema';
 import { UserId as UserIdHelper } from '../users/user-id';
 import { UserSessionId as UserSessionIdHelper } from '../users/user-session-id';
+import { findCurrentUserSession } from '../users/user-session-queries';
 
 // Create context type
 export type Context = {
@@ -56,7 +56,7 @@ function buildContext({
   };
 }
 
-// Create context function: find first user session where matches session id AND authenticated user else anonymous session
+// Create context function: find first NON-ENDED authenticated session, else fall back to anonymous session
 export const createContext = async (config: {
   db: Db;
   s3: S3Client;
@@ -68,39 +68,23 @@ export const createContext = async (config: {
   const { db, s3, s3Endpoint, minioClient, logger, req } = config;
   const sessionId = getSessionId(req);
 
-  // Find first user session matching session id and authenticated user
-  const session = await db.query.userSessions.findFirst({
-    where: and(eq(userSessions.session_id, sessionId)),
-    with: { user: true },
-  });
+  // Try to find existing session (authenticated or anonymous)
+  const currentSession = await findCurrentUserSession(db, sessionId);
 
-  if (session) {
-    if (session.user.type === 'authenticated') {
-      return buildContext({
-        db,
-        s3,
-        s3Endpoint,
-        minioClient,
-        logger,
-        sessionId,
-        userId: session.user_id as UserId,
-        userSessionId: session.id as UserSessionId,
-      });
-    } else if (session.user.type === 'anonymous') {
-      return buildContext({
-        db,
-        s3,
-        s3Endpoint,
-        minioClient,
-        logger,
-        sessionId,
-        userId: session.user_id as UserId,
-        userSessionId: session.id as UserSessionId,
-      });
-    }
+  if (currentSession) {
+    return buildContext({
+      db,
+      s3,
+      s3Endpoint,
+      minioClient,
+      logger,
+      sessionId,
+      userId: currentSession.user_id as UserId,
+      userSessionId: currentSession.id as UserSessionId,
+    });
   }
 
-  // No session exists, create new anonymous user/session
+  // No session exists - create new anonymous user/session
   const { userId: newUserId, userSessionId: newUserSessionId } = await db.transaction(
     async (tx) => {
       const newUserId = UserIdHelper.generate();

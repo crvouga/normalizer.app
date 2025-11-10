@@ -1,6 +1,7 @@
 import { procedure, router } from '../lib/trpc-server';
 import { users, userSessions } from '../db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { findActiveAuthenticatedSession } from './user-session-queries';
 
 export const usersRouter = router({
   /**
@@ -35,12 +36,7 @@ export const usersRouter = router({
    */
   logout: procedure.mutation(async ({ ctx }) => {
     // Find the active authenticated session for this session_id
-    const activeSession = await ctx.db.query.userSessions.findFirst({
-      where: and(eq(userSessions.session_id, ctx.sessionId), isNull(userSessions.ended_at)),
-      with: {
-        user: true,
-      },
-    });
+    const activeSession = await findActiveAuthenticatedSession(ctx.db, ctx.sessionId);
 
     if (!activeSession) {
       throw new Error('No active session found');
