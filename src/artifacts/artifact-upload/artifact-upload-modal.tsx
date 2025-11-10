@@ -53,8 +53,20 @@ export function ArtifactUploadModal({
     }
   };
 
+  const handleClose = () => {
+    if (!isUploading) {
+      onClose();
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('artifact.uploadDialogTitle')} size="2xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('artifact.uploadDialogTitle')}
+      size="2xl"
+      disabled={isUploading}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <TabularFileField
           label={t('artifact.fileLabel')}
@@ -77,10 +89,11 @@ export function ArtifactUploadModal({
         />
         <ModalActions
           cancelText={t('common.cancel')}
-          onCancel={onClose}
+          onCancel={handleClose}
           cancelDisabled={isUploading}
-          submitText={isUploading ? t('artifact.uploading') : t('artifact.upload')}
-          submitDisabled={!selectedFile || isUploading}
+          submitText={t('artifact.upload')}
+          submitDisabled={!selectedFile}
+          submitLoading={isUploading}
         />
       </form>
     </Modal>

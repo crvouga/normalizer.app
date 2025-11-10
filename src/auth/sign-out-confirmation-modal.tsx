@@ -21,8 +21,20 @@ export function SignOutConfirmationModal({
 }: SignOutConfirmationModalProps) {
   const { t } = useI18n();
 
+  const handleClose = () => {
+    if (!isLoggingOut) {
+      onClose();
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('auth.signOutConfirmTitle')} size="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('auth.signOutConfirmTitle')}
+      size="sm"
+      disabled={isLoggingOut}
+    >
       <div className="space-y-4">
         <Typography variant="base" color="secondary">
           {t('auth.signOutConfirmMessage')}
@@ -30,11 +42,11 @@ export function SignOutConfirmationModal({
 
         <ModalActions
           cancelText={t('common.cancel')}
-          onCancel={onClose}
+          onCancel={handleClose}
           cancelDisabled={isLoggingOut}
           submitText={t('auth.signOut')}
           onSubmit={onConfirm}
-          submitDisabled={isLoggingOut}
+          submitLoading={isLoggingOut}
           submitType="button"
         />
       </div>

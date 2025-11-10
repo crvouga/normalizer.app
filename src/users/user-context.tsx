@@ -23,7 +23,6 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       setCurrentUserResult(Loading);
       const response = await trpcClient.users.currentUser.mutate();
       // Parse the response to ensure proper typing with branded types

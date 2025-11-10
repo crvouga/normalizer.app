@@ -12,6 +12,7 @@ export interface ModalProps {
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   className?: string;
+  disabled?: boolean;
 }
 
 // Make all modal sizes wider
@@ -25,12 +26,26 @@ const sizeClasses = {
   '4xl': 'max-w-5xl',
 };
 
-export function Modal({ isOpen, onClose, title, children, size = '4xl', className }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = '4xl',
+  className,
+  disabled = false,
+}: ModalProps) {
   const { t } = useI18n();
+
+  const handleClose = () => {
+    if (!disabled) {
+      onClose();
+    }
+  };
 
   return (
     <Transition show={isOpen} as={Fragment}>
-      <Dialog onClose={onClose} className="relative z-50">
+      <Dialog onClose={handleClose} className="relative z-50">
         {/* Backdrop */}
         <TransitionChild
           as={Fragment}
@@ -71,8 +86,9 @@ export function Modal({ isOpen, onClose, title, children, size = '4xl', classNam
                     </Typography>
                   </DialogTitle>
                   <button
-                    onClick={onClose}
-                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    onClick={handleClose}
+                    disabled={disabled}
+                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:text-gray-400 dark:hover:bg-gray-700 dark:disabled:hover:bg-transparent"
                     aria-label={t('modal.close')}
                   >
                     <IconX className="size-5" />

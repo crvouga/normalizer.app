@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Modal } from '~/src/ui/modal';
 import { Button } from '~/src/ui/button';
 import { Typography } from '~/src/ui/typography';
@@ -15,9 +16,27 @@ type SignInModalProps = {
  */
 export function SignInModal({ isOpen, onClose, onGoogleSignIn }: SignInModalProps) {
   const { t } = useI18n();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  const handleGoogleSignIn = () => {
+    setIsSigningIn(true);
+    onGoogleSignIn();
+  };
+
+  const handleClose = () => {
+    if (!isSigningIn) {
+      onClose();
+    }
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('auth.signInTitle')} size="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('auth.signInTitle')}
+      size="sm"
+      disabled={isSigningIn}
+    >
       <div className="space-y-6">
         <Typography variant="base" color="secondary">
           {t('auth.signInMessage')}
@@ -26,10 +45,11 @@ export function SignInModal({ isOpen, onClose, onGoogleSignIn }: SignInModalProp
         <div className="space-y-3">
           <Button
             variant="outline"
-            onClick={onGoogleSignIn}
+            onClick={handleGoogleSignIn}
             text={t('auth.signInWithGoogle')}
             startIcon={<IconGoogle className="size-5" />}
             className="w-full"
+            loading={isSigningIn}
           />
         </div>
       </div>

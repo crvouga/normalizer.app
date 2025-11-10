@@ -74,7 +74,13 @@ export function EditArtifactModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('artifact.editDialogTitle')} size="2xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('artifact.editDialogTitle')}
+      size="2xl"
+      disabled={isEditing}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <TextField
           id="artifact-name"
@@ -114,8 +120,8 @@ export function EditArtifactModal({
           cancelText={t('common.cancel')}
           onCancel={handleClose}
           cancelDisabled={isEditing}
-          submitText={isEditing ? t('artifact.saving') : t('artifact.save')}
-          submitDisabled={isEditing}
+          submitText={t('artifact.save')}
+          submitLoading={isEditing}
         />
       </form>
     </Modal>

@@ -10,6 +10,7 @@ export interface ModalActionsProps {
   submitText: string;
   onSubmit?: () => void;
   submitDisabled?: boolean;
+  submitLoading?: boolean;
   submitType?: 'submit' | 'button';
 
   // Layout
@@ -27,6 +28,7 @@ export function ModalActions({
   submitText,
   onSubmit,
   submitDisabled = false,
+  submitLoading = false,
   submitType = 'submit',
   className,
 }: ModalActionsProps) {
@@ -45,6 +47,7 @@ export function ModalActions({
         text={submitText}
         onClick={onSubmit}
         disabled={submitDisabled}
+        loading={submitLoading}
       />
     </div>
   );

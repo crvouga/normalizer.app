@@ -8,6 +8,7 @@ type FormContextValue = {
   errors: Record<string, string>;
   setError: (name: string, message: string) => void;
   clearError: (name: string) => void;
+  disabled?: boolean;
 };
 
 const FormContext = React.createContext<FormContextValue | null>(null);
@@ -15,9 +16,11 @@ const FormContext = React.createContext<FormContextValue | null>(null);
 const Form = ({
   children,
   onSubmit,
+  disabled = false,
   ...props
 }: React.ComponentProps<'form'> & {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  disabled?: boolean;
 }) => {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -34,9 +37,11 @@ const Form = ({
   }, []);
 
   return (
-    <FormContext.Provider value={{ errors, setError, clearError }}>
+    <FormContext.Provider value={{ errors, setError, clearError, disabled }}>
       <form data-slot="form" onSubmit={onSubmit} {...props}>
-        {children}
+        <fieldset disabled={disabled} className="contents">
+          {children}
+        </fieldset>
       </form>
     </FormContext.Provider>
   );
