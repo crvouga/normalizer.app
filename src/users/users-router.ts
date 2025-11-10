@@ -1,7 +1,7 @@
 import { procedure, router } from '../lib/trpc-server';
 import { users, userSessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { findActiveAuthenticatedSession } from './user-session-queries';
+import { findActiveAuthenticatedSession, findCurrentUserSession } from './user-session-queries';
 
 export const usersRouter = router({
   /**
@@ -9,14 +9,13 @@ export const usersRouter = router({
    * This mutation ensures a user and user_session record exists for the current session
    */
   currentUser: procedure.mutation(async ({ ctx }) => {
-    // User is already created in context, just fetch and return
-    const user = await ctx.db.query.users.findFirst({
-      where: eq(users.id, ctx.userId),
-    });
+    const session = await findCurrentUserSession(ctx.db, ctx.sessionId);
 
-    if (!user) {
+    if (!session?.user) {
       throw new Error('User not found');
     }
+
+    const user = session.user;
 
     // Don't expose session_id to client
     return {

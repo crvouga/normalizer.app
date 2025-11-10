@@ -9,6 +9,7 @@ import { getS3Config } from './s3-config';
 import { cleanupDb, createDb } from './sql';
 import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
 import { createGoogleAuthEndpoints } from './auth/google-auth-endpoints';
+import { createUserProfilePictureEndpoints } from './users/user-profile-picture-router';
 
 const main = async () => {
   const logger = createLogger();
@@ -60,7 +61,10 @@ const main = async () => {
   };
 
   // Google OAuth endpoints
-  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, logger });
+  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, s3: s3Client, s3Endpoint, logger });
+
+  // User profile picture endpoints
+  const profilePictureEndpoints = createUserProfilePictureEndpoints({ s3: s3Client, logger });
 
   const server = serve({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
@@ -68,6 +72,9 @@ const main = async () => {
     routes: {
       // Google OAuth endpoints
       ...googleAuthEndpoints,
+
+      // User profile picture endpoints
+      ...profilePictureEndpoints,
 
       // tRPC endpoint
       '/api/trpc/*': {

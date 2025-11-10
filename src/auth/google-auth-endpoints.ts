@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+import type { S3Client } from 'bun';
 import type { Logger } from '../lib/logger';
 import type { Db } from '../sql';
 import { users, userSessions } from '../db/schema';
@@ -8,13 +9,19 @@ import { isGoogleAuthEnabled } from './google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from './google-oauth-service';
 import { getCookie } from '../lib/http-cookie';
 import { getSessionId } from '../lib/session-id-cookie';
+import { storeProfilePictureFromUrl } from '../users/user-profile-picture';
 
 /**
  * Create Google OAuth HTTP endpoints
  * These are kept separate from tRPC as Google OAuth requires standard HTTP redirects
  */
-export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
-  const { db, logger } = config;
+export function createGoogleAuthEndpoints(config: {
+  db: Db;
+  s3: S3Client;
+  s3Endpoint: string;
+  logger: Logger;
+}) {
+  const { db, s3, s3Endpoint, logger } = config;
 
   return {
     '/api/auth/google': {
@@ -102,6 +109,15 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
             });
 
             if (existingEmailUser) {
+              // Store profile picture in S3
+              const profilePictureUrl = await storeProfilePictureFromUrl(
+                s3,
+                existingEmailUser.id as UserId,
+                googleUser.picture,
+                s3Endpoint,
+                logger,
+              );
+
               // Link Google account to existing user and create new session in a transaction
               user = await db.transaction(async (tx) => {
                 await tx
@@ -110,7 +126,7 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
                     google_id: googleUser.id,
                     type: 'authenticated',
                     name: googleUser.name,
-                    profile_picture: googleUser.picture,
+                    profile_picture: profilePictureUrl,
                     updated_at: new Date(),
                   })
                   .where(eq(users.id, existingEmailUser.id));
@@ -137,6 +153,16 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
             } else {
               // Create new authenticated user and new session in a transaction
               const userId = UserId.generate();
+
+              // Store profile picture in S3
+              const profilePictureUrl = await storeProfilePictureFromUrl(
+                s3,
+                userId,
+                googleUser.picture,
+                s3Endpoint,
+                logger,
+              );
+
               user = await db.transaction(async (tx) => {
                 await tx.insert(users).values({
                   id: userId,
@@ -144,7 +170,7 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
                   email: googleUser.email,
                   google_id: googleUser.id,
                   name: googleUser.name,
-                  profile_picture: googleUser.picture,
+                  profile_picture: profilePictureUrl,
                   created_at: new Date(),
                   updated_at: new Date(),
                 });
