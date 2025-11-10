@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ArtifactId } from '../artifacts/artifact-id';
 import { UserId } from '../users/user-id';
 
-export const SessionEvent = z.discriminatedUnion('type', [
+const schema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('start-session'),
     targetArtifactIds: z.array(ArtifactId.schema),
@@ -11,4 +11,8 @@ export const SessionEvent = z.discriminatedUnion('type', [
   }),
 ]);
 
-export type SessionEvent = z.infer<typeof SessionEvent>;
+export type NormalizationSessionEvent = z.infer<typeof schema>;
+
+export const NormalizationSessionEvent = {
+  schema,
+};
