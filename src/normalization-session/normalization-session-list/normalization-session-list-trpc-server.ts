@@ -1,0 +1,80 @@
+import { and, desc, lt, sql } from 'drizzle-orm';
+import { z } from 'zod';
+import * as schema from '../../db/schema';
+import { procedure, router } from '../../lib/trpc-server';
+import { UserId } from '../../users/user-id';
+import { NormalizationSessionProjection } from '../normalization-session-projection';
+
+export const normalizationSessionListRouter = router({
+  /**
+   * List normalization sessions by user with cursor-based pagination
+   */
+  listByStartedByUser: procedure
+    .input(
+      z.object({
+        userId: UserId.schema,
+        cursor: z.string().optional(), // ISO timestamp string
+        limit: z.number().min(1).max(100).default(20),
+      }),
+    )
+    .output(
+      z.object({
+        sessions: z.array(NormalizationSessionProjection.schema),
+        nextCursor: z.string().nullable(),
+        hasMore: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      ctx.logger.info('Normalization session list by user', {
+        userId: input.userId,
+        cursor: input.cursor,
+        limit: input.limit,
+      });
+
+      // Build query conditions
+      const conditions = [
+        sql`${schema.normalizationSessionProjections.projection}->>'startedByUserId' = ${input.userId}`,
+      ];
+
+      // Add cursor condition if provided
+      if (input.cursor) {
+        conditions.push(
+          lt(schema.normalizationSessionProjections.updated_at, new Date(input.cursor)),
+        );
+      }
+
+      // Query projections with pagination
+      const rows = await ctx.db
+        .select()
+        .from(schema.normalizationSessionProjections)
+        .where(and(...conditions))
+        .orderBy(desc(schema.normalizationSessionProjections.updated_at))
+        .limit(input.limit + 1); // Fetch one extra to determine if there's more
+
+      // Parse projections from JSONB
+      const projections = rows
+        .slice(0, input.limit)
+        .map((row) => NormalizationSessionProjection.schema.parse(row.projection));
+
+      // Determine if there are more results
+      const hasMore = rows.length > input.limit;
+
+      // Get next cursor from the last item's updated_at
+      const nextCursor =
+        hasMore && rows[input.limit - 1]?.updated_at
+          ? rows[input.limit - 1].updated_at.toISOString()
+          : null;
+
+      ctx.logger.info('Normalization session list retrieved', {
+        userId: input.userId,
+        count: projections.length,
+        hasMore,
+      });
+
+      return {
+        sessions: projections,
+        nextCursor,
+        hasMore,
+      };
+    }),
+});

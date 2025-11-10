@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { ArtifactId } from '../artifacts/artifact-id';
-import { UserId } from '../users/user-id';
-import { NormalizationSessionId } from './normalization-session-id';
+import { ArtifactId } from '../../artifacts/artifact-id';
+import { UserId } from '../../users/user-id';
+import { NormalizationSessionId } from '../normalization-session-id';
 
 const schema = z.discriminatedUnion('type', [
   z.object({

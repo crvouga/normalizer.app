@@ -55,7 +55,7 @@ export function useStartNormalizationSession({
       };
 
       // Call the backend to append the event
-      const { eventId } = await trpcClient.normalizationSession.appendEvent.mutate({
+      const { eventId } = await trpcClient.normalizationSession.events.append.mutate({
         sessionId,
         event,
       });

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { shallowEqual, useEntityStoreSelector } from '~/src/store/entity-store';
-import type { NormalizationSessionEventId } from '../normalization-session-event-id';
+import type { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { useNormalizationSessionLoader } from '../use-normalization-session-loader';
 

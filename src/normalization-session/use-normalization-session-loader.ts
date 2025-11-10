@@ -25,7 +25,7 @@ export function useNormalizationSessionLoader(
 
       try {
         // Fetch events from the server
-        const events = await trpcClient.normalizationSession.getEvents.mutate({
+        const events = await trpcClient.normalizationSession.events.getBySessionId.mutate({
           sessionId: id,
         });
 

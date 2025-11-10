@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { NormalizationSessionEventId } from './normalization-session-event-id';
-import { NormalizationSessionId } from './normalization-session-id';
+import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionEvent } from './normalization-session-event';
 
 /**

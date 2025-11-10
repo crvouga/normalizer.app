@@ -30,7 +30,7 @@
     "targetFiles": "Target Files",
     "uploadPlaceholder": "Upload target files",
     "targetArtifact": "Target Artifact",
-    "startSuccess": "Session started successfully",
+    "startSuccess": "Session started",
     "startError": "Failed to start session"
   },
   "prompt": {
@@ -48,7 +48,7 @@
     "nameLabel": "Artifact Name",
     "namePlaceholder": "Enter artifact name",
     "upload": "Upload",
-    "uploadSuccess": "Artifact uploaded successfully",
+    "uploadSuccess": "Artifact uploaded",
     "uploadError": "Failed to upload artifact",
     "uploading": "Uploading...",
     "fileLabel": "Artifact File",
@@ -56,7 +56,7 @@
     "editDialogTitle": "Edit Artifact",
     "save": "Save",
     "saving": "Saving...",
-    "editSuccess": "Artifact updated successfully",
+    "editSuccess": "Artifact updated",
     "editError": "Failed to update artifact"
   },
   "modal": {

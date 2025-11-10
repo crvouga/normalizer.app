@@ -1,6 +1,7 @@
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionId } from './normalization-session/normalization-session-id';
+import { NormalizationSessionProjectionList } from './normalization-session/normalization-session-list/normalization-session-list';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
@@ -28,6 +29,14 @@ function AppSidebar() {
 
   const user = currentUserResult.tag === 'ok' ? currentUserResult.value : null;
   const currentScreen = useCurrentScreen();
+
+  const handleSessionClick = (sessionId: NormalizationSessionId) => {
+    currentScreen.setCurrentScreen({
+      type: 'normalization-session',
+      normalizationSessionId: sessionId,
+    });
+  };
+
   return (
     <SidebarRoot>
       <SidebarHeader icon={<AnimatedLogo size="sm" />} title={t('app.title')} />
@@ -38,7 +47,15 @@ function AppSidebar() {
           onClick={() => currentScreen.setCurrentScreen({ type: 'normalization-session' })}
         />
       </div>
-      <div className="w-full flex-1"></div>
+      {user && (
+        <div className="w-full flex-1 overflow-hidden">
+          <NormalizationSessionProjectionList
+            userId={user.id}
+            onSessionClick={handleSessionClick}
+          />
+        </div>
+      )}
+      {!user && <div className="w-full flex-1"></div>}
       <SidebarFooter content={<UserProfileSidebarItem user={user} />} />
     </SidebarRoot>
   );

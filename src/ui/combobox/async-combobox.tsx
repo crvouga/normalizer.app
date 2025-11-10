@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useInfiniteScroll } from '../../lib/use-infinite-scroll';
 import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-state';
 import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
 import {
@@ -8,7 +9,6 @@ import {
 } from './async-combobox/use-async-combobox-fetch';
 import { useAsyncComboboxState } from './async-combobox/use-async-combobox-state';
 import { useDebounce } from './async-combobox/use-debounce';
-import { useInfiniteScroll } from './async-combobox/use-infinite-scroll';
 import type { ComboboxOption, ComboboxProps } from './combobox';
 import { Combobox } from './combobox';
 
