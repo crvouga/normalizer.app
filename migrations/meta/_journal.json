@@ -43,6 +43,13 @@
       "when": 1762740267562,
       "tag": "0005_jazzy_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762743608948,
+      "tag": "0006_remove_session_id_unique_constraint",
+      "breakpoints": true
     }
   ]
 }

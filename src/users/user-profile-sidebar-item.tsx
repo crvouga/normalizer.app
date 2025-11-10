@@ -7,9 +7,11 @@ import { Dropdown } from '~/src/ui/dropdown';
 import { Divider } from '~/src/ui/divider';
 import { MenuItem } from '~/src/ui/menu-item';
 import { Button } from '~/src/ui/button';
-import { IconSettings, IconSpinner, IconGoogle } from '~/src/ui/icons';
+import { IconSettings, IconSpinner, IconGoogle, IconLogout } from '~/src/ui/icons';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
+import { trpcClient } from '~/src/trpc-client';
+import { useI18n } from '~/src/i18n/use-i18n';
 
 type MenuState = { type: 'closed' } | { type: 'open' };
 
@@ -25,6 +27,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
     type: 'closed',
   });
   const authState = useGoogleAuthEnabled();
+  const { t } = useI18n();
 
   const isAnonymous = user.type === 'anonymous';
 
@@ -47,6 +50,16 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
 
   const handleGoogleSignIn = () => {
     window.location.href = '/api/auth/google';
+  };
+
+  const handleLogout = async () => {
+    try {
+      await trpcClient.users.logout.mutate();
+      // Reload the page to refresh user context
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -125,6 +138,17 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
                 Settings
               </Typography>
             </MenuItem>
+
+            {!isAnonymous && (
+              <MenuItem
+                icon={<IconLogout className="size-5 text-gray-600 dark:text-gray-400" />}
+                onClick={handleLogout}
+              >
+                <Typography variant="sm" color="secondary">
+                  {t('auth.signOut')}
+                </Typography>
+              </MenuItem>
+            )}
           </div>
         </Dropdown>
       </div>

@@ -3,6 +3,7 @@ import type { Logger } from '../lib/logger';
 import type { Db } from '../sql';
 import { users, userSessions } from '../db/schema';
 import { UserId } from '../users/user-id';
+import { UserSessionId } from '../users/user-session-id';
 import { isGoogleAuthEnabled } from './google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from './google-oauth-service';
 import { getCookie } from '../lib/http-cookie';
@@ -101,7 +102,7 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
             });
 
             if (existingEmailUser) {
-              // Link Google account to existing user and update session in a transaction
+              // Link Google account to existing user and create new session in a transaction
               user = await db.transaction(async (tx) => {
                 await tx
                   .update(users)
@@ -118,11 +119,14 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
                   where: eq(users.id, existingEmailUser.id),
                 });
 
-                // Update session with authenticated user
-                await tx
-                  .update(userSessions)
-                  .set({ user_id: updatedUser!.id, started_at: new Date() })
-                  .where(eq(userSessions.session_id, sessionId));
+                // Create new session with authenticated user (keeps anonymous session intact)
+                const newUserSessionId = UserSessionId.generate();
+                await tx.insert(userSessions).values({
+                  id: newUserSessionId,
+                  session_id: sessionId,
+                  user_id: updatedUser!.id,
+                  started_at: new Date(),
+                });
 
                 return updatedUser;
               });
@@ -131,7 +135,7 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
                 user_id: existingEmailUser.id,
               });
             } else {
-              // Create new authenticated user and update session in a transaction
+              // Create new authenticated user and new session in a transaction
               const userId = UserId.generate();
               user = await db.transaction(async (tx) => {
                 await tx.insert(users).values({
@@ -149,11 +153,14 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
                   where: eq(users.id, userId),
                 });
 
-                // Update session with authenticated user
-                await tx
-                  .update(userSessions)
-                  .set({ user_id: newUser!.id, started_at: new Date() })
-                  .where(eq(userSessions.session_id, sessionId));
+                // Create new session with authenticated user (keeps anonymous session intact)
+                const newUserSessionId = UserSessionId.generate();
+                await tx.insert(userSessions).values({
+                  id: newUserSessionId,
+                  session_id: sessionId,
+                  user_id: newUser!.id,
+                  started_at: new Date(),
+                });
 
                 return newUser;
               });
@@ -161,16 +168,19 @@ export function createGoogleAuthEndpoints(config: { db: Db; logger: Logger }) {
               logger.info('Created new authenticated user', { user_id: userId });
             }
           } else {
-            // Update existing Google user's session in a transaction
+            // Create new session for existing Google user
             await db.transaction(async (tx) => {
-              await tx
-                .update(userSessions)
-                .set({ user_id: user!.id, started_at: new Date() })
-                .where(eq(userSessions.session_id, sessionId));
+              const newUserSessionId = UserSessionId.generate();
+              await tx.insert(userSessions).values({
+                id: newUserSessionId,
+                session_id: sessionId,
+                user_id: user!.id,
+                started_at: new Date(),
+              });
             });
           }
 
-          logger.info('Updated session with authenticated user', {
+          logger.info('Created session with authenticated user', {
             session_id: sessionId,
             user_id: user!.id,
           });

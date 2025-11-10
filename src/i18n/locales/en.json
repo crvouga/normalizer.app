@@ -3,6 +3,9 @@
     "title": "normalizer.app",
     "newSession": "New Session"
   },
+  "auth": {
+    "signOut": "Sign Out"
+  },
   "settings": {
     "title": "Settings"
   },

@@ -1,4 +1,5 @@
 import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
 export const userTypeEnum = pgEnum('user_type', ['anonymous', 'authenticated']);
@@ -56,7 +57,7 @@ export type IUser = typeof users.$inferSelect;
 
 export const userSessions = pgTable('user_sessions', {
   id: text('id').primaryKey(),
-  session_id: text('session_id').notNull().unique(),
+  session_id: text('session_id').notNull(),
   user_id: text('user_id')
     .notNull()
     .references(() => users.id),
@@ -65,3 +66,10 @@ export const userSessions = pgTable('user_sessions', {
 });
 
 export type IUserSession = typeof userSessions.$inferSelect;
+
+export const userSessionsRelations = relations(userSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSessions.user_id],
+    references: [users.id],
+  }),
+}));
