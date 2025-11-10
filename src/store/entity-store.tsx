@@ -25,8 +25,8 @@ function dispatch(action: Parameters<typeof reducer>[1]): void {
 }
 
 // Create and export hooks
-const { useSelector, useEntityStore } = createEntityStoreHooks(store, dispatch);
+const { useSelector, useEntityStore, shallowEqual } = createEntityStoreHooks(store, dispatch);
 
 export const useEntityStoreSelector = useSelector;
-export { useEntityStore };
+export { useEntityStore, shallowEqual };
 export type { EntityStore } from './entity-store-config';

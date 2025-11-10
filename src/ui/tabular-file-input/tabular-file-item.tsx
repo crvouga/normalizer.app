@@ -145,7 +145,18 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
       setError(null);
 
       try {
-        const response = await fetch(tabularFile.downloadUrl);
+        // Ensure the protocol matches the current app to avoid mixed content errors
+        let downloadUrl = tabularFile.downloadUrl;
+        if (
+          typeof window !== 'undefined' &&
+          downloadUrl.startsWith('http') &&
+          window.location.protocol &&
+          !downloadUrl.startsWith(window.location.protocol)
+        ) {
+          // Replace protocol with the current protocol (http: or https:)
+          downloadUrl = downloadUrl.replace(/^https?:/, window.location.protocol);
+        }
+        const response = await fetch(downloadUrl);
         if (!response.ok) {
           throw new Error(`Failed to download file: ${response.statusText}`);
         }

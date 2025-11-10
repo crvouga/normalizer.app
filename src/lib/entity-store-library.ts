@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Store } from './store';
 
 // Generic types
@@ -265,17 +265,70 @@ type ExtractEntityType<TStore extends StoreConfig<any>, TKey extends keyof TStor
 type ExtractEntityId<TStore extends StoreConfig<any>, TKey extends keyof TStore['entities']> =
   TStore['entities'][TKey] extends EntitySlice<infer TId, any> ? TId : never;
 
+// Shallow equality check for objects and arrays
+function shallowEqual(a: any, b: any): boolean {
+  if (Object.is(a, b)) return true;
+
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!Object.is(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(b, key) || !Object.is(a[key], b[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // Generic hook factory
 export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
   store: Store<TStore>,
   dispatch: (action: StoreAction) => void,
 ) {
-  function useSelector<T>(selector: (state: TStore) => T): T {
-    return useSyncExternalStore(
-      store.subscribe,
-      () => selector(store.getState()),
-      () => selector(store.getState()),
-    );
+  function useSelector<T>(
+    selector: (state: TStore) => T,
+    equalityFn: (a: T, b: T) => boolean = Object.is,
+  ): T {
+    // Use refs to avoid recreating getSnapshot on every render
+    const selectorRef = useRef(selector);
+    const equalityFnRef = useRef(equalityFn);
+    const selectedValueRef = useRef<T | undefined>(undefined);
+    const hasValueRef = useRef(false);
+
+    // Always update refs to latest values
+    selectorRef.current = selector;
+    equalityFnRef.current = equalityFn;
+
+    const getSnapshot = useCallback(() => {
+      const nextValue = selectorRef.current(store.getState());
+
+      // If we have a previous value and it's equal, return the same reference
+      if (hasValueRef.current && equalityFnRef.current(selectedValueRef.current as T, nextValue)) {
+        return selectedValueRef.current as T;
+      }
+
+      // Update cached value and return new one
+      selectedValueRef.current = nextValue;
+      hasValueRef.current = true;
+      return nextValue;
+    }, []); // Empty deps - we use refs for everything
+
+    return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
   }
 
   function useEntityStore() {
@@ -349,14 +402,17 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
       [optimizedDispatch],
     );
 
-    return {
-      addEntity,
-      addManyEntities,
-      updateEntity,
-      removeEntity,
-      resetEntity,
-    };
+    return useMemo(
+      () => ({
+        addEntity,
+        addManyEntities,
+        updateEntity,
+        removeEntity,
+        resetEntity,
+      }),
+      [addEntity, addManyEntities, updateEntity, removeEntity, resetEntity],
+    );
   }
 
-  return { useSelector, useEntityStore };
+  return { useSelector, useEntityStore, shallowEqual };
 }
