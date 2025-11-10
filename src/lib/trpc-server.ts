@@ -24,74 +24,26 @@ export type Context = {
   userSessionId: UserSessionId;
 };
 
-// Create context function
-export const createContext = async (config: {
+// Helper to return context
+function buildContext({
+  db,
+  s3,
+  s3Endpoint,
+  minioClient,
+  logger,
+  sessionId,
+  userId,
+  userSessionId,
+}: {
   db: Db;
   s3: S3Client;
   s3Endpoint: string;
   minioClient: MinioClient;
   logger: Logger;
-  req: Request;
-}): Promise<Context> => {
-  const { db, s3, s3Endpoint, minioClient, logger, req } = config;
-
-  // Get or generate session ID
-  const sessionId = getSessionId(req);
-
-  let userId: UserId;
-  let userSessionId: UserSessionId;
-
-  // First, try to find an active (non-ended) authenticated session
-  const authenticatedSession = await db.query.userSessions.findFirst({
-    where: and(eq(userSessions.session_id, sessionId), isNull(userSessions.ended_at)),
-    with: {
-      user: true,
-    },
-  });
-
-  if (authenticatedSession && authenticatedSession.user.type === 'authenticated') {
-    // Use the authenticated session
-    userId = authenticatedSession.user_id as UserId;
-    userSessionId = authenticatedSession.id as UserSessionId;
-  } else {
-    // Fall back to anonymous session or create one
-    const anonymousSession = await db.query.userSessions.findFirst({
-      where: eq(userSessions.session_id, sessionId),
-      with: {
-        user: true,
-      },
-    });
-
-    if (anonymousSession && anonymousSession.user.type === 'anonymous') {
-      userId = anonymousSession.user_id as UserId;
-      userSessionId = anonymousSession.id as UserSessionId;
-    } else {
-      // No session exists, create new anonymous user and session
-      const result = await db.transaction(async (tx) => {
-        const newUserId = UserIdHelper.generate();
-        await tx.insert(users).values({
-          id: newUserId,
-          type: 'anonymous',
-          created_at: new Date(),
-          updated_at: new Date(),
-        });
-
-        const newUserSessionId = UserSessionIdHelper.generate();
-        await tx.insert(userSessions).values({
-          id: newUserSessionId,
-          session_id: sessionId,
-          user_id: newUserId,
-          started_at: new Date(),
-        });
-
-        return { userId: newUserId, userSessionId: newUserSessionId };
-      });
-
-      userId = result.userId;
-      userSessionId = result.userSessionId;
-    }
-  }
-
+  sessionId: SessionId;
+  userId: UserId;
+  userSessionId: UserSessionId;
+}): Context {
   return {
     db,
     s3,
@@ -102,6 +54,85 @@ export const createContext = async (config: {
     userId,
     userSessionId,
   };
+}
+
+// Create context function: find first user session where matches session id AND authenticated user else anonymous session
+export const createContext = async (config: {
+  db: Db;
+  s3: S3Client;
+  s3Endpoint: string;
+  minioClient: MinioClient;
+  logger: Logger;
+  req: Request;
+}): Promise<Context> => {
+  const { db, s3, s3Endpoint, minioClient, logger, req } = config;
+  const sessionId = getSessionId(req);
+
+  // Find first user session matching session id and authenticated user
+  const session = await db.query.userSessions.findFirst({
+    where: and(eq(userSessions.session_id, sessionId)),
+    with: { user: true },
+  });
+
+  if (session) {
+    if (session.user.type === 'authenticated') {
+      return buildContext({
+        db,
+        s3,
+        s3Endpoint,
+        minioClient,
+        logger,
+        sessionId,
+        userId: session.user_id as UserId,
+        userSessionId: session.id as UserSessionId,
+      });
+    } else if (session.user.type === 'anonymous') {
+      return buildContext({
+        db,
+        s3,
+        s3Endpoint,
+        minioClient,
+        logger,
+        sessionId,
+        userId: session.user_id as UserId,
+        userSessionId: session.id as UserSessionId,
+      });
+    }
+  }
+
+  // No session exists, create new anonymous user/session
+  const { userId: newUserId, userSessionId: newUserSessionId } = await db.transaction(
+    async (tx) => {
+      const newUserId = UserIdHelper.generate();
+      await tx.insert(users).values({
+        id: newUserId,
+        type: 'anonymous',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const newUserSessionId = UserSessionIdHelper.generate();
+      await tx.insert(userSessions).values({
+        id: newUserSessionId,
+        session_id: sessionId,
+        user_id: newUserId,
+        started_at: new Date(),
+      });
+
+      return { userId: newUserId, userSessionId: newUserSessionId };
+    },
+  );
+
+  return buildContext({
+    db,
+    s3,
+    s3Endpoint,
+    minioClient,
+    logger,
+    sessionId,
+    userId: newUserId,
+    userSessionId: newUserSessionId,
+  });
 };
 
 // Initialize tRPC
