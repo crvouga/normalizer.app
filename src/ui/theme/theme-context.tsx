@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
+import './theme-transitions.css';
 
 export type Theme = 'system' | 'light' | 'dark';
 export type EffectiveTheme = 'light' | 'dark';
