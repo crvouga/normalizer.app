@@ -1,18 +1,21 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { serve } from 'bun';
-import { createLogger } from './lib/logger';
-import { createContext } from './lib/trpc-server';
+import { createGoogleAuthEndpoints } from './auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
-import { appRouter } from './trpc-server';
+import { createLogger } from './lib/logger';
+import { getSessionId, setSessionCookie } from './lib/session-id-cookie';
+import { createContext } from './lib/trpc-server';
 import { createS3 } from './s3';
 import { getS3Config } from './s3-config';
 import { cleanupDb, createDb } from './sql';
-import { setSessionCookie, getSessionId } from './lib/session-id-cookie';
-import { createGoogleAuthEndpoints } from './auth/google-auth-http-server/google-auth-http-server-endpoints';
+import { appRouter } from './trpc-server';
+import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
 
 const main = async () => {
   const logger = createLogger();
+
+  generateSparklesSvg(logger);
 
   // Setup graceful shutdown handlers
   const setupGracefulShutdown = () => {
