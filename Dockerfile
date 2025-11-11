@@ -6,11 +6,12 @@ WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
 
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.bun \
+    bun install --frozen-lockfile
 
 COPY . .
 
-ARG NODE_ENV=development
+ARG NODE_ENV=production
 ARG PORT=5000
 
 ENV NODE_ENV=${NODE_ENV}

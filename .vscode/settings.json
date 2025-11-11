@@ -25,6 +25,7 @@
     "pushstate",
     "replacestate",
     "schemaname",
+    "smol",
     "spreadsheetml",
     "sslmode",
     "tablename",
