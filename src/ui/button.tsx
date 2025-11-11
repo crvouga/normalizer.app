@@ -13,12 +13,12 @@ type ButtonVariant =
   | 'contained'
   | 'gradient';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
-type ButtonColor = 'purple' | 'red' | 'green' | 'yellow' | 'gray';
+type ButtonColor = 'fuchsia' | 'red' | 'green' | 'yellow' | 'gray';
 
 function getButtonClasses(
   variant: ButtonVariant = 'default',
   size: ButtonSize = 'default',
-  color: ButtonColor = 'purple',
+  color: ButtonColor = 'fuchsia',
 ) {
   const baseClasses = [
     'inline-flex items-center justify-center gap-2',
@@ -36,7 +36,7 @@ function getButtonClasses(
   ].join(' ');
 
   const colorClasses = {
-    purple:
+    fuchsia:
       'bg-gradient-to-br from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 text-white shadow-md hover:shadow-lg hover:from-fuchsia-600 hover:via-fuchsia-700 hover:to-fuchsia-800 dark:from-fuchsia-600 dark:via-fuchsia-700 dark:to-fuchsia-800 dark:hover:from-fuchsia-700 dark:hover:via-fuchsia-800 dark:hover:to-fuchsia-900',
     red: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
     green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
@@ -81,7 +81,7 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
-  color = 'purple',
+  color = 'fuchsia',
   asChild = false,
   text,
   startIcon,
@@ -99,7 +99,7 @@ function Button({
     >
       {loading && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <Spinner size="sm" color={color === 'purple' ? 'white' : 'purple'} />
+          <Spinner size="sm" color={color === 'fuchsia' ? 'white' : 'fuchsia'} />
         </span>
       )}
       <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>

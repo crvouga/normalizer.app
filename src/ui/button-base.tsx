@@ -39,7 +39,7 @@ export function getButtonBaseStyles({
  * - cursor-wait when busy
  * - hover:opacity-90 when enabled
  * - active:opacity-80 when enabled
- * - focus:ring-2 focus:ring-fuchsia-500 focus:outline-none for purple outline
+ * - focus:ring-2 focus:ring-fuchsia-500 focus:outline-none for fuchsia outline
  * - focus:ring-offset-0 focus-visible:ring-rounded for rounded focus ring
  */
 export const ButtonBase = React.forwardRef<HTMLButtonElement, ButtonBaseProps>(

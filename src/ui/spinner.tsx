@@ -2,7 +2,7 @@ import { cn } from '../lib/cn';
 import { IconSpinner } from './icons';
 
 type AllowedSizes = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-type AllowedColors = 'purple' | 'white';
+type AllowedColors = 'fuchsia' | 'white';
 
 interface SpinnerProps {
   size?: AllowedSizes;
@@ -19,10 +19,10 @@ const sizeMap: Record<AllowedSizes, string> = {
 };
 
 const colorMap: Record<AllowedColors, string> = {
-  purple: 'text-fuchsia-600 dark:text-fuchsia-400',
+  fuchsia: 'text-fuchsia-600 dark:text-fuchsia-400',
   white: 'text-white dark:text-slate-50',
 };
 
-export function Spinner({ size = 'md', className, color = 'purple' }: SpinnerProps) {
+export function Spinner({ size = 'md', className, color = 'fuchsia' }: SpinnerProps) {
   return <IconSpinner className={cn(sizeMap[size], colorMap[color], 'animate-spin', className)} />;
 }
