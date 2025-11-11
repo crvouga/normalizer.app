@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 import { ButtonBase } from './button-base';
-import { Spinner } from './spinner';
+import { Spinner, type SpinnerColor } from './spinner';
 
 type ButtonVariant =
   | 'default'
@@ -28,11 +28,8 @@ function getButtonClasses(
     "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
     'ring-ring/10 dark:ring-ring/20',
     'dark:outline-ring/40 outline-ring/50',
-    // Make the focus-visible rings much less pronounced:
-    // Reduce ring width and outline thickness, and tone down ring color strength
     'focus-visible:ring-2 focus-visible:outline-[0.5px] focus-visible:ring-ring/10 dark:focus-visible:ring-ring/20',
     'aria-invalid:focus-visible:ring-0',
-    // Note: cursor-pointer and active:opacity-80 are now provided by ButtonBase
   ].join(' ');
 
   const colorClasses = {
@@ -99,7 +96,7 @@ function Button({
     >
       {loading && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <Spinner size="sm" color={color === 'fuchsia' ? 'white' : 'fuchsia'} />
+          <Spinner size="sm" color={getSpinnerColor(variant)} />
         </span>
       )}
       <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>
@@ -111,3 +108,18 @@ function Button({
 }
 
 export { Button };
+
+function getSpinnerColor(variant: ButtonVariant): SpinnerColor {
+  switch (variant) {
+    case 'default':
+    case 'destructive':
+      return 'white';
+    case 'outline':
+    case 'ghost':
+    case 'link':
+    case 'contained':
+      return 'fuchsia';
+    case 'secondary':
+      return 'white';
+  }
+}
