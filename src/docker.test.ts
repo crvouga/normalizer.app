@@ -46,12 +46,10 @@ describe('Dockerfile Build Tests', () => {
     expect(dockerfileContent).toContain('FROM oven/bun:1-alpine');
   });
 
-  test('Dockerfile cache mounts should have id argument for Railway compatibility', async () => {
-    // Railway requires explicit id for cache mounts with very specific format
-    // Error 1: flag '--mount=type=cache,target=/root/.bun' is missing an id argument
-    // Error 2: flag '--mount=type=cache,id=bun,target=/root/.bun' is missing the cacheKey prefix from its id
-    // Error 3: flag '--mount=type=cache,id=bun-cache,target=/root/.bun' is missing the cacheKey prefix from its id
-    // Railway requires the LITERAL prefix "cacheKey-" in the id
+  test('Dockerfile cache mounts should have valid format if present (Railway compatibility)', async () => {
+    // Cache mounts are optional but if used, Railway has strict requirements
+    // We simplified the Dockerfile to not use cache mounts due to Railway compatibility issues
+    // This test ensures that IF cache mounts are added in the future, they follow Railway's format
     const dockerfilePath = join(projectRoot, 'Dockerfile');
     const dockerfileContent = await Bun.file(dockerfilePath).text();
 
@@ -59,7 +57,7 @@ describe('Dockerfile Build Tests', () => {
     const cacheMountRegex = /--mount=type=cache[^\n]*/g;
     const cacheMounts = dockerfileContent.match(cacheMountRegex) || [];
 
-    // Each cache mount must have an id parameter with proper format
+    // If cache mounts exist, validate they have proper Railway format
     for (const mount of cacheMounts) {
       // Must have id parameter
       expect(mount).toContain('id=');
@@ -74,8 +72,8 @@ describe('Dockerfile Build Tests', () => {
       }
     }
 
-    // Ensure we found at least one cache mount (the bun cache)
-    expect(cacheMounts.length).toBeGreaterThan(0);
+    // Cache mounts are now optional - test passes whether they exist or not
+    // (We removed them for simplicity and Railway compatibility)
   });
 
   test('should have .dockerignore file to prevent copying unnecessary files', () => {
