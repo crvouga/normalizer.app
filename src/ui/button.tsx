@@ -99,7 +99,7 @@ function Button({
     >
       {loading && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <Spinner size="sm" />
+          <Spinner size="sm" color={color === 'purple' ? 'white' : 'purple'} />
         </span>
       )}
       <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>

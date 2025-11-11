@@ -1,16 +1,15 @@
+import { cn } from '../lib/cn';
 import { IconSpinner } from './icons';
 
 type AllowedSizes = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+type AllowedColors = 'purple' | 'white';
 
 interface SpinnerProps {
   size?: AllowedSizes;
   className?: string;
+  color?: AllowedColors;
 }
 
-/**
- * Spinner using tailwind width/height classes mapped from size tokens.
- * All sizes increased from baseline.
- */
 const sizeMap: Record<AllowedSizes, string> = {
   xs: 'w-6 h-6',
   sm: 'w-8 h-8',
@@ -19,10 +18,11 @@ const sizeMap: Record<AllowedSizes, string> = {
   xl: 'w-16 h-16',
 };
 
-export function Spinner({ size = 'md', className }: SpinnerProps) {
-  return (
-    <IconSpinner
-      className={`${sizeMap[size]} animate-spin text-purple-600 dark:text-purple-400${className ? ` ${className}` : ''}`}
-    />
-  );
+const colorMap: Record<AllowedColors, string> = {
+  purple: 'text-purple-600 dark:text-purple-400',
+  white: 'text-white dark:text-slate-50',
+};
+
+export function Spinner({ size = 'md', className, color = 'purple' }: SpinnerProps) {
+  return <IconSpinner className={cn(sizeMap[size], colorMap[color], 'animate-spin', className)} />;
 }
