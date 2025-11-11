@@ -2,6 +2,7 @@ import { ComboboxButton, ComboboxInput } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
 import { IconChevronDown } from '../../icons';
 import { Spinner } from '../../spinner';
+import { getButtonBaseStyles } from '../../button-base';
 
 export interface ComboboxInputFieldProps<T> {
   displayValue: (value: T | null) => string;
@@ -50,7 +51,9 @@ export function ComboboxInputField<T extends string | number>({
         autoComplete="off"
       />
 
-      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
+      <ComboboxButton
+        className={cn(getButtonBaseStyles(), 'absolute inset-y-0 right-0 flex items-center pr-3')}
+      >
         {isLoading ? (
           <Spinner size="sm" />
         ) : (

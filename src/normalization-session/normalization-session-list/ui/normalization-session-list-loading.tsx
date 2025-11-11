@@ -1,0 +1,18 @@
+import { Spinner } from '~/src/ui/spinner';
+import { Typography } from '~/src/ui/typography';
+
+/**
+ * Initial loading state for the normalization session list.
+ */
+export function NormalizationSessionListLoading() {
+  return (
+    <div className="flex h-full w-full items-center justify-center p-8">
+      <div className="flex w-full flex-col items-center justify-center">
+        <Spinner size="lg" />
+        <Typography variant="sm" color="muted" className="mt-4 text-center">
+          Loading sessions...
+        </Typography>
+      </div>
+    </div>
+  );
+}

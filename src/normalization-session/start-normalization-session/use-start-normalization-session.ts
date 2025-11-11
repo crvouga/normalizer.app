@@ -5,7 +5,7 @@ import type { RemoteResult, Result } from '../../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
-import { useCurrentUser } from '../../users/use-current-user';
+import { useCurrentUserResult } from '../../users/use-current-user';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionId as NormalizationSessionIdGenerator } from '../normalization-session-id';
 
@@ -27,7 +27,7 @@ export function useStartNormalizationSession({
     useState<RemoteResult<StartNormalizationSessionResult, Error>>(NotAsked);
   const entityStore = useEntityStore();
   const { t } = useI18n();
-  const { currentUserResult } = useCurrentUser();
+  const { currentUserResult } = useCurrentUserResult();
 
   const startSession = async (params: StartNormalizationSessionParams) => {
     // Check if user is loaded

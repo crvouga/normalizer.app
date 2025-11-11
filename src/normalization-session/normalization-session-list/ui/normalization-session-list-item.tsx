@@ -1,5 +1,5 @@
-import type { NormalizationSessionId } from '../normalization-session-id';
-import type { NormalizationSessionProjection } from '../normalization-session-projection';
+import type { NormalizationSessionId } from '../../normalization-session-id';
+import type { NormalizationSessionProjection } from '../../normalization-session-projection';
 
 interface NormalizationSessionListItemProps {
   projection: NormalizationSessionProjection;

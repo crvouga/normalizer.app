@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { trpcClient } from '~/src/trpc-client';
-import { useCurrentUser } from '~/src/users/use-current-user';
+import { useCurrentUserResult } from '~/src/users/use-current-user';
 import { showSuccessToast, showErrorToast } from '~/src/ui/toast';
 import { useI18n } from '~/src/i18n/use-i18n';
 
@@ -11,7 +11,7 @@ import { useI18n } from '~/src/i18n/use-i18n';
 export function useSignOut() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const { refetchCurrentUser } = useCurrentUser();
+  const { refetchCurrentUser } = useCurrentUserResult();
   const { t } = useI18n();
 
   const openSignOutDialog = useCallback(() => {

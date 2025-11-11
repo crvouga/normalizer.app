@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { SplashScreen } from '../ui/splash-screen';
 import { showErrorToast } from '../ui/toast';
-import { useCurrentUser } from './use-current-user';
+import { useCurrentUserResult } from './use-current-user';
 
 /**
  * Boundary component that handles loading and error states for the current user.
@@ -9,7 +9,7 @@ import { useCurrentUser } from './use-current-user';
  * Only renders children when the user is successfully loaded.
  */
 export function CurrentUserBoundary({ children }: { children: ReactNode }) {
-  const { currentUserResult } = useCurrentUser();
+  const { currentUserResult } = useCurrentUserResult();
 
   useEffect(() => {
     if (currentUserResult.tag === 'err') {

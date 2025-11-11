@@ -4,7 +4,6 @@ import { NormalizationSessionId } from './normalization-session/normalization-se
 import { NormalizationSessionProjectionList } from './normalization-session/normalization-session-list/normalization-session-list';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
 import { StartNormalizationSessionScreen } from './normalization-session/start-normalization-session/start-normalization-session-screen';
-
 import { useCurrentScreen } from './screen/use-current-screen';
 import { AnimatedLogo } from './ui/animated-logo';
 import { Button } from './ui/button';
@@ -27,9 +26,7 @@ export function App() {
 
 function AppSidebar() {
   const { t } = useI18n();
-  const { currentUserResult } = useCurrentUser();
-
-  const user = currentUserResult.tag === 'ok' ? currentUserResult.value : null;
+  const user = useCurrentUser();
   const currentScreen = useCurrentScreen();
 
   const handleSessionClick = (sessionId: NormalizationSessionId) => {
@@ -38,7 +35,6 @@ function AppSidebar() {
       normalizationSessionId: sessionId,
     });
   };
-
   return (
     <SidebarRoot>
       <SidebarHeader icon={<AnimatedLogo size="sm" />} title={t('app.title')} />
@@ -49,15 +45,9 @@ function AppSidebar() {
           onClick={() => currentScreen.setCurrentScreen({ type: 'start-normalization-session' })}
         />
       </div>
-      {user && (
-        <div className="w-full flex-1 overflow-hidden">
-          <NormalizationSessionProjectionList
-            userId={user.id}
-            onSessionClick={handleSessionClick}
-          />
-        </div>
-      )}
-      {!user && <div className="w-full flex-1"></div>}
+      <div className="w-full flex-1 overflow-hidden">
+        <NormalizationSessionProjectionList userId={user.id} onSessionClick={handleSessionClick} />
+      </div>
       <SidebarFooter content={<UserProfileSidebarItem user={user} />} />
     </SidebarRoot>
   );

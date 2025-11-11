@@ -23,7 +23,7 @@ interface UseNormalizationSessionListLoaderResult {
  * @param userId - The user ID to fetch sessions for
  * @returns Loading state, hasMore flag, and loadMore function
  */
-export function useNormalizationSessionListLoader(
+export function useNormalizationSessionsByUserLoader(
   userId: UserId,
 ): UseNormalizationSessionListLoaderResult {
   const [state, setState] = useState<LoadingState>({ type: 'idle' });
