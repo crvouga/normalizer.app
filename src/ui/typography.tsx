@@ -39,7 +39,7 @@ const colorClasses: Record<TypographyColor, string> = {
   disabled: 'text-slate-500 dark:text-slate-500',
   error: 'text-red-600 dark:text-red-400',
   success: 'text-green-600 dark:text-green-400',
-  info: 'text-purple-600 dark:text-purple-400',
+  info: 'text-fuchsia-600 dark:text-fuchsia-400',
   warning: 'text-yellow-600 dark:text-yellow-400',
 };
 

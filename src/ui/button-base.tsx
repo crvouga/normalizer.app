@@ -21,7 +21,7 @@ export function getButtonBaseStyles({
   return cn(
     'transition-opacity',
     // Purple outline on focus, rounded ring
-    'focus:ring-rounded focus:ring-2 focus:ring-purple-500 focus:outline-none',
+    'focus:ring-rounded focus:ring-2 focus:ring-fuchsia-500 focus:outline-none',
     // Cursor states
     !isDisabled && 'cursor-pointer',
     disabled && 'cursor-not-allowed',
@@ -39,7 +39,7 @@ export function getButtonBaseStyles({
  * - cursor-wait when busy
  * - hover:opacity-90 when enabled
  * - active:opacity-80 when enabled
- * - focus:ring-2 focus:ring-purple-500 focus:outline-none for purple outline
+ * - focus:ring-2 focus:ring-fuchsia-500 focus:outline-none for purple outline
  * - focus:ring-offset-0 focus-visible:ring-rounded for rounded focus ring
  */
 export const ButtonBase = React.forwardRef<HTMLButtonElement, ButtonBaseProps>(

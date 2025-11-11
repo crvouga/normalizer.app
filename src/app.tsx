@@ -5,7 +5,7 @@ import { NormalizationSessionProjectionList } from './normalization-session/norm
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
 import { StartNormalizationSessionScreen } from './normalization-session/start-normalization-session/start-normalization-session-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
-import { AnimatedLogo } from './ui/animated-logo';
+import { Sparkles } from './ui/sparkles';
 import { Button } from './ui/button';
 import { SidebarFooter, SidebarHeader, SidebarRoot } from './ui/sidebar';
 import { SidebarLayout } from './ui/sidebar-layout';
@@ -37,7 +37,7 @@ function AppSidebar() {
   };
   return (
     <SidebarRoot>
-      <SidebarHeader icon={<AnimatedLogo size="sm" />} title={t('app.title')} />
+      <SidebarHeader icon={<Sparkles size="sm" />} title={t('app.title')} />
       <div className="w-full p-4">
         <Button
           className="w-full"

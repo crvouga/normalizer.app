@@ -28,7 +28,7 @@ export const PromptInputField: React.FC<PromptInputFieldProps> = ({
       <textarea
         id={id}
         rows={rows}
-        className="resize-y rounded border border-slate-300 bg-white p-2 text-base text-slate-900 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-purple-400 dark:focus:ring-purple-400"
+        className="resize-y rounded border border-slate-300 bg-white p-2 text-base text-slate-900 focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-400"
         placeholder={placeholder ?? t('prompt.placeholder')}
         value={value}
         onChange={onChange}

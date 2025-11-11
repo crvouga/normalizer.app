@@ -34,8 +34,9 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
       <div
         className={cn(
           'relative cursor-pointer rounded-lg border-2 border-dashed border-slate-300 p-8 text-center transition-colors dark:border-slate-600',
-          'hover:border-purple-500 hover:bg-purple-50 dark:hover:border-purple-400 dark:hover:bg-purple-950',
-          isDragOver && 'border-purple-500 bg-purple-50 dark:border-purple-400 dark:bg-purple-950',
+          'hover:border-fuchsia-500 hover:bg-fuchsia-50 dark:hover:border-fuchsia-400 dark:hover:bg-fuchsia-950',
+          isDragOver &&
+            'border-fuchsia-500 bg-fuchsia-50 dark:border-fuchsia-400 dark:bg-fuchsia-950',
           hasError && 'border-destructive',
           className,
         )}

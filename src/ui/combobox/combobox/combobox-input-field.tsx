@@ -35,8 +35,8 @@ export function ComboboxInputField<T extends string | number>({
         className={cn(
           'w-full border border-slate-300 bg-white py-3 pr-12 pl-4 text-lg leading-6 text-slate-900',
           'dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100',
-          'focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none',
-          'dark:focus:border-purple-400 dark:focus:ring-purple-400',
+          'focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 focus:outline-none',
+          'dark:focus:border-fuchsia-400 dark:focus:ring-fuchsia-400',
           'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500',
           'dark:disabled:bg-slate-900 dark:disabled:text-slate-600',
           hasError && 'border-red-500 focus:border-red-500 focus:ring-red-500',

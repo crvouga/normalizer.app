@@ -19,7 +19,7 @@ const sizeMap: Record<AllowedSizes, string> = {
 };
 
 const colorMap: Record<AllowedColors, string> = {
-  purple: 'text-purple-600 dark:text-purple-400',
+  purple: 'text-fuchsia-600 dark:text-fuchsia-400',
   white: 'text-white dark:text-slate-50',
 };
 

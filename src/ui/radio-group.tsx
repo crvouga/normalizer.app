@@ -54,7 +54,7 @@ export function RadioGroup<T extends string = string>({
                 cn(
                   'relative flex cursor-pointer rounded-lg border px-4 py-3 transition-colors',
                   checked
-                    ? 'border-purple-500 bg-purple-50 dark:border-purple-400 dark:bg-purple-950'
+                    ? 'border-fuchsia-500 bg-fuchsia-50 dark:border-fuchsia-400 dark:bg-fuchsia-950'
                     : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700',
                   disabled && 'cursor-not-allowed opacity-50',
                 )
@@ -68,7 +68,7 @@ export function RadioGroup<T extends string = string>({
                       className={cn(
                         'text-base font-medium',
                         checked
-                          ? 'text-purple-900 dark:text-purple-100'
+                          ? 'text-fuchsia-900 dark:text-fuchsia-100'
                           : 'text-slate-900 dark:text-slate-100',
                       )}
                     >
@@ -80,7 +80,7 @@ export function RadioGroup<T extends string = string>({
                         className={cn(
                           'text-sm',
                           checked
-                            ? 'text-purple-700 dark:text-purple-300'
+                            ? 'text-fuchsia-700 dark:text-fuchsia-300'
                             : 'text-slate-600 dark:text-slate-400',
                         )}
                       >
@@ -90,7 +90,7 @@ export function RadioGroup<T extends string = string>({
                   </div>
                   {checked && (
                     <div className="shrink-0">
-                      <IconCheck className="size-5 text-purple-600 dark:text-purple-400" />
+                      <IconCheck className="size-5 text-fuchsia-600 dark:text-fuchsia-400" />
                     </div>
                   )}
                 </div>

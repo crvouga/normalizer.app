@@ -37,7 +37,7 @@ function getButtonClasses(
 
   const colorClasses = {
     purple:
-      'bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-md hover:shadow-lg hover:from-purple-600 hover:via-purple-700 hover:to-purple-800 dark:from-purple-600 dark:via-purple-700 dark:to-purple-800 dark:hover:from-purple-700 dark:hover:via-purple-800 dark:hover:to-purple-900',
+      'bg-gradient-to-br from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 text-white shadow-md hover:shadow-lg hover:from-fuchsia-600 hover:via-fuchsia-700 hover:to-fuchsia-800 dark:from-fuchsia-600 dark:via-fuchsia-700 dark:to-fuchsia-800 dark:hover:from-fuchsia-700 dark:hover:via-fuchsia-800 dark:hover:to-fuchsia-900',
     red: 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
     green: 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
     yellow:
