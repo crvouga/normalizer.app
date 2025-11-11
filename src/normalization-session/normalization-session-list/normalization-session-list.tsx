@@ -1,8 +1,8 @@
 import { useInfiniteScroll } from '../../lib/use-infinite-scroll';
 import type { UserId } from '../../users/user-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import { useNormalizationSessionsByUserLoader } from './use-normalization-session-list-loader';
-import { useNormalizationSessionsByUser } from './use-normalization-sessions-by-user';
+import { useNormalizationSessionsByUserLoader } from './use-normalization-sessions-by-user-loader';
+import { useNormalizationSessionsByUserSelector } from './use-normalization-sessions-by-user-selector';
 import { NormalizationSessionListError } from './ui/normalization-session-list-error';
 import { NormalizationSessionListLoading } from './ui/normalization-session-list-loading';
 import { NormalizationSessionListEmpty } from './ui/normalization-session-list-empty';
@@ -22,7 +22,7 @@ export function NormalizationSessionProjectionList({
   onSessionClick,
 }: NormalizationSessionProjectionListProps) {
   const { state, hasMore, loadMore } = useNormalizationSessionsByUserLoader(userId);
-  const sessions = useNormalizationSessionsByUser(userId);
+  const sessions = useNormalizationSessionsByUserSelector(userId);
 
   const loadMoreRef = useInfiniteScroll({
     hasMore,

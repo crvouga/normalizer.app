@@ -9,7 +9,9 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
  * @param userId - The user ID to filter sessions by
  * @returns Array of normalization session projections for the user
  */
-export function useNormalizationSessionsByUser(userId: UserId): NormalizationSessionProjection[] {
+export function useNormalizationSessionsByUserSelector(
+  userId: UserId,
+): NormalizationSessionProjection[] {
   // Get session IDs from the index with shallow equality check
   const sessionIds = useEntityStoreSelector(
     (state) => state.indexes.normalizationSessionProjectionsByUserId[userId] || [],
