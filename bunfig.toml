@@ -1,3 +1,9 @@
 [serve.static]
 plugins = ["bun-plugin-tailwind"]
 env = "BUN_PUBLIC_*"
+
+[test]
+# E2E tests use .e2e.ts extension (not .test.ts)
+# This ensures Bun's test runner only picks up unit tests
+# E2E tests should be run with Playwright instead
+coveragePathIgnorePatterns = ["**/*.e2e.test.ts"]

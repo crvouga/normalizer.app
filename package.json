@@ -26,6 +26,9 @@
     "server": "bun run --hot src/server.tsx",
     "tc": "bun type-check",
     "test": "bun test",
+    "test:e2e": "playwright test",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
     "type-check": "tsc --noEmit --watch",
     "type-check:once": "tsc --noEmit"
   },
@@ -44,10 +47,12 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.30.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.7.1",
     "sort-package-json": "^3.4.0"

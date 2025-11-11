@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "bunfig",
+    "bunx",
     "cloc",
     "defval",
     "dotenv",
@@ -13,6 +14,7 @@
     "micromacro",
     "minioadmin",
     "netcat",
+    "networkidle",
     "officedocument",
     "openxmlformats",
     "orpc",
