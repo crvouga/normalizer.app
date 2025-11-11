@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
 
-RUN --mount=type=cache,target=/root/.bun \
+RUN --mount=type=cache,id=bun,target=/root/.bun \
     bun install --frozen-lockfile
 
 COPY . .

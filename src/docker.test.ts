@@ -46,6 +46,25 @@ describe('Dockerfile Build Tests', () => {
     expect(dockerfileContent).toContain('FROM oven/bun:1-alpine');
   });
 
+  test('Dockerfile cache mounts should have id argument for Railway compatibility', async () => {
+    // Railway requires explicit id for cache mounts
+    // Error: flag '--mount=type=cache,target=/root/.bun' is missing an id argument
+    const dockerfilePath = join(projectRoot, 'Dockerfile');
+    const dockerfileContent = await Bun.file(dockerfilePath).text();
+
+    // Find all cache mount declarations
+    const cacheMountRegex = /--mount=type=cache[^\n]*/g;
+    const cacheMounts = dockerfileContent.match(cacheMountRegex) || [];
+
+    // Each cache mount must have an id parameter
+    for (const mount of cacheMounts) {
+      expect(mount).toContain('id=');
+    }
+
+    // Ensure we found at least one cache mount (the bun cache)
+    expect(cacheMounts.length).toBeGreaterThan(0);
+  });
+
   test('should have .dockerignore file to prevent copying unnecessary files', () => {
     // This is critical for Railway deployments - without .dockerignore,
     // the build will copy node_modules, test-results, etc. which can
