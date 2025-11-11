@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-
+import os from 'os';
 const isCI = !!process.env.CI;
 
 export default defineConfig({
@@ -8,7 +8,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: 0,
-  workers: isCI ? 2 : Math.max(4, require('os').cpus().length),
+  workers: isCI ? 2 : Math.max(4, os.cpus().length),
   reporter: isCI ? [['github'], ['list']] : [['list']], // Use GitHub Actions reporter in CI, otherwise just list
 
   use: {
