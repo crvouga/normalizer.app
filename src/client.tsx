@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './app_';
+import { App } from './app';
 import { I18nProvider } from './i18n/i18n-context';
 import { ThemeProvider } from './ui/theme/theme-context';
 import { ToastProvider } from './ui/toast';
