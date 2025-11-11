@@ -47,6 +47,7 @@ export const ButtonBase = React.forwardRef<HTMLButtonElement, ButtonBaseProps>(
     return (
       <button
         ref={ref}
+        type="button"
         className={cn(getButtonBaseStyles({ disabled, busy }), className)}
         disabled={disabled || busy}
         {...props}

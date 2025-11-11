@@ -1,3 +1,4 @@
+import { ButtonBase } from '~/src/ui/button-base';
 import type { NormalizationSessionId } from '../../normalization-session-id';
 import type { NormalizationSessionProjection } from '../../normalization-session-projection';
 
@@ -39,10 +40,9 @@ export function NormalizationSessionListItem({
   };
 
   return (
-    <button
-      type="button"
+    <ButtonBase
       onClick={() => onClick(projection.id)}
-      className="dark:hover:bg-slate-750 w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
+      className="dark:hover:bg-slate-750 w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
     >
       <div className="flex flex-col gap-2">
         {/* Session ID */}
@@ -64,6 +64,6 @@ export function NormalizationSessionListItem({
           <span>Started {formatDate(projection.startedAt)}</span>
         </div>
       </div>
-    </button>
+    </ButtonBase>
   );
 }

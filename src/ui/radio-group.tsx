@@ -1,4 +1,4 @@
-import { RadioGroup as HeadlessRadioGroup } from '@headlessui/react';
+import { Description, RadioGroup as HeadlessRadioGroup, Label, Radio } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
 import { IconCheck } from './icons';
 import { Typography } from './typography';
@@ -46,7 +46,7 @@ export function RadioGroup<T extends string = string>({
       <HeadlessRadioGroup value={value} onChange={onChange}>
         <div className="space-y-2">
           {options.map((option) => (
-            <HeadlessRadioGroup.Option
+            <Radio
               key={option.value}
               value={option.value}
               disabled={option.disabled}
@@ -63,7 +63,7 @@ export function RadioGroup<T extends string = string>({
               {({ checked }) => (
                 <div className="flex w-full items-center justify-between">
                   <div className="flex flex-col">
-                    <HeadlessRadioGroup.Label
+                    <Label
                       as="span"
                       className={cn(
                         'text-base font-medium',
@@ -73,9 +73,9 @@ export function RadioGroup<T extends string = string>({
                       )}
                     >
                       {option.label}
-                    </HeadlessRadioGroup.Label>
+                    </Label>
                     {option.description && (
-                      <HeadlessRadioGroup.Description
+                      <Description
                         as="span"
                         className={cn(
                           'text-sm',
@@ -85,7 +85,7 @@ export function RadioGroup<T extends string = string>({
                         )}
                       >
                         {option.description}
-                      </HeadlessRadioGroup.Description>
+                      </Description>
                     )}
                   </div>
                   {checked && (
@@ -95,7 +95,7 @@ export function RadioGroup<T extends string = string>({
                   )}
                 </div>
               )}
-            </HeadlessRadioGroup.Option>
+            </Radio>
           ))}
         </div>
       </HeadlessRadioGroup>
