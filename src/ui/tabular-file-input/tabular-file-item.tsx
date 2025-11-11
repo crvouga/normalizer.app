@@ -36,15 +36,9 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
     <div className="flex items-center justify-between p-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="shrink-0">
-          {isImage ? (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              <ImageIcon />
-            </div>
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              <FileIcon />
-            </div>
-          )}
+          <div className="flex size-10 items-center justify-center rounded-lg">
+            {isImage ? <ImageIcon className="size-6" /> : <FileIcon className="size-6" />}
+          </div>
         </div>
         <div className="min-w-0 flex-1">
           <Typography variant="sm" weight="medium" color="primary" className="truncate">

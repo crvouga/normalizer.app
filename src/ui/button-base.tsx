@@ -6,6 +6,32 @@ export interface ButtonBaseProps extends React.ComponentProps<'button'> {
 }
 
 /**
+ * Returns base button style classes for cursor states and opacity transitions.
+ *
+ * @param options - Configuration options
+ * @param options.disabled - Whether the button is disabled
+ * @param options.busy - Whether the button is in a busy/loading state
+ */
+export function getButtonBaseStyles({
+  disabled = false,
+  busy = false,
+}: { disabled?: boolean; busy?: boolean } = {}) {
+  const isDisabled = disabled || busy;
+
+  return cn(
+    'transition-opacity',
+    // Purple outline on focus, rounded ring
+    'focus:ring-rounded focus:ring-2 focus:ring-purple-500 focus:outline-none',
+    // Cursor states
+    !isDisabled && 'cursor-pointer',
+    disabled && 'cursor-not-allowed',
+    busy && 'cursor-wait',
+    // Opacity effects when enabled
+    !isDisabled && 'hover:opacity-90 active:opacity-80',
+  );
+}
+
+/**
  * ButtonBase component with shared button styles for cursor states and opacity transitions.
  *
  * - cursor-pointer when enabled
@@ -13,25 +39,16 @@ export interface ButtonBaseProps extends React.ComponentProps<'button'> {
  * - cursor-wait when busy
  * - hover:opacity-90 when enabled
  * - active:opacity-80 when enabled
+ * - focus:ring-2 focus:ring-purple-500 focus:outline-none for purple outline
+ * - focus:ring-offset-0 focus-visible:ring-rounded for rounded focus ring
  */
 export const ButtonBase = React.forwardRef<HTMLButtonElement, ButtonBaseProps>(
   ({ className, busy = false, disabled, children, ...props }, ref) => {
-    const isDisabled = disabled || busy;
-
     return (
       <button
         ref={ref}
-        className={cn(
-          'transition-opacity',
-          // Cursor states
-          !isDisabled && 'cursor-pointer',
-          disabled && 'cursor-not-allowed',
-          busy && 'cursor-wait',
-          // Opacity effects when enabled
-          !isDisabled && 'hover:opacity-90 active:opacity-80',
-          className,
-        )}
-        disabled={isDisabled}
+        className={cn(getButtonBaseStyles({ disabled, busy }), className)}
+        disabled={disabled || busy}
         {...props}
       >
         {children}

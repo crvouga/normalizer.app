@@ -6,9 +6,11 @@ import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
 import { useSignOut } from '~/src/auth/use-sign-out';
 import { useSignIn } from '~/src/auth/use-sign-in';
 import { useI18n } from '~/src/i18n/use-i18n';
+import { cn } from '~/src/lib/cn';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
 import { Avatar } from '~/src/ui/avatar';
+import { getButtonBaseStyles } from '~/src/ui/button-base';
 import { Divider } from '~/src/ui/divider';
 import { IconLogin, IconLogout, IconSettings, IconSpinner, IconUser } from '~/src/ui/icons';
 import { MenuItemButton } from '~/src/ui/menu-item-button';
@@ -24,7 +26,14 @@ type UserProfileSidebarItemProps = {
 
 const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolean }) => {
   return (
-    <MenuButton className="flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200 hover:bg-slate-100 data-active:bg-slate-100 dark:hover:bg-slate-800 dark:data-active:bg-slate-800">
+    <MenuButton
+      className={cn(
+        getButtonBaseStyles(),
+        'flex w-full items-center gap-3 rounded-lg p-2 transition-all duration-200',
+        'hover:bg-slate-100 data-active:bg-slate-100',
+        'dark:hover:bg-slate-800 dark:data-active:bg-slate-800',
+      )}
+    >
       {isAnonymous ? (
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
           <IconUser className="size-5 text-slate-600 dark:text-slate-400" />
