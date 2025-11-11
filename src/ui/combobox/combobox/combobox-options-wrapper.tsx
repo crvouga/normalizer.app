@@ -1,10 +1,19 @@
 import { ComboboxOptions } from '@headlessui/react';
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import { getSurfaceStyles } from '~/src/ui/surface';
 
 export interface ComboboxOptionsWrapperProps {
   optionsClassName?: string;
   children: React.ReactNode;
+}
+
+/**
+ * Surface styles for combobox/select dropdowns.
+ * Includes max height and scrolling behavior.
+ */
+function getComboboxSurfaceStyles(className?: string) {
+  return cn(getSurfaceStyles(), 'max-h-60 overflow-auto', className);
 }
 
 /**
@@ -19,11 +28,7 @@ export function ComboboxOptionsWrapper({
   return (
     <ComboboxOptions
       anchor="bottom start"
-      className={cn(
-        'ring-opacity-5 z-50 mt-1 max-h-60 w-(--input-width) overflow-auto rounded-lg bg-white text-base shadow-lg ring-1 ring-black focus:outline-none',
-        'dark:bg-slate-800 dark:ring-slate-700',
-        optionsClassName,
-      )}
+      className={getComboboxSurfaceStyles(cn('mt-1 w-(--input-width) text-base', optionsClassName))}
     >
       {children}
     </ComboboxOptions>
