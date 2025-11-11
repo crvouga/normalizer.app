@@ -53,11 +53,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
+
+    // Add transitioning class before changing theme
+    root.classList.add('theme-transitioning');
+
+    // Change theme
     if (effectiveTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
+
+    // Remove transitioning class after transition completes
+    const timeoutId = setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 200); // Match the transition duration in CSS
+
+    return () => clearTimeout(timeoutId);
   }, [effectiveTheme]);
 
   // Set theme and persist to localStorage
