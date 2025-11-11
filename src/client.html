@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="./ui/sparkles.svg" />
     <title>normalizer.app</title>
+    <script>
+      // Prevent flash of light mode by applying dark class immediately
+      (function () {
+        try {
+          const theme = localStorage.getItem('normalizer-theme');
+          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const shouldUseDark = theme === 'dark' || (theme !== 'light' && systemPrefersDark);
+
+          if (shouldUseDark) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          // If localStorage fails, fall back to system preference
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        }
+      })();
+    </script>
     <script type="module" src="./client.tsx" async></script>
     <link rel="stylesheet" href="./client.css" />
   </head>
