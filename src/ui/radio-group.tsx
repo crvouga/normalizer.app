@@ -1,6 +1,6 @@
 import { Description, RadioGroup as HeadlessRadioGroup, Label, Radio } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
-import { IconCheck } from './icons';
+import { IconCheck, type Icon } from './icons';
 import { Typography } from './typography';
 
 export interface RadioOption<T extends string = string> {
@@ -8,6 +8,7 @@ export interface RadioOption<T extends string = string> {
   label: string;
   description?: string;
   disabled?: boolean;
+  icon?: Icon;
 }
 
 export interface RadioGroupProps<T extends string = string> {
@@ -62,31 +63,43 @@ export function RadioGroup<T extends string = string>({
             >
               {({ checked }) => (
                 <div className="flex w-full items-center justify-between">
-                  <div className="flex flex-col">
-                    <Label
-                      as="span"
-                      className={cn(
-                        'text-base font-medium',
-                        checked
-                          ? 'text-fuchsia-900 dark:text-fuchsia-100'
-                          : 'text-slate-900 dark:text-slate-100',
-                      )}
-                    >
-                      {option.label}
-                    </Label>
-                    {option.description && (
-                      <Description
+                  <div className="flex items-center gap-3">
+                    {option.icon && (
+                      <option.icon
+                        className={cn(
+                          'size-6 shrink-0',
+                          checked
+                            ? 'text-fuchsia-600 dark:text-fuchsia-400'
+                            : 'text-slate-500 dark:text-slate-400',
+                        )}
+                      />
+                    )}
+                    <div className="flex flex-col">
+                      <Label
                         as="span"
                         className={cn(
-                          'text-sm',
+                          'text-base font-medium',
                           checked
-                            ? 'text-fuchsia-700 dark:text-fuchsia-300'
-                            : 'text-slate-600 dark:text-slate-400',
+                            ? 'text-fuchsia-900 dark:text-fuchsia-100'
+                            : 'text-slate-900 dark:text-slate-100',
                         )}
                       >
-                        {option.description}
-                      </Description>
-                    )}
+                        {option.label}
+                      </Label>
+                      {option.description && (
+                        <Description
+                          as="span"
+                          className={cn(
+                            'text-sm',
+                            checked
+                              ? 'text-fuchsia-700 dark:text-fuchsia-300'
+                              : 'text-slate-600 dark:text-slate-400',
+                          )}
+                        >
+                          {option.description}
+                        </Description>
+                      )}
+                    </div>
                   </div>
                   {checked && (
                     <div className="shrink-0">
