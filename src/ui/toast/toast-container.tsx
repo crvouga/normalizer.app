@@ -16,6 +16,10 @@ export function ToastContainer() {
     setErrorDetails(null);
   };
 
+  // Only show the first toast in the queue
+  const currentToast = toasts[0];
+  const hasQueuedToasts = toasts.length > 1;
+
   return (
     <>
       {/* Toast container */}
@@ -24,9 +28,14 @@ export function ToastContainer() {
         aria-live="polite"
         aria-atomic="false"
       >
-        {toasts.map((toast) => (
-          <Toast key={toast.id} toast={toast} onShowError={handleShowError} />
-        ))}
+        {currentToast && (
+          <Toast
+            key={currentToast.id}
+            toast={currentToast}
+            onShowError={handleShowError}
+            hasQueuedToasts={hasQueuedToasts}
+          />
+        )}
       </div>
 
       {/* Error details modal */}

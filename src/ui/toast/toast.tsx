@@ -10,11 +10,20 @@ import type { Toast as ToastType } from './toast-types';
 interface ToastProps {
   toast: ToastType;
   onShowError?: (errorDetails: string) => void;
+  hasQueuedToasts?: boolean;
 }
 
-export function Toast({ toast, onShowError }: ToastProps) {
+export function Toast({ toast, onShowError, hasQueuedToasts }: ToastProps) {
   const { t } = useI18n();
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Trigger enter animation on mount
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+    return () => cancelAnimationFrame(timer);
+  }, []);
 
   const handleDismiss = useCallback(() => {
     setIsVisible(false);
@@ -23,6 +32,13 @@ export function Toast({ toast, onShowError }: ToastProps) {
       toastStore.removeToast(toast.id);
     }, 300);
   }, [toast.id]);
+
+  // Immediately dismiss when new toasts are queued
+  useEffect(() => {
+    if (hasQueuedToasts && isVisible) {
+      handleDismiss();
+    }
+  }, [hasQueuedToasts, isVisible, handleDismiss]);
 
   // Auto-dismiss after duration
   useEffect(() => {
