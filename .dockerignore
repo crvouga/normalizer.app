@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+bun.lock.b
+
+# Testing
+test-results
+playwright-report
+coverage
+*.log
+
+# Development
+.git
+.github
+.vscode
+.idea
+*.md
+!README.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist
+build
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
