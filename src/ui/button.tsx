@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
-import { IconSpinner } from './icons';
 import { ButtonBase } from './button-base';
+import { Spinner } from './spinner';
 
 type ButtonVariant =
   | 'default'
@@ -99,7 +99,7 @@ function Button({
     >
       {loading && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <IconSpinner />
+          <Spinner size="sm" />
         </span>
       )}
       <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>

@@ -17,6 +17,7 @@ import { MenuItemButton } from '~/src/ui/menu-item-button';
 import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
 import { getUserInitials } from './user-initials';
+import { Spinner } from '../ui/spinner';
 
 type SettingsModalState = { type: 'closed' } | { type: 'open' };
 
@@ -97,7 +98,7 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
         <MenuItemsAnimated anchor="top">
           {authState.type === 'loading' && (
             <div className="flex items-center justify-center px-4 py-6">
-              <IconSpinner className="size-5 text-slate-400" />
+              <Spinner size="sm" />
             </div>
           )}
 

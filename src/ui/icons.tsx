@@ -142,14 +142,8 @@ export const IconCheck = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGEl
 );
 
 export const IconSpinner = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
-  ({ className, ...props }, ref) => (
-    <svg
-      ref={ref}
-      className={cn('h-4 w-4 animate-spin', className)}
-      fill="none"
-      viewBox="0 0 24 24"
-      {...props}
-    >
+  (props, ref) => (
+    <svg ref={ref} fill="none" viewBox="0 0 24 24" {...props}>
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"

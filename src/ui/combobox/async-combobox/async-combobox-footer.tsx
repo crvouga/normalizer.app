@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { IconSpinner } from '../../icons';
+import { Spinner } from '../../spinner';
 import { Typography } from '../../typography';
 
 export interface AsyncComboboxFooterProps {
@@ -26,7 +26,7 @@ export function AsyncComboboxFooter({
     >
       {isLoadingMore ? (
         <div className="flex items-center justify-center gap-2">
-          <IconSpinner />
+          <Spinner size="sm" />
           <Typography variant="xs" color="muted">
             Loading more...
           </Typography>

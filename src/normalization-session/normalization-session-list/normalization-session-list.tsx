@@ -4,6 +4,8 @@ import { NormalizationSessionListItem } from './normalization-session-list-item'
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { useNormalizationSessionListLoader } from './use-normalization-session-list-loader';
 import { useNormalizationSessionsByUser } from './use-normalization-sessions-by-user';
+import { IconSpinner } from '~/src/ui/icons';
+import { Spinner } from '~/src/ui/spinner';
 
 interface NormalizationSessionProjectionListProps {
   userId: UserId;
@@ -47,7 +49,7 @@ export function NormalizationSessionProjectionList({
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-blue-600 dark:border-slate-600 dark:border-t-blue-400" />
+          <Spinner size="lg" />
           <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Loading sessions...</p>
         </div>
       </div>

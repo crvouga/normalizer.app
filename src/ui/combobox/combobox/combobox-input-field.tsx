@@ -1,7 +1,7 @@
 import { ComboboxButton, ComboboxInput } from '@headlessui/react';
-import * as React from 'react';
 import { cn } from '~/src/lib/cn';
-import { IconChevronDown, IconSpinner } from '../../icons';
+import { IconChevronDown } from '../../icons';
+import { Spinner } from '../../spinner';
 
 export interface ComboboxInputFieldProps<T> {
   displayValue: (value: T | null) => string;
@@ -28,14 +28,6 @@ export function ComboboxInputField<T extends string | number>({
   inputClassName,
   hasActionButton = false,
 }: ComboboxInputFieldProps<T>) {
-  const buttonRef = React.useRef<HTMLButtonElement>(null);
-
-  const handleFocus = () => {
-    // Trigger the dropdown to open when input is focused
-    // by programmatically clicking the button
-    buttonRef.current?.click();
-  };
-
   return (
     <div className="relative">
       <ComboboxInput
@@ -54,16 +46,15 @@ export function ComboboxInputField<T extends string | number>({
         )}
         displayValue={displayValue}
         onChange={(event) => onQueryChange(event.target.value)}
-        onFocus={handleFocus}
         placeholder={placeholder}
         autoComplete="off"
       />
 
-      <ComboboxButton ref={buttonRef} className="absolute inset-y-0 right-0 flex items-center pr-3">
+      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
         {isLoading ? (
-          <IconSpinner className="text-slate-400 dark:text-slate-500" />
+          <Spinner size="sm" />
         ) : (
-          <IconChevronDown className="text-slate-400 dark:text-slate-500" />
+          <IconChevronDown className="origin-center text-slate-400 transition-transform duration-200 data-open:rotate-180 dark:text-slate-500" />
         )}
       </ComboboxButton>
     </div>
