@@ -70,17 +70,17 @@ const create = (input: {
 
 /**
  * Populates the S3 signed upload and download URLs for a list of artifacts,
- * and sets their expiration timestamps, but only if missing or expired.
+ * and sets their expiration timestamps, but only if missing, expired, or if the base URL doesn't match the s3 endpoint.
  *
  * @param artifacts - Array of Artifact objects.
  * @param s3 - S3 client for presigning URLs.
- * @param s3Endpoint - S3 endpoint URL (optional, used to determine if HTTPS should be enforced).
+ * @param s3Endpoint - S3 endpoint URL (required, used to determine if HTTPS should be enforced and to validate base URLs).
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
 async function populateUrls(
   artifacts: Artifact[],
   s3: S3Client,
-  s3Endpoint?: string,
+  s3Endpoint: string,
 ): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
   const expiresIn = 60 * 60 * 24 * 7; // 7 days
   const now = Date.now();
@@ -88,7 +88,31 @@ async function populateUrls(
   const updated = new Set<string>();
 
   // Determine if we should use HTTPS based on the endpoint
-  const useHTTPS = s3Endpoint ? s3Endpoint.startsWith('https://') : false;
+  const useHTTPS = s3Endpoint.startsWith('https://');
+
+  /**
+   * Extracts the base URL (protocol + host + port) from a URL string.
+   */
+  function getBaseUrl(urlString: string): string | null {
+    try {
+      const url = new URL(urlString);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      return null;
+    }
+  }
+
+  // Get the expected base URL from the s3 endpoint
+  const expectedBaseUrl = getBaseUrl(s3Endpoint);
+
+  /**
+   * Checks if the URL's base URL matches the expected s3 endpoint base URL.
+   */
+  function hasMatchingBaseUrl(url: string | null | undefined): boolean {
+    if (!url || !expectedBaseUrl) return false;
+    const urlBase = getBaseUrl(url);
+    return urlBase === expectedBaseUrl;
+  }
 
   function isMissingOrExpired(url: string | null | undefined, expiresAt: Date | null | undefined) {
     if (!url || !expiresAt) return true;
@@ -116,8 +140,12 @@ async function populateUrls(
 
       const key = artifact.s3_key;
 
-      const shouldUpdateUpload = isMissingOrExpired(upload_url, upload_url_expires_at);
-      const shouldUpdateDownload = isMissingOrExpired(download_url, download_url_expires_at);
+      // Check if URLs need to be regenerated due to expiration, missing, or base URL mismatch
+      const shouldUpdateUpload =
+        isMissingOrExpired(upload_url, upload_url_expires_at) || !hasMatchingBaseUrl(upload_url);
+      const shouldUpdateDownload =
+        isMissingOrExpired(download_url, download_url_expires_at) ||
+        !hasMatchingBaseUrl(download_url);
 
       let newUploadUrl: string | undefined;
       let newDownloadUrl: string | undefined;
