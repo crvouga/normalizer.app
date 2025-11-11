@@ -47,8 +47,9 @@ describe('Dockerfile Build Tests', () => {
   });
 
   test('Dockerfile cache mounts should have id argument for Railway compatibility', async () => {
-    // Railway requires explicit id for cache mounts
-    // Error: flag '--mount=type=cache,target=/root/.bun' is missing an id argument
+    // Railway requires explicit id for cache mounts with specific format
+    // Error 1: flag '--mount=type=cache,target=/root/.bun' is missing an id argument
+    // Error 2: flag '--mount=type=cache,id=bun,target=/root/.bun' is missing the cacheKey prefix from its id
     const dockerfilePath = join(projectRoot, 'Dockerfile');
     const dockerfileContent = await Bun.file(dockerfilePath).text();
 
@@ -56,9 +57,19 @@ describe('Dockerfile Build Tests', () => {
     const cacheMountRegex = /--mount=type=cache[^\n]*/g;
     const cacheMounts = dockerfileContent.match(cacheMountRegex) || [];
 
-    // Each cache mount must have an id parameter
+    // Each cache mount must have an id parameter with proper format
     for (const mount of cacheMounts) {
+      // Must have id parameter
       expect(mount).toContain('id=');
+
+      // Railway requires the id to contain a hyphen (cacheKey prefix format)
+      // Valid: id=bun-cache, id=npm-modules, etc.
+      // Invalid: id=bun, id=cache
+      const idMatch = mount.match(/id=([^,\s]+)/);
+      if (idMatch) {
+        const idValue = idMatch[1];
+        expect(idValue).toMatch(/-/); // Must contain a hyphen
+      }
     }
 
     // Ensure we found at least one cache mount (the bun cache)
