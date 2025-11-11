@@ -12,7 +12,7 @@ interface ThemeContextValue {
 
 export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'normalizer-theme';
+const THEME_STORAGE_KEY = 'theme-storage-key';
 
 function getSystemTheme(): EffectiveTheme {
   if (typeof window === 'undefined') return 'light';

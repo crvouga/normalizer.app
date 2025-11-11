@@ -6,23 +6,12 @@
     <link rel="icon" type="image/svg+xml" href="./ui/sparkles.svg" />
     <title>normalizer.app</title>
     <script>
-      // Prevent flash of light mode by applying dark class immediately
-      (function () {
-        try {
-          const theme = localStorage.getItem('normalizer-theme');
-          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const shouldUseDark = theme === 'dark' || (theme !== 'light' && systemPrefersDark);
-
-          if (shouldUseDark) {
-            document.documentElement.classList.add('dark');
-          }
-        } catch (e) {
-          // If localStorage fails, fall back to system preference
-          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-          }
-        }
-      })();
+      // Prevents flash of light mode by applying dark class immediately
+      try {
+        var t = localStorage.getItem('theme-storage-key');
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.classList.add('dark');
+      } catch {}
     </script>
     <script type="module" src="./client.tsx" async></script>
     <link rel="stylesheet" href="./client.css" />
