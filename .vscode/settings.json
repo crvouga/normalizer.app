@@ -20,6 +20,7 @@
     "officedocument",
     "openxmlformats",
     "orpc",
+    "pgsql",
     "PKCE",
     "pkey",
     "plpgsql",

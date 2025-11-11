@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/run-migrations.ts",
     "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
     "docker": "bun docker:down && bun docker:up",
     "docker:destroy": "docker-compose down -v --remove-orphans",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
