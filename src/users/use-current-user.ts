@@ -5,7 +5,7 @@ import type { User } from './user';
 
 export function useCurrentUserResult(): {
   currentUserResult: RemoteResult<User, Error>;
-  refetchCurrentUser: () => Promise<void>;
+  refetchCurrentUser: () => void;
 } {
   const context = useContext(UserContext);
   if (!context) {

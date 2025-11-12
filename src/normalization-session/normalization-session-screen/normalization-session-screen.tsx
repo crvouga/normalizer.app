@@ -1,34 +1,13 @@
-import { useMemo } from 'react';
-import { shallowEqual, useEntityStoreSelector } from '~/src/store/entity-store';
-import type { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import { useNormalizationSessionLoader } from './use-normalization-session-loader';
+import { useNormalizationSessionEventsLoader } from './use-normalization-session-events-loader';
+import { useNormalizationSessionEventsSelector } from './use-normalization-session-events-selector';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
 }) => {
-  useNormalizationSessionLoader(props.normalizationSessionId);
-
-  // Get event IDs from the index with shallow equality check
-  const eventIds: NormalizationSessionEventId[] = useEntityStoreSelector(
-    (state) =>
-      state.indexes.normalizationSessionEventsBySessionId[props.normalizationSessionId] || [],
-    shallowEqual,
-  );
-
-  // Get the events byId object with shallow equality check
-  const eventsById = useEntityStoreSelector(
-    (state) => state.entities.normalizationSessionEvents.byId,
-    shallowEqual,
-  );
-
-  // Map IDs to entities with memoization to prevent unnecessary recalculations
-  const normalizationSessionEvents = useMemo(
-    () =>
-      eventIds
-        .map((id) => eventsById[id])
-        .filter((e): e is NonNullable<typeof e> => e !== undefined),
-    [eventIds, eventsById],
+  useNormalizationSessionEventsLoader(props.normalizationSessionId);
+  const normalizationSessionEvents = useNormalizationSessionEventsSelector(
+    props.normalizationSessionId,
   );
 
   return (
