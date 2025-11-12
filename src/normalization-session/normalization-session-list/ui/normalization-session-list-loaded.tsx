@@ -3,13 +3,14 @@ import type { NormalizationSessionId } from '../../normalization-session-id';
 import type { NormalizationSessionProjection } from '../../normalization-session-projection/normalization-session-projection';
 import { NormalizationSessionListItem } from './normalization-session-list-item';
 import { Spinner } from '~/src/ui/spinner';
+import { Typography } from '~/src/ui/typography';
 
 interface NormalizationSessionListLoadedProps {
   sessions: NormalizationSessionProjection[];
   onSessionClick: (id: NormalizationSessionId) => void;
   hasMore: boolean;
   isLoadingMore: boolean;
-  loadMoreRef: RefObject<HTMLDivElement>;
+  loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -43,7 +44,9 @@ export function NormalizationSessionListLoaded({
         {/* No more results indicator */}
         {!hasMore && sessions.length > 0 && (
           <div className="py-4 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-500">No more sessions</p>
+            <Typography variant="xs" color="muted" as="p" className="text-center">
+              No more sessions
+            </Typography>
           </div>
         )}
       </div>

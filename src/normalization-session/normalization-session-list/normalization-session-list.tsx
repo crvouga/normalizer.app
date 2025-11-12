@@ -1,4 +1,3 @@
-import { useInfiniteScroll } from '../../lib/use-infinite-scroll';
 import type { UserId } from '../../users/user-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { useNormalizationSessionsByUserLoader } from './use-normalization-sessions-by-user-loader';
@@ -7,7 +6,6 @@ import { NormalizationSessionListError } from './ui/normalization-session-list-e
 import { NormalizationSessionListLoading } from './ui/normalization-session-list-loading';
 import { NormalizationSessionListEmpty } from './ui/normalization-session-list-empty';
 import { NormalizationSessionListLoaded } from './ui/normalization-session-list-loaded';
-import type { RefObject } from 'react';
 
 interface NormalizationSessionProjectionListProps {
   userId: UserId;
@@ -22,18 +20,11 @@ export function NormalizationSessionProjectionList({
   userId,
   onSessionClick,
 }: NormalizationSessionProjectionListProps) {
-  const { state, hasMore, loadMore } = useNormalizationSessionsByUserLoader(userId);
+  const { state, hasMore, loadMoreRef, retry } = useNormalizationSessionsByUserLoader(userId);
   const sessions = useNormalizationSessionsByUserSelector(userId);
 
-  const loadMoreRef = useInfiniteScroll({
-    hasMore,
-    isLoading: state.type === 'loading',
-    isLoadingMore: state.type === 'loading-more',
-    onLoadMore: loadMore,
-  }) as RefObject<HTMLDivElement>;
-
   if (state.type === 'error') {
-    return <NormalizationSessionListError error={state.error} />;
+    return <NormalizationSessionListError error={state.error} onRetry={retry} />;
   }
 
   if (state.type === 'loading' && sessions.length === 0) {

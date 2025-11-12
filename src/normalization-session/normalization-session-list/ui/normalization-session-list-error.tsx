@@ -1,13 +1,18 @@
+import { Button } from '~/src/ui/button';
 import { Typography } from '~/src/ui/typography';
 
 interface NormalizationSessionListErrorProps {
   error: Error;
+  onRetry?: () => void;
 }
 
 /**
  * Error state for the normalization session list.
  */
-export function NormalizationSessionListError({ error }: NormalizationSessionListErrorProps) {
+export function NormalizationSessionListError({
+  error,
+  onRetry,
+}: NormalizationSessionListErrorProps) {
   return (
     <div className="flex h-full items-center justify-center p-8">
       <div className="text-center">
@@ -17,6 +22,9 @@ export function NormalizationSessionListError({ error }: NormalizationSessionLis
         <Typography variant="xs" color="muted" as="p" className="mt-1">
           {error.message}
         </Typography>
+        {onRetry && (
+          <Button onClick={onRetry} variant="outline" size="sm" className="mt-4" text="Retry" />
+        )}
       </div>
     </div>
   );

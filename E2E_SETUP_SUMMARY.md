@@ -24,9 +24,9 @@ This document summarizes the e2e testing setup that has been successfully implem
 Added the following npm scripts to `package.json`:
 
 - `test` - Run unit tests only (Bun)
-- `test:e2e` - Run e2e tests (Playwright)
-- `test:e2e:ui` - Open Playwright UI for debugging
-- `test:e2e:debug` - Run e2e tests in debug mode
+- `e2e` - Run e2e tests (Playwright)
+- `e2e:ui` - Open Playwright UI for debugging
+- `e2e:debug` - Run e2e tests in debug mode
 
 ### 4. Test Infrastructure
 
@@ -147,13 +147,13 @@ $ bunx playwright test --list
 bun test
 
 # Run all e2e tests
-bun run test:e2e
+bun run e2e
 
 # Debug e2e tests interactively
-bun run test:e2e:ui
+bun run e2e:ui
 
 # Run e2e tests in debug mode
-bun run test:e2e:debug
+bun run e2e:debug
 ```
 
 ### Writing New E2E Tests

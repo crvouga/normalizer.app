@@ -13,7 +13,7 @@ This project uses Playwright for end-to-end (e2e) testing, running alongside Bun
 
 - **E2E Tests**: Use `.e2e.ts` extension
   - Example: `server.e2e.ts`, `app.e2e.ts`
-  - Run with: `bun run test:e2e`
+  - Run with: `bun run e2e`
   - Located next to the code they test
 
 This naming convention ensures complete isolation between the two test runners.
@@ -29,19 +29,19 @@ bun test
 ### E2E Tests Only
 
 ```bash
-bun run test:e2e
+bun run e2e
 ```
 
 ### E2E Tests with UI Mode (for debugging)
 
 ```bash
-bun run test:e2e:ui
+bun run e2e:ui
 ```
 
 ### E2E Tests in Debug Mode
 
 ```bash
-bun run test:e2e:debug
+bun run e2e:debug
 ```
 
 ## Writing E2E Tests
@@ -140,7 +140,7 @@ For the best development experience:
 
 2. Run e2e tests in watch mode in another terminal:
    ```bash
-   bun run test:e2e:ui
+   bun run e2e:ui
    ```
 
 The UI mode allows you to:

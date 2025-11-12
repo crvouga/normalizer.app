@@ -1,92 +1,47 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useInfiniteScrollLoader } from '../../lib/use-infinite-scroll-loader';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import type { UserId } from '../../users/user-id';
 import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
-type LoadingState =
-  | { type: 'idle' }
-  | { type: 'loading' }
-  | { type: 'loading-more' }
-  | { type: 'loaded' }
-  | { type: 'error'; error: Error };
-
-interface UseNormalizationSessionListLoaderResult {
-  state: LoadingState;
-  hasMore: boolean;
-  loadMore: () => void;
-}
-
 /**
  * Hook for loading normalization session projections by user ID with infinite scroll support.
  *
  * @param userId - The user ID to fetch sessions for
- * @returns Loading state, hasMore flag, and loadMore function
+ * @returns Loading state, hasMore flag, loadMore function, and loadMoreRef for infinite scroll
  */
-export function useNormalizationSessionsByUserLoader(
-  userId: UserId,
-): UseNormalizationSessionListLoaderResult {
-  const [state, setState] = useState<LoadingState>({ type: 'idle' });
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
+export function useNormalizationSessionsByUserLoader(userId: UserId) {
   const entityStore = useEntityStore();
 
-  const loadSessions = useCallback(
-    async (isLoadingMore: boolean) => {
-      setState(isLoadingMore ? { type: 'loading-more' } : { type: 'loading' });
+  const loadData = useCallback(
+    async (cursor: string | undefined, limit: number) => {
+      const response = await trpcClient.normalizationSession.list.listByStartedByUser.mutate({
+        userId,
+        cursor,
+        limit,
+      });
 
-      try {
-        const response = await trpcClient.normalizationSession.list.listByStartedByUser.mutate({
-          userId,
-          cursor: isLoadingMore ? (cursor ?? undefined) : undefined,
-          limit: 20,
-        });
-
-        // Convert string dates to Date objects and store projections in entity store
-        const sessionsWithDates = response.sessions.map((session) => ({
+      // Convert string dates to Date objects and store projections in entity store
+      const sessionsWithDates: NormalizationSessionProjection[] = response.sessions.map(
+        (session) => ({
           ...session,
           startedAt: new Date(session.startedAt),
-        }));
-        entityStore.addManyEntities('normalizationSessionProjections', sessionsWithDates);
+        }),
+      );
+      entityStore.addManyEntities('normalizationSessionProjections', sessionsWithDates);
 
-        // Update cursor and hasMore state
-        setCursor(response.nextCursor);
-        setHasMore(response.hasMore);
-        setState({ type: 'loaded' });
-      } catch (error) {
-        setState({
-          type: 'error',
-          error:
-            error instanceof Error ? error : new Error('Failed to load normalization sessions'),
-        });
-      }
+      return {
+        nextCursor: response.nextCursor,
+        hasMore: response.hasMore,
+      };
     },
-    [userId, cursor, entityStore],
+    [userId, entityStore],
   );
 
-  // Reset state when userId changes
-  useEffect(() => {
-    setCursor(null);
-    setHasMore(false);
-    setState({ type: 'idle' });
-  }, [userId]);
-
-  // Initial load
-  useEffect(() => {
-    if (state.type === 'idle') {
-      loadSessions(false);
-    }
-  }, [state.type, loadSessions]);
-
-  const loadMore = useCallback(() => {
-    if (hasMore && state.type !== 'loading' && state.type !== 'loading-more') {
-      loadSessions(true);
-    }
-  }, [hasMore, state.type, loadSessions]);
-
-  return {
-    state,
-    hasMore,
-    loadMore,
-  };
+  return useInfiniteScrollLoader({
+    loadData,
+    pageSize: 20,
+    deps: [userId],
+  });
 }
