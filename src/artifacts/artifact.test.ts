@@ -47,7 +47,7 @@ describe('Artifact.populateUrls', () => {
     expect(artifactForTest.upload_url).toBeNull();
     expect(artifactForTest.download_url).toBeNull();
 
-    const { artifacts: populated, updated } = await ArtifactModule.populateUrls(
+    const { artifacts: populated, updated } = await ArtifactModule.refreshUrls(
       [artifactForTest],
       s3Client,
       s3Endpoint,
@@ -84,11 +84,11 @@ describe('Artifact.populateUrls', () => {
       s3_bucket: testBucket,
       s3_key,
     };
-    const firstPop = await ArtifactModule.populateUrls([artifactForTest], s3Client, s3Endpoint);
+    const firstPop = await ArtifactModule.refreshUrls([artifactForTest], s3Client, s3Endpoint);
     const populated = firstPop.artifacts[0];
 
     // The second run should preserve the URLs (not update them, so the set will be empty)
-    const secondPop = await ArtifactModule.populateUrls([populated], s3Client, s3Endpoint);
+    const secondPop = await ArtifactModule.refreshUrls([populated], s3Client, s3Endpoint);
     const again = secondPop.artifacts[0];
 
     expect(secondPop.updated.size).toBe(0);
@@ -118,7 +118,7 @@ describe('Artifact.populateUrls', () => {
       download_url_expires_at: pastDate,
     };
 
-    const { artifacts: result, updated } = await ArtifactModule.populateUrls(
+    const { artifacts: result, updated } = await ArtifactModule.refreshUrls(
       [artifactForTest],
       s3Client,
       s3Endpoint,
@@ -152,7 +152,7 @@ describe('Artifact.populateUrls', () => {
       s3_key,
     };
 
-    const { artifacts: result } = await ArtifactModule.populateUrls(
+    const { artifacts: result } = await ArtifactModule.refreshUrls(
       [artifactForTest],
       s3Client,
       s3Endpoint,

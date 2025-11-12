@@ -6,6 +6,7 @@
   "main": "src/server.tsx",
   "module": "src/server.tsx",
   "scripts": {
+    "circular": "madge --circular --extensions ts,tsx src",
     "cloc": "bun x cloc src",
     "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
     "db:generate": "drizzle-kit generate",
@@ -53,6 +54,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.30.0",
+    "madge": "^8.0.0",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.7.1",

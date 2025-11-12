@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { ComboboxOption } from '../combobox';
+import type { ComboboxOption } from '../combobox-types';
 
 export interface UseComboboxFilteringParams<T> {
   options: ComboboxOption<T>[];

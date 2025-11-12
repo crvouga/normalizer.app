@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ComboboxOption } from '../combobox';
+import type { ComboboxOption } from '../combobox-types';
 import { ComboboxOptionItem } from './combobox-option-item';
 
 export interface ComboboxOptionsContentProps<T> {

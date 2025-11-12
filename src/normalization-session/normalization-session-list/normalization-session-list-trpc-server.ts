@@ -1,5 +1,6 @@
-import { and, desc, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { Artifact } from '../../artifacts/artifact';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
 import { UserId } from '../../users/user-id';
@@ -20,6 +21,7 @@ export const normalizationSessionListRouter = router({
     .output(
       z.object({
         sessions: z.array(NormalizationSessionProjection.schema),
+        artifacts: z.array(Artifact.schema),
         nextCursor: z.string().nullable(),
         hasMore: z.boolean(),
       }),
@@ -99,8 +101,68 @@ export const normalizationSessionListRouter = router({
         hasMore,
       });
 
+      // Collect all unique artifact IDs from all projections
+      const artifactIds = Array.from(
+        new Set(projections.flatMap((projection) => projection.targetArtifactIds)),
+      );
+
+      ctx.logger.debug('Fetching artifacts for projections', {
+        artifactIds,
+        count: artifactIds.length,
+      });
+
+      // Fetch all artifacts if there are any IDs
+      let artifacts: Artifact[] = [];
+      if (artifactIds.length > 0) {
+        const artifactRows = await ctx.db
+          .select()
+          .from(schema.artifacts)
+          .where(and(inArray(schema.artifacts.id, artifactIds), isNull(schema.artifacts.deleted)));
+
+        // Validate and transform artifacts
+        artifacts = artifactRows.map((row) => Artifact.schema.parse(row));
+
+        // Populate URLs for all artifacts
+        const { artifacts: artifactsWithUrls, updated } = await Artifact.refreshUrls(
+          artifacts,
+          ctx.s3,
+          ctx.s3Endpoint,
+        );
+        artifacts = artifactsWithUrls;
+
+        // If any URLs were updated, persist to database
+        if (updated.size > 0) {
+          ctx.logger.debug('Updating artifact URLs', {
+            count: updated.size,
+            artifactIds: Array.from(updated),
+          });
+
+          // Update each artifact with new URLs
+          for (const artifactId of updated) {
+            const artifact = artifacts.find((a) => a.id === artifactId);
+            if (artifact) {
+              await ctx.db
+                .update(schema.artifacts)
+                .set({
+                  download_url: artifact.download_url,
+                  download_url_expires_at: artifact.download_url_expires_at,
+                  upload_url: artifact.upload_url,
+                  upload_url_expires_at: artifact.upload_url_expires_at,
+                  updated_at: new Date(),
+                })
+                .where(and(eq(schema.artifacts.id, artifactId), isNull(schema.artifacts.deleted)));
+            }
+          }
+        }
+
+        ctx.logger.info('Artifacts fetched for sessions', {
+          count: artifacts.length,
+        });
+      }
+
       return {
         sessions: projections,
+        artifacts,
         nextCursor,
         hasMore,
       };

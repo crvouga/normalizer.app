@@ -50,7 +50,7 @@ export const artifactRouter = router({
       const {
         artifacts: [artifactWithUrls],
         updated,
-      } = await Artifact.populateUrls([validatedArtifact], ctx.s3, ctx.s3Endpoint);
+      } = await Artifact.refreshUrls([validatedArtifact], ctx.s3, ctx.s3Endpoint);
 
       // If URLs were updated, persist to database
       if (updated.has(String(validatedArtifact.id))) {
@@ -97,7 +97,7 @@ export const artifactRouter = router({
       const validatedArtifacts = z.array(Artifact.schema).parse(files);
 
       // Populate URLs and get update metadata
-      const { artifacts: artifactsWithUrls, updated } = await Artifact.populateUrls(
+      const { artifacts: artifactsWithUrls, updated } = await Artifact.refreshUrls(
         validatedArtifacts,
         ctx.s3,
         ctx.s3Endpoint,

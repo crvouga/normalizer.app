@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { ComboboxOption } from '../combobox';
+import type { ComboboxOption } from '../combobox-types';
 
 export interface UseComboboxDisplayValueParams<T> {
   options: ComboboxOption<T>[];
