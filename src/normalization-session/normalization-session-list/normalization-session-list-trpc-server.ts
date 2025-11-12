@@ -83,7 +83,7 @@ export const normalizationSessionListRouter = router({
       const rows = await query;
 
       // Parse projections from JSONB
-      const projections = rows
+      const sessionProjections = rows
         .slice(0, input.limit)
         .map((row) => NormalizationSessionProjection.schema.parse(row.projection));
 
@@ -98,13 +98,13 @@ export const normalizationSessionListRouter = router({
 
       ctx.logger.info('Normalization session list retrieved', {
         userId: input.userId,
-        count: projections.length,
+        count: sessionProjections.length,
         hasMore,
       });
 
       // Collect all unique artifact IDs from all projections
       const artifactIds = Array.from(
-        new Set(projections.flatMap((projection) => projection.targetArtifactIds)),
+        new Set(sessionProjections.flatMap((projection) => projection.targetArtifactIds)),
       );
 
       ctx.logger.debug('Fetching artifacts for projections', {
@@ -132,7 +132,7 @@ export const normalizationSessionListRouter = router({
       }
 
       return {
-        sessions: projections,
+        sessions: sessionProjections,
         artifacts,
         nextCursor,
         hasMore,
