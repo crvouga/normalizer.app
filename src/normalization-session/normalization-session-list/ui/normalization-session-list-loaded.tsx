@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { NormalizationSessionId } from '../../normalization-session-id';
 import type { NormalizationSessionProjection } from '../../normalization-session-projection';
 import { NormalizationSessionListItem } from './normalization-session-list-item';
+import { Spinner } from '~/src/ui/spinner';
 
 interface NormalizationSessionListLoadedProps {
   sessions: NormalizationSessionProjection[];
@@ -35,9 +36,7 @@ export function NormalizationSessionListLoaded({
         {/* Infinite scroll sentinel */}
         {hasMore && (
           <div ref={loadMoreRef} className="flex items-center justify-center py-4">
-            {isLoadingMore && (
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600 dark:border-slate-600 dark:border-t-blue-400" />
-            )}
+            {isLoadingMore && <Spinner size="sm" />}
           </div>
         )}
 
