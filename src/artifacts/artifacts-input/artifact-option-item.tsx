@@ -17,11 +17,11 @@ export function ArtifactOptionItem({ option, selected }: ArtifactOptionItemProps
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
         <Typography weight={selected ? 'semibold' : 'normal'}>{option.label}</Typography>
-        {option.metadata?.type && (
+        {option.metadata?.type ? (
           <Typography variant="xs" color="muted">
-            {option.metadata.type as string}
+            {String(option.metadata.type)}
           </Typography>
-        )}
+        ) : null}
       </div>
       {selected && <IconCheck className="text-fuchsia-600" />}
     </div>

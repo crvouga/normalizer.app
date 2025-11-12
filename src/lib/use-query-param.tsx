@@ -65,7 +65,7 @@ export function useQueryParam<T>({
 
   // Update URL when state changes
   const updateValue = useCallback(
-    (newValue: T, method: 'push' | 'replace') => {
+    (newValue: T, method: 'push' | 'replace' = 'push') => {
       setValue(newValue);
       const params = new URLSearchParams(window.location.search);
 

@@ -31,8 +31,16 @@ export function useNormalizationSessionLoader(
 
         if (isCancelled) return;
 
-        // Store events in the entity store
-        entityStore.addManyEntities('normalizationSessionEvents', events);
+        // Convert string dates to Date objects and store events in the entity store
+        const eventsWithDates = events.map((event) => ({
+          ...event,
+          created_at: new Date(event.created_at),
+          event: {
+            ...event.event,
+            startedAt: new Date(event.event.startedAt),
+          },
+        }));
+        entityStore.addManyEntities('normalizationSessionEvents', eventsWithDates);
 
         setState(Success(undefined));
       } catch (error) {

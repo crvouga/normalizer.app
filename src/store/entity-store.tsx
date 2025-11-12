@@ -4,7 +4,7 @@ import type { EntityStore } from './entity-store-config';
 import { initialEntityStore, indexDefinitions } from './entity-store-config';
 
 // Create reducer with index definitions
-const reducer = createEntityStoreReducer<EntityStore>(indexDefinitions);
+const reducer = createEntityStoreReducer<EntityStore>(indexDefinitions as any);
 
 // Create store instance
 const store = new Store<EntityStore>(initialEntityStore);

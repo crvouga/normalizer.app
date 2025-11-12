@@ -52,6 +52,7 @@ function getButtonClasses(
     link: 'text-primary underline-offset-4 hover:underline',
     contained:
       'bg-white dark:bg-slate-800 text-black dark:text-white shadow-md hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700',
+    gradient: colorClasses[color],
   };
 
   const sizeClasses = {
@@ -113,6 +114,7 @@ function getSpinnerColor(variant: ButtonVariant): SpinnerColor {
   switch (variant) {
     case 'default':
     case 'destructive':
+    case 'gradient':
       return 'white';
     case 'outline':
     case 'ghost':

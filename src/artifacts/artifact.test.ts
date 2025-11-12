@@ -138,8 +138,8 @@ describe('Artifact.populateUrls', () => {
 
     expect(updatedArtifact.upload_url).not.toBe('http://should-be-replaced');
     expect(updatedArtifact.download_url).not.toBe('http://should-be-replaced');
-    expect(updatedArtifact.upload_url_expires_at.getTime()).toBeGreaterThan(Date.now());
-    expect(updatedArtifact.download_url_expires_at.getTime()).toBeGreaterThan(Date.now());
+    expect(updatedArtifact.upload_url_expires_at?.getTime()).toBeGreaterThan(Date.now());
+    expect(updatedArtifact.download_url_expires_at?.getTime()).toBeGreaterThan(Date.now());
   });
 
   test('should enforce HTTPS on URLs if the S3 endpoint uses HTTPS', async () => {

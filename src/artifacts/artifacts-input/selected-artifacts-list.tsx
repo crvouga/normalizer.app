@@ -105,7 +105,7 @@ export function SelectedArtifactsList({
       <EditArtifactModal
         isOpen={modalState.type === 'edit'}
         onClose={() => setModalState({ type: 'closed' })}
-        artifact={modalState.artifact}
+        artifact={modalState.type === 'edit' ? modalState.artifact : null}
         onEditComplete={handleEditComplete}
       />
     </>

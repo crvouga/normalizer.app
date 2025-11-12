@@ -176,7 +176,7 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
             ...state.entities,
             [entityType]: {
               byId: restById,
-              allIds: slice.allIds.filter((entityId) => entityId !== id),
+              allIds: slice.allIds.filter((entityId: string) => entityId !== id),
             },
           },
         };
@@ -240,7 +240,7 @@ function updateIndexesForEntity<TStore extends StoreConfig<any>>(
       newState = { ...newState, indexes: {} };
     }
 
-    const existingIndex = newState.indexes[indexName] || {};
+    const existingIndex = (newState.indexes && newState.indexes[indexName]) || {};
     const existingEntities = existingIndex[indexKey] || [];
 
     newState = {

@@ -40,7 +40,7 @@ export function useFetchArtifacts() {
       }
 
       // Fetch artifacts from the API
-      const allArtifacts: Artifact[] = await trpcClient.artifact.list.mutate();
+      const rawArtifacts: any[] = await trpcClient.artifact.list.mutate();
 
       // Check if request was aborted after fetch
       if (signal?.aborted) {
@@ -48,6 +48,19 @@ export function useFetchArtifacts() {
         abortError.name = 'AbortError';
         throw abortError;
       }
+
+      // Convert date strings to Date objects
+      const allArtifacts: Artifact[] = rawArtifacts.map((artifact) => ({
+        ...artifact,
+        created_at: artifact.created_at ? new Date(artifact.created_at) : null,
+        updated_at: artifact.updated_at ? new Date(artifact.updated_at) : null,
+        download_url_expires_at: artifact.download_url_expires_at
+          ? new Date(artifact.download_url_expires_at)
+          : null,
+        upload_url_expires_at: artifact.upload_url_expires_at
+          ? new Date(artifact.upload_url_expires_at)
+          : null,
+      }));
 
       // Store all artifacts in entity store
       entityStore.addManyEntities('artifacts', allArtifacts);

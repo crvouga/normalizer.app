@@ -7,27 +7,29 @@ import { procedure, router } from '../../lib/trpc-server';
 import { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
+const InputSchema = z.object({
+  userId: UserId.schema,
+  cursor: z.string().optional(), // ISO timestamp string
+  limit: z.number().min(1).max(100).default(20),
+});
+type InputSchema = z.infer<typeof InputSchema>;
+
+const OutputSchema = z.object({
+  sessions: z.array(NormalizationSessionProjection.schema),
+  artifacts: z.array(Artifact.schema),
+  nextCursor: z.string().nullable(),
+  hasMore: z.boolean(),
+});
+type OutputSchema = z.infer<typeof OutputSchema>;
+
 export const normalizationSessionListRouter = router({
   /**
    * List normalization sessions by user with cursor-based pagination
    */
   listByStartedByUser: procedure
-    .input(
-      z.object({
-        userId: UserId.schema,
-        cursor: z.string().optional(), // ISO timestamp string
-        limit: z.number().min(1).max(100).default(20),
-      }),
-    )
-    .output(
-      z.object({
-        sessions: z.array(NormalizationSessionProjection.schema),
-        artifacts: z.array(Artifact.schema),
-        nextCursor: z.string().nullable(),
-        hasMore: z.boolean(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
+    .input(InputSchema)
+    .output(OutputSchema)
+    .mutation(async ({ input, ctx }): Promise<OutputSchema> => {
       ctx.logger.info('Normalization session list by user', {
         userId: input.userId,
         cursor: input.cursor,

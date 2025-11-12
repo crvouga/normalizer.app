@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import type { RefObject } from 'react';
 import { useInfiniteScroll } from '../../lib/use-infinite-scroll';
 import { AsyncComboboxEmptyState } from './async-combobox/async-combobox-empty-state';
 import { AsyncComboboxFooter } from './async-combobox/async-combobox-footer';
@@ -67,7 +68,7 @@ export function AsyncCombobox<T extends string | number>({
     isLoading,
     isLoadingMore,
     onLoadMore: handleLoadMore,
-  });
+  }) as RefObject<HTMLDivElement>;
 
   // Custom empty state renderer that respects minQueryLength
   const renderEmpty = useCallback(

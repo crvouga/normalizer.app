@@ -41,7 +41,7 @@ const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolea
         </div>
       ) : (
         <Avatar
-          src={user.profile_picture}
+          src={user.profile_picture ?? undefined}
           alt={user.name || 'User'}
           initials={getUserInitials(user)}
           size="md"

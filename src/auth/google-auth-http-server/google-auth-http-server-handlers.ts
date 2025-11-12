@@ -41,7 +41,7 @@ export async function handleGoogleAuthStart(req: Request, logger: Logger): Promi
 
     return response;
   } catch (error) {
-    logger.error('Error generating Google auth URL:', error);
+    logger.error('Error generating Google auth URL:', error as Record<string, unknown>);
     return createErrorRedirect('config_error');
   }
 }
@@ -86,7 +86,7 @@ export async function handleGoogleAuthCallback(
   const validatedState = state as string;
 
   // Verify state matches (CSRF protection)
-  const stateError = validateOAuthState(validatedState, storedState);
+  const stateError = validateOAuthState(validatedState, storedState ?? null);
   if (stateError) {
     logger.warn('OAuth state mismatch - potential CSRF attack');
     return createErrorRedirect(stateError);
@@ -108,7 +108,7 @@ export async function handleGoogleAuthCallback(
     // Redirect to app with success
     return createSuccessRedirect();
   } catch (error) {
-    logger.error('Google OAuth callback error:', error);
+    logger.error('Google OAuth callback error:', error as Record<string, unknown>);
     return createErrorRedirect('oauth_failed');
   }
 }

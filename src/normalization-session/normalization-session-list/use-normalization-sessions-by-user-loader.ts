@@ -42,31 +42,16 @@ export function useNormalizationSessionsByUserLoader(
           limit: 20,
         });
 
-        // Type guard and cast response
-        if (
-          !response ||
-          typeof response !== 'object' ||
-          !('sessions' in response) ||
-          !('nextCursor' in response) ||
-          !('hasMore' in response) ||
-          !Array.isArray(response.sessions) ||
-          typeof response.hasMore !== 'boolean'
-        ) {
-          throw new Error('Invalid response from server');
-        }
-
-        const typedResponse = response as {
-          sessions: NormalizationSessionProjection[];
-          nextCursor: string | null;
-          hasMore: boolean;
-        };
-
-        // Store projections in entity store
-        entityStore.addManyEntities('normalizationSessionProjections', typedResponse.sessions);
+        // Convert string dates to Date objects and store projections in entity store
+        const sessionsWithDates = response.sessions.map((session) => ({
+          ...session,
+          startedAt: new Date(session.startedAt),
+        }));
+        entityStore.addManyEntities('normalizationSessionProjections', sessionsWithDates);
 
         // Update cursor and hasMore state
-        setCursor(typedResponse.nextCursor);
-        setHasMore(typedResponse.hasMore);
+        setCursor(response.nextCursor);
+        setHasMore(response.hasMore);
         setState({ type: 'loaded' });
       } catch (error) {
         setState({

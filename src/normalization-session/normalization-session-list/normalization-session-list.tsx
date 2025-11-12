@@ -7,6 +7,7 @@ import { NormalizationSessionListError } from './ui/normalization-session-list-e
 import { NormalizationSessionListLoading } from './ui/normalization-session-list-loading';
 import { NormalizationSessionListEmpty } from './ui/normalization-session-list-empty';
 import { NormalizationSessionListLoaded } from './ui/normalization-session-list-loaded';
+import type { RefObject } from 'react';
 
 interface NormalizationSessionProjectionListProps {
   userId: UserId;
@@ -29,7 +30,7 @@ export function NormalizationSessionProjectionList({
     isLoading: state.type === 'loading',
     isLoadingMore: state.type === 'loading-more',
     onLoadMore: loadMore,
-  });
+  }) as RefObject<HTMLDivElement>;
 
   if (state.type === 'error') {
     return <NormalizationSessionListError error={state.error} />;

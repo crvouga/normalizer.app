@@ -13,7 +13,7 @@ const main = async () => {
     logger.info('✅ Migrations completed successfully');
     process.exit(0);
   } catch (err) {
-    logger.error('❌ Migration failed:', err);
+    logger.error('❌ Migration failed:', err as Record<string, unknown>);
     process.exit(1);
   }
 };

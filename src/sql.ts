@@ -63,7 +63,7 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
     await sql`SELECT 1`;
     logger.info('Database connection successful');
   } catch (error) {
-    logger.error('Database connection failed:', error);
+    logger.error('Database connection failed:', error as Record<string, unknown>);
     throw new Error('Failed to connect to database');
   }
 
@@ -91,7 +91,7 @@ export const cleanupDb = async (logger: Logger): Promise<void> => {
       isInitialized = false;
       logger.info('Database connection closed');
     } catch (error) {
-      logger.error('Error closing database connection:', error);
+      logger.error('Error closing database connection:', error as Record<string, unknown>);
     }
   }
 };

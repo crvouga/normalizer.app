@@ -49,7 +49,7 @@ export function useArtifactUpload({
         entityStore.removeEntity('artifacts', artifactId);
       }
 
-      const before: Artifact | null = await trpcClient.artifact.get.mutate({
+      const before = await trpcClient.artifact.get.mutate({
         artifactId: artifactId,
       });
 
@@ -58,7 +58,17 @@ export function useArtifactUpload({
       }
 
       // Add or update with server data
-      entityStore.addEntity('artifacts', before);
+      entityStore.addEntity('artifacts', {
+        ...before,
+        created_at: before.created_at ? new Date(before.created_at) : null,
+        updated_at: before.updated_at ? new Date(before.updated_at) : null,
+        download_url_expires_at: before.download_url_expires_at
+          ? new Date(before.download_url_expires_at)
+          : null,
+        upload_url_expires_at: before.upload_url_expires_at
+          ? new Date(before.upload_url_expires_at)
+          : null,
+      });
 
       // Ensure upload URL protocol matches the client app's protocol to avoid mixed content errors
       const uploadUrl = new URL(before.upload_url);
@@ -85,13 +95,26 @@ export function useArtifactUpload({
       });
 
       // Fetch updated artifact
-      const artifact: Artifact | null = await trpcClient.artifact.get.mutate({
+      const rawArtifact: any = await trpcClient.artifact.get.mutate({
         artifactId: artifactId,
       });
 
-      if (!artifact) {
+      if (!rawArtifact) {
         throw new Error('Failed to fetch file after upload');
       }
+
+      // Convert date strings to Date objects
+      const artifact: Artifact = {
+        ...rawArtifact,
+        created_at: rawArtifact.created_at ? new Date(rawArtifact.created_at) : null,
+        updated_at: rawArtifact.updated_at ? new Date(rawArtifact.updated_at) : null,
+        download_url_expires_at: rawArtifact.download_url_expires_at
+          ? new Date(rawArtifact.download_url_expires_at)
+          : null,
+        upload_url_expires_at: rawArtifact.upload_url_expires_at
+          ? new Date(rawArtifact.upload_url_expires_at)
+          : null,
+      };
 
       // Update entity store with uploaded status
       entityStore.updateEntity('artifacts', artifactId, {

@@ -68,8 +68,15 @@ export function useStartNormalizationSession({
         created_at: startedAt,
       });
 
-      // Add the projection to the entity store
-      entityStore.addEntity('normalizationSessionProjections', projection);
+      // Add the projection to the entity store (convert string date if needed)
+      const projectionWithDate = {
+        ...projection,
+        startedAt:
+          typeof projection.startedAt === 'string'
+            ? new Date(projection.startedAt)
+            : projection.startedAt,
+      };
+      entityStore.addEntity('normalizationSessionProjections', projectionWithDate);
 
       const result: StartNormalizationSessionResult = { sessionId, eventId };
 
