@@ -70,7 +70,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         artifacts={props.value}
         onRemove={removeArtifact}
         onClearAll={handleClearAll}
-        readOnly={props.readOnly}
+        readOnly={props.readOnly ?? false}
       />
 
       {!props.readOnly && props.value.length < limit && (
