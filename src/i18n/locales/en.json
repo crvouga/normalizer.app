@@ -28,7 +28,8 @@
   },
   "session": {
     "startButton": "Start Session",
-    "targetFiles": "Target Files",
+    "targetArtifacts": "Target Artifacts",
+    "inputArtifacts": "Input Artifacts",
     "uploadPlaceholder": "Upload target files",
     "targetArtifact": "Target Artifact",
     "startSuccess": "Session started",
@@ -72,5 +73,15 @@
     "search": "Search...",
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "permissions": {
+    "denied": "Access Denied",
+    "deniedMessage": "You don't have permission to access this resource",
+    "checking": "Checking permissions...",
+    "redirecting": "Access denied. Redirecting...",
+    "errorChecking": "Error checking permissions",
+    "sessionNotFound": "Session not found",
+    "notOwner": "You are not the owner of this session",
+    "unauthorized": "You are not authorized to perform this action"
   }
 }

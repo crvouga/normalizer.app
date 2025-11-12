@@ -7,6 +7,11 @@ import { NormalizationSessionEventEntity } from '../normalization-session-event/
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '../normalization-session-id';
 import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
+import {
+  canViewNormalizationSession,
+  viewNormalizationSessionPolicy,
+  getNormalizationSessionOwner,
+} from '../normalization-session-permissions';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -67,6 +72,18 @@ export const normalizationSessionEventRouter = router({
       ctx.logger.info('Normalization session get events', {
         sessionId: input.sessionId,
         userId: ctx.userId,
+      });
+
+      // Authorization check: verify user has permission to view this session
+      const permission = canViewNormalizationSession(input.sessionId);
+      const resourceOwnerId = await getNormalizationSessionOwner(ctx.db, input.sessionId);
+
+      if (!resourceOwnerId) {
+        throw new Error('Normalization session not found');
+      }
+
+      await ctx.authorize(permission, viewNormalizationSessionPolicy, {
+        resourceOwnerId,
       });
 
       const events = await ctx.db

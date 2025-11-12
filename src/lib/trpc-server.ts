@@ -11,6 +11,10 @@ import { users, userSessions } from '../db/schema';
 import { UserId as UserIdHelper } from '../users/user-id';
 import { UserSessionId as UserSessionIdHelper } from '../users/user-session-id';
 import { findCurrentUserSession } from '../users/user-session-queries';
+import { AuthorizationError } from '../permissions/authorization-error';
+import type { Permission, PermissionCheckResult } from '../permissions/permission';
+import { isGranted } from '../permissions/permission';
+import type { Policy, PolicyContext } from '../permissions/policy';
 
 // Create context type
 export type Context = {
@@ -22,6 +26,17 @@ export type Context = {
   sessionId: SessionId;
   userId: UserId;
   userSessionId: UserSessionId;
+  // Authorization utilities
+  authorize: (
+    permission: Permission,
+    policy: Policy,
+    additionalContext?: Record<string, unknown>,
+  ) => Promise<void>;
+  checkPermission: (
+    permission: Permission,
+    policy: Policy,
+    additionalContext?: Record<string, unknown>,
+  ) => Promise<PermissionCheckResult>;
 };
 
 // Helper to return context
@@ -44,6 +59,61 @@ function buildContext({
   userId: UserId;
   userSessionId: UserSessionId;
 }): Context {
+  /**
+   * Check a permission using a policy
+   */
+  const checkPermission = async (
+    permission: Permission,
+    policy: Policy,
+    additionalContext?: Record<string, unknown>,
+  ): Promise<PermissionCheckResult> => {
+    const context: PolicyContext = {
+      userId,
+      permission,
+      ...additionalContext,
+    };
+
+    logger.debug('Checking permission', {
+      userId,
+      resource: permission.resource,
+      action: permission.action,
+      resourceId: permission.resourceId,
+      policy: policy.name,
+    });
+
+    const result = await policy.evaluate(context);
+
+    logger.info('Permission check result', {
+      userId,
+      resource: permission.resource,
+      action: permission.action,
+      resourceId: permission.resourceId,
+      policy: policy.name,
+      granted: isGranted(result),
+    });
+
+    return result;
+  };
+
+  /**
+   * Authorize a permission using a policy, throwing if denied
+   */
+  const authorize = async (
+    permission: Permission,
+    policy: Policy,
+    additionalContext?: Record<string, unknown>,
+  ): Promise<void> => {
+    const result = await checkPermission(permission, policy, additionalContext);
+
+    if (!isGranted(result)) {
+      throw new AuthorizationError({
+        permission,
+        userId,
+        reason: result.reason,
+      });
+    }
+  };
+
   return {
     db,
     s3,
@@ -53,6 +123,8 @@ function buildContext({
     sessionId,
     userId,
     userSessionId,
+    authorize,
+    checkPermission,
   };
 }
 
