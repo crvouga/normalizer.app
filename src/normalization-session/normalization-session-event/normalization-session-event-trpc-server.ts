@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
@@ -58,18 +58,20 @@ export const normalizationSessionEventRouter = router({
         const projection = NormalizationSessionProjection.reduce(validatedEvents, initialState);
 
         // Upsert the projection for this normalization session
+        // Cast JSON string to jsonb to prevent double-encoding
+        const projectionJson = JSON.stringify(projection);
         await tx
           .insert(schema.normalizationSessionProjections)
           .values({
             normalization_session_id: projection.id,
-            projection: projection,
+            projection: sql`${projectionJson}::jsonb`,
             created_at: new Date(),
             updated_at: new Date(),
           })
           .onConflictDoUpdate({
             target: schema.normalizationSessionProjections.normalization_session_id,
             set: {
-              projection: projection,
+              projection: sql`${projectionJson}::jsonb`,
               updated_at: new Date(),
             },
           });

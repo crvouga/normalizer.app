@@ -9,6 +9,7 @@ import {
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
 export const userTypeEnum = pgEnum('user_type', ['anonymous', 'authenticated']);
@@ -102,7 +103,7 @@ export type INormalizationSessionEvent = typeof normalizationSessionEvents.$infe
 
 export const normalizationSessionProjections = pgTable('normalization_session_projections', {
   normalization_session_id: text('normalization_session_id').primaryKey(),
-  projection: jsonb('projection').notNull(),
+  projection: jsonb('projection').notNull().$type<NormalizationSessionProjection>(),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });

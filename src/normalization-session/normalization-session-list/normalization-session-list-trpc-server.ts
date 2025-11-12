@@ -32,8 +32,12 @@ export const normalizationSessionListRouter = router({
       });
 
       // Build query conditions
+      // Handle both object and string JSONB formats for backwards compatibility
       const conditions = [
-        sql`${schema.normalizationSessionProjections.projection}->>'startedByUserId' = ${input.userId}`,
+        sql`COALESCE(
+          ${schema.normalizationSessionProjections.projection}->>'startedByUserId',
+          (${schema.normalizationSessionProjections.projection}#>>'{}')::jsonb->>'startedByUserId'
+        ) = ${input.userId}`,
       ];
 
       // Add cursor condition if provided
@@ -43,13 +47,37 @@ export const normalizationSessionListRouter = router({
         );
       }
 
-      // Query projections with pagination
-      const rows = await ctx.db
+      const query = ctx.db
         .select()
         .from(schema.normalizationSessionProjections)
         .where(and(...conditions))
         .orderBy(desc(schema.normalizationSessionProjections.updated_at))
         .limit(input.limit + 1); // Fetch one extra to determine if there's more
+
+      // Log the compiled SQL query with parameters
+      const compiled = query.toSQL();
+      // Assemble the raw SQL with parameters inline for copy-paste
+      let rawSql = compiled.sql;
+      let pos = 0;
+      for (const param of compiled.params) {
+        pos++;
+        // Simple heuristic: quote string params, print as-is for non-strings
+        const formatted =
+          typeof param === 'string'
+            ? `'${param.replace(/'/g, "''")}'`
+            : param instanceof Date
+              ? `'${param.toISOString()}'`
+              : param;
+        rawSql = rawSql.replace(`$${pos}`, String(formatted));
+      }
+      ctx.logger.debug('Normalization session list compiled SQL', {
+        sql: compiled.sql,
+        params: compiled.params,
+        raw: rawSql,
+      });
+
+      // Query projections with pagination
+      const rows = await query;
 
       // Parse projections from JSONB
       const projections = rows
