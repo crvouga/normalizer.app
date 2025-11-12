@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { ArtifactId } from '../artifacts/artifact-id';
-import { UserId } from '../users/user-id';
-import { NormalizationSessionId } from './normalization-session-id';
-import type { NormalizationSessionEventEntity } from './normalization-session-event/normalization-session-event-entity';
-import type { NormalizationSessionEvent } from './normalization-session-event/normalization-session-event';
+import { ArtifactId } from '../../artifacts/artifact-id';
+import { UserId } from '../../users/user-id';
+import { NormalizationSessionId } from '../normalization-session-id';
+import type { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import type { NormalizationSessionEvent } from '../normalization-session-event/normalization-session-event';
 
 const schema = z.object({
   id: NormalizationSessionId.schema,

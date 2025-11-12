@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import type { NormalizationSessionId } from '../../normalization-session-id';
-import type { NormalizationSessionProjection } from '../../normalization-session-projection';
+import type { NormalizationSessionProjection } from '../../normalization-session-projection/normalization-session-projection';
 import { NormalizationSessionListItem } from './normalization-session-list-item';
 import { Spinner } from '~/src/ui/spinner';
 

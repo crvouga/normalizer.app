@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { shallowEqual, useEntityStoreSelector } from '../../store/entity-store';
 import type { UserId } from '../../users/user-id';
-import type { NormalizationSessionProjection } from '../normalization-session-projection';
+import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 /**
  * Hook for selecting normalization session projections from the entity store by user ID.

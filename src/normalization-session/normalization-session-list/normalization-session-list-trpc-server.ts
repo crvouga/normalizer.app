@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
 import { UserId } from '../../users/user-id';
-import { NormalizationSessionProjection } from '../normalization-session-projection';
+import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 export const normalizationSessionListRouter = router({
   /**

@@ -5,7 +5,7 @@ import type { UserId } from '../users/user-id';
 import type { NormalizationSessionEventEntity } from '../normalization-session/normalization-session-event/normalization-session-event-entity';
 import type { NormalizationSessionEventId } from '../normalization-session/normalization-session-event/normalization-session-event-id';
 import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
-import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection';
+import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
 import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
 
 // Define entity types

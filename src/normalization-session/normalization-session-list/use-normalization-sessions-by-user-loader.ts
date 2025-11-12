@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { trpcClient } from '../../trpc-client';
 import { useEntityStore } from '../../store/entity-store';
 import type { UserId } from '../../users/user-id';
-import type { NormalizationSessionProjection } from '../normalization-session-projection';
+import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 type LoadingState =
   | { type: 'idle' }

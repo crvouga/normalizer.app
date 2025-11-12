@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
@@ -6,7 +6,7 @@ import { NormalizationSessionEvent } from '../normalization-session-event/normal
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '../normalization-session-id';
-import { NormalizationSessionProjection } from '../normalization-session-projection';
+import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -38,50 +38,13 @@ export const normalizationSessionEventRouter = router({
           created_at: new Date(),
         });
 
-        // Query all events for this session (including the new one)
-        const events = await tx
-          .select()
-          .from(schema.normalizationSessionEvents)
-          .where(eq(schema.normalizationSessionEvents.normalization_session_id, input.sessionId))
-          .orderBy(schema.normalizationSessionEvents.created_at);
-
-        // Validate events
-        const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
-
-        // Compute projection by reducing all events
-        const initialState = NormalizationSessionProjection.init({
+        // Refresh the projection
+        return await refreshNormalizationSessionProjection({
+          tx: tx,
           sessionId: input.sessionId,
-          targetArtifactIds: [],
-          startedAt: new Date(),
           startedByUserId: ctx.userId,
+          logger: ctx.logger,
         });
-        const projection = NormalizationSessionProjection.reduce(validatedEvents, initialState);
-
-        // Upsert the projection for this normalization session
-        // Cast JSON string to jsonb to prevent double-encoding
-        const projectionJson = JSON.stringify(projection);
-        await tx
-          .insert(schema.normalizationSessionProjections)
-          .values({
-            normalization_session_id: projection.id,
-            projection: sql`${projectionJson}::jsonb`,
-            created_at: new Date(),
-            updated_at: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: schema.normalizationSessionProjections.normalization_session_id,
-            set: {
-              projection: sql`${projectionJson}::jsonb`,
-              updated_at: new Date(),
-            },
-          });
-
-        ctx.logger.info('Normalization session projection updated', {
-          sessionId: input.sessionId,
-          eventCount: events.length,
-        });
-
-        return projection;
       });
 
       return {

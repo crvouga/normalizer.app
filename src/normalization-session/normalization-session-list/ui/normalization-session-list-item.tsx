@@ -1,6 +1,7 @@
 import { ButtonBase } from '~/src/ui/button-base';
+import { formatDate } from '~/src/lib/date/format-date';
 import type { NormalizationSessionId } from '../../normalization-session-id';
-import type { NormalizationSessionProjection } from '../../normalization-session-projection';
+import type { NormalizationSessionProjection } from '../../normalization-session-projection/normalization-session-projection';
 
 interface NormalizationSessionListItemProps {
   projection: NormalizationSessionProjection;
@@ -15,34 +16,10 @@ export function NormalizationSessionListItem({
   projection,
   onClick,
 }: NormalizationSessionListItemProps) {
-  // Handles the known issue: RangeError: Invalid time value
-  // Accepts string, Date, or number
-  const formatDate = (dateLike: unknown): string => {
-    let date: Date | null = null;
-    if (dateLike instanceof Date && !isNaN(dateLike.valueOf())) {
-      date = dateLike;
-    } else if (typeof dateLike === 'string' || typeof dateLike === 'number') {
-      const d = new Date(dateLike);
-      if (!isNaN(d.valueOf())) {
-        date = d;
-      }
-    }
-
-    if (!date) return 'Invalid date';
-
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
-  };
-
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}
-      className="dark:hover:bg-slate-750 w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
+      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700"
     >
       <div className="flex flex-col gap-2">
         {/* Session ID */}

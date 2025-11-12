@@ -34,7 +34,8 @@
     "spreadsheetml",
     "sslmode",
     "tablename",
-    "timestamptz"
+    "timestamptz",
+    "Upserting"
   ],
   "cursor.cpp.disabledLanguages": [],
   "cursor.general.enableAI": true,
