@@ -1,5 +1,3 @@
-import type { FileType } from '../types';
-
 export const parseCSV = async (file: File): Promise<Record<string, unknown>[]> => {
   const text = await file.text();
   const rows = text.split('\n').filter((row) => row.trim() !== '');
@@ -8,7 +6,10 @@ export const parseCSV = async (file: File): Promise<Record<string, unknown>[]> =
     return [];
   }
 
-  const headers = rows[0].split(',').map((h) => h.trim());
+  const headers = rows[0]?.split(',').map((h) => h.trim());
+  if (!headers || headers.length === 0) {
+    return [];
+  }
 
   return rows.slice(1).map((row) => {
     const values = row.split(',');
@@ -22,4 +23,4 @@ export const parseCSV = async (file: File): Promise<Record<string, unknown>[]> =
   });
 };
 
-export const getCSVFileType = (): FileType => 'csv';
+export const getCSVFileType = () => 'csv' as const;

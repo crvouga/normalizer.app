@@ -18,7 +18,7 @@ class ToastStore extends Store<ToastStoreState> {
       message,
       duration: options?.duration ?? (type === 'error' && options?.errorDetails ? 0 : 5000),
       dismissible: options?.dismissible ?? true,
-      errorDetails: options?.errorDetails,
+      ...(options?.errorDetails ? { errorDetails: options.errorDetails } : {}),
     };
 
     this.updateState((state) => ({

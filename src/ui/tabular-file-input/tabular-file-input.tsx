@@ -177,9 +177,9 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
         {/* Drop Zone - Only show when no files selected */}
         {selectedFiles.length === 0 && (
           <DropZone
-            className={className}
+            {...(className !== undefined ? { className } : {})}
             placeholder={placeholder}
-            accept={accept}
+            {...(accept !== undefined ? { accept } : {})}
             isDragOver={isDragOver}
             hasError={!!error}
             onDragOver={handleDragOver}

@@ -24,7 +24,10 @@ export const NormalizationSessionScreen = (props: {
 
   // Map IDs to entities with memoization to prevent unnecessary recalculations
   const normalizationSessionEvents = useMemo(
-    () => eventIds.map((id) => eventsById[id]).filter(Boolean),
+    () =>
+      eventIds
+        .map((id) => eventsById[id])
+        .filter((e): e is NonNullable<typeof e> => e !== undefined),
     [eventIds, eventsById],
   );
 

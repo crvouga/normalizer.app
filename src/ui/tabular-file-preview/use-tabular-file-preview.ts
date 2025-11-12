@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getFileType, getFileTypeFromMimeType, parseCSV, parseExcel, parseJSON } from './parsers';
-import type { TabularFilePreviewResult, FileType } from './types';
+import type { TabularFilePreviewResult } from './types';
 import { useTabularFilePreviewBase } from './use-tabular-file-preview-base';
 
 /**

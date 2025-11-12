@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import type { FileType } from '../types';
 
 export const parseExcel = async (file: File): Promise<Record<string, unknown>[]> => {
   try {
@@ -13,6 +12,9 @@ export const parseExcel = async (file: File): Promise<Record<string, unknown>[]>
     }
 
     const worksheet = workbook.Sheets[firstSheetName];
+    if (!worksheet) {
+      throw new Error('Worksheet not found');
+    }
 
     // Convert worksheet to JSON array
     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
@@ -47,4 +49,4 @@ export const parseExcel = async (file: File): Promise<Record<string, unknown>[]>
   }
 };
 
-export const getExcelFileType = (): FileType => 'excel';
+export const getExcelFileType = () => 'excel' as const;

@@ -21,7 +21,7 @@ export const validateFiles = (
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    if (file.size > maxSize) {
+    if (file && file.size > maxSize) {
       return `File "${file.name}" is too large. Maximum size is ${formatFileSize(maxSize)}`;
     }
   }

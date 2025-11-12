@@ -43,7 +43,7 @@ export const TabularFileList: React.FC<FileListProps> = ({
             isPreviewVisible={showPreviews[index] || false}
             onTogglePreview={onTogglePreview}
             onRemove={onRemoveFile}
-            customActions={customActions}
+            {...(customActions !== undefined ? { customActions } : {})}
           />
         ))}
       </div>

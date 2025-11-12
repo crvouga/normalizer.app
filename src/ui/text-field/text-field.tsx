@@ -34,8 +34,13 @@ export function TextField({
 
   return (
     <div className={cn('w-full', className)}>
-      <TextFieldLabel label={label} htmlFor={id} />
-      <TextFieldInput id={id} hasError={hasError} inputClassName={inputClassName} {...inputProps} />
+      {label && <TextFieldLabel label={label} {...(id !== undefined ? { htmlFor: id } : {})} />}
+      <TextFieldInput
+        id={id}
+        hasError={hasError}
+        {...(inputClassName !== undefined ? { inputClassName } : {})}
+        {...inputProps}
+      />
     </div>
   );
 }

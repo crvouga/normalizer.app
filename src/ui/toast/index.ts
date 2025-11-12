@@ -56,9 +56,10 @@ export function showErrorToast(
     }
   }
 
+  const finalErrorDetails = errorDetails || options?.errorDetails;
   return toastStore.addToast('error', message, {
     ...options,
-    errorDetails: errorDetails || options?.errorDetails,
+    ...(finalErrorDetails ? { errorDetails: finalErrorDetails } : {}),
   });
 }
 

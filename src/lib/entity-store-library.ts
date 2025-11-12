@@ -302,7 +302,7 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
 ) {
   function useSelector<T>(
     selector: (state: TStore) => T,
-    equalityFn: (a: T, b: T) => boolean = Object.is,
+    equalityFn: (a: T, b: T) => boolean = shallowEqual,
   ): T {
     // Use refs to avoid recreating getSnapshot on every render
     const selectorRef = useRef(selector);

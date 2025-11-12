@@ -9,11 +9,7 @@ export interface FilePreviewSectionProps {
   className?: string;
 }
 
-export const FilePreviewSection: React.FC<FilePreviewSectionProps> = ({
-  file,
-  isVisible,
-  className,
-}) => {
+export const FilePreviewSection: React.FC<FilePreviewSectionProps> = ({ file, isVisible }) => {
   if (!isVisible) return null;
 
   return (

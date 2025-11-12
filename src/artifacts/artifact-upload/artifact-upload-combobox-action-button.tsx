@@ -36,7 +36,7 @@ export function ArtifactUploadComboboxActionButton({
       <ArtifactUploadModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        onUploadComplete={onUploadComplete}
+        {...(onUploadComplete !== undefined ? { onUploadComplete } : {})}
       />
     </>
   );

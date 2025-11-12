@@ -18,7 +18,7 @@ export const artifactRouter = router({
       }),
     )
     .output(Artifact.schema.nullable())
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }): Promise<Artifact | null> => {
       ctx.logger.info('Artifact get', {
         artifactId: input.artifactId,
         userId: ctx.userId,
@@ -48,12 +48,12 @@ export const artifactRouter = router({
       const validatedArtifact = Artifact.schema.parse(artifact);
 
       // Refresh artifact URLs and persist to database if needed
-      const [artifactWithUrls] = await refreshArtifactUrls({
+      const artifactsWithUrls = await refreshArtifactUrls({
         ...ctx,
         artifacts: [validatedArtifact],
       });
 
-      return artifactWithUrls;
+      return artifactsWithUrls[0] ?? null;
     }),
 
   // List files for user

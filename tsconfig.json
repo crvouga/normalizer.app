@@ -2,20 +2,44 @@
   "compilerOptions": {
     "target": "ES2020",
     "jsx": "react-jsx",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-
-    // Bundler mode
     "moduleResolution": "bundler",
     "module": "preserve",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "~/*": ["*"]
-    }
+    },
+
+    /* Strict type-checking options */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    /* Additional checks and error reporting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "useUnknownInCatchVariables": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Javascript interop - disallow js files */
+    "checkJs": true,
+    "skipLibCheck": true,
+
+    /* Imports */
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

@@ -41,7 +41,7 @@ export const TabularFilePreview: React.FC<TabularFilePreviewProps> = ({
   return (
     <TabularFilePreviewTable
       data={data}
-      className={className}
+      {...(className !== undefined ? { className } : {})}
       maxRows={maxRows}
       maxColumns={maxColumns}
     />

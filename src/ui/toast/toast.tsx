@@ -94,8 +94,8 @@ export function Toast({ toast, isVisible, onDismiss, onShowError }: ToastProps) 
 
             <ToastContent
               message={toast.message}
-              errorDetails={toast.errorDetails}
-              onShowError={handleShowError}
+              {...(toast.errorDetails ? { errorDetails: toast.errorDetails } : {})}
+              {...(toast.errorDetails ? { onShowError: handleShowError } : {})}
             />
 
             {toast.dismissible && (

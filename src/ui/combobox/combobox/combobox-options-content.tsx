@@ -43,7 +43,7 @@ export function ComboboxOptionsContent<T extends string | number>({
         <ComboboxOptionItem
           key={String(option.value)}
           option={option}
-          renderOption={renderOption}
+          {...(renderOption !== undefined ? { renderOption } : {})}
         />
       ))}
 

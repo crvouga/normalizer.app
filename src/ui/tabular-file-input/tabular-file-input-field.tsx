@@ -29,12 +29,12 @@ export const TabularFileInputField: React.FC<TabularFileInputFieldProps> = ({
       </label>
       <TabularFileInput
         id={id}
-        multiple={multiple}
-        maxFiles={maxFiles}
-        maxSize={maxSize}
-        onFilesChange={onFilesChange}
-        placeholder={placeholder}
-        accept={accept}
+        {...(multiple !== undefined ? { multiple } : {})}
+        {...(maxFiles !== undefined ? { maxFiles } : {})}
+        {...(maxSize !== undefined ? { maxSize } : {})}
+        {...(onFilesChange !== undefined ? { onFilesChange } : {})}
+        {...(placeholder !== undefined ? { placeholder } : {})}
+        {...(accept !== undefined ? { accept } : {})}
         showPreview
       />
     </div>

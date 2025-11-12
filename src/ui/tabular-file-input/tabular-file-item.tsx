@@ -180,7 +180,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
         isPreviewVisible={isPreviewVisible}
         onTogglePreview={onTogglePreview}
         onRemove={onRemove}
-        customActions={customActions}
+        {...(customActions !== undefined ? { customActions } : {})}
       />
 
       {isPreviewVisible && showPreview && (

@@ -12,7 +12,7 @@ import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
 import { Avatar } from '~/src/ui/avatar';
 import { getButtonBaseStyles } from '~/src/ui/button-base';
 import { Divider } from '~/src/ui/divider';
-import { IconLogin, IconLogout, IconSettings, IconSpinner, IconUser } from '~/src/ui/icons';
+import { IconLogin, IconLogout, IconSettings, IconUser } from '~/src/ui/icons';
 import { MenuItemButton } from '~/src/ui/menu-item-button';
 import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
@@ -41,7 +41,7 @@ const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolea
         </div>
       ) : (
         <Avatar
-          src={user.profile_picture ?? undefined}
+          {...(user.profile_picture ? { src: user.profile_picture } : {})}
           alt={user.name || 'User'}
           initials={getUserInitials(user)}
           size="md"

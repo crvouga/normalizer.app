@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { AsyncCombobox } from '~/src/ui/combobox/async-combobox';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';

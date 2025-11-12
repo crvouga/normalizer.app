@@ -37,9 +37,11 @@ export function ArtifactUploadModal({
   const handleFilesChange = (files: FileList | null) => {
     if (files && files.length > 0) {
       const file = files[0];
-      setSelectedFile(file);
-      // Pre-fill the artifact name with the filename
-      setArtifactName(file.name);
+      if (file) {
+        setSelectedFile(file);
+        // Pre-fill the artifact name with the filename
+        setArtifactName(file.name);
+      }
     } else {
       setSelectedFile(null);
       setArtifactName('');

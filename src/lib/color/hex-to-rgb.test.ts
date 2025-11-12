@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { hexToRgb } from './hex-to-rgb.ts';
+import { hexToRgb } from './hex-to-rgb';
 
 describe('hexToRgb', () => {
   it('converts 6-digit hex with # to RGB', () => {

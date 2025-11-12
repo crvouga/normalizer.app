@@ -36,7 +36,7 @@ export function SelectedArtifactsList({
   const tabularFiles = React.useMemo(() => {
     return artifacts
       .map((id) => artifactsById[id])
-      .filter(Boolean)
+      .filter((artifact): artifact is NonNullable<typeof artifact> => artifact !== undefined)
       .map(artifactToTabularFile);
   }, [artifacts, artifactsById]);
 
@@ -63,7 +63,7 @@ export function SelectedArtifactsList({
   }, [onClearAll]);
 
   const handleEdit = React.useCallback(
-    (file: any, index: number) => {
+    (_file: any, index: number) => {
       const artifactId = artifacts[index];
       const artifact = artifactId ? artifactsById[artifactId] : null;
       if (artifact) {

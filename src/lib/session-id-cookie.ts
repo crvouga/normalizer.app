@@ -31,7 +31,11 @@ export function getSessionId(req: Request): SessionId {
 /**
  * Set session ID cookie on response with maximum security
  */
-export function setSessionCookie(req: Request, response: Response, sessionId: SessionId): Response {
+export function setSessionCookie(
+  _req: Request,
+  response: Response,
+  sessionId: SessionId,
+): Response {
   // Always overwrite - do not allow fixation via not-set
   const result = setCookie(response, SESSION_COOKIE_NAME, sessionId, SESSION_COOKIE_OPTIONS);
   return result;

@@ -10,7 +10,8 @@ export function getUserInitials(user: User): string {
       .slice(0, 2);
   }
   if (user.email) {
-    return user.email[0].toUpperCase();
+    const firstChar = user.email[0];
+    return firstChar ? firstChar.toUpperCase() : 'A';
   }
   return 'A'; // Anonymous
 }

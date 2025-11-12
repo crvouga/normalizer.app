@@ -185,7 +185,9 @@ export function dispatch(action: StoreAction): void {
 
 export function useArtifacts(): Artifact[] {
   return useStore((state) =>
-    state.entities.artifacts.allIds.map((id) => state.entities.artifacts.byId[id]),
+    state.entities.artifacts.allIds
+      .map((id) => state.entities.artifacts.byId[id])
+      .filter((a): a is Artifact => a !== undefined),
   );
 }
 

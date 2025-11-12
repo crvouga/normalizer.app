@@ -56,6 +56,11 @@ describe('Artifact.populateUrls', () => {
 
     expect(updated.has(artifactId.toString())).toBe(true);
     const populatedArtifact = populated[0];
+    expect(populatedArtifact).toBeDefined();
+
+    if (!populatedArtifact) {
+      throw new Error('Expected populated artifact to be defined');
+    }
 
     expect(populatedArtifact.upload_url).toBeDefined();
     expect(typeof populatedArtifact.upload_url).toBe('string');
@@ -91,6 +96,11 @@ describe('Artifact.populateUrls', () => {
       s3Endpoint,
     });
     const populated = firstPop.artifacts[0];
+    expect(populated).toBeDefined();
+
+    if (!populated) {
+      throw new Error('Expected populated artifact to be defined');
+    }
 
     // The second run should preserve the URLs (not update them, so the set will be empty)
     const secondPop = await populateArtifactUrls({
@@ -99,6 +109,11 @@ describe('Artifact.populateUrls', () => {
       s3Endpoint,
     });
     const again = secondPop.artifacts[0];
+    expect(again).toBeDefined();
+
+    if (!again) {
+      throw new Error('Expected again artifact to be defined');
+    }
 
     expect(secondPop.updated.size).toBe(0);
     expect(again.upload_url).toBe(populated.upload_url);
@@ -135,6 +150,11 @@ describe('Artifact.populateUrls', () => {
 
     expect(updated.has(artifactId.toString())).toBe(true);
     const updatedArtifact = result[0];
+    expect(updatedArtifact).toBeDefined();
+
+    if (!updatedArtifact) {
+      throw new Error('Expected updated artifact to be defined');
+    }
 
     expect(updatedArtifact.upload_url).not.toBe('http://should-be-replaced');
     expect(updatedArtifact.download_url).not.toBe('http://should-be-replaced');
@@ -167,6 +187,11 @@ describe('Artifact.populateUrls', () => {
       s3Endpoint,
     });
     const updatedArtifact = result[0];
+    expect(updatedArtifact).toBeDefined();
+
+    if (!updatedArtifact) {
+      throw new Error('Expected updated artifact to be defined');
+    }
 
     expect(updatedArtifact.upload_url?.startsWith('https://')).toBe(true);
     expect(updatedArtifact.download_url?.startsWith('https://')).toBe(true);

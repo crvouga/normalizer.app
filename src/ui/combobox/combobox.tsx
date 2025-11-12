@@ -1,7 +1,7 @@
 import { Combobox as HeadlessCombobox } from '@headlessui/react';
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
-import type { ComboboxOption, ComboboxProps } from './combobox-types';
+import type { ComboboxProps } from './combobox-types';
 import { ComboboxEmptyState } from './combobox/combobox-empty-state';
 import { ComboboxErrorState } from './combobox/combobox-error-state';
 import { ComboboxInputField } from './combobox/combobox-input-field';
@@ -39,19 +39,19 @@ export function Combobox<T extends string | number>({
 }: ComboboxProps<T>) {
   // Use extracted hooks
   const { query, setQuery } = useComboboxQuery({
-    controlledQuery,
-    onQueryChange,
+    ...(controlledQuery !== undefined ? { controlledQuery } : {}),
+    ...(onQueryChange !== undefined ? { onQueryChange } : {}),
   });
 
   const { getDisplayValue } = useComboboxDisplayValue({
     options,
-    displayValue,
+    ...(displayValue !== undefined ? { displayValue } : {}),
   });
 
   const { filteredOptions } = useComboboxFiltering({
     options,
     query,
-    filterOptions,
+    ...(filterOptions !== undefined ? { filterOptions } : {}),
   });
 
   // Render empty state
@@ -87,7 +87,7 @@ export function Combobox<T extends string | number>({
 
   return (
     <div className={cn('w-full', className)}>
-      <ComboboxLabel label={label} />
+      {label && <ComboboxLabel label={label} />}
       <div className="flex">
         <div className="flex-1">
           <HeadlessCombobox value={value} onChange={onChange} disabled={disabled}>
@@ -97,19 +97,21 @@ export function Combobox<T extends string | number>({
               placeholder={placeholder}
               isLoading={isLoading}
               hasError={hasError}
-              inputClassName={inputClassName}
+              {...(inputClassName !== undefined ? { inputClassName } : {})}
               hasActionButton={Boolean(actionButton)}
             />
 
-            <ComboboxOptionsWrapper optionsClassName={optionsClassName}>
+            <ComboboxOptionsWrapper
+              {...(optionsClassName !== undefined ? { optionsClassName } : {})}
+            >
               <ComboboxOptionsContent
                 error={error}
                 filteredOptions={filteredOptions}
                 isLoading={isLoading}
-                renderOption={renderOption}
+                {...(renderOption !== undefined ? { renderOption } : {})}
                 renderEmptyState={renderEmptyState}
                 renderErrorState={renderErrorState}
-                renderFooter={renderFooter}
+                {...(renderFooter !== undefined ? { renderFooter } : {})}
               />
             </ComboboxOptionsWrapper>
           </HeadlessCombobox>

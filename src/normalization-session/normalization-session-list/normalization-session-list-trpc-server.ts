@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, desc, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { refreshArtifactUrls } from '~/src/artifacts/artifact-urls-refresh';
 import { Artifact } from '../../artifacts/artifact';
@@ -93,10 +93,8 @@ export const normalizationSessionListRouter = router({
       const hasMore = rows.length > input.limit;
 
       // Get next cursor from the last item's updated_at
-      const nextCursor =
-        hasMore && rows[input.limit - 1]?.updated_at
-          ? rows[input.limit - 1].updated_at.toISOString()
-          : null;
+      const lastRow = rows[input.limit - 1];
+      const nextCursor = hasMore && lastRow?.updated_at ? lastRow.updated_at.toISOString() : null;
 
       ctx.logger.info('Normalization session list retrieved', {
         userId: input.userId,

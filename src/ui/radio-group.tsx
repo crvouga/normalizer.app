@@ -50,7 +50,7 @@ export function RadioGroup<T extends string = string>({
             <Radio
               key={option.value}
               value={option.value}
-              disabled={option.disabled}
+              {...(option.disabled !== undefined ? { disabled: option.disabled } : {})}
               className={({ checked, disabled }) =>
                 cn(
                   'relative flex cursor-pointer rounded-lg border px-4 py-3 transition-colors',

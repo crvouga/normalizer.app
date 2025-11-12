@@ -62,7 +62,7 @@ export function EditArtifactModal({
     if (artifact) {
       await editArtifact({
         artifactId: artifact.id,
-        name: artifactName || undefined,
+        ...(artifactName ? { name: artifactName } : {}),
       });
     }
   };

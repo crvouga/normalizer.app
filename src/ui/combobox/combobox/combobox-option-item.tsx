@@ -42,7 +42,7 @@ export function ComboboxOptionItem<T extends string | number>({
     <HeadlessComboboxOption
       key={String(option.value)}
       value={option.value}
-      disabled={option.disabled}
+      {...(option.disabled !== undefined ? { disabled: option.disabled } : {})}
       className={({ focus, selected }) =>
         cn(
           'relative cursor-pointer py-3 pr-10 pl-4 select-none',

@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 
-export type Icon = React.FC<React.SVGProps<SVGSVGElement>>;
-
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
 }
+
+export type Icon = React.ForwardRefExoticComponent<
+  Omit<IconProps, 'ref'> & React.RefAttributes<SVGSVGElement>
+>;
 
 export const IconSparkles = React.forwardRef<SVGSVGElement, IconProps>(
   ({ className, ...props }, ref) => (

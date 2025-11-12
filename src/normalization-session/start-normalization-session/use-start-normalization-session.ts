@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import type { ArtifactId } from '../../artifacts/artifact-id';
-import { useI18n } from '../../i18n/use-i18n';
 import type { RemoteResult, Result } from '../../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
@@ -26,7 +25,6 @@ export function useStartNormalizationSession({
   const [state, setState] =
     useState<RemoteResult<StartNormalizationSessionResult, Error>>(NotAsked);
   const entityStore = useEntityStore();
-  const { t } = useI18n();
   const { currentUserResult } = useCurrentUserResult();
 
   const startSession = async (params: StartNormalizationSessionParams) => {

@@ -25,12 +25,12 @@ describe('Database Client', () => {
     // Test simple query using Drizzle's sql operator
     const result = await db.execute(sql`SELECT 1 as num`);
     expect(result).toBeDefined();
-    expect(result[0].num).toBe(1);
+    expect(result[0]?.num).toBe(1);
 
     // Test parameterized query
     const testValue = 'test';
     const paramResult = await db.execute(sql`SELECT ${testValue} as val`);
-    expect(paramResult[0].val).toBe('test');
+    expect(paramResult[0]?.val).toBe('test');
 
     await cleanupDb(logger);
   });

@@ -2,7 +2,6 @@ import type { S3Client } from 'bun';
 import type { Logger } from '../lib/logger';
 import type { UserId } from './user-id';
 
-const PROFILE_PICTURES_BUCKET = 'main';
 const PROFILE_PICTURES_PREFIX = 'profile-pictures';
 
 /**
@@ -15,7 +14,7 @@ function getProfilePictureS3Key(userId: UserId, extension: string = 'jpg'): stri
 /**
  * Generate URL for serving a user's profile picture from our server
  */
-export function getProfilePictureUrl(userId: UserId, s3Endpoint: string): string {
+export function getProfilePictureUrl(userId: UserId, _s3Endpoint: string): string {
   // Using our server endpoint to serve profile pictures
   return `/api/users/${userId}/profile-picture`;
 }

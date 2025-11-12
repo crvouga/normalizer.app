@@ -2,6 +2,7 @@ import { ButtonBase } from '~/src/ui/button-base';
 import { formatDate } from '~/src/lib/date/format-date';
 import type { NormalizationSessionId } from '../../normalization-session-id';
 import type { NormalizationSessionProjection } from '../../normalization-session-projection/normalization-session-projection';
+import { useEntityStoreSelector } from '~/src/store/entity-store';
 
 interface NormalizationSessionListItemProps {
   projection: NormalizationSessionProjection;
@@ -16,6 +17,9 @@ export function NormalizationSessionListItem({
   projection,
   onClick,
 }: NormalizationSessionListItemProps) {
+  const targetArtifacts = useEntityStoreSelector((store) =>
+    projection.targetArtifactIds.map((id) => store.entities.artifacts.byId[id]),
+  );
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}
@@ -25,7 +29,7 @@ export function NormalizationSessionListItem({
         {/* Session ID */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-            Session {projection.id.slice(0, 8)}
+            {targetArtifacts.map((artifact) => artifact?.name ?? artifact?.filename).join(', ')}
           </span>
         </div>
 

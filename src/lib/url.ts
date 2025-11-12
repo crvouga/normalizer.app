@@ -45,9 +45,9 @@ export function parseAndValidateURL(input: string, errorPrefix = 'Invalid URL'):
     if (!isIP && !isLocalhost && !hasDot) {
       // Check if it's a hostname with a port
       if (hasPort) {
-        const [hostnamePart] = host.split(':');
+        const hostnamePart = host.split(':')[0];
         // If the hostname part (before port) has no dot and isn't localhost, it's likely invalid
-        if (hostnamePart !== 'localhost' && !hostnamePart.includes('.')) {
+        if (hostnamePart && hostnamePart !== 'localhost' && !hostnamePart.includes('.')) {
           return false;
         }
       } else {

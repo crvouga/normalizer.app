@@ -31,9 +31,9 @@ export function ToastContainer() {
         setIsVisible(true);
       });
       return () => cancelAnimationFrame(timer);
-    } else {
-      setIsVisible(false);
     }
+    setIsVisible(false);
+    return undefined;
   }, [currentToast?.id]);
 
   // Auto-dismiss after duration
@@ -45,6 +45,7 @@ export function ToastContainer() {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [currentToast?.id, currentToast?.duration, handleDismiss]);
 
   // Immediately dismiss when new toasts are queued

@@ -29,7 +29,7 @@ export function useArtifactUpload({
         id: artifactId,
         filename: file.name,
         content_type: file.type,
-        name,
+        ...(name ? { name } : {}),
       });
 
       // Optimistically insert into entity store

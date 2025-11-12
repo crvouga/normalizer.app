@@ -119,7 +119,7 @@ export function useAsyncComboboxFetch<T extends string | number>({
           payload: {
             items,
             hasMore: result.hasMore,
-            total: result.total,
+            ...(result.total !== undefined ? { total: result.total } : {}),
             isLoadingMore: isLoadingMoreData,
             searchHash,
             ids: result.ids,
