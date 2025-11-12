@@ -1,58 +1,48 @@
-import { useEffect, useState } from 'react';
-import { trpcClient } from '../trpc-client';
-import { useCurrentUser } from '../users/use-current-user';
 import type { NormalizationSessionId } from './normalization-session-id';
+import { usePermission } from '../permissions/use-permission';
+import {
+  canViewNormalizationSession,
+  canEditNormalizationSession,
+  canDeleteNormalizationSession,
+} from './normalization-session-permissions';
 
 export interface NormalizationSessionPermission {
   canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   isLoading: boolean;
   error: Error | null;
 }
 
 /**
- * Hook to check if the current user has permission to view a normalization session
+ * Hook to check normalization session permissions from entity store
+ *
+ * This hook reads permissions from the entity store that were previously loaded
+ * (e.g., by useNormalizationSessionEventsLoader).
  */
 export function useNormalizationSessionPermission(
   sessionId: NormalizationSessionId,
 ): NormalizationSessionPermission {
-  const currentUser = useCurrentUser();
-  const [isLoading, setIsLoading] = useState(true);
-  const [canView, setCanView] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  // Get permissions from entity store
+  const viewPermission = usePermission(canViewNormalizationSession(sessionId));
+  const editPermission = usePermission(canEditNormalizationSession(sessionId));
+  const deletePermission = usePermission(canDeleteNormalizationSession(sessionId));
 
-  useEffect(() => {
-    let mounted = true;
+  // Aggregate loading state - we're loading if any permission is still loading
+  const isLoading =
+    viewPermission.isLoading || editPermission.isLoading || deletePermission.isLoading;
 
-    async function checkPermission() {
-      try {
-        setIsLoading(true);
-        setError(null);
+  // Check if any permission check has an error (convert to Error object)
+  let error: Error | null = null;
+  if (viewPermission.reason && !viewPermission.granted && !viewPermission.isLoading) {
+    error = new Error(viewPermission.reason);
+  }
 
-        // Check permission by calling the tRPC endpoint
-        // This will throw if the user doesn't have permission
-        const result = await trpcClient.normalizationSession.permissions.canView.mutate({
-          sessionId,
-        });
-
-        if (mounted) {
-          setCanView(result.canView);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err : new Error('Permission check failed'));
-          setCanView(false);
-          setIsLoading(false);
-        }
-      }
-    }
-
-    checkPermission();
-
-    return () => {
-      mounted = false;
-    };
-  }, [sessionId, currentUser.id]);
-
-  return { canView, isLoading, error };
+  return {
+    canView: viewPermission.granted,
+    canEdit: editPermission.granted,
+    canDelete: deletePermission.granted,
+    isLoading,
+    error,
+  };
 }

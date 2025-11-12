@@ -7,6 +7,8 @@ import type { NormalizationSessionEventId } from '../normalization-session/norma
 import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
 import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
+import type { PermissionEntityId } from '../permissions/permission-entity-id';
+import type { PermissionEntity } from '../permissions/permission-entity';
 
 // Define entity types
 export type EntityStore = {
@@ -21,6 +23,7 @@ export type EntityStore = {
       NormalizationSessionId,
       NormalizationSessionProjection
     >;
+    permissions: EntitySlice<PermissionEntityId, PermissionEntity>;
   };
   indexes: {
     normalizationSessionEventsBySessionId: Record<
@@ -28,6 +31,7 @@ export type EntityStore = {
       NormalizationSessionEventId[]
     >;
     normalizationSessionProjectionsByUserId: Record<UserId, NormalizationSessionId[]>;
+    permissionsByResource: Record<string, PermissionEntityId[]>;
   };
 };
 
@@ -50,10 +54,15 @@ export const initialEntityStore: EntityStore = {
       byId: {},
       allIds: [],
     },
+    permissions: {
+      byId: {},
+      allIds: [],
+    },
   },
   indexes: {
     normalizationSessionEventsBySessionId: {},
     normalizationSessionProjectionsByUserId: {},
+    permissionsByResource: {},
   },
 };
 
@@ -102,6 +111,28 @@ export const indexDefinitions = {
         return '';
       },
     } as IndexDefinition<NormalizationSessionProjection>,
+  },
+  permissionsByResource: {
+    entityType: 'permissions' as const,
+    definition: {
+      getIndexKey: (entity: unknown) => {
+        if (
+          entity &&
+          typeof entity === 'object' &&
+          'resourceId' in entity &&
+          typeof entity.resourceId === 'string'
+        ) {
+          return entity.resourceId;
+        }
+        return undefined;
+      },
+      getEntityId: (entity: unknown) => {
+        if (entity && typeof entity === 'object' && 'id' in entity) {
+          return entity.id as string;
+        }
+        return '';
+      },
+    } as IndexDefinition<PermissionEntity>,
   },
 };
 

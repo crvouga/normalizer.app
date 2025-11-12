@@ -9,9 +9,14 @@ import { NormalizationSessionId } from '../normalization-session-id';
 import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
 import {
   canViewNormalizationSession,
+  canEditNormalizationSession,
+  canDeleteNormalizationSession,
   viewNormalizationSessionPolicy,
+  editNormalizationSessionPolicy,
+  deleteNormalizationSessionPolicy,
   getNormalizationSessionOwner,
 } from '../normalization-session-permissions';
+import { isGranted } from '../../permissions/permission';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -67,7 +72,17 @@ export const normalizationSessionEventRouter = router({
         sessionId: NormalizationSessionId.schema,
       }),
     )
-    .output(z.array(NormalizationSessionEventEntity.schema))
+    .output(
+      z.object({
+        events: z.array(NormalizationSessionEventEntity.schema),
+        permissions: z.object({
+          canView: z.boolean(),
+          canEdit: z.boolean(),
+          canDelete: z.boolean(),
+          resourceOwnerId: z.string(),
+        }),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       ctx.logger.info('Normalization session get events', {
         sessionId: input.sessionId,
@@ -97,7 +112,36 @@ export const normalizationSessionEventRouter = router({
         count: events.length,
       });
 
+      // Calculate all permissions for this session
+      const viewPermission = canViewNormalizationSession(input.sessionId);
+      const editPermission = canEditNormalizationSession(input.sessionId);
+      const deletePermission = canDeleteNormalizationSession(input.sessionId);
+
+      const viewResult = await ctx.checkPermission(viewPermission, viewNormalizationSessionPolicy, {
+        resourceOwnerId,
+      });
+      const editResult = await ctx.checkPermission(editPermission, editNormalizationSessionPolicy, {
+        resourceOwnerId,
+      });
+      const deleteResult = await ctx.checkPermission(
+        deletePermission,
+        deleteNormalizationSessionPolicy,
+        {
+          resourceOwnerId,
+        },
+      );
+
       // Validate and transform to NormalizationSessionEventEntity type array
-      return z.array(NormalizationSessionEventEntity.schema).parse(events);
+      const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
+
+      return {
+        events: validatedEvents,
+        permissions: {
+          canView: isGranted(viewResult),
+          canEdit: isGranted(editResult),
+          canDelete: isGranted(deleteResult),
+          resourceOwnerId,
+        },
+      };
     }),
 });
