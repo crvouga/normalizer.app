@@ -36,7 +36,6 @@ export function useNormalizationSessionsByUserLoader(
       setState(isLoadingMore ? { type: 'loading-more' } : { type: 'loading' });
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         const response = await trpcClient.normalizationSession.list.listByStartedByUser.mutate({
           userId,
           cursor: isLoadingMore ? (cursor ?? undefined) : undefined,

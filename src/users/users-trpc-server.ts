@@ -9,8 +9,6 @@ export const usersRouter = router({
    * Context creation already ensures a user exists
    */
   currentUser: procedure.mutation(async ({ ctx }) => {
-    // await new Promise((resolve) => setTimeout(resolve, 1000 * 1.5));
-
     // The context already has userId from an existing or newly created user
     const user = await ctx.db.query.users.findFirst({
       where: eq(users.id, ctx.userId),
