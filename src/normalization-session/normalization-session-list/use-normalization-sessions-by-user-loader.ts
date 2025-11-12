@@ -47,6 +47,8 @@ export function useNormalizationSessionsByUserLoader(userId: UserId) {
       );
       entityStore.addManyEntities('artifacts', artifacts);
 
+      entityStore.addManyEntities('resourceOwnerships', response.resourceOwnerships);
+
       return {
         nextCursor: response.nextCursor,
         hasMore: response.hasMore,

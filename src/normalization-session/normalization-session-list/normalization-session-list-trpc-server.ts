@@ -6,6 +6,8 @@ import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
 import { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
+import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 
 const InputSchema = z.object({
   userId: UserId.schema,
@@ -17,6 +19,7 @@ type InputSchema = z.infer<typeof InputSchema>;
 const OutputSchema = z.object({
   sessions: z.array(NormalizationSessionProjection.schema),
   artifacts: z.array(Artifact.schema),
+  resourceOwnerships: z.array(ResourceOwnershipEntity.schema),
   nextCursor: z.string().nullable(),
   hasMore: z.boolean(),
 });
@@ -131,9 +134,20 @@ export const normalizationSessionListRouter = router({
         });
       }
 
+      // Create resource ownership entries for each session
+      const resourceOwnerships: ResourceOwnershipEntity[] = sessionProjections.map(
+        (projection) => ({
+          id: ResourceOwnershipEntityId.create('normalization-session', projection.id),
+          resourceType: 'normalization-session',
+          resourceId: projection.id,
+          ownerId: projection.startedByUserId,
+        }),
+      );
+
       return {
         sessions: sessionProjections,
         artifacts,
+        resourceOwnerships,
         nextCursor,
         hasMore,
       };

@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import type { CurrentScreen } from '../screen/current-screen';
-import { Typography } from '../ui/typography';
 import { Spinner } from '../ui/spinner';
+import { Typography } from '../ui/typography';
 
 export interface PermissionGuardProps {
   /**
@@ -18,13 +17,9 @@ export interface PermissionGuardProps {
    */
   error?: Error | null;
   /**
-   * Screen to redirect to if permission is denied
-   */
-  fallbackScreen: CurrentScreen;
-  /**
    * Function to navigate to a screen
    */
-  onRedirect: (screen: CurrentScreen) => void;
+  onRedirect: () => void;
   /**
    * Content to render if permission is granted
    */
@@ -40,17 +35,16 @@ export interface PermissionGuardProps {
 }
 
 interface AccessDeniedRedirectProps {
-  fallbackScreen: CurrentScreen;
-  onRedirect: (screen: CurrentScreen) => void;
+  onRedirect: () => void;
 }
 
 /**
  * Component that handles redirect when access is denied
  */
-function AccessDeniedRedirect({ fallbackScreen, onRedirect }: AccessDeniedRedirectProps) {
+function AccessDeniedRedirect({ onRedirect }: AccessDeniedRedirectProps) {
   useEffect(() => {
-    onRedirect(fallbackScreen);
-  }, [fallbackScreen, onRedirect]);
+    onRedirect();
+  }, [onRedirect]);
 
   return (
     <div className="flex h-full w-full items-center justify-center">
@@ -68,7 +62,6 @@ export function PermissionGuard({
   hasPermission,
   isLoading,
   error,
-  fallbackScreen,
   onRedirect,
   children,
   loadingComponent,
@@ -110,7 +103,7 @@ export function PermissionGuard({
 
   // Redirect if permission is denied
   if (!hasPermission) {
-    return <AccessDeniedRedirect fallbackScreen={fallbackScreen} onRedirect={onRedirect} />;
+    return <AccessDeniedRedirect onRedirect={onRedirect} />;
   }
 
   // Render children if permission is granted

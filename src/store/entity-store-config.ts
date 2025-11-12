@@ -7,8 +7,8 @@ import type { NormalizationSessionEventId } from '../normalization-session/norma
 import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
 import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
-import type { PermissionEntityId } from '../permissions/permission-entity-id';
-import type { PermissionEntity } from '../permissions/permission-entity';
+import type { ResourceOwnershipEntityId } from '../permissions/resource-ownership-entity-id';
+import type { ResourceOwnershipEntity } from '../permissions/resource-ownership-entity';
 
 // Define entity types
 export type EntityStore = {
@@ -23,7 +23,7 @@ export type EntityStore = {
       NormalizationSessionId,
       NormalizationSessionProjection
     >;
-    permissions: EntitySlice<PermissionEntityId, PermissionEntity>;
+    resourceOwnerships: EntitySlice<ResourceOwnershipEntityId, ResourceOwnershipEntity>;
   };
   indexes: {
     normalizationSessionEventsBySessionId: Record<
@@ -31,7 +31,7 @@ export type EntityStore = {
       NormalizationSessionEventId[]
     >;
     normalizationSessionProjectionsByUserId: Record<UserId, NormalizationSessionId[]>;
-    permissionsByResource: Record<string, PermissionEntityId[]>;
+    resourceOwnershipsByResourceId: Record<string, ResourceOwnershipEntityId[]>;
   };
 };
 
@@ -54,7 +54,7 @@ export const initialEntityStore: EntityStore = {
       byId: {},
       allIds: [],
     },
-    permissions: {
+    resourceOwnerships: {
       byId: {},
       allIds: [],
     },
@@ -62,7 +62,7 @@ export const initialEntityStore: EntityStore = {
   indexes: {
     normalizationSessionEventsBySessionId: {},
     normalizationSessionProjectionsByUserId: {},
-    permissionsByResource: {},
+    resourceOwnershipsByResourceId: {},
   },
 };
 
@@ -112,8 +112,8 @@ export const indexDefinitions = {
       },
     } as IndexDefinition<NormalizationSessionProjection>,
   },
-  permissionsByResource: {
-    entityType: 'permissions' as const,
+  resourceOwnershipsByResourceId: {
+    entityType: 'resourceOwnerships' as const,
     definition: {
       getIndexKey: (entity: unknown) => {
         if (
@@ -132,7 +132,7 @@ export const indexDefinitions = {
         }
         return '';
       },
-    } as IndexDefinition<PermissionEntity>,
+    } as IndexDefinition<ResourceOwnershipEntity>,
   },
 };
 

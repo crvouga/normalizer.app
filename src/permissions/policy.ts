@@ -24,7 +24,7 @@ export interface Policy {
    * Evaluate the policy
    * @returns PermissionCheckResult indicating if permission is granted
    */
-  evaluate(context: PolicyContext): Promise<PermissionCheckResult> | PermissionCheckResult;
+  evaluate(context: PolicyContext): PermissionCheckResult;
 }
 
 /**
@@ -35,9 +35,9 @@ export class AllPoliciesRequired implements Policy {
 
   constructor(private policies: Policy[]) {}
 
-  async evaluate(context: PolicyContext): Promise<PermissionCheckResult> {
+  evaluate(context: PolicyContext): PermissionCheckResult {
     for (const policy of this.policies) {
-      const result = await policy.evaluate(context);
+      const result = policy.evaluate(context);
       if (!isGranted(result)) {
         return denied(`Policy '${policy.name}' failed: ${result.reason}`);
       }
@@ -54,10 +54,10 @@ export class AnyPolicyRequired implements Policy {
 
   constructor(private policies: Policy[]) {}
 
-  async evaluate(context: PolicyContext): Promise<PermissionCheckResult> {
+  evaluate(context: PolicyContext): PermissionCheckResult {
     const reasons: string[] = [];
     for (const policy of this.policies) {
-      const result = await policy.evaluate(context);
+      const result = policy.evaluate(context);
       if (isGranted(result)) {
         return granted();
       }
@@ -84,7 +84,7 @@ export class PolicyEngine {
   /**
    * Check if a permission is granted
    */
-  async check(context: PolicyContext): Promise<PermissionCheckResult> {
+  check(context: PolicyContext): PermissionCheckResult {
     const { permission } = context;
     const key = this.makeKey(permission.resource, permission.action);
     const policy = this.policies.get(key);
@@ -94,7 +94,7 @@ export class PolicyEngine {
       return denied(`No policy registered for ${permission.resource}:${permission.action}`);
     }
 
-    return await policy.evaluate(context);
+    return policy.evaluate(context);
   }
 
   /**
