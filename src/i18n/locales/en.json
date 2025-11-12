@@ -87,6 +87,7 @@
   "normalizationSession": {
     "artifactsLabel": "Artifacts",
     "targetArtifactsLabel": "Target Artifact",
-    "inputArtifactsLabel": "Input Artifact"
+    "inputArtifactsLabel": "Input Artifact",
+    "normalize": "Normalize"
   }
 }
