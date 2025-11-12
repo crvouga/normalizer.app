@@ -35,6 +35,7 @@ function AppSidebar() {
       normalizationSessionId: sessionId,
     });
   };
+
   return (
     <SidebarRoot>
       <SidebarHeader icon={<Sparkles size="sm" />} title={t('app.title')} />
@@ -46,7 +47,14 @@ function AppSidebar() {
         />
       </div>
       <div className="w-full flex-1 overflow-hidden">
-        <NormalizationSessionProjectionList userId={user.id} onSessionClick={handleSessionClick} />
+        <NormalizationSessionProjectionList
+          userId={user.id}
+          onSessionClick={handleSessionClick}
+          isSelected={(id) =>
+            currentScreen.currentScreen.type === 'normalization-session' &&
+            currentScreen.currentScreen.normalizationSessionId === id
+          }
+        />
       </div>
       <SidebarFooter content={<UserProfileSidebarItem user={user} />} />
     </SidebarRoot>

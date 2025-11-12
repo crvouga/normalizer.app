@@ -8,6 +8,7 @@ import { Typography } from '~/src/ui/typography';
 interface NormalizationSessionListLoadedProps {
   sessions: NormalizationSessionProjection[];
   onSessionClick: (id: NormalizationSessionId) => void;
+  isSelected: (id: NormalizationSessionId) => boolean;
   hasMore: boolean;
   isLoadingMore: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
@@ -19,6 +20,7 @@ interface NormalizationSessionListLoadedProps {
 export function NormalizationSessionListLoaded({
   sessions,
   onSessionClick,
+  isSelected,
   hasMore,
   isLoadingMore,
   loadMoreRef,
@@ -31,6 +33,7 @@ export function NormalizationSessionListLoaded({
             key={session.id}
             projection={session}
             onClick={onSessionClick}
+            isSelected={isSelected(session.id)}
           />
         ))}
 

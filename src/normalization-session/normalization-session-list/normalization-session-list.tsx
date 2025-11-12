@@ -10,6 +10,7 @@ import { NormalizationSessionListLoaded } from './ui/normalization-session-list-
 interface NormalizationSessionProjectionListProps {
   userId: UserId;
   onSessionClick: (id: NormalizationSessionId) => void;
+  isSelected: (id: NormalizationSessionId) => boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ interface NormalizationSessionProjectionListProps {
 export function NormalizationSessionProjectionList({
   userId,
   onSessionClick,
+  isSelected,
 }: NormalizationSessionProjectionListProps) {
   const { state, hasMore, loadMoreRef, retry } = useNormalizationSessionsByUserLoader(userId);
   const sessions = useNormalizationSessionsByUserSelector(userId);
@@ -39,6 +41,7 @@ export function NormalizationSessionProjectionList({
     <NormalizationSessionListLoaded
       sessions={sessions}
       onSessionClick={onSessionClick}
+      isSelected={isSelected}
       hasMore={hasMore}
       isLoadingMore={state.type === 'loading-more'}
       loadMoreRef={loadMoreRef}

@@ -7,6 +7,7 @@ import { useEntityStoreSelector } from '~/src/store/entity-store';
 interface NormalizationSessionListItemProps {
   projection: NormalizationSessionProjection;
   onClick: (id: NormalizationSessionId) => void;
+  isSelected: boolean;
 }
 
 /**
@@ -16,6 +17,7 @@ interface NormalizationSessionListItemProps {
 export function NormalizationSessionListItem({
   projection,
   onClick,
+  isSelected,
 }: NormalizationSessionListItemProps) {
   const targetArtifacts = useEntityStoreSelector((store) =>
     projection.targetArtifactIds.map((id) => store.entities.artifacts.byId[id]),
@@ -23,7 +25,11 @@ export function NormalizationSessionListItem({
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}
-      className="w-full rounded-lg border border-slate-200 bg-white p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+      className={`w-full rounded-lg border p-4 text-left transition-colors ${
+        isSelected
+          ? 'border-fuchsia-500 bg-fuchsia-50 hover:border-fuchsia-600 hover:bg-fuchsia-100 dark:border-fuchsia-400 dark:bg-fuchsia-950 dark:hover:border-fuchsia-300 dark:hover:bg-fuchsia-900'
+          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
+      }`}
     >
       <div className="flex flex-col gap-2">
         {/* Session ID */}

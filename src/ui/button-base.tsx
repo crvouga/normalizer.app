@@ -21,7 +21,7 @@ export function getButtonBaseStyles({
   return cn(
     'transition-opacity',
     // Purple outline on focus, rounded ring
-    'focus:ring-rounded focus:ring-2 focus:ring-fuchsia-500 focus:outline-none',
+    'focus:ring-rounded focus:ring-1 focus:ring-offset-1 focus:ring-fuchsia-500 focus:outline-none',
     // Cursor states
     !isDisabled && 'cursor-pointer',
     disabled && 'cursor-not-allowed',
