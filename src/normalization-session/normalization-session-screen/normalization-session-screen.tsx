@@ -10,6 +10,7 @@ import {
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
 import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
+import { Divider } from '~/src/ui/divider';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -30,14 +31,26 @@ export const NormalizationSessionScreen = (props: {
       policy={viewNormalizationSessionPolicy}
       onRedirect={() => setCurrentScreen({ type: 'start-normalization-session' })}
     >
-      <div className="flex h-full w-full items-start justify-center p-8">
-        <div className="flex w-full max-w-2xl flex-col gap-6">
-          <ArtifactsField
-            label={t('normalizationSession.targetArtifactsLabel')}
-            value={normalizationSessionProjection.targetArtifactIds}
-            onChange={() => {}}
-            readOnly={true}
-          />
+      <div className="flex h-full w-full flex-col items-start justify-start">
+        <div className="flex w-full flex-col items-center justify-center gap-6 px-8 py-4 pt-8">
+          <div className="flex w-full max-w-2xl flex-col gap-6">
+            <ArtifactsField
+              label={t('normalizationSession.targetArtifactsLabel')}
+              value={normalizationSessionProjection.targetArtifactIds}
+              onChange={() => {}}
+              readOnly={true}
+            />
+          </div>
+        </div>
+        <Divider />
+        <div className="flex w-full flex-col items-center justify-center gap-6 px-8 py-4 pt-8">
+          <div className="flex w-full max-w-2xl flex-col gap-6">
+            <ArtifactsField
+              label={t('normalizationSession.inputArtifactsLabel')}
+              value={[]}
+              onChange={() => {}}
+            />
+          </div>
         </div>
       </div>
     </PolicyCheckGuard>
