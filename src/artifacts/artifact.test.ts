@@ -6,6 +6,7 @@ import { createS3 } from '../s3';
 import { getS3Config } from '../s3-config';
 import { Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
+import { populateArtifactUrls } from './artifact-urls-populate';
 
 describe('Artifact.populateUrls', () => {
   const logger = createLogger();
@@ -47,11 +48,11 @@ describe('Artifact.populateUrls', () => {
     expect(artifactForTest.upload_url).toBeNull();
     expect(artifactForTest.download_url).toBeNull();
 
-    const { artifacts: populated, updated } = await ArtifactModule.refreshUrls(
-      [artifactForTest],
-      s3Client,
+    const { artifacts: populated, updated } = await populateArtifactUrls({
+      artifacts: [artifactForTest],
+      s3: s3Client,
       s3Endpoint,
-    );
+    });
 
     expect(updated.has(artifactId.toString())).toBe(true);
     const populatedArtifact = populated[0];
@@ -84,11 +85,19 @@ describe('Artifact.populateUrls', () => {
       s3_bucket: testBucket,
       s3_key,
     };
-    const firstPop = await ArtifactModule.refreshUrls([artifactForTest], s3Client, s3Endpoint);
+    const firstPop = await populateArtifactUrls({
+      artifacts: [artifactForTest],
+      s3: s3Client,
+      s3Endpoint,
+    });
     const populated = firstPop.artifacts[0];
 
     // The second run should preserve the URLs (not update them, so the set will be empty)
-    const secondPop = await ArtifactModule.refreshUrls([populated], s3Client, s3Endpoint);
+    const secondPop = await populateArtifactUrls({
+      artifacts: [populated],
+      s3: s3Client,
+      s3Endpoint,
+    });
     const again = secondPop.artifacts[0];
 
     expect(secondPop.updated.size).toBe(0);
@@ -118,11 +127,11 @@ describe('Artifact.populateUrls', () => {
       download_url_expires_at: pastDate,
     };
 
-    const { artifacts: result, updated } = await ArtifactModule.refreshUrls(
-      [artifactForTest],
-      s3Client,
+    const { artifacts: result, updated } = await populateArtifactUrls({
+      artifacts: [artifactForTest],
+      s3: s3Client,
       s3Endpoint,
-    );
+    });
 
     expect(updated.has(artifactId.toString())).toBe(true);
     const updatedArtifact = result[0];
@@ -152,11 +161,11 @@ describe('Artifact.populateUrls', () => {
       s3_key,
     };
 
-    const { artifacts: result } = await ArtifactModule.refreshUrls(
-      [artifactForTest],
-      s3Client,
+    const { artifacts: result } = await populateArtifactUrls({
+      artifacts: [artifactForTest],
+      s3: s3Client,
       s3Endpoint,
-    );
+    });
     const updatedArtifact = result[0];
 
     expect(updatedArtifact.upload_url?.startsWith('https://')).toBe(true);

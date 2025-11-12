@@ -1,7 +1,6 @@
 import { ArtifactId } from './artifact-id';
-import { artifactSchema } from './artifact-type';
 import type { Artifact as ArtifactType } from './artifact-type';
-import { refreshArtifactUrls } from './refresh-artifact-urls';
+import { artifactSchema } from './artifact-type';
 
 export type Artifact = ArtifactType;
 
@@ -39,5 +38,4 @@ const create = (input: {
 export const Artifact = {
   schema: artifactSchema,
   create,
-  refreshUrls: refreshArtifactUrls,
 };

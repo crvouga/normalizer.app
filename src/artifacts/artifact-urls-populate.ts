@@ -10,11 +10,13 @@ import type { Artifact } from './artifact-type';
  * @param s3Endpoint - S3 endpoint URL (required, used to determine if HTTPS should be enforced and to validate base URLs).
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
-export async function refreshArtifactUrls(
-  artifacts: Artifact[],
-  s3: S3Client,
-  s3Endpoint: string,
-): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
+export async function populateArtifactUrls(params: {
+  artifacts: Artifact[];
+  s3: S3Client;
+  s3Endpoint: string;
+}): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
+  const { artifacts, s3, s3Endpoint } = params;
+
   const expiresIn = 60 * 60 * 24 * 7; // 7 days
   const now = Date.now();
   const expiresAt = new Date(now + expiresIn * 1000);

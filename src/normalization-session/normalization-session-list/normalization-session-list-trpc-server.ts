@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { refreshArtifactUrls } from '~/src/artifacts/artifact-urls-refresh';
 import { Artifact } from '../../artifacts/artifact';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
@@ -122,38 +123,8 @@ export const normalizationSessionListRouter = router({
         // Validate and transform artifacts
         artifacts = artifactRows.map((row) => Artifact.schema.parse(row));
 
-        // Populate URLs for all artifacts
-        const { artifacts: artifactsWithUrls, updated } = await Artifact.refreshUrls(
-          artifacts,
-          ctx.s3,
-          ctx.s3Endpoint,
-        );
-        artifacts = artifactsWithUrls;
-
-        // If any URLs were updated, persist to database
-        if (updated.size > 0) {
-          ctx.logger.debug('Updating artifact URLs', {
-            count: updated.size,
-            artifactIds: Array.from(updated),
-          });
-
-          // Update each artifact with new URLs
-          for (const artifactId of updated) {
-            const artifact = artifacts.find((a) => a.id === artifactId);
-            if (artifact) {
-              await ctx.db
-                .update(schema.artifacts)
-                .set({
-                  download_url: artifact.download_url,
-                  download_url_expires_at: artifact.download_url_expires_at,
-                  upload_url: artifact.upload_url,
-                  upload_url_expires_at: artifact.upload_url_expires_at,
-                  updated_at: new Date(),
-                })
-                .where(and(eq(schema.artifacts.id, artifactId), isNull(schema.artifacts.deleted)));
-            }
-          }
-        }
+        // Refresh artifact URLs and persist to database if needed
+        artifacts = await refreshArtifactUrls({ ...ctx, artifacts });
 
         ctx.logger.info('Artifacts fetched for sessions', {
           count: artifacts.length,

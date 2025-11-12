@@ -3,9 +3,10 @@ import { z } from 'zod';
 import * as schema from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
 import { Artifact } from './artifact';
-import { artifactUploadRouter } from './artifact-upload/artifact-upload-trpc-server';
-import { editArtifactRouter } from './edit-artifact/edit-artifact-trpc-server';
 import { ArtifactId } from './artifact-id';
+import { artifactUploadRouter } from './artifact-upload/artifact-upload-trpc-server';
+import { refreshArtifactUrls } from './artifact-urls-refresh';
+import { editArtifactRouter } from './edit-artifact/edit-artifact-trpc-server';
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
@@ -46,25 +47,11 @@ export const artifactRouter = router({
       // Validate and transform to Artifact type
       const validatedArtifact = Artifact.schema.parse(artifact);
 
-      // Populate URLs and get update metadata
-      const {
-        artifacts: [artifactWithUrls],
-        updated,
-      } = await Artifact.refreshUrls([validatedArtifact], ctx.s3, ctx.s3Endpoint);
-
-      // If URLs were updated, persist to database
-      if (updated.has(String(validatedArtifact.id))) {
-        await ctx.db
-          .update(schema.artifacts)
-          .set({
-            upload_url: artifactWithUrls.upload_url,
-            upload_url_expires_at: artifactWithUrls.upload_url_expires_at,
-            download_url: artifactWithUrls.download_url,
-            download_url_expires_at: artifactWithUrls.download_url_expires_at,
-            updated_at: new Date(),
-          })
-          .where(eq(schema.artifacts.id, input.artifactId));
-      }
+      // Refresh artifact URLs and persist to database if needed
+      const [artifactWithUrls] = await refreshArtifactUrls({
+        ...ctx,
+        artifacts: [validatedArtifact],
+      });
 
       return artifactWithUrls;
     }),
@@ -96,32 +83,11 @@ export const artifactRouter = router({
       // Validate and transform to Artifact type array
       const validatedArtifacts = z.array(Artifact.schema).parse(files);
 
-      // Populate URLs and get update metadata
-      const { artifacts: artifactsWithUrls, updated } = await Artifact.refreshUrls(
-        validatedArtifacts,
-        ctx.s3,
-        ctx.s3Endpoint,
-      );
-
-      // Update database for artifacts with refreshed URLs
-      if (updated.size > 0) {
-        await Promise.all(
-          artifactsWithUrls
-            .filter((artifact) => updated.has(String(artifact.id)))
-            .map((artifact) =>
-              ctx.db
-                .update(schema.artifacts)
-                .set({
-                  upload_url: artifact.upload_url,
-                  upload_url_expires_at: artifact.upload_url_expires_at,
-                  download_url: artifact.download_url,
-                  download_url_expires_at: artifact.download_url_expires_at,
-                  updated_at: new Date(),
-                })
-                .where(eq(schema.artifacts.id, String(artifact.id))),
-            ),
-        );
-      }
+      // Refresh artifact URLs and persist to database if needed
+      const artifactsWithUrls = await refreshArtifactUrls({
+        ...ctx,
+        artifacts: validatedArtifacts,
+      });
 
       return artifactsWithUrls;
     }),
