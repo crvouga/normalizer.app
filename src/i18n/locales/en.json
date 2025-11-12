@@ -83,5 +83,10 @@
     "sessionNotFound": "Session not found",
     "notOwner": "You are not the owner of this session",
     "unauthorized": "You are not authorized to perform this action"
+  },
+  "normalizationSession": {
+    "artifactsLabel": "Artifacts",
+    "targetArtifactsLabel": "Target Artifact",
+    "inputArtifactsLabel": "Input Artifact"
   }
 }

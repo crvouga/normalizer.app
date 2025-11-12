@@ -14,6 +14,7 @@ export type ArtifactsInputProps = {
   value: ArtifactId[];
   onChange: (value: ArtifactId[]) => void;
   limit?: number;
+  readOnly?: boolean;
 };
 
 /**
@@ -69,9 +70,10 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
         artifacts={props.value}
         onRemove={removeArtifact}
         onClearAll={handleClearAll}
+        readOnly={props.readOnly}
       />
 
-      {props.value.length < limit && (
+      {!props.readOnly && props.value.length < limit && (
         <AsyncCombobox
           value={currentSelection}
           onChange={addArtifact}

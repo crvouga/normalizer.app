@@ -7,6 +7,7 @@ export type ArtifactsFieldProps = ArtifactsInputProps & {
 
 /**
  * A field component that wraps ArtifactsInput with a label.
+ * Supports read-only mode by passing the readOnly prop to ArtifactsInput.
  */
 export function ArtifactsField({ label, ...artifactsInputProps }: ArtifactsFieldProps) {
   return (

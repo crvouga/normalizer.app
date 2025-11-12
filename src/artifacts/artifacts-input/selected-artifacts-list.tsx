@@ -13,6 +13,7 @@ export interface SelectedArtifactsListProps {
   onRemove: (artifactId: ArtifactId) => void;
   onClearAll?: () => void;
   showPreview?: boolean;
+  readOnly?: boolean;
 }
 
 // Discriminated union for modal state
@@ -26,6 +27,7 @@ export function SelectedArtifactsList({
   onRemove,
   onClearAll,
   showPreview = true,
+  readOnly = false,
 }: SelectedArtifactsListProps) {
   const { t } = useI18n();
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
@@ -89,6 +91,21 @@ export function SelectedArtifactsList({
 
   if (artifacts.length === 0) {
     return null;
+  }
+
+  if (readOnly) {
+    return (
+      <div className="[&_.flex.items-center.justify-end]:hidden [&_button:has(svg)]:hidden">
+        <TabularFileList
+          files={tabularFiles}
+          showPreview={showPreview}
+          showPreviews={showPreviews}
+          onTogglePreview={handleTogglePreview}
+          onRemoveFile={() => {}}
+          onClearAll={() => {}}
+        />
+      </div>
+    );
   }
 
   return (

@@ -14,6 +14,7 @@ import {
 } from '../normalization-session-permissions';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
+import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -73,6 +74,7 @@ export const normalizationSessionEventRouter = router({
       z.object({
         events: z.array(NormalizationSessionEventEntity.schema),
         resourceOwnership: z.array(ResourceOwnershipEntity.schema),
+        projection: NormalizationSessionProjection.schema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -107,6 +109,16 @@ export const normalizationSessionEventRouter = router({
       // Validate and transform to NormalizationSessionEventEntity type array
       const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
 
+      const projection = await ctx.db.transaction(
+        async (tx) =>
+          await refreshNormalizationSessionProjection({
+            tx,
+            sessionId: input.id,
+            startedByUserId: resourceOwnerId,
+            logger: ctx.logger,
+          }),
+      );
+
       return {
         events: validatedEvents,
         resourceOwnership: [
@@ -117,6 +129,7 @@ export const normalizationSessionEventRouter = router({
             ownerId: resourceOwnerId,
           },
         ],
+        projection,
       };
     }),
 });

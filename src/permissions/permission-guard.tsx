@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { Spinner } from '../ui/spinner';
+import { SpinnerBlock } from '../ui/spinner-block';
 import { Typography } from '../ui/typography';
 
 export interface PermissionGuardProps {
@@ -69,18 +69,7 @@ export function PermissionGuard({
 }: PermissionGuardProps) {
   // Show loading state while checking permissions
   if (isLoading) {
-    return (
-      loadingComponent || (
-        <div className="flex h-full w-full items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <Spinner size="md" color="fuchsia" />
-            <Typography color="muted" variant="lg">
-              Checking permissions...
-            </Typography>
-          </div>
-        </div>
-      )
-    );
+    return loadingComponent || <SpinnerBlock />;
   }
 
   // Handle error state

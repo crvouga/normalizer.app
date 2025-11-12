@@ -3,7 +3,7 @@ import { isOk, type Result } from '~/src/lib/result';
 import { Modal } from '~/src/ui/modal';
 import { ModalActions } from '~/src/ui/modal-actions';
 import { TextField } from '~/src/ui/text-field/text-field';
-import { TabularFileList } from '~/src/ui/tabular-file-input/tabular-file-list';
+import { TabularFileInputField } from '~/src/ui/tabular-file-input/tabular-file-input-field';
 import type { TabularFile } from '~/src/ui/tabular-file-input/tabular-file';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
@@ -24,9 +24,6 @@ export function EditArtifactModal({
 }: EditArtifactModalProps) {
   const { t } = useI18n();
   const [artifactName, setArtifactName] = useState<string>('');
-  const [showPreview, setShowPreview] = useState<Record<number, boolean>>({
-    0: true,
-  });
 
   // Initialize form with artifact data when modal opens
   useEffect(() => {
@@ -92,29 +89,12 @@ export function EditArtifactModal({
           disabled={isEditing}
         />
 
-        {/* Read-only file display */}
-        {tabularFiles.length > 0 && (
-          <div>
-            <div className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-              {t('artifact.fileLabel') || 'File'}
-            </div>
-            <div className="[&_.flex.items-center.justify-end]:hidden [&_button:has(svg)]:hidden">
-              <TabularFileList
-                files={tabularFiles}
-                showPreview={true}
-                showPreviews={showPreview}
-                onTogglePreview={(index) => {
-                  setShowPreview((prev) => ({
-                    ...prev,
-                    [index]: !prev[index],
-                  }));
-                }}
-                onRemoveFile={() => {}}
-                onClearAll={() => {}}
-              />
-            </div>
-          </div>
-        )}
+        <TabularFileInputField
+          id="artifact-file"
+          label={t('artifact.fileLabel') || 'File'}
+          readOnly={true}
+          files={tabularFiles}
+        />
 
         <ModalActions
           cancelText={t('common.cancel')}
