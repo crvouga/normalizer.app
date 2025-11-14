@@ -21,7 +21,7 @@
     "docker:prune": "docker system prune -a",
     "docker:restart": "docker-compose restart",
     "docker:stop": "docker stop $(docker ps -q)",
-    "docker:up": "COMPOSE_BAKE=true docker-compose up --build -d",
+    "docker:up": "COMPOSE_BAKE=true docker-compose up --build",
     "e2e": "playwright test",
     "e2e:debug": "playwright test --debug",
     "e2e:ui": "playwright test --ui",

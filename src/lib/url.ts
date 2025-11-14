@@ -40,18 +40,15 @@ export function parseAndValidateURL(input: string, errorPrefix = 'Invalid URL'):
     const hasDot = host.includes('.');
     const hasPort = host.includes(':');
 
-    // If it's not an IP, not localhost, and has no dot, it's probably invalid
-    // (unless it has a port, in which case we check the hostname part)
+    // If it's not an IP, not localhost, and has no dot, it might be a Docker service name
+    // Allow simple alphanumeric hostnames (e.g., "s3", "db") for Docker networking
     if (!isIP && !isLocalhost && !hasDot) {
-      // Check if it's a hostname with a port
-      if (hasPort) {
-        const hostnamePart = host.split(':')[0];
-        // If the hostname part (before port) has no dot and isn't localhost, it's likely invalid
-        if (hostnamePart && hostnamePart !== 'localhost' && !hostnamePart.includes('.')) {
-          return false;
-        }
-      } else {
-        // No port, no dot, not localhost, not IP - likely invalid
+      // Check if it's a simple alphanumeric hostname (Docker service name)
+      const hostnamePart = hasPort ? host.split(':')[0] : host;
+      const isSimpleHostname = hostnamePart && /^[a-zA-Z0-9-]+$/.test(hostnamePart);
+
+      // Allow simple hostnames (like Docker service names) or reject
+      if (!isSimpleHostname) {
         return false;
       }
     }

@@ -25,6 +25,13 @@ describe('parseAndValidateURL', () => {
     expect(parseAndValidateURL('Example.com')).toBe('http://example.com/');
   });
 
+  it('accepts Docker service names as valid hostnames', () => {
+    expect(parseAndValidateURL('http://s3:9000')).toBe('http://s3:9000/');
+    expect(parseAndValidateURL('http://db:5432')).toBe('http://db:5432/');
+    expect(parseAndValidateURL('http://my-service')).toBe('http://my-service/');
+    expect(parseAndValidateURL('redis')).toBe('http://redis/');
+  });
+
   it('throws for completely invalid URLs', () => {
     expect(() => parseAndValidateURL('not-a-url!!!')).toThrow(/Must be a valid URL/);
     expect(() => parseAndValidateURL('///')).toThrow(/Must be a valid URL/);
@@ -41,6 +48,6 @@ describe('parseAndValidateURL', () => {
   });
 
   it('throws with proper prefix', () => {
-    expect(() => parseAndValidateURL('bad-url', 'MyError')).toThrow(/MyError:/);
+    expect(() => parseAndValidateURL('not-a-url!!!', 'MyError')).toThrow(/MyError:/);
   });
 });

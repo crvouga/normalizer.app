@@ -31,6 +31,32 @@ services:
       timeout: 3s
       retries: 2
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '5000:5000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    env_file:
+      - .env
+    environment:
+      # Use localhost URLs so presigned URLs work in the browser
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5433/postgres?sslmode=disable
+      S3_ENDPOINT: http://localhost:9010
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    command: ['/bin/sh', './docker-entrypoint.sh']
+
 volumes:
   postgres_data:
   s3_data:
+  node_modules:
