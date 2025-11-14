@@ -8,7 +8,7 @@
   "scripts": {
     "circular": "madge --circular --extensions ts,tsx src",
     "cloc": "bun x cloc src",
-    "db": "psql postgresql://postgres:postgres@localhost:5432/postgres",
+    "db": "bun run db:studio",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/run-migrations.ts",
     "db:push": "drizzle-kit push",
