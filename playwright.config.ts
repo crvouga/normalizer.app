@@ -13,6 +13,7 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:5001',
+    colorScheme: 'dark',
     trace: 'off',
     screenshot: 'off',
     video: 'off',
