@@ -25,6 +25,24 @@ export async function findActiveAuthenticatedSession(db: Db, sessionId: SessionI
     .orderBy(desc(userSessions.started_at))
     .limit(1);
 
+  /**
+   SELECT
+     user_sessions.id,
+     user_sessions.session_id,
+     user_sessions.user_id,
+     user_sessions.started_at,
+     user_sessions.ended_at,
+     users.*
+   FROM user_sessions
+   INNER JOIN users ON user_sessions.user_id = users.id
+   WHERE
+     user_sessions.session_id = $1
+     AND users.type = 'authenticated'
+     AND user_sessions.ended_at IS NULL
+   ORDER BY user_sessions.started_at DESC
+   LIMIT 1;
+   */
+
   return session;
 }
 

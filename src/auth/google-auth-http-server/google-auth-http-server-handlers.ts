@@ -5,7 +5,7 @@ import { isGoogleAuthEnabled } from '../google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from '../google-oauth-service';
 import { getCookie } from '../../lib/http-cookie';
 import { getSessionId } from '../../lib/session-id-cookie';
-import { findOrCreateUser } from './google-auth-http-server-user-service';
+import { GoogleAuthUserService } from './google-auth-http-server-user-service';
 import {
   validateOAuthParams,
   validateOAuthState,
@@ -102,8 +102,9 @@ export async function handleGoogleAuthCallback(
     // Get session ID for user session creation
     const sessionId = getSessionId(req);
 
-    // Find or create user (handles all cases: new user, existing Google user, account linking)
-    await findOrCreateUser(db, googleUser, sessionId, s3, s3Endpoint, logger);
+    // Use GoogleAuthUserService to find or create user (handles all cases)
+    const userService = new GoogleAuthUserService({ db, s3, s3Endpoint, logger });
+    await userService.findOrCreateUser({ googleUser, sessionId });
 
     // Redirect to app with success
     return createSuccessRedirect();
