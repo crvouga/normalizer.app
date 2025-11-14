@@ -7,6 +7,7 @@ import { artifactToTabularFile } from './artifact-to-tabular-file';
 import { EditArtifactModal } from '../edit-artifact/edit-artifact-modal';
 import type { Artifact } from '../artifact';
 import { useI18n } from '../../i18n/use-i18n';
+import { IconPencil } from '~/src/ui/icons';
 
 export interface SelectedArtifactsListProps {
   artifacts: ArtifactId[];
@@ -84,6 +85,7 @@ export function SelectedArtifactsList({
       {
         label: t('artifact.edit'),
         onClick: handleEdit,
+        icon: IconPencil,
       },
     ],
     [t, handleEdit],

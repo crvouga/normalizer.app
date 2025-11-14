@@ -1,13 +1,14 @@
 import * as React from 'react';
+import { ButtonBase } from '../button-base';
+import { FileIcon, IconEye, IconEyeSlash, IconX, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
-import { FileIcon, ImageIcon, IconX } from '../icons';
-import { formatFileSize } from './tabular-file-utils';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
-import { ButtonBase } from '../button-base';
+import { formatFileSize } from './tabular-file-utils';
 
 export interface TabularFileAction {
   label: string;
+  icon: Icon;
   onClick: (file: TabularFile, index: number) => void;
 }
 
@@ -31,6 +32,17 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   customActions = [],
 }) => {
   const isImage = tabularFile.contentType?.startsWith('image/');
+  const actions: TabularFileAction[] = [];
+
+  if (showPreview) {
+    actions.push({
+      label: 'Preview',
+      icon: isPreviewVisible ? IconEyeSlash : IconEye,
+      onClick: () => onTogglePreview(index),
+    });
+  }
+
+  if (customActions.length > 0) actions.push(...customActions);
 
   return (
     <div className="flex items-center justify-between p-3">
@@ -52,40 +64,29 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {showPreview && (
-          <ButtonBase
-            type="button"
-            onClick={() => onTogglePreview(index)}
-            className="rounded px-2 py-1 transition-colors"
-          >
-            <Typography
-              variant="xs"
-              color="muted"
-              className="hover:text-slate-900 dark:hover:text-slate-100"
+        {actions.map((action, actionIndex) => {
+          const IconComponent = action.icon;
+          return (
+            <ButtonBase
+              key={`${action.label}-${actionIndex}`}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick(tabularFile, index);
+              }}
+              className="flex items-center gap-1 rounded px-2 py-1 transition-colors"
             >
-              {isPreviewVisible ? 'Hide' : 'Preview'}
-            </Typography>
-          </ButtonBase>
-        )}
-        {customActions.map((action, actionIndex) => (
-          <ButtonBase
-            key={`${action.label}-${actionIndex}`}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              action.onClick(tabularFile, index);
-            }}
-            className="rounded px-2 py-1 transition-colors"
-          >
-            <Typography
-              variant="xs"
-              color="muted"
-              className="hover:text-slate-900 dark:hover:text-slate-100"
-            >
-              {action.label}
-            </Typography>
-          </ButtonBase>
-        ))}
+              <IconComponent className="size-3.5 shrink-0" />
+              <Typography
+                variant="xs"
+                color="muted"
+                className="hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                {action.label}
+              </Typography>
+            </ButtonBase>
+          );
+        })}
         <ButtonBase
           type="button"
           onClick={(e) => {
