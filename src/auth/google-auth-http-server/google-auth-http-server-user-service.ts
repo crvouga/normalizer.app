@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { S3Client } from 'bun';
 import type { Logger } from '../../lib/logger';
 import type { Db } from '../../sql';
@@ -30,7 +30,40 @@ export class GoogleAuthUserService {
   }
 
   /**
+   * End any existing anonymous sessions with the same sessionId
+   * This ensures that after Google sign-in, queries will find the authenticated session
+   */
+  private async endAnonymousSessions(
+    tx: Parameters<Parameters<Db['transaction']>[0]>[0],
+    sessionId: SessionId,
+  ): Promise<void> {
+    // Find all anonymous user sessions with this sessionId that haven't been ended
+    const anonymousSessions = await tx
+      .select({
+        id: userSessions.id,
+      })
+      .from(userSessions)
+      .innerJoin(users, eq(userSessions.user_id, users.id))
+      .where(
+        and(
+          eq(userSessions.session_id, sessionId),
+          eq(users.type, 'anonymous'),
+          isNull(userSessions.ended_at),
+        ),
+      );
+
+    // End all anonymous sessions by updating each one individually
+    for (const session of anonymousSessions) {
+      await tx
+        .update(userSessions)
+        .set({ ended_at: new Date() })
+        .where(eq(userSessions.id, session.id));
+    }
+  }
+
+  /**
    * Create a new user session in a transaction
+   * Always creates a new session record - this is called after ending any anonymous sessions
    */
   private async createUserSession(
     tx: Parameters<Parameters<Db['transaction']>[0]>[0],
@@ -64,7 +97,11 @@ export class GoogleAuthUserService {
     );
 
     // Link Google account and create session in a transaction
+    // Always creates a new session record after ending any anonymous sessions
     const updatedUser = await this.db.transaction(async (tx) => {
+      // End any existing anonymous sessions with this sessionId
+      await this.endAnonymousSessions(tx, sessionId);
+
       await tx
         .update(users)
         .set({
@@ -80,6 +117,7 @@ export class GoogleAuthUserService {
         where: eq(users.id, existingUser.id),
       });
 
+      // Always create a new session record
       await this.createUserSession(tx, user!.id, sessionId);
 
       return user!;
@@ -111,7 +149,11 @@ export class GoogleAuthUserService {
     );
 
     // Create user and session in a transaction
+    // Always creates a new session record after ending any anonymous sessions
     const newUser = await this.db.transaction(async (tx) => {
+      // End any existing anonymous sessions with this sessionId
+      await this.endAnonymousSessions(tx, sessionId);
+
       await tx.insert(users).values({
         id: userId,
         type: 'authenticated',
@@ -127,6 +169,7 @@ export class GoogleAuthUserService {
         where: eq(users.id, userId),
       });
 
+      // Always create a new session record
       await this.createUserSession(tx, user!.id, sessionId);
 
       return user!;
@@ -155,7 +198,11 @@ export class GoogleAuthUserService {
     );
 
     // Update user info and create session in a transaction
+    // Always creates a new session record after ending any anonymous sessions
     const updatedUser = await this.db.transaction(async (tx) => {
+      // End any existing anonymous sessions with this sessionId
+      await this.endAnonymousSessions(tx, sessionId);
+
       // Update user profile with latest info from Google
       await tx
         .update(users)
@@ -170,6 +217,7 @@ export class GoogleAuthUserService {
         where: eq(users.id, user.id),
       });
 
+      // Always create a new session record
       await this.createUserSession(tx, user.id, sessionId);
 
       return refreshedUser!;
@@ -185,6 +233,7 @@ export class GoogleAuthUserService {
 
   /**
    * Find or create user based on Google account info
+   * Always creates a new session record after ending any anonymous sessions.
    * Handles three cases:
    * 1. Existing Google user - create new session and update profile from Google
    * 2. Existing email user - link Google account

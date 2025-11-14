@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { users, userSessions } from '../db/schema';
 import { procedure, router } from '../lib/trpc-server';
-import { findActiveAuthenticatedSession } from './user-session-queries';
 
 export const usersRouter = router({
   /**
@@ -35,26 +34,13 @@ export const usersRouter = router({
    * This is provider-agnostic and works for any authentication method
    */
   logout: procedure.mutation(async ({ ctx }) => {
-    // Find the active authenticated session for this session_id
-    const activeSession = await findActiveAuthenticatedSession(ctx.db, ctx.sessionId);
-
-    if (!activeSession) {
-      throw new Error('No active session found');
-    }
-
-    if (activeSession.user.type !== 'authenticated') {
-      throw new Error('Cannot logout - user is not authenticated');
-    }
-
-    // End the authenticated session by setting ended_at
     await ctx.db
       .update(userSessions)
       .set({ ended_at: new Date() })
-      .where(eq(userSessions.id, activeSession.id));
+      .where(eq(userSessions.session_id, ctx.sessionId));
 
     ctx.logger.info('User logged out', {
       session_id: ctx.sessionId,
-      user_id: activeSession.user_id,
     });
 
     return { success: true };

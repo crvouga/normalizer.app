@@ -11,6 +11,7 @@ import { cleanupDb, createDb } from './sql';
 import { appRouter } from './trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
+import { SessionId } from './lib/session-id';
 
 const main = async () => {
   const logger = createLogger();
@@ -58,7 +59,9 @@ const main = async () => {
     });
 
     // Set session cookie if not already set
-    const finalRes = setSessionCookie(req, res, getSessionId(req));
+    const existingSessionId = getSessionId(req);
+    const sessionId = existingSessionId ?? SessionId.generate();
+    const finalRes = setSessionCookie(req, res, sessionId);
     logger.info(`[HTTP Res] ${finalRes.status} ${finalRes.statusText}`);
     return finalRes;
   };

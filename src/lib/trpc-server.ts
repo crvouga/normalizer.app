@@ -140,6 +140,10 @@ export const createContext = async (config: {
   const { db, s3, s3Endpoint, minioClient, logger, req } = config;
   const sessionId = getSessionId(req);
 
+  if (!sessionId) {
+    throw new Error('No session ID found');
+  }
+
   // Try to find existing session (authenticated or anonymous)
   const currentSession = await findCurrentUserSession(db, sessionId);
 

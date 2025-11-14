@@ -30,7 +30,7 @@ export function useSignOut() {
       await trpcClient.users.logout.mutate();
 
       // Refetch current user (will get new anonymous user)
-      await refetchCurrentUser();
+      refetchCurrentUser();
 
       // Show success message
       showSuccessToast(t('auth.signOutSuccess'));

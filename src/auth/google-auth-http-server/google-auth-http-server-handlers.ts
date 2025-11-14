@@ -102,6 +102,10 @@ export async function handleGoogleAuthCallback(
     // Get session ID for user session creation
     const sessionId = getSessionId(req);
 
+    if (!sessionId) {
+      throw new Error('No session ID found');
+    }
+
     // Use GoogleAuthUserService to find or create user (handles all cases)
     const userService = new GoogleAuthUserService({ db, s3, s3Endpoint, logger });
     await userService.findOrCreateUser({ googleUser, sessionId });
@@ -109,7 +113,7 @@ export async function handleGoogleAuthCallback(
     // Redirect to app with success
     return createSuccessRedirect();
   } catch (error) {
-    logger.error('Google OAuth callback error:', error as Record<string, unknown>);
+    logger.error('Google OAuth callback error:', { error: String(error) });
     return createErrorRedirect('oauth_failed');
   }
 }

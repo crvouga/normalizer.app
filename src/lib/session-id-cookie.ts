@@ -18,14 +18,14 @@ const SESSION_COOKIE_OPTIONS: CookieOptions = {
  * Get session ID from request cookies, or generate a new one
  * Will ONLY accept session ids that strictly pass schema validation
  */
-export function getSessionId(req: Request): SessionId {
+export function getSessionId(req: Request): SessionId | null {
   const sessionId = getCookie(req, SESSION_COOKIE_NAME);
 
   if (typeof sessionId === 'string' && SessionId.schema.safeParse(sessionId).success) {
     return sessionId as SessionId;
   }
 
-  return SessionId.generate();
+  return null;
 }
 
 /**
