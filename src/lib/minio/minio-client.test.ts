@@ -19,13 +19,15 @@ describe('MinioClient', () => {
     await minioClient.ensureBucketExists(testBucket);
   });
 
-  test.skip('should check if bucket exists', async () => {
+  test('should check if bucket exists', async () => {
     const exists = await minioClient.checkBucketExists(testBucket);
-    expect(exists).toBe(false);
+    expect(exists).toBe(true);
   });
 
-  test.skip('should create a new bucket', async () => {
-    await minioClient.createBucket(testBucket);
+  test('should create a new bucket', async () => {
+    if (!(await minioClient.checkBucketExists(testBucket))) {
+      await minioClient.createBucket(testBucket);
+    }
     const exists = await minioClient.checkBucketExists(testBucket);
     expect(exists).toBe(true);
   });
@@ -37,7 +39,7 @@ describe('MinioClient', () => {
     expect(exists).toBe(true);
   });
 
-  test.skip('should ensure bucket exists - do nothing if exists', async () => {
+  test('should ensure bucket exists - do nothing if exists', async () => {
     await minioClient.ensureBucketExists(testBucket);
     const exists = await minioClient.checkBucketExists(testBucket);
     expect(exists).toBe(true);
