@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15-alpine
     ports:
-      - '5433:5432'
+      - '5432:5432'
     environment:
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -18,8 +18,8 @@ services:
   s3:
     image: minio/minio
     ports:
-      - '9010:9000'
-      - '9011:9001'
+      - '9000:9000'
+      - '9001:9001'
     env_file:
       - .env
     volumes:
@@ -42,8 +42,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5433/postgres?sslmode=disable
-      S3_ENDPOINT: http://host.docker.internal:9010
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/postgres?sslmode=disable
       NODE_ENV: development
     volumes:
       - .:/app
