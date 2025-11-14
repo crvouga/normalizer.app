@@ -84,13 +84,14 @@ async function uploadProfilePictureToS3(
  * Download a profile picture from an external URL and store it in S3
  * Returns the URL to serve the profile picture from our server
  */
-export async function storeProfilePictureFromUrl(
-  s3: S3Client,
-  userId: UserId,
-  externalUrl: string,
-  s3Endpoint: string,
-  logger: Logger,
-): Promise<string> {
+export async function storeProfilePictureFromUrl(params: {
+  s3: S3Client;
+  userId: UserId;
+  externalUrl: string;
+  s3Endpoint: string;
+  logger: Logger;
+}): Promise<string> {
+  const { s3, userId, externalUrl, s3Endpoint, logger } = params;
   try {
     // Download the image
     const { buffer, contentType } = await downloadImage(externalUrl, logger);

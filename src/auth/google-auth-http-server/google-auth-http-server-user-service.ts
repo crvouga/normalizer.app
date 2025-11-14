@@ -82,19 +82,20 @@ export class GoogleAuthUserService {
   /**
    * Link Google account to existing user and create session
    */
-  private async linkGoogleAccount(
-    existingUser: IUser,
-    googleUser: GoogleUserInfo,
-    sessionId: SessionId,
-  ): Promise<IUser> {
+  private async linkGoogleAccount(params: {
+    existingUser: IUser;
+    googleUser: GoogleUserInfo;
+    sessionId: SessionId;
+  }): Promise<IUser> {
+    const { existingUser, googleUser, sessionId } = params;
     // Store profile picture in S3
-    const profilePictureUrl = await storeProfilePictureFromUrl(
-      this.s3,
-      existingUser.id as UserId,
-      googleUser.picture,
-      this.s3Endpoint,
-      this.logger,
-    );
+    const profilePictureUrl = await storeProfilePictureFromUrl({
+      s3: this.s3,
+      userId: existingUser.id as UserId,
+      externalUrl: googleUser.picture,
+      s3Endpoint: this.s3Endpoint,
+      logger: this.logger,
+    });
 
     // Link Google account and create session in a transaction
     // Always creates a new session record after ending any anonymous sessions
@@ -133,20 +134,21 @@ export class GoogleAuthUserService {
   /**
    * Create a new authenticated user and session
    */
-  private async createAuthenticatedUser(
-    googleUser: GoogleUserInfo,
-    sessionId: SessionId,
-  ): Promise<IUser> {
+  private async createAuthenticatedUser(params: {
+    googleUser: GoogleUserInfo;
+    sessionId: SessionId;
+  }): Promise<IUser> {
+    const { googleUser, sessionId } = params;
     const userId = UserId.generate();
 
     // Store profile picture in S3
-    const profilePictureUrl = await storeProfilePictureFromUrl(
-      this.s3,
-      userId,
-      googleUser.picture,
-      this.s3Endpoint,
-      this.logger,
-    );
+    const profilePictureUrl = await storeProfilePictureFromUrl({
+      s3: this.s3,
+      userId: userId,
+      externalUrl: googleUser.picture,
+      s3Endpoint: this.s3Endpoint,
+      logger: this.logger,
+    });
 
     // Create user and session in a transaction
     // Always creates a new session record after ending any anonymous sessions
@@ -183,19 +185,20 @@ export class GoogleAuthUserService {
   /**
    * Create session for existing Google user and update profile
    */
-  private async createSessionForExistingUser(
-    user: IUser,
-    googleUser: GoogleUserInfo,
-    sessionId: SessionId,
-  ): Promise<IUser> {
+  private async createSessionForExistingUser(params: {
+    user: IUser;
+    googleUser: GoogleUserInfo;
+    sessionId: SessionId;
+  }): Promise<IUser> {
+    const { user, googleUser, sessionId } = params;
     // Update profile picture from Google (in case it changed)
-    const profilePictureUrl = await storeProfilePictureFromUrl(
-      this.s3,
-      user.id as UserId,
-      googleUser.picture,
-      this.s3Endpoint,
-      this.logger,
-    );
+    const profilePictureUrl = await storeProfilePictureFromUrl({
+      s3: this.s3,
+      userId: user.id as UserId,
+      externalUrl: googleUser.picture,
+      s3Endpoint: this.s3Endpoint,
+      logger: this.logger,
+    });
 
     // Update user info and create session in a transaction
     // Always creates a new session record after ending any anonymous sessions
@@ -256,7 +259,11 @@ export class GoogleAuthUserService {
     });
 
     if (existingGoogleUser) {
-      return this.createSessionForExistingUser(existingGoogleUser, googleUser, sessionId);
+      return this.createSessionForExistingUser({
+        user: existingGoogleUser,
+        googleUser,
+        sessionId,
+      });
     }
 
     // Check if user with same email exists (for account linking)
@@ -265,10 +272,17 @@ export class GoogleAuthUserService {
     });
 
     if (existingEmailUser) {
-      return this.linkGoogleAccount(existingEmailUser, googleUser, sessionId);
+      return this.linkGoogleAccount({
+        existingUser: existingEmailUser,
+        googleUser,
+        sessionId,
+      });
     }
 
     // Create new authenticated user
-    return this.createAuthenticatedUser(googleUser, sessionId);
+    return this.createAuthenticatedUser({
+      googleUser,
+      sessionId,
+    });
   }
 }
