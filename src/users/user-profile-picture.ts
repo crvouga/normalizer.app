@@ -47,13 +47,14 @@ async function downloadImage(
 /**
  * Upload profile picture to S3
  */
-async function uploadProfilePictureToS3(
-  s3: S3Client,
-  userId: UserId,
-  buffer: Buffer,
-  contentType: string,
-  logger: Logger,
-): Promise<string> {
+async function uploadProfilePictureToS3(params: {
+  s3: S3Client;
+  userId: UserId;
+  buffer: Buffer;
+  contentType: string;
+  logger: Logger;
+}): Promise<string> {
+  const { s3, userId, buffer, contentType, logger } = params;
   // Determine file extension from content type
   const extension = contentType.includes('png') ? 'png' : 'jpg';
   const s3Key = getProfilePictureS3Key(userId, extension);
@@ -97,7 +98,7 @@ export async function storeProfilePictureFromUrl(params: {
     const { buffer, contentType } = await downloadImage(externalUrl, logger);
 
     // Upload to S3
-    await uploadProfilePictureToS3(s3, userId, buffer, contentType, logger);
+    await uploadProfilePictureToS3({ s3, userId, buffer, contentType, logger });
 
     // Return our server URL for serving the image
     return getProfilePictureUrl(userId, s3Endpoint);

@@ -109,3 +109,11 @@ export const normalizationSessionProjections = pgTable('normalization_session_pr
 });
 
 export type INormalizationSessionProjection = typeof normalizationSessionProjections.$inferSelect;
+
+export const keyValueStore = pgTable('key_value_store', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export type IKeyValueStore = typeof keyValueStore.$inferSelect;

@@ -1,11 +1,11 @@
 import type { S3Client } from 'bun';
-import type { Logger } from '../../lib/logger';
-import type { Db } from '../../sql';
+import type { Logger } from '../../../lib/logger';
+import type { Db } from '../../../sql';
 import { isGoogleAuthEnabled } from '../google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from '../google-oauth-service';
-import { getCookie } from '../../lib/http-cookie';
-import { getSessionId, setSessionCookie } from '../../lib/session-id-cookie';
-import { SessionId } from '../../lib/session-id';
+import { getCookie } from '../../../lib/http-cookie';
+import { getSessionId, setSessionCookie } from '../../../lib/session-id-cookie';
+import { SessionId } from '../../../lib/session-id';
 import { GoogleAuthUserService } from './google-auth-http-server-user-service';
 import {
   validateOAuthParams,

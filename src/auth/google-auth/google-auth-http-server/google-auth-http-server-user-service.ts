@@ -1,13 +1,13 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { S3Client } from 'bun';
-import type { Logger } from '../../lib/logger';
-import type { Db } from '../../sql';
+import type { Logger } from '../../../lib/logger';
+import type { Db } from '../../../sql';
 import type { GoogleUserInfo } from '../google-oauth-service';
-import { users, userSessions, type IUser } from '../../db/schema';
-import { UserId } from '../../users/user-id';
-import { UserSessionId } from '../../users/user-session-id';
-import type { SessionId } from '../../lib/session-id';
-import { storeProfilePictureFromUrl } from '../../users/user-profile-picture';
+import { users, userSessions, type IUser } from '../../../db/schema';
+import { UserId } from '../../../users/user-id';
+import { UserSessionId } from '../../../users/user-session-id';
+import type { SessionId } from '../../../lib/session-id';
+import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture';
 
 export type GoogleAuthUserServiceDeps = {
   db: Db;

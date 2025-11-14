@@ -1,6 +1,6 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { serve } from 'bun';
-import { createGoogleAuthEndpoints } from './auth/google-auth-http-server/google-auth-http-server-endpoints';
+import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
 import { getSessionId, setSessionCookie } from './lib/session-id-cookie';
