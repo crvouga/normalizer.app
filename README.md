@@ -1,6 +1,48 @@
 # normalizer.app
 
+## Quick Start
+
+### 1. Setup Environment Variables
+
+Copy the environment template to create your local configuration:
+
+```bash
+cp env-template.txt .env
+```
+
+This file contains all necessary configuration for local development, including:
+
+- Database connection settings
+- MinIO/S3 configuration
+- Optional Google OAuth credentials
+
+### 2. Start Docker Services
+
+```bash
+bun docker
+```
+
+This starts PostgreSQL and MinIO services defined in `docker-compose.yml`.
+
+### 3. Run Migrations
+
+```bash
+bun run db:migrate
+```
+
+### 4. Start Development Server
+
+```bash
+bun run server
+```
+
+The app will be available at `http://localhost:5000`.
+
 ## Environment Variables
+
+All environment configuration is stored in `env-template.txt` as the single source of truth. Both local development and CI/CD pipelines use this template.
+
+**Important**: The `.env` file is git-ignored. Always update `env-template.txt` when adding new environment variables so that all developers and CI have the same configuration.
 
 ### Google OAuth (Optional)
 

@@ -1,8 +1,18 @@
 NODE_ENV=development
 DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
+
+# MinIO/S3 Configuration
 S3_ENDPOINT=http://localhost:9010
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 S3_BUCKET=main
+
+# MinIO Server Configuration (used by docker-compose)
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+MINIO_BROWSER_REDIRECT_URL=http://localhost:9011
+MINIO_SERVER_URL=http://localhost:9010
+
+# Google OAuth (optional)
 # GOOGLE_CLIENT_ID=
 # GOOGLE_CLIENT_SECRET=
