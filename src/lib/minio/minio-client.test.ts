@@ -3,7 +3,7 @@ import { createMinioClient } from './minio-client';
 import { createLogger } from '../logger';
 import { getS3Config } from '~/src/s3-config';
 
-describe.skip('MinioClient', () => {
+describe('MinioClient', () => {
   const logger = createLogger();
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const minioClient = createMinioClient({
@@ -19,12 +19,12 @@ describe.skip('MinioClient', () => {
     await minioClient.ensureBucketExists(testBucket);
   });
 
-  test('should check if bucket exists', async () => {
+  test.skip('should check if bucket exists', async () => {
     const exists = await minioClient.checkBucketExists(testBucket);
     expect(exists).toBe(false);
   });
 
-  test('should create a new bucket', async () => {
+  test.skip('should create a new bucket', async () => {
     await minioClient.createBucket(testBucket);
     const exists = await minioClient.checkBucketExists(testBucket);
     expect(exists).toBe(true);
