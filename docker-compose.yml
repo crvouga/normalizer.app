@@ -42,9 +42,8 @@ services:
     env_file:
       - .env
     environment:
-      # Use localhost URLs so presigned URLs work in the browser
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5433/postgres?sslmode=disable
-      S3_ENDPOINT: http://localhost:9010
+      S3_ENDPOINT: http://host.docker.internal:9010
       NODE_ENV: development
     volumes:
       - .:/app
@@ -54,7 +53,13 @@ services:
         condition: service_healthy
       s3:
         condition: service_healthy
-    command: ['/bin/sh', './docker-entrypoint.sh']
+    command: >
+      sh -c "
+        echo 'Running database migrations...' &&
+        bun run db:migrate &&
+        echo 'Starting development server with hot reload...' &&
+        exec bun run server
+      "
 
 volumes:
   postgres_data:

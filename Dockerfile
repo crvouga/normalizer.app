@@ -1,6 +1,6 @@
 FROM oven/bun:1-alpine
 
-RUN apk add --no-cache curl netcat-openbsd
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
