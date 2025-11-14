@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useFileLoader } from '../../lib/use-file-loader';
 import { ButtonBase } from '../button-base';
 import { FileIcon, IconEye, IconEyeSlash, IconX, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
@@ -125,52 +126,12 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   onRemove,
   customActions,
 }) => {
-  const [loadedFile, setLoadedFile] = React.useState<File | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // Lazy load the file when preview is visible
-  React.useEffect(() => {
-    if (!isPreviewVisible || loadedFile) {
-      return;
-    }
-
-    const loadFile = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Ensure the protocol matches the current app to avoid mixed content errors
-        let downloadUrl = tabularFile.downloadUrl;
-        if (
-          typeof window !== 'undefined' &&
-          downloadUrl.startsWith('http') &&
-          window.location.protocol &&
-          !downloadUrl.startsWith(window.location.protocol)
-        ) {
-          // Replace protocol with the current protocol (http: or https:)
-          downloadUrl = downloadUrl.replace(/^https?:/, window.location.protocol);
-        }
-        const response = await fetch(downloadUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to download file: ${response.statusText}`);
-        }
-
-        const blob = await response.blob();
-        const file = new File([blob], tabularFile.name, {
-          type: tabularFile.contentType || 'application/octet-stream',
-        });
-
-        setLoadedFile(file);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load file');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFile();
-  }, [isPreviewVisible, tabularFile, loadedFile]);
+  const { loadedFile, isLoading, error } = useFileLoader({
+    downloadUrl: tabularFile.downloadUrl,
+    fileName: tabularFile.name,
+    ...(tabularFile.contentType && { contentType: tabularFile.contentType }),
+    enabled: isPreviewVisible,
+  });
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
