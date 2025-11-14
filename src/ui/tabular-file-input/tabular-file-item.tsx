@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useFileLoader } from '../../lib/use-file-loader';
 import { ButtonBase } from '../button-base';
-import { FileIcon, IconEye, IconEyeSlash, IconX, ImageIcon, type Icon } from '../icons';
+import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
@@ -44,6 +44,12 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   }
 
   if (customActions.length > 0) actions.push(...customActions);
+
+  actions.push({
+    label: 'Remove',
+    icon: IconTrash,
+    onClick: () => onRemove(index),
+  });
 
   return (
     <div className="flex items-center justify-between p-3">
@@ -88,16 +94,6 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
             </ButtonBase>
           );
         })}
-        <ButtonBase
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(index);
-          }}
-          className="shrink-0 rounded p-1 text-slate-600 transition-colors dark:text-slate-400"
-        >
-          <IconX />
-        </ButtonBase>
       </div>
     </div>
   );
@@ -134,7 +130,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+    <div className="overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
       <TabularFileItemHeader
         tabularFile={tabularFile}
         index={index}

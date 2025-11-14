@@ -42,7 +42,7 @@ export const NormalizationSessionScreen = (props: {
     >
       <div className="flex h-full w-full flex-col">
         {/* Fixed header - Target artifacts (consistent context) */}
-        <div className="shrink-0 border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <div className="shrink-0 border-b border-slate-200 dark:border-slate-700">
           <div className="flex w-full flex-col items-center justify-center px-8 py-4">
             <div className="w-full max-w-2xl">
               <ArtifactsField
