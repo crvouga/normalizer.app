@@ -4,7 +4,8 @@ import type { Db } from '../../sql';
 import { isGoogleAuthEnabled } from '../google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from '../google-oauth-service';
 import { getCookie } from '../../lib/http-cookie';
-import { getSessionId } from '../../lib/session-id-cookie';
+import { getSessionId, setSessionCookie } from '../../lib/session-id-cookie';
+import { SessionId } from '../../lib/session-id';
 import { GoogleAuthUserService } from './google-auth-http-server-user-service';
 import {
   validateOAuthParams,
@@ -24,6 +25,7 @@ export type GoogleAuthConfig = {
 /**
  * Handle the start of Google OAuth flow
  * Generates authorization URL and redirects user to Google
+ * Stores session ID in OAuth state so it can be retrieved in callback (since session cookie uses SameSite: Strict)
  */
 export async function handleGoogleAuthStart(req: Request, logger: Logger): Promise<Response> {
   // Return 404 if Google Auth is not configured
@@ -33,11 +35,24 @@ export async function handleGoogleAuthStart(req: Request, logger: Logger): Promi
   }
 
   try {
-    const { url, state } = generateAuthUrl(req);
+    // Get existing session ID (if any) - this will be stored in OAuth state
+    // Since session cookie uses SameSite: Strict, it won't be sent on OAuth redirect
+    // So we store it in the OAuth state (server-side) and retrieve it in the callback
+    const existingSessionId = getSessionId(req);
+    const sessionId = existingSessionId ?? SessionId.generate();
 
-    // Set state in cookie for verification in callback
+    // Generate auth URL with session ID stored in state
+    const { url, state } = generateAuthUrl(req, sessionId);
+
+    // Set state in cookie for verification in callback (CSRF protection)
     const response = Response.redirect(url);
     response.headers.set('Set-Cookie', createOAuthStateCookie(state));
+
+    // If we generated a new session ID, set it in the cookie now
+    // This cookie will be available after OAuth callback (same-site navigation)
+    if (!existingSessionId) {
+      return setSessionCookie(req, response, sessionId);
+    }
 
     return response;
   } catch (error) {
@@ -93,25 +108,39 @@ export async function handleGoogleAuthCallback(
   }
 
   try {
-    // Exchange code for tokens
-    const accessToken = await validateCallback(validatedCode, validatedState);
+    // Exchange code for tokens and get session ID from OAuth state
+    // Session ID is stored in OAuth state because session cookie uses SameSite: Strict
+    // This allows us to retrieve it even though the cookie wasn't sent on OAuth redirect
+    const { accessToken, sessionId: stateSessionId } = await validateCallback(
+      validatedCode,
+      validatedState,
+    );
 
     // Get user info from Google
     const googleUser = await getUserInfo(accessToken);
 
-    // Get session ID for user session creation
-    const sessionId = getSessionId(req);
-
-    if (!sessionId) {
-      throw new Error('No session ID found');
+    // Use session ID from OAuth state, or try to get from cookie, or generate new one
+    // Priority: OAuth state > cookie > generate new
+    let sessionId: SessionId | null = null;
+    if (stateSessionId) {
+      sessionId = stateSessionId as SessionId;
+    } else {
+      // Fallback to cookie (shouldn't happen, but safe fallback)
+      sessionId = getSessionId(req);
+      if (!sessionId) {
+        sessionId = SessionId.generate();
+      }
     }
 
     // Use GoogleAuthUserService to find or create user (handles all cases)
+    // This always creates a new session record and ends any anonymous sessions
     const userService = new GoogleAuthUserService({ db, s3, s3Endpoint, logger });
     await userService.findOrCreateUser({ googleUser, sessionId });
 
-    // Redirect to app with success
-    return createSuccessRedirect();
+    // Redirect to app with success and set session cookie
+    // Since this is a same-site navigation, the Strict cookie will be set correctly
+    const successResponse = createSuccessRedirect();
+    return setSessionCookie(req, successResponse, sessionId);
   } catch (error) {
     logger.error('Google OAuth callback error:', { error: String(error) });
     return createErrorRedirect('oauth_failed');

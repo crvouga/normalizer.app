@@ -5,13 +5,14 @@ const SESSION_COOKIE_NAME = 'session_id';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 // Most secure possible cookie settings for single-origin app
-// Uses 'Lax' instead of 'Strict' to allow cookies on OAuth redirects from providers like Google
-// 'Lax' still provides CSRF protection by blocking cookies on cross-site POST requests
+// Uses 'Strict' for maximum security - session ID is passed through OAuth state during OAuth flow
+// This prevents the cookie from being sent on any cross-site request, including OAuth redirects
+// The session ID is stored in the OAuth state (server-side) and retrieved in the callback
 const SESSION_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true, // Prevent JS access
   secure: true, // Always require HTTPS
   path: '/', // Whole origin
-  sameSite: 'Lax', // Allow on top-level navigations (OAuth redirects) but block on cross-site POST
+  sameSite: 'Strict', // Never send cross-origin - session ID passed through OAuth state instead
   maxAge: COOKIE_MAX_AGE,
   // No domain: restricts to current host
 };

@@ -2,11 +2,13 @@ import { Google, generateState, generateCodeVerifier } from 'arctic';
 import { isGoogleAuthEnabled } from './google-oauth-config';
 
 // In-memory storage for OAuth state tokens (can be upgraded to Redis for production)
+// Stores session ID so it can be retrieved in callback without relying on cookies (which use SameSite: Strict)
 const oauthStates = new Map<
   string,
   {
     codeVerifier: string;
     redirectUri: string;
+    sessionId: string | null; // Session ID stored here to survive OAuth redirect
     expiresAt: number;
   }
 >();
@@ -23,8 +25,12 @@ function cleanupExpiredStates() {
 
 /**
  * Generate Google OAuth authorization URL with PKCE
+ * @param sessionId - Optional session ID to store in OAuth state (used when cookies are Strict)
  */
-export function generateAuthUrl(req: Request): { url: string; state: string } {
+export function generateAuthUrl(
+  req: Request,
+  sessionId?: string | null,
+): { url: string; state: string } {
   if (!isGoogleAuthEnabled()) {
     throw new Error('Google OAuth is not configured');
   }
@@ -43,10 +49,12 @@ export function generateAuthUrl(req: Request): { url: string; state: string } {
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
 
-  // Store state, verifier, AND redirect URI
+  // Store state, verifier, redirect URI, and session ID
+  // Session ID is stored here so it can be retrieved in callback without relying on cookies
   oauthStates.set(state, {
     codeVerifier,
     redirectUri,
+    sessionId: sessionId ?? null,
     expiresAt: Date.now() + 10 * 60 * 1000,
   });
 
@@ -61,8 +69,12 @@ export function generateAuthUrl(req: Request): { url: string; state: string } {
 
 /**
  * Validate OAuth callback and exchange code for tokens
+ * @returns Object with access token and session ID from stored state
  */
-export async function validateCallback(code: string, state: string): Promise<string> {
+export async function validateCallback(
+  code: string,
+  state: string,
+): Promise<{ accessToken: string; sessionId: string | null }> {
   if (!isGoogleAuthEnabled()) {
     throw new Error('Google OAuth is not configured');
   }
@@ -86,14 +98,20 @@ export async function validateCallback(code: string, state: string): Promise<str
     stored.redirectUri,
   );
 
+  // Extract session ID before cleaning up state
+  const sessionId = stored.sessionId;
+
   // Clean up used state
   oauthStates.delete(state);
 
   // Validate authorization code and get tokens
   const tokens = await google.validateAuthorizationCode(code, stored.codeVerifier);
 
-  // Return access token
-  return tokens.accessToken();
+  // Return access token and session ID
+  return {
+    accessToken: tokens.accessToken(),
+    sessionId,
+  };
 }
 
 /**
