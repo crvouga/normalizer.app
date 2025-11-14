@@ -1,8 +1,8 @@
 import type { S3Client } from 'bun';
 import { and, eq, isNull } from 'drizzle-orm';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../db/schema';
 import type { Logger } from '../lib/logger';
+import type { Db } from '../sql';
 import type { Artifact } from './artifact-type';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
@@ -14,7 +14,7 @@ export async function refreshArtifactUrls(params: {
   artifacts: Artifact[];
   s3: S3Client;
   s3Endpoint: string;
-  db: NodePgDatabase<typeof schema>;
+  db: Db;
   logger?: Logger;
 }): Promise<Artifact[]> {
   const { artifacts, s3, s3Endpoint, db, logger } = params;

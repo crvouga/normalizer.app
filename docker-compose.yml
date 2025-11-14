@@ -32,6 +32,8 @@ services:
       retries: 2
 
   server:
+    profiles:
+      - all
     build:
       context: .
       dockerfile: Dockerfile
