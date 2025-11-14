@@ -102,6 +102,9 @@ jobs:
           timeout 30 bash -c "until curl -f ${S3_ENDPOINT}/minio/health/live 2>/dev/null; do sleep 1; done"
           echo "✅ MinIO is ready"
 
+      - name: Clean node_modules
+        run: rm -rf node_modules || true
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -160,6 +163,9 @@ jobs:
           echo "Waiting for MinIO..."
           timeout 30 bash -c "until curl -f ${S3_ENDPOINT}/minio/health/live 2>/dev/null; do sleep 1; done"
           echo "✅ MinIO is ready"
+
+      - name: Clean node_modules
+        run: rm -rf node_modules || true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
