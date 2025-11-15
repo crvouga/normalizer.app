@@ -10,6 +10,7 @@
         "arctic": "^3.7.0",
         "bun-plugin-tailwind": "^0.0.14",
         "drizzle-orm": "^0.44.7",
+        "lru-cache": "^11.2.2",
         "minio": "^8.0.6",
         "react": "^19",
         "react-dom": "^19",
@@ -20,12 +21,10 @@
       "devDependencies": {
         "@playwright/test": "^1.56.1",
         "@types/bun": "latest",
-        "@types/pg": "^8.15.6",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "drizzle-kit": "^0.30.0",
         "madge": "^8.0.0",
-        "pg": "^8.16.3",
         "playwright": "^1.56.1",
         "prettier": "^3.6.2",
         "prettier-plugin-tailwindcss": "^0.7.1",
@@ -449,6 +448,8 @@
     "lodash": ["lodash@4.17.21", "", {}, "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="],
 
     "log-symbols": ["log-symbols@4.1.0", "", { "dependencies": { "chalk": "^4.1.0", "is-unicode-supported": "^0.1.0" } }, "sha512-8XPvpAA8uyhfteu8pIvQxpJZ7SYYdpUivZpGy6sFsBuKRY/7rQGavedeB8aK+Zkyq6upMFVL/9AW6vOYzfRyLg=="],
+
+    "lru-cache": ["lru-cache@11.2.2", "", {}, "sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg=="],
 
     "madge": ["madge@8.0.0", "", { "dependencies": { "chalk": "^4.1.2", "commander": "^7.2.0", "commondir": "^1.0.1", "debug": "^4.3.4", "dependency-tree": "^11.0.0", "ora": "^5.4.1", "pluralize": "^8.0.0", "pretty-ms": "^7.0.1", "rc": "^1.2.8", "stream-to-array": "^2.3.0", "ts-graphviz": "^2.1.2", "walkdir": "^0.4.1" }, "peerDependencies": { "typescript": "^5.4.4" }, "optionalPeers": ["typescript"], "bin": { "madge": "bin/cli.js" } }, "sha512-9sSsi3TBPhmkTCIpVQF0SPiChj1L7Rq9kU2KDG1o6v2XH9cCw086MopjVCD+vuoL5v8S77DTbVopTO8OUiQpIw=="],
 

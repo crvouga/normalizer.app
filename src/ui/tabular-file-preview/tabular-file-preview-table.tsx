@@ -161,7 +161,9 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
       rows={truncatedData}
       showFooter={data.length > maxRows}
       footerContent={
-        data.length > maxRows ? `Showing ${maxRows} of ${data.length} rows` : undefined
+        data.length > maxRows
+          ? `Showing ${maxRows.toLocaleString()} of ${data.length.toLocaleString()} rows`
+          : undefined
       }
       className={className}
     />

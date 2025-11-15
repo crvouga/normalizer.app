@@ -1,10 +1,25 @@
 import * as React from 'react';
-import type { TabularFilePreviewResult, FileType } from './types';
+import { LRUCache } from 'lru-cache';
+import type { FileType, TabularFilePreviewResult } from './types';
 
 interface UseTabularFilePreviewBaseParams {
   file: File;
-  parser: (file: File) => Promise<any[]>;
+  parser: (file: File) => Promise<Record<string, unknown>[]>;
   fileType: FileType;
+}
+
+interface CachedResult {
+  data: Record<string, unknown>[] | null;
+  error: string | null;
+}
+
+const parseCache = new LRUCache<string, CachedResult>({
+  max: 50,
+  ttl: 1000 * 60 * 60,
+});
+
+function getFileCacheKey(file: File): string {
+  return `${file.name}-${file.size}-${file.lastModified}`;
 }
 
 export const useTabularFilePreviewBase = ({
@@ -12,30 +27,62 @@ export const useTabularFilePreviewBase = ({
   parser,
   fileType,
 }: UseTabularFilePreviewBaseParams): TabularFilePreviewResult => {
-  const [data, setData] = React.useState<any[] | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const cacheKey = React.useMemo(() => getFileCacheKey(file), [file]);
+
+  const initialCached = React.useMemo(() => parseCache.get(cacheKey), [cacheKey]);
+
+  const [data, setData] = React.useState<Record<string, unknown>[] | null>(
+    initialCached?.data ?? null,
+  );
+  const [error, setError] = React.useState<string | null>(initialCached?.error ?? null);
+  const [isLoading, setIsLoading] = React.useState(!initialCached);
 
   React.useEffect(() => {
-    const parseFile = async () => {
+    const cached = parseCache.get(cacheKey);
+    if (cached) {
+      setData(cached.data);
+      setError(cached.error);
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function parseFile() {
       try {
         setIsLoading(true);
         setError(null);
 
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
         const parsedData = await parser(file);
-        setData(parsedData);
+        if (!isCancelled) {
+          const result: CachedResult = { data: parsedData, error: null };
+          parseCache.set(cacheKey, result);
+          setData(parsedData);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to parse file');
-        setData(null);
+        if (!isCancelled) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to parse file';
+          const result: CachedResult = {
+            data: [],
+            error: errorMessage,
+          };
+          parseCache.set(cacheKey, result);
+          setError(errorMessage);
+          setData(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
-    };
+    }
 
     parseFile();
-  }, [file, parser]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [file, parser, cacheKey]);
 
   return { data, error, isLoading, fileType };
 };
