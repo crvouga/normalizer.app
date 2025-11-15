@@ -40,7 +40,7 @@ export const StartNormalizationSessionScreen = () => {
   };
 
   return (
-    <div className="flex h-full w-full items-start justify-center p-8">
+    <div className="flex h-full w-full items-center justify-center p-8">
       <Form
         onSubmit={handleSubmit}
         disabled={isStarting}

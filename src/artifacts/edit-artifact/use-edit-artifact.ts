@@ -27,13 +27,6 @@ export function useEditArtifact({
     setState(Loading);
 
     try {
-      // Optimistically update the entity store
-      entityStore.updateEntity('artifacts', params.artifactId, {
-        ...(params.name !== undefined ? { name: params.name } : {}),
-        ...(params.filename !== undefined ? { filename: params.filename } : {}),
-        updated_at: new Date(),
-      });
-
       // Call the backend to update the artifact
       const rawUpdatedArtifact: any = await trpcClient.artifact.edit.update.mutate({
         artifactId: params.artifactId,
@@ -55,7 +48,7 @@ export function useEditArtifact({
       };
 
       // Update entity store with server response
-      entityStore.updateEntity('artifacts', params.artifactId, updatedArtifact);
+      entityStore.addEntity('artifacts', updatedArtifact);
 
       setState(Success(updatedArtifact));
       showSuccessToast(t('artifact.editSuccess'));
@@ -79,7 +72,7 @@ export function useEditArtifact({
               ? new Date(rawArtifact.upload_url_expires_at)
               : null,
           };
-          entityStore.updateEntity('artifacts', params.artifactId, artifact);
+          entityStore.addEntity('artifacts', artifact);
         }
       } catch {
         // If we can't revert, just leave the optimistic update

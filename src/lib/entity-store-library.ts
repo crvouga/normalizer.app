@@ -34,13 +34,6 @@ export type EntityAddManyAction<TEntityType extends string = string, TEntity = u
   entities: TEntity[];
 };
 
-export type EntityUpdateAction<TEntityType extends string = string, TId extends string = string> = {
-  type: 'entity/UPDATE';
-  entityType: TEntityType;
-  id: TId;
-  changes: Record<string, unknown>;
-};
-
 export type EntityRemoveAction<TEntityType extends string = string, TId extends string = string> = {
   type: 'entity/REMOVE';
   entityType: TEntityType;
@@ -62,7 +55,6 @@ export type IndexUpdateAction = {
 export type StoreAction =
   | EntityAddAction
   | EntityAddManyAction
-  | EntityUpdateAction
   | EntityRemoveAction
   | EntityResetAction
   | IndexUpdateAction;
@@ -78,22 +70,35 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
         const slice = state.entities[entityType];
         if (!slice || !entity || typeof entity !== 'object') return state;
         if (!('id' in entity) || typeof entity.id !== 'string') return state;
-        if (entity.id in slice.byId) return state;
 
         const entityId = entity.id;
+        const entityExists = entityId in slice.byId;
+        const oldEntity = entityExists ? slice.byId[entityId as keyof typeof slice.byId] : null;
+
         const newState = {
           ...state,
           entities: {
             ...state.entities,
             [entityType]: {
               byId: { ...slice.byId, [entityId]: entity },
-              allIds: [...slice.allIds, entityId],
+              allIds: entityExists ? slice.allIds : [...slice.allIds, entityId],
             },
           },
         };
 
-        // Auto-update indexes
-        return updateIndexesForEntity(newState, entityType, entity, indexDefinitions);
+        // Remove from old indexes if entity existed and index keys might have changed
+        let stateAfterIndexRemoval = newState;
+        if (entityExists && oldEntity) {
+          stateAfterIndexRemoval = removeFromIndexes(
+            newState,
+            entityType,
+            oldEntity,
+            indexDefinitions,
+          );
+        }
+
+        // Add/update indexes
+        return updateIndexesForEntity(stateAfterIndexRemoval, entityType, entity, indexDefinitions);
       }
 
       case 'entity/ADD_MANY': {
@@ -103,6 +108,7 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
 
         const newById = { ...slice.byId };
         const newIds: string[] = [];
+        const oldEntitiesMap = new Map<string, unknown>();
 
         for (const entity of entities) {
           if (
@@ -111,14 +117,20 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
             'id' in entity &&
             typeof entity.id === 'string'
           ) {
-            if (!(entity.id in newById)) {
-              newById[entity.id] = entity;
-              newIds.push(entity.id);
+            const entityId = entity.id;
+            if (entityId in newById) {
+              oldEntitiesMap.set(entityId, newById[entityId]);
+            } else {
+              newIds.push(entityId);
             }
+            newById[entityId] = entity;
           }
         }
 
-        if (newIds.length === 0) return state;
+        if (Object.keys(newById).length === Object.keys(slice.byId).length && newIds.length === 0) {
+          // No changes if all entities already existed
+          return state;
+        }
 
         let newState = {
           ...state,
@@ -131,35 +143,17 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
           },
         };
 
-        // Auto-update indexes for all entities
+        // Remove old entities from indexes
+        for (const [, oldEntity] of oldEntitiesMap) {
+          newState = removeFromIndexes(newState, entityType, oldEntity, indexDefinitions);
+        }
+
+        // Add/update indexes for all entities
         for (const entity of entities) {
           newState = updateIndexesForEntity(newState, entityType, entity, indexDefinitions);
         }
 
         return newState;
-      }
-
-      case 'entity/UPDATE': {
-        const { entityType, id, changes } = action;
-        const slice = state.entities[entityType];
-        if (!slice || !(id in slice.byId)) return state;
-
-        const existingEntity = slice.byId[id as keyof typeof slice.byId];
-        if (typeof existingEntity !== 'object' || !existingEntity) return state;
-
-        return {
-          ...state,
-          entities: {
-            ...state.entities,
-            [entityType]: {
-              ...slice,
-              byId: {
-                ...slice.byId,
-                [id]: { ...existingEntity, ...changes },
-              },
-            },
-          },
-        };
       }
 
       case 'entity/REMOVE': {
@@ -221,6 +215,44 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
   };
 }
 
+function removeFromIndexes<TStore extends StoreConfig<any>>(
+  state: TStore,
+  entityType: string,
+  entity: unknown,
+  indexDefinitions: Record<string, { entityType: string; definition: IndexDefinition }>,
+): TStore {
+  let newState = state;
+
+  for (const [indexName, indexConfig] of Object.entries(indexDefinitions)) {
+    if (indexConfig.entityType !== entityType) continue;
+
+    const indexKey = indexConfig.definition.getIndexKey(entity);
+    if (!indexKey) continue;
+
+    const entityId = indexConfig.definition.getEntityId(entity);
+    if (!newState.indexes || !newState.indexes[indexName]) continue;
+
+    const existingIndex = newState.indexes[indexName];
+    const existingEntities = existingIndex[indexKey] || [];
+
+    // Only update if entity is in the index
+    if (existingEntities.includes(entityId)) {
+      newState = {
+        ...newState,
+        indexes: {
+          ...newState.indexes,
+          [indexName]: {
+            ...existingIndex,
+            [indexKey]: existingEntities.filter((id) => id !== entityId),
+          },
+        },
+      };
+    }
+  }
+
+  return newState;
+}
+
 function updateIndexesForEntity<TStore extends StoreConfig<any>>(
   state: TStore,
   entityType: string,
@@ -243,16 +275,19 @@ function updateIndexesForEntity<TStore extends StoreConfig<any>>(
     const existingIndex = (newState.indexes && newState.indexes[indexName]) || {};
     const existingEntities = existingIndex[indexKey] || [];
 
-    newState = {
-      ...newState,
-      indexes: {
-        ...newState.indexes,
-        [indexName]: {
-          ...existingIndex,
-          [indexKey]: [...existingEntities, entityId],
+    // Only add if not already in the index (prevent duplicates)
+    if (!existingEntities.includes(entityId)) {
+      newState = {
+        ...newState,
+        indexes: {
+          ...newState.indexes,
+          [indexName]: {
+            ...existingIndex,
+            [indexKey]: [...existingEntities, entityId],
+          },
         },
-      },
-    };
+      };
+    }
   }
 
   return newState;
@@ -362,22 +397,6 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
       [optimizedDispatch],
     );
 
-    const updateEntity = useCallback(
-      <TKey extends keyof TStore['entities']>(
-        entityType: TKey,
-        id: ExtractEntityId<TStore, TKey>,
-        changes: Partial<ExtractEntityType<TStore, TKey>>,
-      ) => {
-        optimizedDispatch({
-          type: 'entity/UPDATE',
-          entityType: entityType as string,
-          id: id as string,
-          changes: changes as Record<string, unknown>,
-        });
-      },
-      [optimizedDispatch],
-    );
-
     const removeEntity = useCallback(
       <TKey extends keyof TStore['entities']>(
         entityType: TKey,
@@ -406,11 +425,10 @@ export function createEntityStoreHooks<TStore extends StoreConfig<any>>(
       () => ({
         addEntity,
         addManyEntities,
-        updateEntity,
         removeEntity,
         resetEntity,
       }),
-      [addEntity, addManyEntities, updateEntity, removeEntity, resetEntity],
+      [addEntity, addManyEntities, removeEntity, resetEntity],
     );
   }
 

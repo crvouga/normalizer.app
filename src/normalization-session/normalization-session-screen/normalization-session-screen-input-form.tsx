@@ -5,9 +5,15 @@ import { useI18n } from '~/src/i18n/use-i18n';
 import { Button } from '~/src/ui/button';
 import { IconSparkles } from '~/src/ui/icons';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import { useRequestNormalization } from './use-request-normalization';
-import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+
+import { useMutation } from '~/src/lib/use-mutation';
+import { useEntityStore } from '~/src/store/entity-store';
+import { trpcClient } from '~/src/trpc-client';
 import { Form } from '~/src/ui/form';
+import { useCurrentUser } from '~/src/users/use-current-user';
+import { NormalizationRunId } from '../normalization-run-id';
+import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 export const NormalizationSessionScreenInputForm = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -16,7 +22,31 @@ export const NormalizationSessionScreenInputForm = (props: {
   const { t } = useI18n();
   const [inputArtifactIds, setInputArtifactIds] = useState<ArtifactId[]>([]);
 
-  const requestNormalization = useRequestNormalization(props.normalizationSessionId);
+  const entityStore = useEntityStore();
+  const currentUser = useCurrentUser();
+  const mutation = useMutation({
+    async mutationFn({ inputArtifactIds }: { inputArtifactIds: ArtifactId[] }) {
+      const normalizationRunId = NormalizationRunId.generate();
+      const output = await trpcClient.normalizationSession.events.append.mutate({
+        event: {
+          type: 'user-requested-normalization',
+          sessionId: props.normalizationSessionId,
+          normalizationRunId,
+          inputArtifactIds,
+          requestedAt: new Date(),
+          requestedByUserId: currentUser.id,
+        },
+        sessionId: props.normalizationSessionId,
+      });
+      const projection = NormalizationSessionProjection.schema.parse(output.projection);
+      const event = NormalizationSessionEventEntity.schema.parse(output.event);
+      entityStore.addEntity('normalizationSessionProjections', projection);
+      entityStore.addEntity('normalizationSessionEvents', event);
+    },
+    onStart() {
+      setInputArtifactIds([]);
+    },
+  });
 
   const lastEntry =
     props.normalizationSessionProjection.entries[
@@ -26,10 +56,10 @@ export const NormalizationSessionScreenInputForm = (props: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputArtifactIds.length === 0 || isLastEntryInProgress || requestNormalization.isPending) {
+    if (inputArtifactIds.length === 0 || isLastEntryInProgress || mutation.isPending) {
       return;
     }
-    requestNormalization.mutate({ inputArtifactIds });
+    mutation.mutate({ inputArtifactIds });
   };
 
   return (
@@ -45,7 +75,7 @@ export const NormalizationSessionScreenInputForm = (props: {
           startIcon={<IconSparkles className="size-6" />}
           text={t('normalizationSession.normalize')}
           type="submit"
-          loading={requestNormalization.isPending}
+          loading={mutation.isPending}
           disabled={inputArtifactIds.length === 0 || isLastEntryInProgress}
         />
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { RemoteResult } from './result';
-import { NotAsked, Loading, Success, Failure } from './result';
+import type { RemoteResult, Result } from './result';
+import { Err, Failure, Loading, NotAsked, Ok, Success } from './result';
 
 export interface UseMutationParams<TData, TInput> {
   /**
@@ -9,6 +9,22 @@ export interface UseMutationParams<TData, TInput> {
    * @returns Promise with the data to be returned in Success state
    */
   mutationFn: (input: TInput) => Promise<TData>;
+  /**
+   * Optional callback for when mutation starts
+   */
+  onStart?: (input: TInput) => void;
+  /**
+   * Optional callback for successful mutation
+   */
+  onSuccess?: (data: TData, input: TInput) => void;
+  /**
+   * Optional callback for failed mutation
+   */
+  onError?: (error: Error, input: TInput) => void;
+  /**
+   * Optional callback for completed mutation
+   */
+  onComplete?: (result: Result<TData, Error>, input: TInput) => void;
 }
 
 export interface UseMutationResult<TData, TInput> {
@@ -41,6 +57,8 @@ export interface UseMutationResult<TData, TInput> {
  * - Manual execution via mutate function
  * - Pending state tracking
  * - State reset capability
+ * - Success and error callbacks
+ * - Start callback
  *
  * @example
  * ```tsx
@@ -51,6 +69,9 @@ export interface UseMutationResult<TData, TInput> {
  *       sessionId,
  *     });
  *   },
+ *   onStart: (input) => console.log("Mutation started", input),
+ *   onSuccess: () => showSuccessToast("Mutation completed!"),
+ *   onError: (err) => showErrorToast("Mutation failed", err),
  * });
  *
  * <Button onClick={() => mutate(artifactIds)} loading={isPending} />
@@ -58,17 +79,26 @@ export interface UseMutationResult<TData, TInput> {
  */
 export function useMutation<TData = void, TInput = void>({
   mutationFn,
+  onStart,
+  onSuccess,
+  onError,
+  onComplete,
 }: UseMutationParams<TData, TInput>): UseMutationResult<TData, TInput> {
   const [state, setState] = useState<RemoteResult<TData, Error>>(NotAsked);
 
   const mutate = async (input: TInput) => {
+    onStart?.(input);
     setState(Loading);
-
     try {
       const data = await mutationFn(input);
       setState(Success(data));
+      onSuccess?.(data, input);
+      onComplete?.(Ok(data), input);
     } catch (error) {
-      setState(Failure(error instanceof Error ? error : new Error('Mutation failed')));
+      const err = error instanceof Error ? error : new Error('Mutation failed');
+      setState(Failure(err));
+      onError?.(err, input);
+      onComplete?.(Err(err), input);
       throw error;
     }
   };

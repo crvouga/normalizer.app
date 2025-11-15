@@ -99,16 +99,16 @@ The index will be automatically maintained when entities are added!
 import { useEntityStore, useEntityStoreSelector } from './store/entity-store';
 
 function MyComponent() {
-  const { addEntity, updateEntity, removeEntity, resetEntity } = useEntityStore();
+  const { addEntity, addManyEntities, removeEntity, resetEntity } = useEntityStore();
 
-  // Add a single entity
+  // Add a single entity (or update if it already exists)
   addEntity('artifacts', myArtifact);
 
-  // Add multiple entities
+  // Add multiple entities (or update if they already exist)
   addManyEntities('users', [user1, user2, user3]);
 
-  // Update an entity
-  updateEntity('artifacts', artifactId, { status: 'uploaded' });
+  // Note: addEntity now overrides existing entities, so you can use it for both
+  // adding new entities and updating existing ones. Just pass the complete entity.
 
   // Remove an entity
   removeEntity('artifacts', artifactId);

@@ -20,11 +20,9 @@ export function useArtifactUpload({
   const uploadArtifact = async (file: File, name?: string) => {
     setState(Loading);
 
-    // Generate client-side artifact ID
     const artifactId = ArtifactId.generate();
 
     try {
-      // Create optimistic artifact entity with pending status
       const optimisticArtifact = Artifact.create({
         id: artifactId,
         filename: file.name,
@@ -32,10 +30,8 @@ export function useArtifactUpload({
         ...(name ? { name } : {}),
       });
 
-      // Optimistically insert into entity store
       entityStore.addEntity('artifacts', optimisticArtifact);
 
-      // Get presigned URL
       await trpcClient.artifact.upload.start.mutate({
         filename: file.name,
         contentType: file.type,
@@ -43,9 +39,7 @@ export function useArtifactUpload({
         name,
       });
 
-      // If server ID differs from client ID, update the entity
       if (artifactId !== artifactId) {
-        // Remove the optimistic entity
         entityStore.removeEntity('artifacts', artifactId);
       }
 
@@ -57,7 +51,6 @@ export function useArtifactUpload({
         throw new Error('Failed to get upload URL');
       }
 
-      // Add or update with server data
       entityStore.addEntity('artifacts', {
         ...before,
         created_at: before.created_at ? new Date(before.created_at) : null,
@@ -70,11 +63,9 @@ export function useArtifactUpload({
           : null,
       });
 
-      // Ensure upload URL protocol matches the client app's protocol to avoid mixed content errors
       const uploadUrl = new URL(before.upload_url);
       uploadUrl.protocol = window.location.protocol;
 
-      // Upload to S3
       const response = await fetch(uploadUrl.toString(), {
         method: 'PUT',
         body: file,
@@ -87,47 +78,26 @@ export function useArtifactUpload({
         throw new Error('Failed to upload file to S3');
       }
 
-      // Mark as uploaded in database
       await trpcClient.artifact.upload.finish.mutate({
         key: artifactId,
         size: file.size,
         artifactId,
       });
 
-      // Fetch updated artifact
-      const rawArtifact: any = await trpcClient.artifact.get.mutate({
-        artifactId: artifactId,
-      });
+      const rawArtifact: any = await trpcClient.artifact.get.mutate({ artifactId });
 
       if (!rawArtifact) {
         throw new Error('Failed to fetch file after upload');
       }
 
-      // Convert date strings to Date objects
-      const artifact: Artifact = {
-        ...rawArtifact,
-        created_at: rawArtifact.created_at ? new Date(rawArtifact.created_at) : null,
-        updated_at: rawArtifact.updated_at ? new Date(rawArtifact.updated_at) : null,
-        download_url_expires_at: rawArtifact.download_url_expires_at
-          ? new Date(rawArtifact.download_url_expires_at)
-          : null,
-        upload_url_expires_at: rawArtifact.upload_url_expires_at
-          ? new Date(rawArtifact.upload_url_expires_at)
-          : null,
-      };
+      const artifact = Artifact.schema.parse(rawArtifact);
 
-      // Update entity store with uploaded status
-      entityStore.updateEntity('artifacts', artifactId, {
-        status: 'uploaded',
-        size: file.size,
-        updated_at: artifact.updated_at,
-      });
+      entityStore.addEntity('artifacts', artifact);
 
       setState(Success(artifact));
       showSuccessToast(t('artifact.uploadSuccess'));
       onUploadComplete?.(Ok(artifact));
     } catch (error) {
-      // Remove the optimistic entity on error
       entityStore.removeEntity('artifacts', artifactId);
 
       setState(Failure(error as Error));
