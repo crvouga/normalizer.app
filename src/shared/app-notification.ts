@@ -1,6 +1,6 @@
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
-import type { Db, Tx } from '../sql';
-import { getPostgresConnection } from '../sql';
+import type { Db, Tx } from './sql';
+import { getPostgresConnection } from './sql';
 import { PostgresNotification } from '../lib/postgres-notification';
 
 /**

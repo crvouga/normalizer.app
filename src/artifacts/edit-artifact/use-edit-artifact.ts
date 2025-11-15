@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { RemoteResult, Result } from '../../lib/result';
 import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
 import { useEntityStore } from '../../store/entity-store';
-import { trpcClient } from '../../trpc-client';
+import { trpcClient } from '../../shared/trpc-client';
 import { showErrorToast, showSuccessToast } from '../../ui/toast';
 import { useI18n } from '../../i18n/use-i18n';
 import { Artifact } from '../artifact';

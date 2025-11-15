@@ -1,7 +1,8 @@
 import { and, inArray, isNull } from 'drizzle-orm';
 import type { TaskHandler } from '../lib/graphile-worker-lib';
 import type { NormalizationJobPayload } from '../shared/graphile-worker';
-import { createDb } from '../sql';
+import { createDb } from '../shared/sql';
+import type { Tx } from '../shared/sql';
 import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
 import { getNormalizationSessionOwner } from './normalization-session-permissions';
 import { ArtifactId } from '../artifacts/artifact-id';
@@ -56,7 +57,7 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
     });
 
     // Perform normalization in a single transaction
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: Tx) => {
       // 1. Load input artifacts
       const inputArtifacts = await tx
         .select()

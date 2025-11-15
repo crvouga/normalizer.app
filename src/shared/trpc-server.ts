@@ -1,7 +1,7 @@
 import { initTRPC } from '@trpc/server';
 import type { S3Client } from 'bun';
 import type { Logger } from '../lib/logger';
-import type { Db } from '../sql';
+import type { Db, Tx } from './sql';
 import type { MinioClient } from '../lib/minio/minio-client';
 import { getSessionId } from './session-id-cookie';
 import { SessionId } from './session-id';
@@ -158,7 +158,7 @@ export const createContext = async (config: {
 
   // No session exists - create new anonymous user/session
   const { userId: newUserId, userSessionId: newUserSessionId } = await db.transaction(
-    async (tx) => {
+    async (tx: Tx) => {
       const newUserId = UserIdHelper.generate();
       await tx.insert(users).values({
         id: newUserId,

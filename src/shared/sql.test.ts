@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { sql } from 'drizzle-orm';
-import { createLogger } from './lib/logger';
-import { createDb, cleanupDb } from './sql';
+import { createLogger } from '../lib/logger';
+import { createDb, cleanupDb } from '../shared/sql';
 
 describe('Database Client', () => {
   const logger = createLogger();

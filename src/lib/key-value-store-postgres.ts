@@ -1,6 +1,6 @@
 import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import type { Db, Tx } from '../sql';
+import type { Db, Tx } from '../shared/sql';
 import * as schema from '../db/schema';
 import type { KeyValueStore } from './key-value-store';
 import { Ok, Err, type Result } from './result';

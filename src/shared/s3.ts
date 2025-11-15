@@ -1,6 +1,6 @@
-import type { Logger } from './lib/logger';
+import type { Logger } from '../lib/logger';
 import { S3Client } from 'bun';
-import { createMinioClient, type MinioClient } from './lib/minio/minio-client';
+import { createMinioClient, type MinioClient } from '../lib/minio/minio-client';
 import { getS3Config } from './s3-config';
 
 export const createS3 = async ({

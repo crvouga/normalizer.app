@@ -1,7 +1,8 @@
 import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
-import { createTaskList } from './shared/graphile-worker';
+import { checkGraphileWorkerSetup, createTaskList } from './shared/graphile-worker';
 import { normalizationTask } from './normalization-session/normalization-task';
+import { createDb } from './shared/sql';
 
 const main = async () => {
   const logger = createLogger();
@@ -11,6 +12,20 @@ const main = async () => {
   if (!databaseUrl) {
     logger.error('DATABASE_URL environment variable is not set');
     throw new Error('DATABASE_URL environment variable is not set');
+  }
+
+  // Create database connection to check worker setup
+  const db = await createDb({ logger });
+
+  // Check Graphile Worker setup
+  const graphileWorkerCheck = await checkGraphileWorkerSetup(db, logger);
+  if (!graphileWorkerCheck.isSetup) {
+    logger.warn(
+      'Graphile Worker is not set up. The worker will initialize the schema on startup.',
+      graphileWorkerCheck,
+    );
+  } else {
+    logger.info('Graphile Worker is set up correctly');
   }
 
   logger.info('Starting Graphile Worker...');

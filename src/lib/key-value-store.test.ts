@@ -1,12 +1,12 @@
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { z } from 'zod';
-import { createDb, cleanupDb } from '../sql';
+import { createDb, cleanupDb } from '../shared/sql';
 import { createLogger } from './logger';
 import { isOk } from './result';
 
 import type { KeyValueStore } from './key-value-store';
 import { PostgresKeyValueStore } from './key-value-store-postgres';
-import type { Db } from '../sql';
+import type { Db } from '../shared/sql';
 
 describe('KeyValueStore (Postgres implementation)', () => {
   const logger = createLogger();

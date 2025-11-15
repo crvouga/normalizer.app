@@ -3,7 +3,7 @@ import type { Result } from '../../lib/result';
 import { Err, Ok } from '../../lib/result';
 import { useMutation } from '../../lib/use-mutation';
 import { useEntityStore } from '../../store/entity-store';
-import { trpcClient } from '../../trpc-client';
+import { trpcClient } from '../../shared/trpc-client';
 import { useCurrentUserResult } from '../../users/use-current-user';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionId as NormalizationSessionIdGenerator } from '../normalization-session-id';

@@ -1,4 +1,4 @@
-import { createDb, cleanupDb } from '../sql';
+import { createDb, cleanupDb } from '../shared/sql';
 import { createLogger } from './logger';
 import { checkGraphileWorkerSetup } from '../shared/graphile-worker';
 

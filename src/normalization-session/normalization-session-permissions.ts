@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import type { Db } from '../sql';
+import type { Db } from '../shared/sql';
 import type { UserId } from '../users/user-id';
 import { createPermission } from '../permissions/permission';
 import { createResourceOwnershipPolicy } from '../permissions/policies/resource-ownership-policy';

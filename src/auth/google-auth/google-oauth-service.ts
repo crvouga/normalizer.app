@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Google, generateState, generateCodeVerifier } from 'arctic';
-import type { Db } from '../../sql';
+import type { Db } from '../../shared/sql';
 import { PostgresKeyValueStore } from '../../lib/key-value-store-postgres';
 import { TypedKeyValueStore } from '../../lib/typed-key-value-store';
 import { isOk } from '../../lib/result';

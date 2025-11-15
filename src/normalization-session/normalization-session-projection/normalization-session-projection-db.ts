@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { AppNotification } from '~/src/shared/app-notification';
 import type { Logger } from '~/src/lib/logger';
-import type { Db, Tx } from '~/src/sql';
+import type { Db, Tx } from '~/src/shared/sql';
 import type { UserId } from '~/src/users/user-id';
 import * as schema from '../../db/schema';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
@@ -34,13 +34,15 @@ export class NormalizationSessionProjectionDb {
       .orderBy(schema.normalizationSessionEvents.created_at);
 
     // Validate events
-    const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap((event) => {
-      const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
-      if (parsedEvent.success) {
-        return [parsedEvent.data];
-      }
-      return [];
-    });
+    const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap(
+      (event: (typeof events)[number]) => {
+        const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
+        if (parsedEvent.success) {
+          return [parsedEvent.data];
+        }
+        return [];
+      },
+    );
 
     // Compute projection by reducing all events
     const initialState = NormalizationSessionProjection.init({

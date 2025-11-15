@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { trpcClient } from '~/src/trpc-client';
+import { trpcClient } from '~/src/shared/trpc-client';
 import { useCurrentUserResult } from '~/src/users/use-current-user';
 import { showSuccessToast, showErrorToast } from '~/src/ui/toast';
 import { useI18n } from '~/src/i18n/use-i18n';

@@ -1,6 +1,6 @@
 import type postgres from 'postgres';
 import { sql } from 'drizzle-orm';
-import type { Db, Tx } from '../sql';
+import type { Db, Tx } from '../shared/sql';
 
 /**
  * Validates a channel name to prevent SQL injection

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useInfiniteScrollLoader } from '../../lib/use-infinite-scroll-loader';
 import { useEntityStore } from '../../store/entity-store';
-import { trpcClient } from '../../trpc-client';
+import { trpcClient } from '../../shared/trpc-client';
 import type { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 import { Artifact } from '~/src/artifacts/artifact';

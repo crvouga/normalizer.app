@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
-import { createLogger } from './lib/logger';
+import { createLogger } from '../lib/logger';
 import { createS3 } from './s3';
-import { createMinioClient } from './lib/minio/minio-client';
+import { createMinioClient } from '../lib/minio/minio-client';
 import { getS3Config } from './s3-config';
 
 describe('S3 Client', () => {

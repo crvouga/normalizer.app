@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
-import type { Db, Tx } from '~/src/sql';
+import type { Db, Tx } from '~/src/shared/sql';
 import * as schema from '../../db/schema';
 import { NormalizationSessionEventEntity } from './normalization-session-event-entity';
 import { NormalizationSessionEventId } from './normalization-session-event-id';
@@ -34,18 +34,20 @@ export class NormalizationSessionEventDb {
     });
 
     // Validate and parse events
-    const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap((event) => {
-      const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
-      if (parsedEvent.success) {
-        return [parsedEvent.data];
-      }
-      this.logger.warn('Failed to parse normalization session event', {
-        sessionId,
-        eventId: event.id,
-        error: parsedEvent.error,
-      });
-      return [];
-    });
+    const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap(
+      (event: (typeof events)[number]) => {
+        const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
+        if (parsedEvent.success) {
+          return [parsedEvent.data];
+        }
+        this.logger.warn('Failed to parse normalization session event', {
+          sessionId,
+          eventId: event.id,
+          error: parsedEvent.error,
+        });
+        return [];
+      },
+    );
 
     return validatedEvents;
   }

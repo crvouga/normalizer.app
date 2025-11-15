@@ -2,7 +2,7 @@ import z from 'zod';
 import type { RemoteResult } from '../../lib/result';
 import { useLoader } from '../../lib/use-loader';
 import { useEntityStore } from '../../store/entity-store';
-import { trpcClient } from '../../trpc-client';
+import { trpcClient } from '../../shared/trpc-client';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';

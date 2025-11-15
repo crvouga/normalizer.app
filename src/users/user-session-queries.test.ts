@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeAll, afterAll } from 'bun:test';
-import { createDb, cleanupDb } from '../sql';
+import { createDb, cleanupDb } from '../shared/sql';
 import { createLogger } from '../lib/logger';
 import { findCurrentUserSession } from './user-session-queries';
 import { users, userSessions } from '../db/schema';

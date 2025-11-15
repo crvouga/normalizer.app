@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { trpcClient } from '../trpc-client';
+import { trpcClient } from '../shared/trpc-client';
 
 type AuthEnabledState = { type: 'loading' } | { type: 'loaded'; isEnabled: boolean };
 

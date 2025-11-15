@@ -1,6 +1,6 @@
 import type { S3Client } from 'bun';
 import type { Logger } from '../../../lib/logger';
-import type { Db } from '../../../sql';
+import type { Db } from '../../../shared/sql';
 import {
   handleGoogleAuthStart,
   handleGoogleAuthCallback,

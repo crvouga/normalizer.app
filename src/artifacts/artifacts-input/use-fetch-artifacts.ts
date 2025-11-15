@@ -6,7 +6,7 @@ import type {
 import type { ComboboxOption } from '~/src/ui/combobox/combobox';
 import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
-import { trpcClient } from '../../trpc-client';
+import { trpcClient } from '../../shared/trpc-client';
 import { useEntityStoreSelector, useEntityStore } from '../../store/entity-store';
 import { useI18n } from '../../i18n/use-i18n';
 

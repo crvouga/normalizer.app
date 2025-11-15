@@ -1,6 +1,6 @@
 import { useMutation } from '~/src/lib/use-mutation';
 import { useEntityStore } from '~/src/store/entity-store';
-import { trpcClient } from '~/src/trpc-client';
+import { trpcClient } from '~/src/shared/trpc-client';
 import { Button } from '~/src/ui/button';
 import { IconX } from '~/src/ui/icons';
 import { useCurrentUser } from '~/src/users/use-current-user';

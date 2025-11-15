@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 import { drizzle, type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import type { Logger } from './lib/logger';
-import * as schema from './db/schema';
+import type { Logger } from '../lib/logger';
+import * as schema from '../db/schema';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 

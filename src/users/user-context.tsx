@@ -1,5 +1,5 @@
 import { createContext, type ReactNode } from 'react';
-import { trpcClient } from '../trpc-client';
+import { trpcClient } from '../shared/trpc-client';
 import { User, type User as UserType } from './user';
 import type { RemoteResult } from '../lib/result';
 import { useEntityStore } from '../store/entity-store';
