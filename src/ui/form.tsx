@@ -36,9 +36,21 @@ const Form = ({
     });
   }, []);
 
+  const handleSubmit = React.useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.stopPropagation();
+      onSubmit?.(e);
+    },
+    [onSubmit],
+  );
+
+  const handleClick = React.useCallback((e: React.MouseEvent<HTMLFormElement>) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <FormContext.Provider value={{ errors, setError, clearError, disabled }}>
-      <form data-slot="form" onSubmit={onSubmit} {...props}>
+      <form data-slot="form" onSubmit={handleSubmit} onClick={handleClick} {...props}>
         <fieldset disabled={disabled} className="contents">
           {children}
         </fieldset>

@@ -8,6 +8,7 @@ import type { TabularFile } from '~/src/ui/tabular-file-input/tabular-file';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
 import { useEditArtifact } from './use-edit-artifact';
+import { Form } from '~/src/ui/form';
 
 export interface EditArtifactModalProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export function EditArtifactModal({
       size="2xl"
       disabled={isEditing}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <Form onSubmit={handleSubmit} className="space-y-4">
         <TextField
           id="artifact-name"
           type="text"
@@ -103,7 +104,7 @@ export function EditArtifactModal({
           submitText={t('artifact.save')}
           submitLoading={isEditing}
         />
-      </form>
+      </Form>
     </Modal>
   );
 }
