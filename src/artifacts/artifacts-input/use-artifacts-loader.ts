@@ -1,14 +1,14 @@
 import * as React from 'react';
 import type {
-  AsyncComboboxFetchOptions,
   AsyncComboboxFetchIdsResult,
+  AsyncComboboxFetchOptions,
 } from '~/src/ui/combobox/async-combobox';
 import type { ComboboxOption } from '~/src/ui/combobox/combobox';
-import type { Artifact } from '../artifact';
-import type { ArtifactId } from '../artifact-id';
-import { trpcClient } from '../../shared/trpc-client';
-import { useEntityStoreSelector, useEntityStore } from '../../store/entity-store';
 import { useI18n } from '../../i18n/use-i18n';
+import { trpcClient } from '../../shared/trpc-client';
+import { useEntityStore, useEntityStoreSelector } from '../../store/entity-store';
+import { Artifact } from '../artifact';
+import { ArtifactId } from '../artifact-id';
 
 /**
  * Hook for fetching artifacts with pagination and search.
@@ -18,7 +18,7 @@ import { useI18n } from '../../i18n/use-i18n';
  * - fetchArtifactIds: Fetches from API, stores in entity store, returns IDs
  * - getArtifactOptions: Reads from entity store and hydrates IDs into options
  */
-export function useFetchArtifacts() {
+export function useArtifactsLoader() {
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
   const entityStore = useEntityStore();
   const { t } = useI18n();
@@ -34,47 +34,33 @@ export function useFetchArtifacts() {
       pageSize,
       signal,
     }: AsyncComboboxFetchOptions): Promise<AsyncComboboxFetchIdsResult<ArtifactId>> => {
-      // Check if request was aborted
       if (signal?.aborted) {
         const abortError = new Error('Request aborted');
         abortError.name = 'AbortError';
         throw abortError;
       }
 
-      // Fetch artifacts from the API
-      const rawArtifacts: any[] = await trpcClient.artifact.list.mutate();
+      const rawArtifacts = await trpcClient.artifact.list.mutate();
 
-      // Check if request was aborted after fetch
       if (signal?.aborted) {
         const abortError = new Error('Request aborted');
         abortError.name = 'AbortError';
         throw abortError;
       }
 
-      // Convert date strings to Date objects
-      const allArtifacts: Artifact[] = rawArtifacts.map((artifact) => ({
-        ...artifact,
-        created_at: artifact.created_at ? new Date(artifact.created_at) : null,
-        updated_at: artifact.updated_at ? new Date(artifact.updated_at) : null,
-        download_url_expires_at: artifact.download_url_expires_at
-          ? new Date(artifact.download_url_expires_at)
-          : null,
-        upload_url_expires_at: artifact.upload_url_expires_at
-          ? new Date(artifact.upload_url_expires_at)
-          : null,
-      }));
+      const allArtifacts: Artifact[] = rawArtifacts.flatMap((artifact) => {
+        const parsed = Artifact.schema.safeParse(artifact);
+        return parsed.success ? [parsed.data] : [];
+      });
 
-      // Store all artifacts in entity store
       entityStore.addManyEntities('artifacts', allArtifacts);
 
-      // Filter based on query
       const filtered = allArtifacts.filter(
         (artifact) =>
           artifact.filename.toLowerCase().includes(query.toLowerCase()) ||
           artifact.file_type.toLowerCase().includes(query.toLowerCase()),
       );
 
-      // Paginate
       const start = page * pageSize;
       const end = start + pageSize;
       const items = filtered.slice(start, end);
@@ -94,14 +80,17 @@ export function useFetchArtifacts() {
    */
   const getArtifactOptions = React.useCallback(
     (ids: ArtifactId[]): ComboboxOption<ArtifactId>[] => {
-      return ids
-        .map((id) => artifactsById[id])
-        .filter((artifact): artifact is Artifact => artifact !== undefined)
-        .map((artifact) => ({
-          value: artifact.id as ArtifactId,
-          label: t('artifact.displayName', { name: artifact.name || artifact.filename }),
-          metadata: { type: artifact.file_type, size: artifact.size },
-        }));
+      return ids.flatMap((id) => {
+        const artifact = artifactsById[id];
+        if (!artifact) return [];
+        return [
+          {
+            value: ArtifactId.schema.parse(artifact.id),
+            label: t('artifact.displayName', { name: artifact.name || artifact.filename }),
+            metadata: { type: artifact.file_type, size: artifact.size },
+          },
+        ];
+      });
     },
     [artifactsById, t],
   );

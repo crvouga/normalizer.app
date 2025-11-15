@@ -7,7 +7,7 @@ import { ArtifactOptionItem } from './artifact-option-item';
 import { ArtifactUploadComboboxActionButton } from '../artifact-upload/artifact-upload-combobox-action-button';
 import { SelectedArtifactsList } from './selected-artifacts-list';
 import { useArtifactSelection } from './use-artifact-selection';
-import { useFetchArtifacts } from './use-fetch-artifacts';
+import { useArtifactsLoader } from './use-artifacts-loader';
 import type { Result } from '~/src/lib/result';
 
 export type ArtifactsInputProps = {
@@ -31,7 +31,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
     onChange: props.onChange,
   });
 
-  const { fetchArtifactIds, getArtifactOptions } = useFetchArtifacts();
+  const { fetchArtifactIds, getArtifactOptions } = useArtifactsLoader();
 
   // Handle upload complete - add artifact to selection
   const handleUploadComplete = useCallback(
