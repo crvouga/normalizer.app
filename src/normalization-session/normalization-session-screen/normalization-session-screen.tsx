@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { PolicyCheckGuard } from '~/src/permissions/policy-check-guard';
 import { useEntityStoreSelector } from '~/src/store/entity-store';
 import { SpinnerBlock } from '~/src/ui/spinner-block';
@@ -22,6 +23,19 @@ export const NormalizationSessionScreen = (props: {
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
   );
 
+  const scrollableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when entries change
+  useEffect(() => {
+    const container = scrollableContainerRef.current;
+    if (container && normalizationSessionProjection) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, [normalizationSessionProjection?.entries.length, normalizationSessionProjection]);
+
   if (!normalizationSessionProjection) return <SpinnerBlock />;
 
   return (
@@ -35,7 +49,10 @@ export const NormalizationSessionScreen = (props: {
           targetArtifactIds={normalizationSessionProjection.targetArtifactIds}
         />
 
-        <div className="flex w-full flex-1 flex-col items-center overflow-y-scroll px-8 py-8">
+        <div
+          ref={scrollableContainerRef}
+          className="flex w-full flex-1 flex-col items-center overflow-y-scroll px-8 py-8"
+        >
           <div className="flex w-full max-w-2xl flex-col gap-4">
             {normalizationSessionProjection.entries.map((entry) => (
               <NormalizationSessionEntry

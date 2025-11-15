@@ -50,16 +50,17 @@ export const normalizationSessionListRouter = router({
         .limit(input.limit + 1);
 
       const rows = await query;
-      const sessionProjections = rows
-        .slice(0, input.limit)
-        .map((row) => NormalizationSessionProjection.schema.parse(row.projection));
+      const sessions = rows.slice(0, input.limit).flatMap((row) => {
+        const parsed = NormalizationSessionProjection.schema.safeParse(row.projection);
+        return parsed.success ? [parsed.data] : [];
+      });
 
       const hasMore = rows.length > input.limit;
       const lastRow = rows[input.limit - 1];
       const nextCursor = hasMore && lastRow?.updated_at ? lastRow.updated_at.toISOString() : null;
 
       const artifactIds = Array.from(
-        new Set(sessionProjections.flatMap((projection) => projection.targetArtifactIds)),
+        new Set(sessions.flatMap((projection) => projection.targetArtifactIds)),
       );
 
       let artifacts: Artifact[] = [];
@@ -69,21 +70,22 @@ export const normalizationSessionListRouter = router({
           .from(schema.artifacts)
           .where(and(inArray(schema.artifacts.id, artifactIds), isNull(schema.artifacts.deleted)));
 
-        artifacts = artifactRows.map((row) => Artifact.schema.parse(row));
+        artifacts = artifactRows.flatMap((row) => {
+          const parsed = Artifact.schema.safeParse(row);
+          return parsed.success ? [parsed.data] : [];
+        });
         artifacts = await refreshArtifactUrls({ ...ctx, artifacts });
       }
 
-      const resourceOwnerships: ResourceOwnershipEntity[] = sessionProjections.map(
-        (projection) => ({
-          id: ResourceOwnershipEntityId.create('normalization-session', projection.id),
-          resourceType: 'normalization-session',
-          resourceId: projection.id,
-          ownerId: projection.startedByUserId,
-        }),
-      );
+      const resourceOwnerships: ResourceOwnershipEntity[] = sessions.map((projection) => ({
+        id: ResourceOwnershipEntityId.create('normalization-session', projection.id),
+        resourceType: 'normalization-session',
+        resourceId: projection.id,
+        ownerId: projection.startedByUserId,
+      }));
 
       return {
-        sessions: sessionProjections,
+        sessions,
         artifacts,
         resourceOwnerships,
         nextCursor,

@@ -33,7 +33,7 @@ export const NormalizationSessionScreenInputForm = (props: {
   };
 
   return (
-    <Form onSubmit={handleSubmit} disabled={isLastEntryInProgress} className="space-y-4">
+    <Form onSubmit={handleSubmit} disabled={isLastEntryInProgress} contentClassName="space-y-4">
       <ArtifactsField
         label={t('normalizationSession.inputArtifactsLabel')}
         value={inputArtifactIds}

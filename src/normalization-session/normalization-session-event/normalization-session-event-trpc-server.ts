@@ -52,10 +52,7 @@ export const normalizationSessionEventRouter = router({
       };
 
       const projection = await ctx.db.transaction(async (tx) => {
-        // Insert the new event
         await tx.insert(schema.normalizationSessionEvents).values(event);
-
-        // Refresh the projection
         return await refreshNormalizationSessionProjection({
           tx: tx,
           sessionId: input.sessionId,
@@ -93,7 +90,6 @@ export const normalizationSessionEventRouter = router({
         userId: ctx.userId,
       });
 
-      // Authorization check: verify user has permission to view this session
       const permission = canViewNormalizationSession(input.id);
       const resourceOwnerId = await getNormalizationSessionOwner(ctx.db, input.id);
 
@@ -116,7 +112,6 @@ export const normalizationSessionEventRouter = router({
         count: events.length,
       });
 
-      // Validate and transform to NormalizationSessionEventEntity type array
       const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
 
       const projection = await ctx.db.transaction(

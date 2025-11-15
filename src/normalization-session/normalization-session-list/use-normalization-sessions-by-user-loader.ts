@@ -4,7 +4,7 @@ import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import type { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import type { Artifact } from '~/src/artifacts/artifact';
+import { Artifact } from '~/src/artifacts/artifact';
 
 /**
  * Hook for loading normalization session projections by user ID with infinite scroll support.
@@ -22,28 +22,16 @@ export function useNormalizationSessionsByUserLoader(userId: UserId) {
         cursor,
         limit,
       });
-
-      // Convert string dates to Date objects and store projections in entity store
-      const projections: NormalizationSessionProjection[] = response.sessions.map((projection) =>
-        NormalizationSessionProjection.schema.parse(projection),
-      );
+      const projections = response.sessions.flatMap((projection) => {
+        const parsed = NormalizationSessionProjection.schema.safeParse(projection);
+        return parsed.success ? [parsed.data] : [];
+      });
+      const artifacts = response.artifacts.flatMap((artifact) => {
+        const parsed = Artifact.schema.safeParse(artifact);
+        return parsed.success ? [parsed.data] : [];
+      });
       entityStore.addManyEntities('normalizationSessionProjections', projections);
-
-      const artifacts: Artifact[] = response.artifacts.map(
-        (artifact): Artifact => ({
-          ...artifact,
-          created_at: artifact.created_at ? new Date(artifact.created_at) : null,
-          updated_at: artifact.updated_at ? new Date(artifact.updated_at) : null,
-          download_url_expires_at: artifact.download_url_expires_at
-            ? new Date(artifact.download_url_expires_at)
-            : null,
-          upload_url_expires_at: artifact.upload_url_expires_at
-            ? new Date(artifact.upload_url_expires_at)
-            : null,
-        }),
-      );
       entityStore.addManyEntities('artifacts', artifacts);
-
       entityStore.addManyEntities('resourceOwnerships', response.resourceOwnerships);
 
       return {
