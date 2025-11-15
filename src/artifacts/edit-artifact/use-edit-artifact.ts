@@ -29,8 +29,8 @@ export function useEditArtifact({
     try {
       // Optimistically update the entity store
       entityStore.updateEntity('artifacts', params.artifactId, {
-        name: params.name,
-        filename: params.filename,
+        ...(params.name !== undefined ? { name: params.name } : {}),
+        ...(params.filename !== undefined ? { filename: params.filename } : {}),
         updated_at: new Date(),
       });
 

@@ -1,13 +1,14 @@
+import type { I18nText } from '../i18n/types';
 import { Button } from './button';
 
 export interface ModalActionsProps {
   // Cancel button
-  cancelText: string;
+  cancelText: I18nText;
   onCancel: () => void;
   cancelDisabled?: boolean;
 
   // Primary/Submit button
-  submitText: string;
+  submitText: I18nText;
   onSubmit?: () => void;
   submitDisabled?: boolean;
   submitLoading?: boolean;

@@ -1,3 +1,5 @@
+import type { I18nText, TranslationKey, InterpolationValues } from '../../i18n/types';
+
 /**
  * Utility functions for file handling and validation
  */
@@ -14,15 +16,19 @@ export const validateFiles = (
   files: FileList,
   maxFiles: number,
   maxSize: number,
-): string | null => {
+  t: (key: TranslationKey, values?: InterpolationValues) => I18nText,
+): I18nText | null => {
   if (files.length > maxFiles) {
-    return `Maximum ${maxFiles} files allowed`;
+    return t('fileValidation.maxFilesExceeded', { max: maxFiles.toString() });
   }
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     if (file && file.size > maxSize) {
-      return `File "${file.name}" is too large. Maximum size is ${formatFileSize(maxSize)}`;
+      return t('fileValidation.fileTooLarge', {
+        name: file.name,
+        size: formatFileSize(maxSize),
+      });
     }
   }
 

@@ -1,5 +1,6 @@
 import { ComboboxButton, ComboboxInput } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../../../i18n/types';
 import { IconChevronDown } from '../../icons';
 import { Spinner } from '../../spinner';
 import { getButtonBaseStyles } from '../../button-base';
@@ -7,7 +8,7 @@ import { getButtonBaseStyles } from '../../button-base';
 export interface ComboboxInputFieldProps<T> {
   displayValue: (value: T | null) => string;
   onQueryChange: (value: string) => void;
-  placeholder: string;
+  placeholder: I18nText;
   isLoading: boolean;
   hasError: boolean;
   inputClassName?: string;

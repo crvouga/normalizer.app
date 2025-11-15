@@ -1,5 +1,6 @@
 import { createContext, type ReactNode } from 'react';
-import type { Locale, TranslationKey, InterpolationValues } from './types';
+import type { Locale, TranslationKey, InterpolationValues, I18nText } from './types';
+import { toI18nText } from './types';
 import en from './locales/en.json';
 
 const translations: Record<Locale, typeof en> = {
@@ -8,7 +9,7 @@ const translations: Record<Locale, typeof en> = {
 
 interface I18nContextValue {
   locale: Locale;
-  t: (key: TranslationKey, values?: InterpolationValues) => string;
+  t: (key: TranslationKey, values?: InterpolationValues) => I18nText;
   setLocale: (locale: Locale) => void;
 }
 
@@ -20,7 +21,7 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children, locale = 'en' }: I18nProviderProps) {
-  const t = (key: TranslationKey, values?: InterpolationValues): string => {
+  const t = (key: TranslationKey, values?: InterpolationValues): I18nText => {
     const keys = key.split('.');
     let translation: any = translations[locale];
 
@@ -31,24 +32,25 @@ export function I18nProvider({ children, locale = 'en' }: I18nProviderProps) {
       } else {
         // Fallback to key if translation not found
         console.warn(`Translation missing for key: ${key}`);
-        return key;
+        return toI18nText(key);
       }
     }
 
     // If translation is not a string, return the key
     if (typeof translation !== 'string') {
       console.warn(`Translation for key "${key}" is not a string`);
-      return key;
+      return toI18nText(key);
     }
 
     // Handle interpolation
     if (values) {
-      return Object.entries(values).reduce((str, [placeholder, value]) => {
+      const interpolated = Object.entries(values).reduce((str, [placeholder, value]) => {
         return str.replace(new RegExp(`{{${placeholder}}}`, 'g'), String(value));
       }, translation);
+      return toI18nText(interpolated);
     }
 
-    return translation;
+    return toI18nText(translation);
   };
 
   const setLocale = (newLocale: Locale) => {

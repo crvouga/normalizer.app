@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { I18nText, TranslationKey, InterpolationValues } from '../i18n/types';
 import { useI18n } from '../i18n/use-i18n';
 
 export interface UseFileLoaderParams {
@@ -118,7 +119,7 @@ async function fetchFile(
   url: string,
   fileName: string,
   contentType: string,
-  t: (key: string, values?: Record<string, string>) => string,
+  t: (key: TranslationKey, values?: InterpolationValues) => I18nText,
 ): Promise<File> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -131,6 +132,6 @@ async function fetchFile(
 /**
  * Standardize error parsing.
  */
-function parseError(err: unknown, t: (key: string) => string): string {
+function parseError(err: unknown, t: (key: TranslationKey) => I18nText): string {
   return err instanceof Error ? err.message : t('fileLoader.failedToLoad');
 }

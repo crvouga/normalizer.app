@@ -8,11 +8,20 @@
     "signOutConfirmTitle": "Sign Out",
     "signOutConfirmMessage": "Are you sure you want to sign out?",
     "signOutSuccess": "Signed out",
+    "signOutError": "Failed to sign out",
     "signIn": "Sign In",
     "signInTitle": "Sign In",
     "signInMessage": "Choose a sign-in method to continue",
     "signInWithGoogle": "Sign in with Google",
-    "signInSuccessGoogle": "Signed in with Google"
+    "signInSuccessGoogle": "Signed in with Google",
+    "errors": {
+      "invalidState": "Authentication failed: Invalid state (possible CSRF attack)",
+      "missingParams": "Authentication failed: Missing parameters",
+      "notConfigured": "Google authentication is not configured",
+      "oauthFailed": "Authentication failed: Could not complete sign in",
+      "configError": "Authentication failed: Configuration error",
+      "generic": "Authentication failed"
+    }
   },
   "settings": {
     "title": "Settings"
@@ -51,6 +60,7 @@
     "namePlaceholder": "Enter artifact name",
     "filenameLabel": "Filename",
     "filenamePlaceholder": "Enter filename",
+    "displayName": "{{name}}",
     "upload": "Upload",
     "uploadSuccess": "Artifact uploaded",
     "uploadError": "Failed to upload artifact",
@@ -75,7 +85,8 @@
   "common": {
     "search": "Search...",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "retry": "Retry"
   },
   "permissions": {
     "denied": "Access Denied",
@@ -91,7 +102,10 @@
     "artifactsLabel": "Artifacts",
     "targetArtifactsLabel": "Target Artifact",
     "inputArtifactsLabel": "Input Artifact",
-    "normalize": "Normalize"
+    "normalize": "Normalize",
+    "list": {
+      "failedToLoad": "Failed to load sessions"
+    }
   },
   "tabularFilePreview": {
     "noData": "No data to preview",
@@ -114,5 +128,12 @@
   "fileLoader": {
     "failedToDownload": "Failed to download file: {{status}}",
     "failedToLoad": "Failed to load file"
+  },
+  "fileValidation": {
+    "maxFilesExceeded": "Maximum {{max}} files allowed",
+    "fileTooLarge": "File \"{{name}}\" is too large. Maximum size is {{size}}"
+  },
+  "users": {
+    "failedToLoad": "Failed to load user"
   }
 }

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { I18nText } from '../../i18n/types';
 import { TabularFileInput } from './tabular-file-input';
 import { TabularFileList } from './tabular-file-list';
 import type { TabularFile } from './tabular-file';
@@ -6,11 +7,11 @@ import type { TabularFileAction } from './tabular-file-item';
 
 interface TabularFileInputFieldProps {
   id: string;
-  label: string;
+  label: I18nText;
   maxFiles?: number;
   maxSize?: number;
   onFilesChange?: (files: FileList | null) => void;
-  placeholder?: string;
+  placeholder?: I18nText;
   accept?: string;
   multiple?: boolean;
   readOnly?: boolean;

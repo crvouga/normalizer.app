@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../../i18n/types';
 import { UploadIcon } from '../icons';
 import { Typography } from '../typography';
 import { useI18n } from '../../i18n/use-i18n';
 
 export interface DropZoneProps {
   className?: string;
-  placeholder?: string;
+  placeholder?: I18nText;
   accept?: string;
   isDragOver: boolean;
   hasError: boolean;

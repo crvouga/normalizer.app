@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { MenuItem } from '@headlessui/react';
+import type { I18nText } from '../i18n/types';
 import { Typography } from './typography';
 import { ButtonBase } from './button-base';
 
 type MenuItemButtonProps = {
   onClick: () => void;
   icon: ReactNode;
-  label: string;
+  label: I18nText;
   disabled?: boolean;
 };
 

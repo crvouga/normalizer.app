@@ -8,6 +8,7 @@ import type { Artifact } from '../artifact';
 import type { ArtifactId } from '../artifact-id';
 import { trpcClient } from '../../trpc-client';
 import { useEntityStoreSelector, useEntityStore } from '../../store/entity-store';
+import { useI18n } from '../../i18n/use-i18n';
 
 /**
  * Hook for fetching artifacts with pagination and search.
@@ -20,6 +21,7 @@ import { useEntityStoreSelector, useEntityStore } from '../../store/entity-store
 export function useFetchArtifacts() {
   const artifactsById = useEntityStoreSelector((state) => state.entities.artifacts.byId);
   const entityStore = useEntityStore();
+  const { t } = useI18n();
 
   /**
    * Fetches artifacts from the API, stores them in the entity store,
@@ -97,11 +99,11 @@ export function useFetchArtifacts() {
         .filter((artifact): artifact is Artifact => artifact !== undefined)
         .map((artifact) => ({
           value: artifact.id as ArtifactId,
-          label: artifact.name || artifact.filename,
+          label: t('artifact.displayName', { name: artifact.name || artifact.filename }),
           metadata: { type: artifact.file_type, size: artifact.size },
         }));
     },
-    [artifactsById],
+    [artifactsById, t],
   );
 
   return { fetchArtifactIds, getArtifactOptions };

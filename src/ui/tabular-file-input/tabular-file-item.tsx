@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useFileLoader } from '../../lib/use-file-loader';
+import type { I18nText } from '../../i18n/types';
 import { ButtonBase } from '../button-base';
 import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
@@ -10,7 +11,7 @@ import type { TabularFile } from './tabular-file';
 import { formatFileSize } from './tabular-file-utils';
 
 export interface TabularFileAction {
-  label: string;
+  label: I18nText;
   icon: Icon;
   onClick: (file: TabularFile, index: number) => void;
 }

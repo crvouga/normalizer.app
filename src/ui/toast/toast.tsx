@@ -1,6 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { useI18n } from '~/src/i18n/use-i18n';
+import type { I18nText } from '../../i18n/types';
 import { cn } from '~/src/lib/cn';
 import { ButtonBase } from '../button-base';
 import { IconAlertCircle, IconCheck, IconX } from '../icons';
@@ -34,7 +35,7 @@ function ToastContent({
   errorDetails,
   onShowError,
 }: {
-  message: string;
+  message: I18nText;
   errorDetails?: string;
   onShowError?: () => void;
 }) {

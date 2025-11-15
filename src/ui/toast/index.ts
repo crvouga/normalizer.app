@@ -1,3 +1,4 @@
+import type { I18nText } from '../../i18n/types';
 import { toastStore } from './toast-store';
 import type { ToastOptions } from './toast-types';
 
@@ -11,7 +12,7 @@ export { ToastProvider } from './toast-provider';
  * @returns The ID of the created toast
  */
 export function showToast(
-  message: string,
+  message: I18nText,
   type: 'success' | 'error',
   options?: ToastOptions,
 ): string {
@@ -24,7 +25,7 @@ export function showToast(
  * @param options - Optional configuration (duration, dismissible)
  * @returns The ID of the created toast
  */
-export function showSuccessToast(message: string, options?: ToastOptions): string {
+export function showSuccessToast(message: I18nText, options?: ToastOptions): string {
   return toastStore.addToast('success', message, options);
 }
 
@@ -36,7 +37,7 @@ export function showSuccessToast(message: string, options?: ToastOptions): strin
  * @returns The ID of the created toast
  */
 export function showErrorToast(
-  message: string,
+  message: I18nText,
   error?: Error | unknown,
   options?: ToastOptions,
 ): string {

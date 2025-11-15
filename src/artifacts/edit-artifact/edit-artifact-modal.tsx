@@ -118,7 +118,7 @@ export function EditArtifactModal({
 
           <TabularFileInputField
             id="artifact-file"
-            label={t('artifact.fileLabel') || 'File'}
+            label={t('artifact.fileLabel')}
             readOnly={true}
             files={tabularFiles}
           />

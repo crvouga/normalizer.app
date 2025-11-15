@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { I18nText } from '../../i18n/types';
 import { Button } from '~/src/ui/button';
 import { cn } from '~/src/lib/cn';
 
@@ -7,7 +8,7 @@ export interface ComboboxActionButtonProps {
   disabled?: boolean;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'contained';
   startIcon?: React.ReactNode;
-  text: string;
+  text: I18nText;
   className?: string;
 }
 

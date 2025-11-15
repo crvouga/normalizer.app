@@ -1,12 +1,13 @@
 import { Description, RadioGroup as HeadlessRadioGroup, Label, Radio } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../i18n/types';
 import { IconCheck, type Icon } from './icons';
 import { Typography } from './typography';
 
 export interface RadioOption<T extends string = string> {
   value: T;
-  label: string;
-  description?: string;
+  label: I18nText;
+  description?: I18nText;
   disabled?: boolean;
   icon?: Icon;
 }
@@ -15,7 +16,7 @@ export interface RadioGroupProps<T extends string = string> {
   value: T;
   onChange: (value: T) => void;
   options: RadioOption<T>[];
-  label?: string;
+  label?: I18nText;
   className?: string;
 }
 

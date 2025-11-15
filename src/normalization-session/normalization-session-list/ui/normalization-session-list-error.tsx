@@ -1,5 +1,6 @@
 import { Button } from '~/src/ui/button';
 import { Typography } from '~/src/ui/typography';
+import { useI18n } from '~/src/i18n/use-i18n';
 
 interface NormalizationSessionListErrorProps {
   error: Error;
@@ -13,17 +14,24 @@ export function NormalizationSessionListError({
   error,
   onRetry,
 }: NormalizationSessionListErrorProps) {
+  const { t } = useI18n();
   return (
     <div className="flex h-full items-center justify-center p-8">
       <div className="text-center">
         <Typography variant="sm" weight="medium" color="error" as="p">
-          Failed to load sessions
+          {t('normalizationSession.list.failedToLoad')}
         </Typography>
         <Typography variant="xs" color="muted" as="p" className="mt-1">
           {error.message}
         </Typography>
         {onRetry && (
-          <Button onClick={onRetry} variant="outline" size="sm" className="mt-4" text="Retry" />
+          <Button
+            onClick={onRetry}
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            text={t('common.retry')}
+          />
         )}
       </div>
     </div>

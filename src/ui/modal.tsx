@@ -1,6 +1,7 @@
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { Fragment } from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../i18n/types';
 import { IconX } from './icons';
 import { Typography } from './typography';
 import { useI18n } from '../i18n/use-i18n';
@@ -9,7 +10,7 @@ import { ButtonBase } from './button-base';
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title?: I18nText;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   className?: string;

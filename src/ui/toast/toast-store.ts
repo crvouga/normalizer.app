@@ -1,4 +1,5 @@
 import { Store } from '~/src/lib/store';
+import type { I18nText } from '../../i18n/types';
 import type { Toast, ToastOptions, ToastType } from './toast-types';
 
 interface ToastStoreState {
@@ -10,7 +11,7 @@ class ToastStore extends Store<ToastStoreState> {
     super({ toasts: [] });
   }
 
-  addToast(type: ToastType, message: string, options?: ToastOptions): string {
+  addToast(type: ToastType, message: I18nText, options?: ToastOptions): string {
     const id = crypto.randomUUID();
     const toast: Toast = {
       id,

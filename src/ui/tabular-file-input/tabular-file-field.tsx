@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../../i18n/types';
 import { Label } from '../label';
 import { TabularFileInput, type TabularFileInputProps } from './tabular-file-input';
 
 export interface TabularFileFieldProps extends TabularFileInputProps {
-  label?: string;
+  label?: I18nText;
 }
 
 /**

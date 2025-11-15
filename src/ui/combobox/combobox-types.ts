@@ -1,9 +1,10 @@
 import * as React from 'react';
+import type { I18nText } from '../../i18n/types';
 
 // Types
 export interface ComboboxOption<T> {
   value: T;
-  label: string;
+  label: I18nText;
   disabled?: boolean;
   metadata?: Record<string, unknown>;
 }
@@ -21,7 +22,7 @@ export interface ComboboxProps<T> {
   onQueryChange?: (query: string) => void;
 
   // Customization
-  placeholder?: string;
+  placeholder?: I18nText;
   displayValue?: (value: T | null) => string;
   filterOptions?: (options: ComboboxOption<T>[], query: string) => ComboboxOption<T>[];
   renderOption?: (option: ComboboxOption<T>, selected: boolean) => React.ReactNode;
@@ -42,8 +43,8 @@ export interface ComboboxProps<T> {
   optionsClassName?: string;
 
   // Labels
-  label?: string;
-  helperText?: string;
+  label?: I18nText;
+  helperText?: I18nText;
 
   // Action button
   actionButton?: React.ReactNode;

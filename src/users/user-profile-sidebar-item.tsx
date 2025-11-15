@@ -128,7 +128,11 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
             />
           )}
 
-          <MenuItemButton onClick={openSettings} icon={<IconSettings />} label="Settings" />
+          <MenuItemButton
+            onClick={openSettings}
+            icon={<IconSettings />}
+            label={t('settings.title')}
+          />
 
           {!isAnonymous && (
             <MenuItemButton

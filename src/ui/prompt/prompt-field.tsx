@@ -1,13 +1,14 @@
 import * as React from 'react';
+import type { I18nText } from '../../i18n/types';
 import { Typography } from '../typography';
 import { useI18n } from '../../i18n/use-i18n';
 
 interface PromptInputFieldProps {
   id?: string;
-  label?: string;
+  label?: I18nText;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
+  placeholder?: I18nText;
   rows?: number;
 }
 

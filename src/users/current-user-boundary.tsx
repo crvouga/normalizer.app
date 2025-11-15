@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { SplashScreen } from '../ui/splash-screen';
 import { showErrorToast } from '../ui/toast';
+import { useI18n } from '../i18n/use-i18n';
 import { useCurrentUserResult } from './use-current-user';
 
 /**
@@ -10,12 +11,13 @@ import { useCurrentUserResult } from './use-current-user';
  */
 export function CurrentUserBoundary({ children }: { children: ReactNode }) {
   const { currentUserResult } = useCurrentUserResult();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (currentUserResult.tag === 'err') {
-      showErrorToast('Failed to load user', currentUserResult.error);
+      showErrorToast(t('users.failedToLoad'), currentUserResult.error);
     }
-  }, [currentUserResult]);
+  }, [currentUserResult, t]);
 
   if (
     currentUserResult.tag === 'loading' ||

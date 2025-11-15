@@ -1,7 +1,8 @@
+import type { I18nText } from '../../i18n/types';
 import { Typography } from '../typography';
 
 export interface TextFieldLabelProps {
-  label?: string;
+  label?: I18nText;
   htmlFor?: string;
 }
 

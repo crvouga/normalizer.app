@@ -39,7 +39,7 @@ export function useSignOut() {
       closeSignOutDialog();
     } catch (error) {
       console.error('Logout failed:', error);
-      showErrorToast('Failed to sign out', error);
+      showErrorToast(t('auth.signOutError'), error);
     } finally {
       setIsSigningOut(false);
     }

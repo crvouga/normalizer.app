@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../../i18n/types';
 import { TextFieldInput } from './text-field-input';
 import { TextFieldLabel } from './text-field-label';
 
-export interface TextFieldProps extends Omit<React.ComponentProps<'input'>, 'className'> {
+export interface TextFieldProps
+  extends Omit<React.ComponentProps<'input'>, 'className' | 'placeholder'> {
   // Label
-  label?: string;
+  label?: I18nText;
+  placeholder?: I18nText;
 
   // Error state
   error?: Error | string | null;
@@ -22,6 +25,7 @@ export interface TextFieldProps extends Omit<React.ComponentProps<'input'>, 'cla
  */
 export function TextField({
   label,
+  placeholder,
   error: errorProp,
   hasError: hasErrorProp,
   className,
@@ -38,6 +42,7 @@ export function TextField({
       <TextFieldInput
         id={id}
         hasError={hasError}
+        placeholder={placeholder}
         {...(inputClassName !== undefined ? { inputClassName } : {})}
         {...inputProps}
       />

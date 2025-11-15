@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { I18nText } from '../../i18n/types';
 import { DropZone } from './drop-zone';
 import { TabularFileList } from './tabular-file-list';
 import { validateFiles, createFileListFromFiles } from './tabular-file-utils';
@@ -7,14 +8,14 @@ import { useI18n } from '../../i18n/use-i18n';
 import type { TabularFile } from './tabular-file';
 
 export interface TabularFileInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange' | 'placeholder'> {
   onFilesChange?: (files: FileList | null) => void;
   accept?: string;
   multiple?: boolean;
   maxFiles?: number;
   maxSize?: number; // in bytes
   className?: string;
-  placeholder?: string;
+  placeholder?: I18nText;
   showPreview?: boolean;
 }
 
@@ -50,7 +51,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
     const [isDragOver, setIsDragOver] = React.useState(false);
     const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
     const [tabularFiles, setTabularFiles] = React.useState<TabularFile[]>([]);
-    const [error, setError] = React.useState<string | null>(null);
+    const [error, setError] = React.useState<I18nText | null>(null);
     const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({});
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -70,7 +71,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
     const handleFiles = (files: FileList | null) => {
       if (!files) return;
 
-      const validationError = validateFiles(files, maxFiles, maxSize);
+      const validationError = validateFiles(files, maxFiles, maxSize, t);
       if (validationError) {
         setError(validationError);
         return;

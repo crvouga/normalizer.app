@@ -1,7 +1,8 @@
+import type { I18nText } from '../../../i18n/types';
 import { Typography } from '../../typography';
 
 export interface ComboboxHelperTextProps {
-  helperText?: string;
+  helperText?: I18nText;
   error?: Error | string | null;
 }
 

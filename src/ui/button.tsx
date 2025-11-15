@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '../i18n/types';
 import { ButtonBase } from './button-base';
 import { Spinner, type SpinnerColor } from './spinner';
 
@@ -70,7 +71,7 @@ interface ButtonProps extends Omit<React.ComponentProps<'button'>, 'children'> {
   size?: ButtonSize;
   color?: ButtonColor;
   asChild?: boolean;
-  text?: string;
+  text?: I18nText;
   startIcon?: React.ReactNode;
   loading?: boolean;
 }

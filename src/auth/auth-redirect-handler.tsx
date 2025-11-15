@@ -20,19 +20,19 @@ export function AuthRedirectHandler() {
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     } else if (authError) {
-      const errorMessages: Record<string, string> = {
-        invalid_state: 'Authentication failed: Invalid state (possible CSRF attack)',
-        missing_params: 'Authentication failed: Missing parameters',
-        not_configured: 'Google authentication is not configured',
-        oauth_failed: 'Authentication failed: Could not complete sign in',
-        config_error: 'Authentication failed: Configuration error',
+      const errorKeyMap: Record<string, string> = {
+        invalid_state: 'auth.errors.invalidState',
+        missing_params: 'auth.errors.missingParams',
+        not_configured: 'auth.errors.notConfigured',
+        oauth_failed: 'auth.errors.oauthFailed',
+        config_error: 'auth.errors.configError',
       };
-      const message = errorMessages[authError] || 'Authentication failed';
-      showErrorToast(message);
+      const errorKey = errorKeyMap[authError] || 'auth.errors.generic';
+      showErrorToast(t(errorKey as any));
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [t]);
 
   return null;
 }
