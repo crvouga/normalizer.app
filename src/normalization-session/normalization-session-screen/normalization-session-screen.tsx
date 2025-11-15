@@ -40,7 +40,7 @@ export const NormalizationSessionScreen = (props: {
           className="px-4 py-8 md:px-8"
           contentClassName="gap-6 max-w-4xl"
           bottomPadding="pb-56 md:pb-64"
-          scrollTriggers={[normalizationSessionProjection?.entries.length]}
+          scrollKey={normalizationSessionProjection?.entries.length}
           autoScroll
           smoothScroll
         >

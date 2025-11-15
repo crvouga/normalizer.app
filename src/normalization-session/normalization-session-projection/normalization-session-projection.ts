@@ -22,7 +22,6 @@ const reducer = (
   event: NormalizationSessionEvent,
 ): NormalizationSessionProjection => {
   switch (event.type) {
-    case 'start-session':
     case 'user-started-session':
       return {
         ...state,

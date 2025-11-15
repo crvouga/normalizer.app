@@ -21,10 +21,12 @@ export interface ChatScrollBoxProps {
    */
   smoothScroll?: boolean;
   /**
-   * Dependencies to watch for changes that should trigger auto-scroll.
-   * When these values change, the scroll position will be evaluated.
+   * A key that changes when content should trigger a scroll.
+   * When this value changes, the scrollbox will check if it should scroll to bottom.
+   * Can be a string, number, or any value that changes when new content is added.
+   * This is optional - ResizeObserver will also detect content changes automatically.
    */
-  scrollTriggers?: unknown[];
+  scrollKey?: string | number;
   /**
    * Callback fired when scroll position changes significantly.
    * Useful for showing/hiding scroll-to-bottom buttons.
@@ -51,7 +53,7 @@ export function ChatScrollBox({
   autoScroll = true,
   scrollThreshold = 100,
   smoothScroll = true,
-  scrollTriggers = [],
+  scrollKey,
   onScrollPositionChange,
   bottomPadding = 'pb-56 md:pb-64',
 }: ChatScrollBoxProps) {
@@ -61,6 +63,7 @@ export function ChatScrollBox({
   const lastScrollTopRef = useRef<number>(0);
   const userScrollTimeoutRef = useRef<number | null>(null);
   const isInitialMountRef = useRef<boolean>(true);
+  const lastHeightRef = useRef<number>(0);
 
   /**
    * Check if user is near the bottom of the scroll container
@@ -143,6 +146,30 @@ export function ChatScrollBox({
   }, [checkScrollPosition, isNearBottom, onScrollPositionChange]);
 
   /**
+   * Attempt to scroll to bottom if conditions are met
+   * This is called both by scrollKey changes and ResizeObserver
+   */
+  const attemptAutoScroll = useCallback(() => {
+    if (!autoScroll || isInitialMountRef.current) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const shouldScroll = checkScrollPosition();
+    const isScrollingAway = isUserScrolling && !shouldScroll;
+
+    if (shouldScroll && !isScrollingAway) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        // Small delay to ensure content is fully rendered
+        window.setTimeout(() => {
+          scrollToBottom();
+        }, 50);
+      });
+    }
+  }, [autoScroll, checkScrollPosition, isUserScrolling, scrollToBottom]);
+
+  /**
    * Initial mount: scroll to bottom instantly (no animation)
    * Uses double RAF to ensure content is fully rendered before scrolling
    */
@@ -181,45 +208,48 @@ export function ChatScrollBox({
   }, [autoScroll]);
 
   /**
-   * Auto-scroll when content changes, but only if user is near bottom
-   * If user is near bottom, smoothly scroll to bottom when new content arrives
-   * This prevents auto-scroll when user has scrolled up to read old messages
+   * Auto-scroll when scrollKey changes
+   * This provides explicit control over when to check for scrolling
    */
   useEffect(() => {
-    // Skip on initial mount (handled by separate effect above)
+    if (!autoScroll || isInitialMountRef.current || scrollKey === undefined) return;
+
+    attemptAutoScroll();
+  }, [autoScroll, scrollKey, attemptAutoScroll]);
+
+  /**
+   * Auto-detect content changes via ResizeObserver
+   * This provides automatic scrolling when content height changes,
+   * regardless of whether scrollKey is provided.
+   * Works independently to catch any DOM changes.
+   */
+  useEffect(() => {
     if (!autoScroll || isInitialMountRef.current) return;
 
     const container = containerRef.current;
     if (!container) return;
 
-    let timeoutId: number | null = null;
-    let rafId: number | null = null;
+    // Initialize last height
+    lastHeightRef.current = container.scrollHeight;
 
-    // Use requestAnimationFrame to ensure DOM has updated
-    rafId = requestAnimationFrame(() => {
-      const shouldScroll = checkScrollPosition();
+    const resizeObserver = new ResizeObserver(() => {
+      const currentHeight = container.scrollHeight;
 
-      // If user is near bottom, always auto-scroll smoothly when new content arrives
-      // Only skip if user is actively scrolling AWAY from bottom (scrolling up while not near bottom)
-      const isScrollingAway = isUserScrolling && !shouldScroll;
-
-      if (shouldScroll && !isScrollingAway) {
-        // Small delay to ensure content is fully rendered
-        timeoutId = window.setTimeout(() => {
-          scrollToBottom();
-        }, 50);
+      // Only trigger if height actually increased (new content added, not removed)
+      // This prevents scrolling when content shrinks
+      if (currentHeight > lastHeightRef.current) {
+        attemptAutoScroll();
       }
+
+      lastHeightRef.current = currentHeight;
     });
 
+    resizeObserver.observe(container);
+
     return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
+      resizeObserver.disconnect();
     };
-  }, [autoScroll, scrollTriggers, checkScrollPosition, isUserScrolling, scrollToBottom]);
+  }, [autoScroll, attemptAutoScroll]);
 
   /**
    * Cleanup timeouts on unmount

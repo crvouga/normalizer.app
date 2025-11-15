@@ -1,13 +1,12 @@
 import { eq, sql, type ExtractTablesWithRelations } from 'drizzle-orm';
 import type { BunSQLQueryResultHKT } from 'drizzle-orm/bun-sql';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
-import { z } from 'zod';
 import type { Logger } from '~/src/lib/logger';
 import type { UserId } from '~/src/users/user-id';
 import * as schema from '../../db/schema';
+import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionProjection } from './normalization-session-projection';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 
 /**
  * Refreshes the projection for a normalization session by:
@@ -31,7 +30,13 @@ export async function refreshNormalizationSessionProjection(params: {
     .orderBy(schema.normalizationSessionEvents.created_at);
 
   // Validate events
-  const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
+  const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap((event) => {
+    const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
+    if (parsedEvent.success) {
+      return [parsedEvent.data];
+    }
+    return [];
+  });
 
   // Compute projection by reducing all events
   const initialState = NormalizationSessionProjection.init({
