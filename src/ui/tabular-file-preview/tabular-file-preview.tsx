@@ -16,17 +16,7 @@ export const TabularFilePreview: React.FC<TabularFilePreviewProps> = ({
   maxRows = 10,
   maxColumns = 10,
 }) => {
-  const { data, error, isLoading, fileType } = useTabularFilePreview(file);
-
-  if (isLoading) {
-    return (
-      <div className="rounded-lg bg-slate-100 p-6 text-center dark:bg-slate-800">
-        <Typography variant="sm" color="muted">
-          Loading {fileType} file...
-        </Typography>
-      </div>
-    );
-  }
+  const { data, error, isLoading } = useTabularFilePreview(file);
 
   if (error) {
     return (
@@ -39,11 +29,21 @@ export const TabularFilePreview: React.FC<TabularFilePreviewProps> = ({
   }
 
   return (
-    <TabularFilePreviewTable
-      data={data}
-      {...(className !== undefined ? { className } : {})}
-      maxRows={maxRows}
-      maxColumns={maxColumns}
-    />
+    <>
+      <TabularFilePreviewTable
+        data={data}
+        {...(className !== undefined ? { className } : {})}
+        maxRows={maxRows}
+        maxColumns={maxColumns}
+        isLoading={isLoading}
+      />
+      {/* <TabularFilePreviewTable
+        data={data}
+        {...(className !== undefined ? { className } : {})}
+        maxRows={maxRows}
+        maxColumns={maxColumns}
+        isLoading
+      /> */}
+    </>
   );
 };

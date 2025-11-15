@@ -3,6 +3,7 @@ import { useFileLoader } from '../../lib/use-file-loader';
 import { ButtonBase } from '../button-base';
 import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
+import { TabularFilePreviewTable } from '../tabular-file-preview/tabular-file-preview-table';
 import { Typography } from '../typography';
 import type { TabularFile } from './tabular-file';
 import { formatFileSize } from './tabular-file-utils';
@@ -150,21 +151,21 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
 
       {isPreviewVisible && showPreview && (
         <div className="border-t border-slate-200 dark:border-slate-700">
-          {isLoading && (
-            <div className="p-6 text-center">
-              <Typography variant="sm" color="muted">
-                Loading file...
-              </Typography>
-            </div>
-          )}
-          {error && (
+          {error ? (
             <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
               <Typography variant="sm" color="error">
                 {error}
               </Typography>
             </div>
-          )}
-          {loadedFile && !isLoading && !error && (
+          ) : isLoading || !loadedFile ? (
+            <TabularFilePreviewTable
+              data={null}
+              maxRows={3}
+              maxColumns={Infinity}
+              className="text-sm"
+              isLoading={true}
+            />
+          ) : (
             <TabularFilePreview
               file={loadedFile}
               maxRows={3}

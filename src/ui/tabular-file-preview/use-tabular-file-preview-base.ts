@@ -22,6 +22,8 @@ export const useTabularFilePreviewBase = ({
         setIsLoading(true);
         setError(null);
 
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
         const parsedData = await parser(file);
         setData(parsedData);
       } catch (err) {
