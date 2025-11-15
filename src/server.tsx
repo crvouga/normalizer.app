@@ -86,7 +86,7 @@ const main = async () => {
   const profilePictureEndpoints = createUserProfilePictureEndpoints({ s3: s3Client, logger });
 
   const server = serve({
-    port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 8080,
 
     routes: {
       // Google OAuth endpoints

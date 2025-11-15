@@ -17,7 +17,7 @@ describe('Server', () => {
     // Wait for server to start by polling health endpoint
     let isServerUp = false;
     const startTime = Date.now();
-    const timeout = 5000; // 5 second timeout
+    const timeout = 8080; // 5 second timeout
 
     while (!isServerUp && Date.now() - startTime < timeout) {
       try {

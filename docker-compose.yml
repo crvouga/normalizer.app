@@ -38,7 +38,7 @@ services:
       context: .
       dockerfile: ./infra/server.Dockerfile
     ports:
-      - '5000:5000'
+      - '8080:8080'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     env_file:

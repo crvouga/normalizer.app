@@ -87,6 +87,42 @@ const reducer = (
         ...state,
         entries: updatedEntries,
       };
+    case 'system-normalization-completed':
+      const completedEntryIndex = state.entries.findIndex(
+        (entry) =>
+          entry.type === 'normalization' && entry.normalizationRunId === event.normalizationRunId,
+      );
+
+      if (completedEntryIndex === -1) {
+        return state;
+      }
+
+      const entryToComplete = state.entries[completedEntryIndex];
+      if (!entryToComplete) {
+        return state;
+      }
+
+      if (entryToComplete.type !== 'normalization' || entryToComplete.status !== 'in_progress') {
+        return state;
+      }
+
+      const completedEntry: NormalizationSessionProjectionEntry = {
+        type: 'normalization',
+        normalizationRunId: entryToComplete.normalizationRunId,
+        id: entryToComplete.id,
+        inputArtifactIds: entryToComplete.inputArtifactIds,
+        outputArtifactIds: event.outputArtifactIds,
+        status: 'completed',
+        createdAt: entryToComplete.createdAt,
+      };
+
+      const updatedEntriesCompleted = [...state.entries];
+      updatedEntriesCompleted[completedEntryIndex] = completedEntry;
+
+      return {
+        ...state,
+        entries: updatedEntriesCompleted,
+      };
     default:
       const _check: never = event;
       console.error('Unknown event type', _check);
