@@ -16,8 +16,8 @@ export const CompletedEntry = (props: { entry: NormalizationSessionProjectionEnt
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col gap-4 py-2">
-      <div className="flex items-center gap-3">
+    <div className="flex w-full flex-col py-2">
+      <div className="flex items-center gap-2">
         <StatusIcon />
         <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
           {t('normalizationSession.completed')}
