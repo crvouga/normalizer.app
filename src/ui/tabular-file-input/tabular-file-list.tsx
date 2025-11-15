@@ -13,6 +13,7 @@ export interface FileListProps {
   onAddMore?: () => void;
   onClearAll: () => void;
   customActions?: TabularFileAction[];
+  readOnly?: boolean;
 }
 
 /**
@@ -28,6 +29,7 @@ export const TabularFileList: React.FC<FileListProps> = ({
   onAddMore,
   onClearAll,
   customActions,
+  readOnly = false,
 }) => {
   if (files.length === 0) return null;
 
@@ -43,26 +45,29 @@ export const TabularFileList: React.FC<FileListProps> = ({
             isPreviewVisible={showPreviews[index] || false}
             onTogglePreview={onTogglePreview}
             onRemove={onRemoveFile}
+            readOnly={readOnly}
             {...(customActions !== undefined ? { customActions } : {})}
           />
         ))}
       </div>
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2">
-          {onAddMore && (
-            <ButtonBase type="button" onClick={onAddMore} className="transition-colors">
-              <Typography variant="xs" color="info" className="hover:opacity-80">
-                Add more
+      {!readOnly && (
+        <div className="flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            {onAddMore && (
+              <ButtonBase type="button" onClick={onAddMore} className="transition-colors">
+                <Typography variant="xs" color="info" className="hover:opacity-80">
+                  Add more
+                </Typography>
+              </ButtonBase>
+            )}
+            <ButtonBase type="button" onClick={onClearAll} className="transition-colors">
+              <Typography variant="xs" color="muted">
+                Clear all
               </Typography>
             </ButtonBase>
-          )}
-          <ButtonBase type="button" onClick={onClearAll} className="transition-colors">
-            <Typography variant="xs" color="muted">
-              Clear all
-            </Typography>
-          </ButtonBase>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

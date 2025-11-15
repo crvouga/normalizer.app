@@ -21,6 +21,7 @@ export interface TabularFileItemHeaderProps {
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
   customActions?: TabularFileAction[];
+  readOnly?: boolean;
 }
 
 export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
@@ -31,6 +32,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   onTogglePreview,
   onRemove,
   customActions = [],
+  readOnly = false,
 }) => {
   const isImage = tabularFile.contentType?.startsWith('image/');
   const actions: TabularFileAction[] = [];
@@ -45,11 +47,13 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
 
   if (customActions.length > 0) actions.push(...customActions);
 
-  actions.push({
-    label: 'Remove',
-    icon: IconTrash,
-    onClick: () => onRemove(index),
-  });
+  if (!readOnly) {
+    actions.push({
+      label: 'Remove',
+      icon: IconTrash,
+      onClick: () => onRemove(index),
+    });
+  }
 
   return (
     <div className="flex items-center justify-between p-3">
@@ -107,6 +111,7 @@ export interface TabularFileItemProps {
   onTogglePreview: (index: number) => void;
   onRemove: (index: number) => void;
   customActions?: TabularFileAction[];
+  readOnly?: boolean;
 }
 
 /**
@@ -121,6 +126,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   onTogglePreview,
   onRemove,
   customActions,
+  readOnly = false,
 }) => {
   const { loadedFile, isLoading, error } = useFileLoader({
     downloadUrl: tabularFile.downloadUrl,
@@ -138,6 +144,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
         isPreviewVisible={isPreviewVisible}
         onTogglePreview={onTogglePreview}
         onRemove={onRemove}
+        readOnly={readOnly}
         {...(customActions !== undefined ? { customActions } : {})}
       />
 

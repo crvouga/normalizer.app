@@ -95,21 +95,6 @@ export function SelectedArtifactsList({
     return null;
   }
 
-  if (readOnly) {
-    return (
-      <div className="[&_.flex.items-center.justify-end]:hidden [&_button:has(svg)]:hidden">
-        <TabularFileList
-          files={tabularFiles}
-          showPreview={showPreview}
-          showPreviews={showPreviews}
-          onTogglePreview={handleTogglePreview}
-          onRemoveFile={() => {}}
-          onClearAll={() => {}}
-        />
-      </div>
-    );
-  }
-
   return (
     <>
       <TabularFileList
@@ -120,6 +105,7 @@ export function SelectedArtifactsList({
         onRemoveFile={handleRemoveFile}
         onClearAll={handleClearAll}
         customActions={customActions}
+        readOnly={readOnly}
       />
       <EditArtifactModal
         isOpen={modalState.type === 'edit'}
