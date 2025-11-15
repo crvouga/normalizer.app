@@ -46,9 +46,15 @@ export function ComboboxOptionItem<T extends string | number>({
       className={({ focus, selected }) =>
         cn(
           'relative cursor-pointer py-3 pr-10 pl-4 select-none',
-          'hover:bg-slate-50 dark:hover:bg-slate-600',
-          focus && 'bg-fuchsia-50 dark:bg-slate-700',
-          selected && 'bg-fuchsia-100 dark:bg-slate-600',
+          'transition-colors',
+          // Hover state - visible background change
+          'hover:bg-slate-100 dark:hover:bg-slate-600',
+          // Keyboard focus state - more visible than hover, uses data attribute from HeadlessUI
+          focus && 'bg-fuchsia-50 dark:bg-slate-500',
+          // Selected state - distinct background
+          selected && 'bg-fuchsia-100 dark:bg-slate-500',
+          // Selected + focus combination - keep the stronger selected state
+          selected && focus && 'bg-fuchsia-200 dark:bg-slate-500',
           option.disabled && 'cursor-not-allowed opacity-50',
         )
       }
