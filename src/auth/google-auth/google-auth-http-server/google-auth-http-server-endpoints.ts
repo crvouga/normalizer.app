@@ -16,11 +16,9 @@ export function createGoogleAuthEndpoints(config: {
   s3Endpoint: string;
   logger: Logger;
 }) {
-  const { logger } = config;
-
   return {
     '/api/auth/google': {
-      GET: async (req: Request) => handleGoogleAuthStart(req, logger),
+      GET: async (req: Request) => handleGoogleAuthStart(req, config),
     },
 
     '/api/auth/google/callback': {

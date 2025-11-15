@@ -27,7 +27,12 @@ export type GoogleAuthConfig = {
  * Generates authorization URL and redirects user to Google
  * Stores session ID in OAuth state so it can be retrieved in callback (since session cookie uses SameSite: Strict)
  */
-export async function handleGoogleAuthStart(req: Request, logger: Logger): Promise<Response> {
+export async function handleGoogleAuthStart(
+  req: Request,
+  config: GoogleAuthConfig,
+): Promise<Response> {
+  const { db, logger } = config;
+
   // Return 404 if Google Auth is not configured
   if (!isGoogleAuthEnabled()) {
     logger.warn('Google OAuth not configured - returning 404');
@@ -42,7 +47,7 @@ export async function handleGoogleAuthStart(req: Request, logger: Logger): Promi
     const sessionId = existingSessionId ?? SessionId.generate();
 
     // Generate auth URL with session ID stored in state
-    const { url, state } = generateAuthUrl(req, sessionId);
+    const { url, state } = await generateAuthUrl(req, db, sessionId);
 
     // Set state in cookie for verification in callback (CSRF protection)
     const response = Response.redirect(url);
@@ -114,6 +119,7 @@ export async function handleGoogleAuthCallback(
     const { accessToken, sessionId: stateSessionId } = await validateCallback(
       validatedCode,
       validatedState,
+      db,
     );
 
     // Get user info from Google

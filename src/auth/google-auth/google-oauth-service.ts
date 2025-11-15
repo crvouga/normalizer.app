@@ -1,36 +1,86 @@
+import { z } from 'zod';
 import { Google, generateState, generateCodeVerifier } from 'arctic';
+import type { Db } from '../../sql';
+import { PostgresKeyValueStore } from '../../lib/key-value-store-postgres';
+import { TypedKeyValueStore } from '../../lib/typed-key-value-store';
+import { isOk } from '../../lib/result';
 import { isGoogleAuthEnabled } from './google-oauth-config';
 
-// In-memory storage for OAuth state tokens (can be upgraded to Redis for production)
-// Stores session ID so it can be retrieved in callback without relying on cookies (which use SameSite: Strict)
-const oauthStates = new Map<
-  string,
-  {
-    codeVerifier: string;
-    redirectUri: string;
-    sessionId: string | null; // Session ID stored here to survive OAuth redirect
-    expiresAt: number;
-  }
->();
+// OAuth state schema for type-safe storage
+const oauthStateSchema = z.object({
+  codeVerifier: z.string(),
+  redirectUri: z.string(),
+  sessionId: z.string().nullable(),
+  expiresAt: z.number(),
+});
 
-// Clean up expired states periodically
-function cleanupExpiredStates() {
-  const now = Date.now();
-  for (const [key, value] of oauthStates.entries()) {
-    if (value.expiresAt < now) {
-      oauthStates.delete(key);
+type OAuthState = z.infer<typeof oauthStateSchema>;
+
+/**
+ * Google OAuth service that uses TypedKeyValueStore for persistent state storage.
+ * Stores OAuth state tokens in the database instead of in-memory Map.
+ * Session ID is stored in state so it can be retrieved in callback without relying on cookies (which use SameSite: Strict).
+ */
+export class GoogleOAuthService {
+  private stateStore: TypedKeyValueStore<OAuthState>;
+  private keyPrefix = 'oauth_state:';
+
+  constructor(db: Db) {
+    const baseStore = new PostgresKeyValueStore(db);
+    this.stateStore = new TypedKeyValueStore(baseStore, oauthStateSchema);
+  }
+
+  /**
+   * Get the full key for an OAuth state
+   */
+  private getStateKey(state: string): string {
+    return `${this.keyPrefix}${state}`;
+  }
+
+  /**
+   * Store OAuth state
+   */
+  async setState(state: string, value: OAuthState): Promise<void> {
+    const result = await this.stateStore.set({ [this.getStateKey(state)]: value });
+    if (!isOk(result)) {
+      throw new Error(`Failed to store OAuth state: ${result.error}`);
+    }
+  }
+
+  /**
+   * Get OAuth state
+   */
+  async getState(state: string): Promise<OAuthState | null> {
+    const result = await this.stateStore.get([this.getStateKey(state)]);
+    if (!isOk(result)) {
+      throw new Error(`Failed to get OAuth state: ${result.error}`);
+    }
+    const value = result.value[this.getStateKey(state)];
+    return value ?? null;
+  }
+
+  /**
+   * Delete OAuth state
+   */
+  async deleteState(state: string): Promise<void> {
+    const result = await this.stateStore.delete([this.getStateKey(state)]);
+    if (!isOk(result)) {
+      throw new Error(`Failed to delete OAuth state: ${result.error}`);
     }
   }
 }
 
 /**
  * Generate Google OAuth authorization URL with PKCE
+ * @param req - Request object to extract origin for redirect URI
+ * @param db - Database connection for storing OAuth state
  * @param sessionId - Optional session ID to store in OAuth state (used when cookies are Strict)
  */
-export function generateAuthUrl(
+export async function generateAuthUrl(
   req: Request,
+  db: Db,
   sessionId?: string | null,
-): { url: string; state: string } {
+): Promise<{ url: string; state: string }> {
   if (!isGoogleAuthEnabled()) {
     throw new Error('Google OAuth is not configured');
   }
@@ -51,15 +101,13 @@ export function generateAuthUrl(
 
   // Store state, verifier, redirect URI, and session ID
   // Session ID is stored here so it can be retrieved in callback without relying on cookies
-  oauthStates.set(state, {
+  const service = new GoogleOAuthService(db);
+  await service.setState(state, {
     codeVerifier,
     redirectUri,
     sessionId: sessionId ?? null,
-    expiresAt: Date.now() + 10 * 60 * 1000,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
   });
-
-  // Clean up old states
-  cleanupExpiredStates();
 
   // Create authorization URL with scopes
   const url = google.createAuthorizationURL(state, codeVerifier, ['openid', 'email', 'profile']);
@@ -69,25 +117,30 @@ export function generateAuthUrl(
 
 /**
  * Validate OAuth callback and exchange code for tokens
+ * @param code - Authorization code from OAuth callback
+ * @param state - OAuth state parameter
+ * @param db - Database connection for retrieving OAuth state
  * @returns Object with access token and session ID from stored state
  */
 export async function validateCallback(
   code: string,
   state: string,
+  db: Db,
 ): Promise<{ accessToken: string; sessionId: string | null }> {
   if (!isGoogleAuthEnabled()) {
     throw new Error('Google OAuth is not configured');
   }
 
   // Retrieve stored state
-  const stored = oauthStates.get(state);
+  const service = new GoogleOAuthService(db);
+  const stored = await service.getState(state);
 
   if (!stored) {
     throw new Error('Invalid or expired OAuth state');
   }
 
   if (stored.expiresAt < Date.now()) {
-    oauthStates.delete(state);
+    await service.deleteState(state);
     throw new Error('OAuth state expired');
   }
 
@@ -102,7 +155,7 @@ export async function validateCallback(
   const sessionId = stored.sessionId;
 
   // Clean up used state
-  oauthStates.delete(state);
+  await service.deleteState(state);
 
   // Validate authorization code and get tokens
   const tokens = await google.validateAuthorizationCode(code, stored.codeVerifier);

@@ -68,7 +68,7 @@ export async function waitForText(
   text: string,
   options: { timeout?: number } = {},
 ): Promise<void> {
-  const { timeout = 8080 } = options;
+  const { timeout = 5000 } = options;
   await page.waitForSelector(`text=${text}`, { timeout });
 }
 
@@ -92,7 +92,7 @@ export async function clickButton(
   const { waitForNavigation = false } = options;
 
   if (waitForNavigation) {
-    await Promise.all([page.waitForNavigation({ timeout: 8080 }), page.click(selector)]);
+    await Promise.all([page.waitForNavigation({ timeout: 5000 }), page.click(selector)]);
   } else {
     await page.click(selector);
   }
@@ -126,7 +126,7 @@ export async function waitForRequest(
   urlPattern: string | RegExp,
   options: { timeout?: number } = {},
 ): Promise<void> {
-  const { timeout = 8080 } = options;
+  const { timeout = 5000 } = options;
   await page.waitForRequest(urlPattern, { timeout });
 }
 
@@ -138,7 +138,7 @@ export async function waitForResponse(
   urlPattern: string | RegExp,
   options: { timeout?: number } = {},
 ): Promise<void> {
-  const { timeout = 8080 } = options;
+  const { timeout = 5000 } = options;
   await page.waitForResponse(urlPattern, { timeout });
 }
 

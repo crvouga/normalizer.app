@@ -17,7 +17,7 @@ class ToastStore extends Store<ToastStoreState> {
       id,
       type,
       message,
-      duration: options?.duration ?? (type === 'error' && options?.errorDetails ? 0 : 8080),
+      duration: options?.duration ?? (type === 'error' && options?.errorDetails ? 0 : 5000),
       dismissible: options?.dismissible ?? true,
       ...(options?.errorDetails ? { errorDetails: options.errorDetails } : {}),
     };

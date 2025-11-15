@@ -7,6 +7,8 @@ services:
       - '5432:5432'
     environment:
       POSTGRES_PASSWORD: postgres
+      POSTGRES_MAX_CONNECTIONS: 100
+    command: ["postgres", "-c", "max_connections=100"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +40,7 @@ services:
       context: .
       dockerfile: ./infra/server.Dockerfile
     ports:
-      - '8080:8080'
+      - '5000:5000'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     env_file:

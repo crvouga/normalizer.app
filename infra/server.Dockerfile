@@ -11,7 +11,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 ARG NODE_ENV=production
-ARG PORT=8080
+ARG PORT=5000
 
 ENV NODE_ENV=${NODE_ENV}
 ENV PORT=${PORT}
