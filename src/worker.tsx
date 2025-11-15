@@ -16,7 +16,7 @@ const main = async () => {
 
   // Define task list with typesafe handlers
   const taskList = createTaskList({
-    normalization: async (payload: NormalizationJobPayload, helpers) => {
+    async normalization(payload: NormalizationJobPayload, helpers) {
       helpers.logger.info('Running normalization task', { sessionId: payload.sessionId });
       // TODO: Implement normalization logic
     },

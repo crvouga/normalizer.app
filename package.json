@@ -30,9 +30,9 @@
     "format": "bun x sort-package-json && bun x prettier --write .",
     "format:check": "bun x prettier --check .",
     "kp": "bun x kill-port 5000",
-    "server": "bun run --hot src/server.tsx",
+    "server": "bun run --watch src/server.tsx",
     "tc": "bun type-check",
-    "worker": "bun run --hot src/worker.tsx",
+    "worker": "bun run --watch src/worker.tsx",
     "test": "bun test",
     "type-check": "tsc --noEmit --watch",
     "type-check:once": "tsc --noEmit"
