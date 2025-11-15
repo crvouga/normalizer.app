@@ -2,6 +2,7 @@ import { PolicyCheckGuard } from '~/src/permissions/policy-check-guard';
 import { useEntityStoreSelector } from '~/src/store/entity-store';
 import { SpinnerBlock } from '~/src/ui/spinner-block';
 import { ChatScrollBox } from '~/src/ui/chat-scrollbox';
+import { useScrollbarWidth } from '~/src/lib/use-scrollbar-width';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import {
@@ -22,6 +23,7 @@ export const NormalizationSessionScreen = (props: {
   const normalizationSessionProjection = useEntityStoreSelector(
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
   );
+  const scrollbarWidth = useScrollbarWidth();
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;
 
@@ -55,8 +57,11 @@ export const NormalizationSessionScreen = (props: {
         </ChatScrollBox>
 
         {/* Floating input section */}
-        <div className="absolute right-0 bottom-0 left-0 z-10 shrink-0 bg-transparent">
-          <div className="mx-auto flex w-full max-w-4xl flex-col px-4 md:px-8">
+        <div
+          className="absolute right-0 bottom-0 left-0 z-10 shrink-0 bg-transparent"
+          style={{ paddingRight: scrollbarWidth }}
+        >
+          <div className="mx-auto flex w-full max-w-4xl flex-col">
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5 dark:border-slate-700 dark:bg-slate-800">
               <NormalizationSessionScreenInputForm
                 normalizationSessionId={props.normalizationSessionId}
