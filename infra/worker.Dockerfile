@@ -11,11 +11,8 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 ARG NODE_ENV=production
-ARG PORT=5000
 
 ENV NODE_ENV=${NODE_ENV}
-ENV PORT=${PORT}
 
-EXPOSE ${PORT}
+CMD ["bun", "run", "src/worker.tsx"]
 
-CMD ["bun", "run", "src/server.tsx"]
