@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useFileLoader } from '../../lib/use-file-loader';
+import { useFileLoader } from '../../shared/use-file-loader';
 import type { I18nText } from '../../i18n/types';
 import { toI18nText } from '../../i18n/types';
 import { ButtonBase } from '../button-base';

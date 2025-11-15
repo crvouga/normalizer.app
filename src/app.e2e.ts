@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getTestUrl, waitForText } from './lib/e2e-test-helpers';
+import { getTestUrl, waitForText } from './shared/e2e-test-helpers';
 
 test.describe('App E2E Tests', () => {
   test('should load the application and display the main UI', async ({ page }) => {

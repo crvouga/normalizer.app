@@ -6,7 +6,7 @@ import type { GoogleUserInfo } from '../google-oauth-service';
 import { users, userSessions, type IUser } from '../../../db/schema';
 import { UserId } from '../../../users/user-id';
 import { UserSessionId } from '../../../users/user-session-id';
-import type { SessionId } from '../../../lib/session-id';
+import type { SessionId } from '../../../shared/session-id';
 import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture';
 
 export type GoogleAuthUserServiceDeps = {

@@ -5,7 +5,7 @@ import { findCurrentUserSession } from './user-session-queries';
 import { users, userSessions } from '../db/schema';
 import { UserId } from './user-id';
 import { UserSessionId } from './user-session-id';
-import { SessionId } from '../lib/session-id';
+import { SessionId } from '../shared/session-id';
 import { eq } from 'drizzle-orm';
 
 describe('User Session Queries - Google Auth Bug', () => {

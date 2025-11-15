@@ -1,4 +1,4 @@
-import { procedure, router } from '../../lib/trpc-server';
+import { procedure, router } from '../../shared/trpc-server';
 import { isGoogleAuthEnabled } from './google-oauth-config';
 
 export const authRouter = router({

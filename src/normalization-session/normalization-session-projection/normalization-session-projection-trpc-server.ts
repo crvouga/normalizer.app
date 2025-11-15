@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { procedure, router } from '~/src/lib/trpc-server';
+import { procedure, router } from '~/src/shared/trpc-server';
 import * as schema from '../../db/schema';
 import {
   canViewNormalizationSession,

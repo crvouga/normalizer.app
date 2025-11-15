@@ -1,8 +1,8 @@
 import { initTRPC } from '@trpc/server';
 import type { S3Client } from 'bun';
-import type { Logger } from './logger';
+import type { Logger } from '../lib/logger';
 import type { Db } from '../sql';
-import type { MinioClient } from './minio/minio-client';
+import type { MinioClient } from '../lib/minio/minio-client';
 import { getSessionId } from './session-id-cookie';
 import { SessionId } from './session-id';
 import type { UserId } from '../users/user-id';

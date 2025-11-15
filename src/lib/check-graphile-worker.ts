@@ -1,6 +1,6 @@
 import { createDb, cleanupDb } from '../sql';
 import { createLogger } from './logger';
-import { checkGraphileWorkerSetup } from './graphile-worker';
+import { checkGraphileWorkerSetup } from '../shared/graphile-worker';
 
 const main = async () => {
   const logger = createLogger();

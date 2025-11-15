@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import { AppNotification } from '~/src/lib/app-notification';
+import { AppNotification } from '~/src/shared/app-notification';
 import type { Logger } from '~/src/lib/logger';
 import type { Db, Tx } from '~/src/sql';
 import type { UserId } from '~/src/users/user-id';

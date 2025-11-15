@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../../db/schema';
-import { procedure, router } from '../../lib/trpc-server';
+import { procedure, router } from '../../shared/trpc-server';
 import { getS3Config } from '../../s3-config';
 import { ArtifactId } from '../artifact-id';
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { enqueueJob } from '../../lib/graphile-worker';
-import { procedure, router } from '../../lib/trpc-server';
+import { enqueueJob } from '../../shared/graphile-worker';
+import { procedure, router } from '../../shared/trpc-server';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 import { NormalizationSessionEvent } from '../normalization-session-event/normalization-session-event';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Tx } from '../sql';
-import { enqueueJob as enqueueJobLib, type TaskHandler } from './graphile-worker-lib';
+import { enqueueJob as enqueueJobLib, type TaskHandler } from '../lib/graphile-worker-lib';
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 
 // Application-specific job payload schemas
@@ -58,4 +58,4 @@ export function createTaskList(handlers: { normalization: TaskHandler<Normalizat
 }
 
 // Re-export library functions for convenience
-export { checkGraphileWorkerSetup, type TaskHandler } from './graphile-worker-lib';
+export { checkGraphileWorkerSetup, type TaskHandler } from '../lib/graphile-worker-lib';

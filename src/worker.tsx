@@ -1,6 +1,6 @@
 import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
-import { createTaskList } from './lib/graphile-worker';
+import { createTaskList } from './shared/graphile-worker';
 import { normalizationTask } from './normalization-session/normalization-task';
 
 const main = async () => {

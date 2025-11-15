@@ -4,8 +4,8 @@ import type { Db } from '../../../sql';
 import { isGoogleAuthEnabled } from '../google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from '../google-oauth-service';
 import { getCookie } from '../../../lib/http-cookie';
-import { getSessionId, setSessionCookie } from '../../../lib/session-id-cookie';
-import { SessionId } from '../../../lib/session-id';
+import { getSessionId, setSessionCookie } from '../../../shared/session-id-cookie';
+import { SessionId } from '../../../shared/session-id';
 import { GoogleAuthUserService } from './google-auth-http-server-user-service';
 import {
   validateOAuthParams,

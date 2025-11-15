@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { users, userSessions } from '../db/schema';
-import { procedure, router } from '../lib/trpc-server';
+import { procedure, router } from '../shared/trpc-server';
 
 export const usersRouter = router({
   /**

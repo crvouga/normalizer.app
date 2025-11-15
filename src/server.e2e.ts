@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getTestUrl } from './lib/e2e-test-helpers';
+import { getTestUrl } from './shared/e2e-test-helpers';
 
 test.describe('Server E2E Tests', () => {
   test('should respond to health check endpoint', async ({ request }) => {

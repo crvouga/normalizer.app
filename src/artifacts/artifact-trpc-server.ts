@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../db/schema';
-import { procedure, router } from '../lib/trpc-server';
+import { procedure, router } from '../shared/trpc-server';
 import { Artifact } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-trpc-server';

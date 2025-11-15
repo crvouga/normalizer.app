@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SessionId } from '../lib/session-id';
+import { SessionId } from '../shared/session-id';
 import { UserId } from './user-id';
 import { UserSessionId } from './user-session-id';
 

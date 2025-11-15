@@ -1,4 +1,4 @@
-import { getCookie, setCookie, type CookieOptions } from './http-cookie';
+import { getCookie, setCookie, type CookieOptions } from '../lib/http-cookie';
 import { SessionId } from './session-id';
 
 const SESSION_COOKIE_NAME = 'session_id';

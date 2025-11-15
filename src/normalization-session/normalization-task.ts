@@ -1,6 +1,6 @@
 import { and, inArray, isNull } from 'drizzle-orm';
 import type { TaskHandler } from '../lib/graphile-worker-lib';
-import type { NormalizationJobPayload } from '../lib/graphile-worker';
+import type { NormalizationJobPayload } from '../shared/graphile-worker';
 import { createDb } from '../sql';
 import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
 import { getNormalizationSessionOwner } from './normalization-session-permissions';

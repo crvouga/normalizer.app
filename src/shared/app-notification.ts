@@ -1,6 +1,6 @@
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { Db, Tx } from '../sql';
-import { PostgresNotification } from './postgres-notification';
+import { PostgresNotification } from '../lib/postgres-notification';
 
 /**
  * Application-specific notification types with type-safe payloads
@@ -41,8 +41,11 @@ export class AppNotification {
    *
    * @param type - Notification channel/type to listen on
    */
-  async listen(type: Notification['type']): Promise<void> {
+  async listen(type: Notification['type']): Promise<() => Promise<void>> {
     await this.pgNotify.listen(type);
+    return async () => {
+      await this.pgNotify.unlisten(type);
+    };
   }
 
   /**

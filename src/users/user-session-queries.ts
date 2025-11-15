@@ -1,7 +1,7 @@
 import { and, desc, asc, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../sql';
 import { userSessions, users } from '../db/schema';
-import type { SessionId } from '../lib/session-id';
+import type { SessionId } from '../shared/session-id';
 
 export async function findActiveAuthenticatedSession(db: Db, sessionId: SessionId) {
   const [session] = await db

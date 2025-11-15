@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { refreshArtifactUrls } from '~/src/artifacts/artifact-urls-refresh';
 import { Artifact } from '../../artifacts/artifact';
 import * as schema from '../../db/schema';
-import { procedure, router } from '../../lib/trpc-server';
+import { procedure, router } from '../../shared/trpc-server';
 import { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
