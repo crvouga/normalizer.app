@@ -146,7 +146,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div className="w-full overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
       <TabularFileItemHeader
         tabularFile={tabularFile}
         index={index}
@@ -160,26 +160,28 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
 
       {isPreviewVisible && showPreview && (
         <div className="border-t border-slate-200 dark:border-slate-700">
-          {error ? (
-            <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
-              <Typography variant="sm" color="error" text={toI18nText(error)} />
-            </div>
-          ) : isLoading || !loadedFile ? (
-            <TabularFilePreviewTable
-              data={null}
-              maxRows={3}
-              maxColumns={Infinity}
-              className="text-sm"
-              isLoading={true}
-            />
-          ) : (
-            <TabularFilePreview
-              file={loadedFile}
-              maxRows={3}
-              maxColumns={Infinity}
-              className="text-sm"
-            />
-          )}
+          <div className="w-full max-w-[80%]">
+            {error ? (
+              <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
+                <Typography variant="sm" color="error" text={toI18nText(error)} />
+              </div>
+            ) : isLoading || !loadedFile ? (
+              <TabularFilePreviewTable
+                data={null}
+                maxRows={3}
+                maxColumns={Infinity}
+                className="text-sm"
+                isLoading={true}
+              />
+            ) : (
+              <TabularFilePreview
+                file={loadedFile}
+                maxRows={3}
+                maxColumns={Infinity}
+                className="text-sm"
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

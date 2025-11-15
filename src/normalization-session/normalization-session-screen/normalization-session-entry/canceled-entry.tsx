@@ -1,28 +1,16 @@
-import type { ArtifactId } from '~/src/artifacts/artifact-id';
 import { IconX } from '~/src/ui/icons';
+import { useI18n } from '~/src/i18n/use-i18n';
 import type { NormalizationSessionProjectionEntry } from '../../normalization-session-projection/normalization-session-projection-entry';
-import { EntryArtifactsSection } from './entry-artifacts-section';
-import { EntryContainer } from './entry-container';
-import { EntryDate } from './entry-date';
-import { EntryStatusHeader } from './entry-status-header';
-
-const StatusIcon = () => {
-  return (
-    <div className="flex size-6 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-      <IconX className="size-4 text-yellow-600 dark:text-yellow-400" />
-    </div>
-  );
-};
 
 export const CanceledEntry = (props: { entry: NormalizationSessionProjectionEntry }) => {
+  const { t } = useI18n();
+
   return (
-    <EntryContainer variant="default">
-      <EntryStatusHeader icon={<StatusIcon />} textKey="normalizationSession.canceled" />
-      <EntryArtifactsSection
-        artifactIds={props.entry.inputArtifactIds as ArtifactId[]}
-        labelKey="normalizationSession.inputArtifactsLabel"
-      />
-      <EntryDate date={props.entry.createdAt} />
-    </EntryContainer>
+    <div className="flex items-center gap-2 py-2">
+      <IconX className="size-4 text-slate-400 dark:text-slate-500" />
+      <span className="text-sm text-slate-500 dark:text-slate-400">
+        {t('normalizationSession.canceled')}
+      </span>
+    </div>
   );
 };

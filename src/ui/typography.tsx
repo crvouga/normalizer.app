@@ -11,7 +11,8 @@ type TypographyColor =
   | 'error'
   | 'success'
   | 'info'
-  | 'warning';
+  | 'warning'
+  | 'fuchsia';
 type TypographyWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 type TypographyElement = 'p' | 'span' | 'div' | 'label' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
@@ -42,6 +43,7 @@ const colorClasses: Record<TypographyColor, string> = {
   success: 'text-green-600 dark:text-green-400',
   info: 'text-fuchsia-600 dark:text-fuchsia-400',
   warning: 'text-yellow-600 dark:text-yellow-400',
+  fuchsia: 'text-fuchsia-500 dark:text-fuchsia-400',
 };
 
 const weightClasses: Record<TypographyWeight, string> = {

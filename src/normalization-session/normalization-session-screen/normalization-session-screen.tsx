@@ -51,9 +51,9 @@ export const NormalizationSessionScreen = (props: {
 
         <div
           ref={scrollableContainerRef}
-          className="flex w-full flex-1 flex-col items-center overflow-y-scroll px-8 py-8"
+          className="flex w-full flex-1 flex-col overflow-y-scroll px-4 py-8 md:px-8"
         >
-          <div className="flex w-full max-w-2xl flex-col gap-4">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
             {normalizationSessionProjection.entries.map((entry) => (
               <NormalizationSessionEntry
                 key={entry.id}
@@ -65,13 +65,11 @@ export const NormalizationSessionScreen = (props: {
         </div>
 
         <div className="shrink-0 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex w-full flex-col items-center px-8 py-4">
-            <div className="w-full max-w-2xl">
-              <NormalizationSessionScreenInputForm
-                normalizationSessionId={props.normalizationSessionId}
-                normalizationSessionProjection={normalizationSessionProjection}
-              />
-            </div>
+          <div className="mx-auto flex w-full max-w-4xl flex-col px-4 py-4 md:px-8">
+            <NormalizationSessionScreenInputForm
+              normalizationSessionId={props.normalizationSessionId}
+              normalizationSessionProjection={normalizationSessionProjection}
+            />
           </div>
         </div>
       </div>

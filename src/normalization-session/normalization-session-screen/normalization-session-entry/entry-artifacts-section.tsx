@@ -11,7 +11,7 @@ export const EntryArtifactsSection = (props: { artifactIds: ArtifactId[]; labelK
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 w-full max-w-[80%]">
       <Typography
         variant="xs"
         color="muted"

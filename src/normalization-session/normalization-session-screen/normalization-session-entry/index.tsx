@@ -1,6 +1,8 @@
 import type { NormalizationSessionProjectionEntry } from '../../normalization-session-projection/normalization-session-projection-entry';
 import type { NormalizationSessionId } from '../../normalization-session-id';
 import { NormalizationEntry } from './normalization-entry';
+import { OutputArea } from './output-area';
+import { UserInputBubble } from './user-input-bubble';
 
 export const NormalizationSessionEntry = (props: {
   entry: NormalizationSessionProjectionEntry;
@@ -9,10 +11,15 @@ export const NormalizationSessionEntry = (props: {
   switch (props.entry.type) {
     case 'normalization':
       return (
-        <NormalizationEntry
-          entry={props.entry}
-          normalizationSessionId={props.normalizationSessionId}
-        />
+        <div className="flex flex-col gap-2">
+          <UserInputBubble artifactIds={props.entry.inputArtifactIds} />
+          <OutputArea>
+            <NormalizationEntry
+              entry={props.entry}
+              normalizationSessionId={props.normalizationSessionId}
+            />
+          </OutputArea>
+        </div>
       );
     default:
       const _check: never = props.entry.type;

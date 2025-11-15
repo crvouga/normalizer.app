@@ -1,10 +1,6 @@
-import type { ArtifactId } from '~/src/artifacts/artifact-id';
 import { IconAlertCircle } from '~/src/ui/icons';
+import { useI18n } from '~/src/i18n/use-i18n';
 import type { NormalizationSessionProjectionEntry } from '../../normalization-session-projection/normalization-session-projection-entry';
-import { EntryArtifactsSection } from './entry-artifacts-section';
-import { EntryContainer } from './entry-container';
-import { EntryDate } from './entry-date';
-import { EntryStatusHeader } from './entry-status-header';
 
 const StatusIcon = () => {
   return (
@@ -15,14 +11,14 @@ const StatusIcon = () => {
 };
 
 export const FailedEntry = (props: { entry: NormalizationSessionProjectionEntry }) => {
+  const { t } = useI18n();
+
   return (
-    <EntryContainer variant="error">
-      <EntryStatusHeader icon={<StatusIcon />} textKey="normalizationSession.failed" />
-      <EntryArtifactsSection
-        artifactIds={props.entry.inputArtifactIds as ArtifactId[]}
-        labelKey="normalizationSession.inputArtifactsLabel"
-      />
-      <EntryDate date={props.entry.createdAt} />
-    </EntryContainer>
+    <div className="flex items-center gap-3 py-2">
+      <StatusIcon />
+      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+        {t('normalizationSession.failed')}
+      </span>
+    </div>
   );
 };
