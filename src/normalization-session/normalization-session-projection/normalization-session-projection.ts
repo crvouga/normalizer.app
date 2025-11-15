@@ -160,7 +160,7 @@ const isNormalizing = (state: NormalizationSessionProjection): boolean => {
   );
 };
 
-const shouldStartNormalization = (
+const shouldStartNormalizationJob = (
   before: NormalizationSessionProjection,
   after: NormalizationSessionProjection,
 ): boolean => {
@@ -173,5 +173,5 @@ export const NormalizationSessionProjection = {
   init,
   reduce,
   isNormalizing,
-  shouldStartNormalization,
+  shouldStartNormalizationJob,
 };

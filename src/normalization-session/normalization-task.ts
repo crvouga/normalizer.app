@@ -2,13 +2,12 @@ import { and, inArray, isNull } from 'drizzle-orm';
 import type { TaskHandler } from '../lib/graphile-worker-lib';
 import type { NormalizationJobPayload } from '../lib/graphile-worker';
 import { createDb } from '../sql';
-import { loadNormalizationSessionProjection } from './normalization-session-projection/normalization-session-projection-load';
+import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
 import { getNormalizationSessionOwner } from './normalization-session-permissions';
 import { ArtifactId } from '../artifacts/artifact-id';
 import * as schema from '../db/schema';
 import { NormalizationSessionEventId } from './normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionEventEntity } from './normalization-session-event/normalization-session-event-entity';
-import { refreshNormalizationSessionProjection } from './normalization-session-projection/normalization-session-projection-refresh';
 
 /**
  * Normalization task handler
@@ -34,12 +33,8 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
     }
 
     // Load the current projection
-    const projection = await loadNormalizationSessionProjection({
-      tx: db,
-      sessionId,
-      startedByUserId,
-      logger,
-    });
+    const projectionDb = new NormalizationSessionProjectionDb(db, logger);
+    const projection = await projectionDb.load(sessionId, startedByUserId);
 
     // Find the in-progress normalization entry
     const inProgressEntry = projection.entries.find(
@@ -125,12 +120,8 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
       await tx.insert(schema.normalizationSessionEvents).values(completedEvent);
 
       // 4. Refresh the projection
-      await refreshNormalizationSessionProjection({
-        tx,
-        sessionId,
-        startedByUserId,
-        logger,
-      });
+      const projectionDb = new NormalizationSessionProjectionDb(tx, logger);
+      await projectionDb.refresh(sessionId, startedByUserId);
 
       logger.info('Normalization task completed', {
         sessionId,

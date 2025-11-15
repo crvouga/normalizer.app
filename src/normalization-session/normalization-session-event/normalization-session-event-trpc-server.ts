@@ -1,11 +1,10 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { enqueueJob } from '../../lib/graphile-worker';
-import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 import { NormalizationSessionEvent } from '../normalization-session-event/normalization-session-event';
+import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '../normalization-session-id';
@@ -15,8 +14,7 @@ import {
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import { loadNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-load';
-import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
+import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -52,23 +50,21 @@ export const normalizationSessionEventRouter = router({
         event: input.event,
         created_at: new Date(),
       };
-      const params = {
-        tx: ctx.db,
-        sessionId: input.sessionId,
-        startedByUserId: ctx.userId,
-        logger: ctx.logger,
-      };
 
-      const projectionBefore = await loadNormalizationSessionProjection(params);
+      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
+      const projectionBefore = await projectionDb.load(input.sessionId, ctx.userId);
 
       const projection = await ctx.db.transaction(async (tx) => {
-        await tx.insert(schema.normalizationSessionEvents).values(event);
-        const projection = await refreshNormalizationSessionProjection({ ...params, tx });
+        const eventDb = new NormalizationSessionEventDb(tx, ctx.logger);
+        await eventDb.append(event);
 
-        if (NormalizationSessionProjection.shouldStartNormalization(projectionBefore, projection)) {
-          await enqueueJob(tx, 'normalization', {
-            sessionId: input.sessionId,
-          });
+        const projectionDbTx = new NormalizationSessionProjectionDb(tx, ctx.logger);
+        const projection = await projectionDbTx.refresh(input.sessionId, ctx.userId);
+
+        if (
+          NormalizationSessionProjection.shouldStartNormalizationJob(projectionBefore, projection)
+        ) {
+          await enqueueJob(tx, 'normalization', { sessionId: input.sessionId });
         }
         return projection;
       });
@@ -114,31 +110,21 @@ export const normalizationSessionEventRouter = router({
         resourceOwnerId,
       });
 
-      const events = await ctx.db
-        .select()
-        .from(schema.normalizationSessionEvents)
-        .where(eq(schema.normalizationSessionEvents.normalization_session_id, input.id))
-        .orderBy(schema.normalizationSessionEvents.created_at);
+      const eventDb = new NormalizationSessionEventDb(ctx.db, ctx.logger);
+      const events = await eventDb.getBySessionId(input.id);
 
       ctx.logger.info('Normalization session events retrieved', {
         sessionId: input.id,
         count: events.length,
       });
 
-      const validatedEvents = z.array(NormalizationSessionEventEntity.schema).parse(events);
-
-      const projection = await ctx.db.transaction(
-        async (tx) =>
-          await refreshNormalizationSessionProjection({
-            tx,
-            sessionId: input.id,
-            startedByUserId: resourceOwnerId,
-            logger: ctx.logger,
-          }),
-      );
+      const projection = await ctx.db.transaction(async (tx) => {
+        const projectionDb = new NormalizationSessionProjectionDb(tx, ctx.logger);
+        return await projectionDb.refresh(input.id, resourceOwnerId);
+      });
 
       return {
-        events: validatedEvents,
+        events,
         resourceOwnership: [
           {
             id: ResourceOwnershipEntityId.create('normalization-session', input.id),
