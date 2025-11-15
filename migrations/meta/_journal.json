@@ -64,6 +64,20 @@
       "when": 1762762886816,
       "tag": "0008_amused_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1763175837207,
+      "tag": "0009_closed_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1763175900000,
+      "tag": "0010_rename_start_session_to_user_started_session",
+      "breakpoints": true
     }
   ]
 }

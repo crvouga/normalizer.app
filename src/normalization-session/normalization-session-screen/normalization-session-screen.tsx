@@ -5,6 +5,7 @@ import { useI18n } from '~/src/i18n/use-i18n';
 import { PolicyCheckGuard } from '~/src/permissions/policy-check-guard';
 import { useEntityStoreSelector } from '~/src/store/entity-store';
 import { Button } from '~/src/ui/button';
+import { IconSparkles } from '~/src/ui/icons';
 import { SpinnerBlock } from '~/src/ui/spinner-block';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import type { NormalizationSessionId } from '../normalization-session-id';
@@ -13,7 +14,6 @@ import {
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
 import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
-import { IconSparkles } from '~/src/ui/icons';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -30,6 +30,11 @@ export const NormalizationSessionScreen = (props: {
   const handleNormalize = () => {
     // TODO: Implement normalization logic
     console.log('Normalize with input artifacts:', inputArtifactIds);
+    // trpcClient.normalizationSession.events.append.mutate({
+    //   event: {
+    //     type: ""
+    //   }
+    // })
   };
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;

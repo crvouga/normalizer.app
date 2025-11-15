@@ -4,12 +4,27 @@ import { UserId } from '../../users/user-id';
 import { NormalizationSessionId } from '../normalization-session-id';
 
 const schema = z.discriminatedUnion('type', [
+  // legacy event type
   z.object({
     type: z.literal('start-session'),
     sessionId: NormalizationSessionId.schema,
     targetArtifactIds: z.array(ArtifactId.schema),
     startedAt: z.coerce.date(),
     startedByUserId: UserId.schema,
+  }),
+  //
+  z.object({
+    type: z.literal('user-started-session'),
+    sessionId: NormalizationSessionId.schema,
+    targetArtifactIds: z.array(ArtifactId.schema),
+    startedAt: z.coerce.date(),
+    startedByUserId: UserId.schema,
+  }),
+  z.object({
+    type: z.literal('user-clicked-normalize'),
+    sessionId: NormalizationSessionId.schema,
+    clickedAt: z.coerce.date(),
+    clickedByUserId: UserId.schema,
   }),
 ]);
 

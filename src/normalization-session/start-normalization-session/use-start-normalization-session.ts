@@ -43,9 +43,9 @@ export function useStartNormalizationSession({
       const startedAt = new Date();
       const startedByUserId = currentUserResult.value.id;
 
-      // Create the start-session event
+      // Create the user-started-session event
       const event = {
-        type: 'start-session' as const,
+        type: 'user-started-session' as const,
         sessionId,
         targetArtifactIds: params.targetArtifactIds,
         startedAt,
