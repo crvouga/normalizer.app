@@ -38,10 +38,15 @@ export const normalizationSessionProjectionRouter = router({
         userId: ctx.userId,
       });
 
-      const projection = await loadProjection(ctx.db, ctx.logger, sessionId, resourceOwnerId);
-      if (!projection) throw new Error('Failed to load initial projection');
+      const data = await load({
+        db: ctx.db,
+        logger: ctx.logger,
+        sessionId,
+        ownerId: resourceOwnerId,
+      });
+      if (!data) throw new Error('Failed to load initial projection');
 
-      yield { projection };
+      yield data;
 
       const appNotification = new AppNotification(ctx.db);
 
@@ -51,11 +56,16 @@ export const normalizationSessionProjectionRouter = router({
         for await (const notifiedSessionId of notifications) {
           if (notifiedSessionId !== sessionId) continue;
 
-          const projection = await loadProjection(ctx.db, ctx.logger, sessionId, resourceOwnerId);
+          const data = await load({
+            db: ctx.db,
+            logger: ctx.logger,
+            sessionId,
+            ownerId: resourceOwnerId,
+          });
 
-          if (!projection) continue;
+          if (!data) continue;
 
-          yield { projection };
+          yield data;
         }
       } finally {
         ctx.logger.info('Normalization session projection subscription ended', {
@@ -66,15 +76,17 @@ export const normalizationSessionProjectionRouter = router({
     }),
 });
 
-const loadProjection = async (
-  db: Db | Tx,
-  logger: Logger,
-  sessionId: NormalizationSessionId,
-  ownerId: UserId,
-): Promise<NormalizationSessionProjection | null> => {
+const load = async (input: {
+  db: Db | Tx;
+  logger: Logger;
+  sessionId: NormalizationSessionId;
+  ownerId: UserId;
+}): Promise<{ projection: NormalizationSessionProjection } | null> => {
+  const { db, logger, sessionId, ownerId } = input;
   try {
     const projectionDb = new NormalizationSessionProjectionDb(db, logger);
-    return projectionDb.load(sessionId, ownerId);
+    const projection = await projectionDb.load(sessionId, ownerId);
+    return { projection };
   } catch (error) {
     logger.error('Failed to load projection', {
       sessionId,
