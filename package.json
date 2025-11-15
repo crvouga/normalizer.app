@@ -14,6 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:up": "bun run db:migrate",
+    "check:graphile-worker": "bun run src/lib/check-graphile-worker.ts",
     "docker": "bun docker:down && bun docker:up",
     "docker:destroy": "docker-compose down -v --remove-orphans",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",

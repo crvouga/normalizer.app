@@ -1,5 +1,6 @@
 import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
+import { createTaskList, type NormalizationJobPayload } from './lib/graphile-worker';
 
 const main = async () => {
   const logger = createLogger();
@@ -13,16 +14,13 @@ const main = async () => {
 
   logger.info('Starting Graphile Worker...');
 
-  // Define task list
-  const taskList = {
-    normalization: async (
-      payload: unknown,
-      helpers: { logger: { info: (msg: string, meta?: Record<string, unknown>) => void } },
-    ) => {
-      helpers.logger.info('Running normalization task', { payload });
+  // Define task list with typesafe handlers
+  const taskList = createTaskList({
+    normalization: async (payload: NormalizationJobPayload, helpers) => {
+      helpers.logger.info('Running normalization task', { sessionId: payload.sessionId });
       // TODO: Implement normalization logic
     },
-  };
+  });
 
   // Run the worker
   const runner = await run({

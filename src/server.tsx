@@ -3,6 +3,7 @@ import { serve } from 'bun';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
+import { checkGraphileWorkerSetup } from './lib/graphile-worker';
 import { getSessionId, setSessionCookie } from './lib/session-id-cookie';
 import { createContext } from './lib/trpc-server';
 import { createS3 } from './s3';
@@ -32,6 +33,18 @@ const main = async () => {
   setupGracefulShutdown();
 
   const db = await createDb({ logger });
+
+  // Check Graphile Worker setup
+  const graphileWorkerCheck = await checkGraphileWorkerSetup(db, logger);
+  if (!graphileWorkerCheck.isSetup) {
+    logger.warn(
+      'Graphile Worker is not set up. Jobs will fail to enqueue. ' +
+        'Run the worker at least once to initialize the schema: bun run worker',
+      graphileWorkerCheck,
+    );
+  } else {
+    logger.info('Graphile Worker is set up correctly');
+  }
 
   const { s3Endpoint } = getS3Config();
   const { s3Client, minioClient } = await createS3({ logger });

@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { enqueueJob } from '../../lib/graphile-worker';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
@@ -65,6 +66,9 @@ export const normalizationSessionEventRouter = router({
         const projection = await refreshNormalizationSessionProjection({ ...params, tx });
 
         if (NormalizationSessionProjection.shouldStartNormalization(projectionBefore, projection)) {
+          await enqueueJob(tx, 'normalization', {
+            sessionId: input.sessionId,
+          });
         }
         return projection;
       });
