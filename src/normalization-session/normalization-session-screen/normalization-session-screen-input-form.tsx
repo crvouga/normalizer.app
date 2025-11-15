@@ -6,16 +6,34 @@ import { Button } from '~/src/ui/button';
 import { IconSparkles } from '~/src/ui/icons';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { useRequestNormalization } from './use-request-normalization';
+import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import { Form } from '~/src/ui/form';
 
-export const NormalizationSessionInputForm = (props: {
+export const NormalizationSessionScreenInputForm = (props: {
   normalizationSessionId: NormalizationSessionId;
+  normalizationSessionProjection: NormalizationSessionProjection;
 }) => {
   const { t } = useI18n();
   const [inputArtifactIds, setInputArtifactIds] = useState<ArtifactId[]>([]);
+
   const requestNormalization = useRequestNormalization(props.normalizationSessionId);
 
+  const lastEntry =
+    props.normalizationSessionProjection.entries[
+      props.normalizationSessionProjection.entries.length - 1
+    ];
+  const isLastEntryInProgress = lastEntry?.status === 'in_progress';
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputArtifactIds.length === 0 || isLastEntryInProgress || requestNormalization.isPending) {
+      return;
+    }
+    requestNormalization.mutate({ inputArtifactIds });
+  };
+
   return (
-    <div className="space-y-4">
+    <Form onSubmit={handleSubmit} disabled={isLastEntryInProgress} className="space-y-4">
       <ArtifactsField
         label={t('normalizationSession.inputArtifactsLabel')}
         value={inputArtifactIds}
@@ -26,11 +44,11 @@ export const NormalizationSessionInputForm = (props: {
           size="lg"
           startIcon={<IconSparkles className="size-6" />}
           text={t('normalizationSession.normalize')}
-          onClick={() => requestNormalization.mutate({ inputArtifactIds })}
+          type="submit"
           loading={requestNormalization.isPending}
-          disabled={inputArtifactIds.length === 0}
+          disabled={inputArtifactIds.length === 0 || isLastEntryInProgress}
         />
       </div>
-    </div>
+    </Form>
   );
 };

@@ -108,6 +108,7 @@
     "inProgress": "In Progress",
     "completed": "Completed",
     "failed": "Failed",
+    "canceled": "Canceled",
     "list": {
       "failedToLoad": "Failed to load sessions"
     }

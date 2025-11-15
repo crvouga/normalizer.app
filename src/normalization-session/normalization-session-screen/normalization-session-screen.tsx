@@ -7,10 +7,10 @@ import {
   canViewNormalizationSession,
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
-import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
 import { NormalizationSessionEntry } from './normalization-session-entry';
-import { NormalizationSessionInputForm } from './normalization-session-entry-input-form';
-import { NormalizationSessionTargetArtifactsHeader } from './normalization-session-target-artifacts-header';
+import { NormalizationSessionHeader } from './normalization-session-screen-header';
+import { NormalizationSessionScreenInputForm } from './normalization-session-screen-input-form';
+import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -24,11 +24,6 @@ export const NormalizationSessionScreen = (props: {
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;
 
-  const lastEntry =
-    normalizationSessionProjection.entries[normalizationSessionProjection.entries.length - 1];
-  const isLastEntryInProgress =
-    lastEntry?.status === 'pending' || lastEntry?.status === 'in_progress';
-
   return (
     <PolicyCheckGuard
       permission={canViewNormalizationSession(props.normalizationSessionId)}
@@ -36,24 +31,29 @@ export const NormalizationSessionScreen = (props: {
       onRedirect={() => setCurrentScreen({ type: 'start-normalization-session' })}
     >
       <div className="flex h-full w-full flex-col">
-        <NormalizationSessionTargetArtifactsHeader
+        <NormalizationSessionHeader
           targetArtifactIds={normalizationSessionProjection.targetArtifactIds}
         />
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex w-full flex-col items-center px-8 py-8">
-            <div className="w-full max-w-2xl">
-              <div className="mb-8">
-                {normalizationSessionProjection.entries.map((entry) => (
-                  <NormalizationSessionEntry key={entry.id} entry={entry} />
-                ))}
-              </div>
+        <div className="flex w-full flex-1 flex-col items-center overflow-y-scroll px-8 py-8">
+          <div className="flex w-full max-w-2xl flex-col gap-4">
+            {normalizationSessionProjection.entries.map((entry) => (
+              <NormalizationSessionEntry
+                key={entry.id}
+                entry={entry}
+                normalizationSessionId={props.normalizationSessionId}
+              />
+            ))}
+          </div>
+        </div>
 
-              {!isLastEntryInProgress && (
-                <NormalizationSessionInputForm
-                  normalizationSessionId={props.normalizationSessionId}
-                />
-              )}
+        <div className="shrink-0 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex w-full flex-col items-center px-8 py-4">
+            <div className="w-full max-w-2xl">
+              <NormalizationSessionScreenInputForm
+                normalizationSessionId={props.normalizationSessionId}
+                normalizationSessionProjection={normalizationSessionProjection}
+              />
             </div>
           </div>
         </div>

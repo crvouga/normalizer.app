@@ -2,9 +2,7 @@ import type { ArtifactId } from '~/src/artifacts/artifact-id';
 import { ArtifactsField } from '~/src/artifacts/artifacts-input/artifacts-field';
 import { useI18n } from '~/src/i18n/use-i18n';
 
-export const NormalizationSessionTargetArtifactsHeader = (props: {
-  targetArtifactIds: ArtifactId[];
-}) => {
+export const NormalizationSessionHeader = (props: { targetArtifactIds: ArtifactId[] }) => {
   const { t } = useI18n();
 
   return (

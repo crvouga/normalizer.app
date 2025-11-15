@@ -34,7 +34,7 @@ const reducer = (
     case 'user-requested-normalization':
       const latestEntry = state.entries[state.entries.length - 1];
 
-      if (latestEntry?.status === 'in_progress' || latestEntry?.status === 'pending') {
+      if (latestEntry?.status === 'in_progress') {
         return state;
       }
 
@@ -44,12 +44,48 @@ const reducer = (
         id: event.normalizationRunId,
         inputArtifactIds: event.inputArtifactIds,
         outputArtifactIds: [],
-        status: 'pending',
+        status: 'in_progress',
         createdAt: event.requestedAt,
       };
       return {
         ...state,
         entries: [...state.entries, entryNew],
+      };
+    case 'user-canceled-normalization':
+      const entryIndex = state.entries.findIndex(
+        (entry) =>
+          entry.type === 'normalization' && entry.normalizationRunId === event.normalizationRunId,
+      );
+
+      if (entryIndex === -1) {
+        return state;
+      }
+
+      const entryToCancel = state.entries[entryIndex];
+      if (!entryToCancel) {
+        return state;
+      }
+
+      if (entryToCancel.type !== 'normalization' || entryToCancel.status !== 'in_progress') {
+        return state;
+      }
+
+      const canceledEntry: NormalizationSessionProjectionEntry = {
+        type: 'normalization',
+        normalizationRunId: entryToCancel.normalizationRunId,
+        id: entryToCancel.id,
+        inputArtifactIds: entryToCancel.inputArtifactIds,
+        outputArtifactIds: entryToCancel.outputArtifactIds,
+        status: 'canceled',
+        createdAt: entryToCancel.createdAt,
+      };
+
+      const updatedEntries = [...state.entries];
+      updatedEntries[entryIndex] = canceledEntry;
+
+      return {
+        ...state,
+        entries: updatedEntries,
       };
     default:
       const _check: never = event;

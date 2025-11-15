@@ -11,7 +11,7 @@ import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-
 
 const InputSchema = z.object({
   userId: UserId.schema,
-  cursor: z.string().optional(), // ISO timestamp string
+  cursor: z.string().optional(),
   limit: z.number().min(1).max(100).default(20),
 });
 type InputSchema = z.infer<typeof InputSchema>;
@@ -26,29 +26,16 @@ const OutputSchema = z.object({
 type OutputSchema = z.infer<typeof OutputSchema>;
 
 export const normalizationSessionListRouter = router({
-  /**
-   * List normalization sessions by user with cursor-based pagination
-   */
   listByStartedByUser: procedure
     .input(InputSchema)
     .output(OutputSchema)
     .mutation(async ({ input, ctx }): Promise<OutputSchema> => {
-      ctx.logger.info('Normalization session list by user', {
-        userId: input.userId,
-        cursor: input.cursor,
-        limit: input.limit,
-      });
-
-      // Build query conditions
-      // Handle both object and string JSONB formats for backwards compatibility
       const conditions = [
         sql`COALESCE(
           ${schema.normalizationSessionProjections.projection}->>'startedByUserId',
           (${schema.normalizationSessionProjections.projection}#>>'{}')::jsonb->>'startedByUserId'
         ) = ${input.userId}`,
       ];
-
-      // Add cursor condition if provided
       if (input.cursor) {
         conditions.push(
           lt(schema.normalizationSessionProjections.updated_at, new Date(input.cursor)),
@@ -60,62 +47,21 @@ export const normalizationSessionListRouter = router({
         .from(schema.normalizationSessionProjections)
         .where(and(...conditions))
         .orderBy(desc(schema.normalizationSessionProjections.updated_at))
-        .limit(input.limit + 1); // Fetch one extra to determine if there's more
+        .limit(input.limit + 1);
 
-      // Log the compiled SQL query with parameters
-      const compiled = query.toSQL();
-      // Assemble the raw SQL with parameters inline for copy-paste
-      let rawSql = compiled.sql;
-      let pos = 0;
-      for (const param of compiled.params) {
-        pos++;
-        // Simple heuristic: quote string params, print as-is for non-strings
-        const formatted =
-          typeof param === 'string'
-            ? `'${param.replace(/'/g, "''")}'`
-            : param instanceof Date
-              ? `'${param.toISOString()}'`
-              : param;
-        rawSql = rawSql.replace(`$${pos}`, String(formatted));
-      }
-      ctx.logger.debug('Normalization session list compiled SQL', {
-        sql: compiled.sql,
-        params: compiled.params,
-        raw: rawSql,
-      });
-
-      // Query projections with pagination
       const rows = await query;
-
-      // Parse projections from JSONB
       const sessionProjections = rows
         .slice(0, input.limit)
         .map((row) => NormalizationSessionProjection.schema.parse(row.projection));
 
-      // Determine if there are more results
       const hasMore = rows.length > input.limit;
-
-      // Get next cursor from the last item's updated_at
       const lastRow = rows[input.limit - 1];
       const nextCursor = hasMore && lastRow?.updated_at ? lastRow.updated_at.toISOString() : null;
 
-      ctx.logger.info('Normalization session list retrieved', {
-        userId: input.userId,
-        count: sessionProjections.length,
-        hasMore,
-      });
-
-      // Collect all unique artifact IDs from all projections
       const artifactIds = Array.from(
         new Set(sessionProjections.flatMap((projection) => projection.targetArtifactIds)),
       );
 
-      ctx.logger.debug('Fetching artifacts for projections', {
-        artifactIds,
-        count: artifactIds.length,
-      });
-
-      // Fetch all artifacts if there are any IDs
       let artifacts: Artifact[] = [];
       if (artifactIds.length > 0) {
         const artifactRows = await ctx.db
@@ -123,18 +69,10 @@ export const normalizationSessionListRouter = router({
           .from(schema.artifacts)
           .where(and(inArray(schema.artifacts.id, artifactIds), isNull(schema.artifacts.deleted)));
 
-        // Validate and transform artifacts
         artifacts = artifactRows.map((row) => Artifact.schema.parse(row));
-
-        // Refresh artifact URLs and persist to database if needed
         artifacts = await refreshArtifactUrls({ ...ctx, artifacts });
-
-        ctx.logger.info('Artifacts fetched for sessions', {
-          count: artifacts.length,
-        });
       }
 
-      // Create resource ownership entries for each session
       const resourceOwnerships: ResourceOwnershipEntity[] = sessionProjections.map(
         (projection) => ({
           id: ResourceOwnershipEntityId.create('normalization-session', projection.id),

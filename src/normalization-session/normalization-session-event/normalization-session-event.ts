@@ -29,6 +29,13 @@ const schema = z.discriminatedUnion('type', [
     requestedByUserId: UserId.schema,
     normalizationRunId: NormalizationRunId.schema,
   }),
+  z.object({
+    type: z.literal('user-canceled-normalization'),
+    sessionId: NormalizationSessionId.schema,
+    normalizationRunId: NormalizationRunId.schema,
+    canceledAt: z.coerce.date(),
+    canceledByUserId: UserId.schema,
+  }),
 ]);
 
 export type NormalizationSessionEvent = z.infer<typeof schema>;
