@@ -3,6 +3,7 @@ import { DropZone } from './drop-zone';
 import { TabularFileList } from './tabular-file-list';
 import { validateFiles, createFileListFromFiles } from './tabular-file-utils';
 import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 import type { TabularFile } from './tabular-file';
 
 export interface TabularFileInputProps
@@ -38,12 +39,14 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
       multiple = false,
       maxFiles = 10,
       maxSize = 10 * 1024 * 1024, // 10MB default
-      placeholder = 'Click to upload or drag and drop',
+      placeholder,
       showPreview = true,
       ...props
     },
     ref,
   ) => {
+    const { t } = useI18n();
+    const defaultPlaceholder = placeholder ?? t('tabularFileInput.uploadPlaceholder');
     const [isDragOver, setIsDragOver] = React.useState(false);
     const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
     const [tabularFiles, setTabularFiles] = React.useState<TabularFile[]>([]);
@@ -178,7 +181,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
         {selectedFiles.length === 0 && (
           <DropZone
             {...(className !== undefined ? { className } : {})}
-            placeholder={placeholder}
+            placeholder={defaultPlaceholder}
             {...(accept !== undefined ? { accept } : {})}
             isDragOver={isDragOver}
             hasError={!!error}

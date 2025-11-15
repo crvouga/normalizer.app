@@ -1,6 +1,7 @@
 import { Combobox as HeadlessCombobox } from '@headlessui/react';
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import { useI18n } from '../../i18n/use-i18n';
 import type { ComboboxProps } from './combobox-types';
 import { ComboboxEmptyState } from './combobox/combobox-empty-state';
 import { ComboboxErrorState } from './combobox/combobox-error-state';
@@ -21,7 +22,7 @@ export function Combobox<T extends string | number>({
   options,
   query: controlledQuery,
   onQueryChange,
-  placeholder = 'Search...',
+  placeholder,
   displayValue,
   filterOptions,
   renderOption,
@@ -37,6 +38,9 @@ export function Combobox<T extends string | number>({
   label,
   actionButton,
 }: ComboboxProps<T>) {
+  const { t } = useI18n();
+  const defaultPlaceholder = placeholder ?? t('common.search');
+
   // Use extracted hooks
   const { query, setQuery } = useComboboxQuery({
     ...(controlledQuery !== undefined ? { controlledQuery } : {}),
@@ -94,7 +98,7 @@ export function Combobox<T extends string | number>({
             <ComboboxInputField
               displayValue={getDisplayValue}
               onQueryChange={setQuery}
-              placeholder={placeholder}
+              placeholder={defaultPlaceholder}
               isLoading={isLoading}
               hasError={hasError}
               {...(inputClassName !== undefined ? { inputClassName } : {})}

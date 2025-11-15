@@ -2,6 +2,7 @@ import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 import { UploadIcon } from '../icons';
 import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 
 export interface DropZoneProps {
   className?: string;
@@ -19,7 +20,7 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
   (
     {
       className,
-      placeholder = 'Click to upload or drag and drop',
+      placeholder,
       accept,
       isDragOver,
       hasError,
@@ -30,6 +31,9 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
     },
     ref,
   ) => {
+    const { t } = useI18n();
+    const defaultPlaceholder = placeholder ?? t('tabularFileInput.uploadPlaceholder');
+
     return (
       <div
         className={cn(
@@ -52,11 +56,11 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
 
           <div className="space-y-1">
             <Typography variant="sm" weight="medium" color="primary">
-              {placeholder}
+              {defaultPlaceholder}
             </Typography>
             {accept && (
               <Typography variant="xs" color="muted">
-                Accepted formats: {accept}
+                {t('tabularFileInput.acceptedFormats', { formats: accept })}
               </Typography>
             )}
           </div>

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { LRUCache } from 'lru-cache';
 import type { FileType, TabularFilePreviewResult } from './types';
+import { useI18n } from '../../i18n/use-i18n';
 
 interface UseTabularFilePreviewBaseParams {
   file: File;
@@ -27,6 +28,7 @@ export const useTabularFilePreviewBase = ({
   parser,
   fileType,
 }: UseTabularFilePreviewBaseParams): TabularFilePreviewResult => {
+  const { t } = useI18n();
   const cacheKey = React.useMemo(() => getFileCacheKey(file), [file]);
 
   const initialCached = React.useMemo(() => parseCache.get(cacheKey), [cacheKey]);
@@ -61,7 +63,8 @@ export const useTabularFilePreviewBase = ({
         }
       } catch (err) {
         if (!isCancelled) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to parse file';
+          const errorMessage =
+            err instanceof Error ? err.message : t('tabularFilePreview.failedToParse');
           const result: CachedResult = {
             data: [],
             error: errorMessage,
@@ -82,7 +85,7 @@ export const useTabularFilePreviewBase = ({
     return () => {
       isCancelled = true;
     };
-  }, [file, parser, cacheKey]);
+  }, [file, parser, cacheKey, t]);
 
   return { data, error, isLoading, fileType };
 };

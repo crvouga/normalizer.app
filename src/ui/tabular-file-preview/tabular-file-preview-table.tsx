@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 
 interface TabularFilePreviewTableProps {
   data: Record<string, string | number | boolean | null | undefined>[] | null;
@@ -108,6 +109,8 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
   maxColumns = 10,
   isLoading = false,
 }) => {
+  const { t } = useI18n();
+
   if (isLoading) {
     const skeletonColumns = 8;
     const skeletonRows = maxRows;
@@ -145,7 +148,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-100 p-6 text-center dark:border-slate-700 dark:bg-slate-800">
         <Typography variant="sm" color="muted">
-          No data to preview
+          {t('tabularFilePreview.noData')}
         </Typography>
       </div>
     );
@@ -162,7 +165,10 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
       showFooter={data.length > maxRows}
       footerContent={
         data.length > maxRows
-          ? `Showing ${maxRows.toLocaleString()} of ${data.length.toLocaleString()} rows`
+          ? t('tabularFilePreview.showingRows', {
+              showing: maxRows.toLocaleString(),
+              total: data.length.toLocaleString(),
+            })
           : undefined
       }
       className={className}

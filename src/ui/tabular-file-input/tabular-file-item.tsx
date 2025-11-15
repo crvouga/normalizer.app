@@ -5,6 +5,7 @@ import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { TabularFilePreviewTable } from '../tabular-file-preview/tabular-file-preview-table';
 import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 import type { TabularFile } from './tabular-file';
 import { formatFileSize } from './tabular-file-utils';
 
@@ -35,12 +36,13 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   customActions = [],
   readOnly = false,
 }) => {
+  const { t } = useI18n();
   const isImage = tabularFile.contentType?.startsWith('image/');
   const actions: TabularFileAction[] = [];
 
   if (showPreview) {
     actions.push({
-      label: 'Preview',
+      label: t('tabularFileInput.preview'),
       icon: isPreviewVisible ? IconEyeSlash : IconEye,
       onClick: () => onTogglePreview(index),
     });
@@ -50,7 +52,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
 
   if (!readOnly) {
     actions.push({
-      label: 'Remove',
+      label: t('tabularFileInput.remove'),
       icon: IconTrash,
       onClick: () => onRemove(index),
     });

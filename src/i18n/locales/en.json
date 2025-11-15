@@ -92,5 +92,27 @@
     "targetArtifactsLabel": "Target Artifact",
     "inputArtifactsLabel": "Input Artifact",
     "normalize": "Normalize"
+  },
+  "tabularFilePreview": {
+    "noData": "No data to preview",
+    "showingRows": "Showing {{showing}} of {{total}} rows",
+    "unsupportedFileType": "Unsupported file type",
+    "failedToParse": "Failed to parse file"
+  },
+  "tabularFileInput": {
+    "preview": "Preview",
+    "remove": "Remove",
+    "addMore": "Add more",
+    "clearAll": "Clear all",
+    "uploadPlaceholder": "Click to upload or drag and drop",
+    "acceptedFormats": "Accepted formats: {{formats}}"
+  },
+  "combobox": {
+    "noResultsFound": "No results found for \"{{query}}\"",
+    "noOptionsAvailable": "No options available"
+  },
+  "fileLoader": {
+    "failedToDownload": "Failed to download file: {{status}}",
+    "failedToLoad": "Failed to load file"
   }
 }

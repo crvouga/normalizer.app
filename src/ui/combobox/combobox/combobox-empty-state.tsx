@@ -1,4 +1,5 @@
 import { Typography } from '../../typography';
+import { useI18n } from '../../../i18n/use-i18n';
 
 export interface ComboboxEmptyStateProps {
   query: string;
@@ -10,10 +11,12 @@ export interface ComboboxEmptyStateProps {
  * Supports dark mode with lighter text color.
  */
 export function ComboboxEmptyState({ query }: ComboboxEmptyStateProps) {
+  const { t } = useI18n();
+
   return (
     <div className="px-4 py-8 text-center">
       <Typography variant="sm" color="muted">
-        {query ? `No results found for "${query}"` : 'No options available'}
+        {query ? t('combobox.noResultsFound', { query }) : t('combobox.noOptionsAvailable')}
       </Typography>
     </div>
   );

@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 import { getFileType, getFileTypeFromMimeType, parseCSV, parseExcel, parseJSON } from './parsers';
 import type { TabularFilePreviewResult } from './types';
 import { useTabularFilePreviewBase } from './use-tabular-file-preview-base';
+import { useI18n } from '../../i18n/use-i18n';
 
 /**
  * Hook for previewing tabular files using File object.
  * Automatically detects file type from MIME type and filename.
  */
 export const useTabularFilePreview = (file: File): TabularFilePreviewResult => {
+  const { t } = useI18n();
   const fileType = getFileType(file);
 
   const parser = useMemo(() => {
@@ -26,7 +28,7 @@ export const useTabularFilePreview = (file: File): TabularFilePreviewResult => {
   if (!parser) {
     return {
       data: null,
-      error: 'Unsupported file type',
+      error: t('tabularFilePreview.unsupportedFileType'),
       isLoading: false,
       fileType,
     };
@@ -45,6 +47,7 @@ export const useTabularFilePreviewWithMimeType = (
   mimeType: string | undefined,
   filename?: string,
 ): TabularFilePreviewResult => {
+  const { t } = useI18n();
   const fileType = getFileTypeFromMimeType(mimeType, filename);
 
   const parser = useMemo(() => {
@@ -63,7 +66,7 @@ export const useTabularFilePreviewWithMimeType = (
   if (!parser) {
     return {
       data: null,
-      error: 'Unsupported file type',
+      error: t('tabularFilePreview.unsupportedFileType'),
       isLoading: false,
       fileType,
     };

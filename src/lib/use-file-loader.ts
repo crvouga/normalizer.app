@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n/use-i18n';
 
 export interface UseFileLoaderParams {
   downloadUrl: string;
@@ -39,6 +40,7 @@ export function useFileLoader({
   contentType = 'application/octet-stream',
   enabled,
 }: UseFileLoaderParams): UseFileLoaderResult {
+  const { t } = useI18n();
   const [loadedFile, setLoadedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,13 +62,13 @@ export function useFileLoader({
 
       try {
         const url = normalizeProtocol(downloadUrl);
-        const file = await fetchFile(url, fileName, contentType);
+        const file = await fetchFile(url, fileName, contentType, t);
         if (!isCancelled) {
           setLoadedFile(file);
         }
       } catch (err) {
         if (!isCancelled) {
-          setError(parseError(err));
+          setError(parseError(err, t));
         }
       } finally {
         if (!isCancelled) {
@@ -112,10 +114,15 @@ function normalizeProtocol(url: string): string {
 /**
  * Fetches the file as a Blob, then creates a File object with the given properties.
  */
-async function fetchFile(url: string, fileName: string, contentType: string): Promise<File> {
+async function fetchFile(
+  url: string,
+  fileName: string,
+  contentType: string,
+  t: (key: string, values?: Record<string, string>) => string,
+): Promise<File> {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.statusText}`);
+    throw new Error(t('fileLoader.failedToDownload', { status: response.statusText }));
   }
   const blob = await response.blob();
   return new File([blob], fileName, { type: contentType });
@@ -124,6 +131,6 @@ async function fetchFile(url: string, fileName: string, contentType: string): Pr
 /**
  * Standardize error parsing.
  */
-function parseError(err: unknown): string {
-  return err instanceof Error ? err.message : 'Failed to load file';
+function parseError(err: unknown, t: (key: string) => string): string {
+  return err instanceof Error ? err.message : t('fileLoader.failedToLoad');
 }

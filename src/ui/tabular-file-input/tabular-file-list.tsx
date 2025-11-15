@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { TabularFileItem, type TabularFileAction } from './tabular-file-item';
 import { Typography } from '../typography';
+import { useI18n } from '../../i18n/use-i18n';
 import type { TabularFile } from './tabular-file';
 import { ButtonBase } from '../button-base';
 
@@ -31,6 +32,8 @@ export const TabularFileList: React.FC<FileListProps> = ({
   customActions,
   readOnly = false,
 }) => {
+  const { t } = useI18n();
+
   if (files.length === 0) return null;
 
   return (
@@ -56,13 +59,13 @@ export const TabularFileList: React.FC<FileListProps> = ({
             {onAddMore && (
               <ButtonBase type="button" onClick={onAddMore} className="transition-colors">
                 <Typography variant="xs" color="info" className="hover:opacity-80">
-                  Add more
+                  {t('tabularFileInput.addMore')}
                 </Typography>
               </ButtonBase>
             )}
             <ButtonBase type="button" onClick={onClearAll} className="transition-colors">
               <Typography variant="xs" color="muted">
-                Clear all
+                {t('tabularFileInput.clearAll')}
               </Typography>
             </ButtonBase>
           </div>
