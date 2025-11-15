@@ -6,8 +6,8 @@ import { EntryArtifactsSection } from './entry-artifacts-section';
 
 const StatusIcon = () => {
   return (
-    <div className="flex size-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-      <IconCheck className="size-4 text-green-600 dark:text-green-400" />
+    <div className="flex size-6 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800/50">
+      <IconCheck className="size-4 text-slate-400 dark:text-slate-500" />
     </div>
   );
 };
@@ -19,7 +19,7 @@ export const CompletedEntry = (props: { entry: NormalizationSessionProjectionEnt
     <div className="flex w-full flex-col py-2">
       <div className="flex items-center gap-2">
         <StatusIcon />
-        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
           {t('normalizationSession.completed')}
         </span>
       </div>

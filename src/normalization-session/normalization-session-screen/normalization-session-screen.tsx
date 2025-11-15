@@ -42,7 +42,6 @@ export const NormalizationSessionScreen = (props: {
           bottomPadding="pb-56 md:pb-64"
           scrollKey={normalizationSessionProjection?.entries.length}
           autoScroll
-          smoothScroll
         >
           {normalizationSessionProjection.entries.map((entry) => (
             <NormalizationSessionEntry

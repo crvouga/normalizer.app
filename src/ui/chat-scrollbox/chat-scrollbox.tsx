@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 
 export interface ChatScrollBoxProps {
   children: ReactNode;
@@ -15,11 +15,6 @@ export interface ChatScrollBoxProps {
    * Default: 100
    */
   scrollThreshold?: number;
-  /**
-   * Smooth scroll behavior. Set to false for instant scrolling.
-   * Default: true
-   */
-  smoothScroll?: boolean;
   /**
    * A key that changes when content should trigger a scroll.
    * When this value changes, the scrollbox will check if it should scroll to bottom.
@@ -39,12 +34,14 @@ export interface ChatScrollBoxProps {
   bottomPadding?: string;
 }
 
+type ScrollMode = 'auto-scroll' | 'user-scroll';
+
 /**
- * A robust and reusable chat scrollbox component that handles:
- * - Auto-scrolling to bottom when new content is added
- * - Detecting if user has scrolled up (prevents auto-scroll if reading old messages)
- * - Smooth scrolling behavior
- * - Scroll position tracking
+ * A chat scrollbox component that behaves like iMessages:
+ * - Starts scrolled to bottom on initial load
+ * - Auto-scrolls when new content appears (only in auto-scroll mode)
+ * - Respects user scroll - switches to user-scroll mode when user scrolls up
+ * - Switches back to auto-scroll mode when user scrolls to bottom
  */
 export function ChatScrollBox({
   children,
@@ -52,88 +49,84 @@ export function ChatScrollBox({
   contentClassName = '',
   autoScroll = true,
   scrollThreshold = 100,
-  smoothScroll = true,
   scrollKey,
   onScrollPositionChange,
   bottomPadding = 'pb-56 md:pb-64',
 }: ChatScrollBoxProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [scrollMode, setScrollMode] = useState<ScrollMode>('auto-scroll');
+  const scrollModeRef = useRef<ScrollMode>('auto-scroll');
   const [isNearBottom, setIsNearBottom] = useState(true);
   const lastScrollTopRef = useRef<number>(0);
-  const userScrollTimeoutRef = useRef<number | null>(null);
-  const isInitialMountRef = useRef<boolean>(true);
+  const isProgrammaticScrollRef = useRef<boolean>(false);
   const lastHeightRef = useRef<number>(0);
+  const isInitialMountRef = useRef<boolean>(true);
 
   /**
    * Check if user is near the bottom of the scroll container
    */
-  const checkScrollPosition = useCallback(() => {
+  const checkIsNearBottom = useCallback(() => {
     const container = containerRef.current;
     if (!container) return false;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const nearBottom = distanceFromBottom <= scrollThreshold;
-
-    return nearBottom;
+    return distanceFromBottom <= scrollThreshold;
   }, [scrollThreshold]);
 
   /**
-   * Scroll to bottom with smooth or instant behavior
+   * Scroll to bottom instantly (for auto-scroll)
    */
-  const scrollToBottom = useCallback(
-    (force = false, instant = false) => {
-      const container = containerRef.current;
-      if (!container) return;
+  const scrollToBottomInstant = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-      // If user is actively scrolling up, don't auto-scroll unless forced
-      if (!force && isUserScrolling && !isNearBottom) {
-        return;
-      }
-
-      const maxScroll = container.scrollHeight;
-      const useSmoothScroll = smoothScroll && !instant;
-
-      // Use scrollTo for smooth scrolling or scrollTop for instant
-      if (useSmoothScroll) {
-        container.scrollTo({
-          top: maxScroll,
-          behavior: 'smooth',
-        });
-      } else {
-        container.scrollTop = maxScroll;
-      }
-    },
-    [smoothScroll, isUserScrolling, isNearBottom],
-  );
+    isProgrammaticScrollRef.current = true;
+    container.scrollTop = container.scrollHeight;
+    // Reset flag after scroll completes
+    requestAnimationFrame(() => {
+      isProgrammaticScrollRef.current = false;
+    });
+  }, []);
 
   /**
-   * Handle scroll events to detect user scrolling
+   * Handle scroll events to detect user scrolling and update mode
    */
   const handleScroll = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Ignore programmatic scrolls
+    if (isProgrammaticScrollRef.current) {
+      lastScrollTopRef.current = container.scrollTop;
+      return;
+    }
+
     const currentScrollTop = container.scrollTop;
-    const nearBottom = checkScrollPosition();
+    const previousScrollTop = lastScrollTopRef.current;
+    const nearBottom = checkIsNearBottom();
 
-    // Detect if user is actively scrolling (not programmatic scroll)
-    const isScrollingUp = currentScrollTop < lastScrollTopRef.current;
-    const isScrollingDown = currentScrollTop > lastScrollTopRef.current;
+    // Detect user scroll direction
+    const isScrollingUp = currentScrollTop < previousScrollTop;
+    const isScrollingDown = currentScrollTop > previousScrollTop;
 
-    if (isScrollingUp || isScrollingDown) {
-      setIsUserScrolling(true);
-
-      // Clear existing timeout
-      if (userScrollTimeoutRef.current) {
-        window.clearTimeout(userScrollTimeoutRef.current);
+    // Update mode based on scroll position
+    if (isScrollingUp) {
+      // User scrolled up → switch to user-scroll mode
+      if (scrollMode !== 'user-scroll') {
+        setScrollMode('user-scroll');
+        scrollModeRef.current = 'user-scroll';
       }
-
-      // Reset user scrolling flag after scroll stops
-      userScrollTimeoutRef.current = window.setTimeout(() => {
-        setIsUserScrolling(false);
-      }, 150);
+    } else if (isScrollingDown && nearBottom) {
+      // User scrolled down and reached bottom → switch to auto-scroll mode
+      if (scrollMode !== 'auto-scroll') {
+        setScrollMode('auto-scroll');
+        scrollModeRef.current = 'auto-scroll';
+      }
+    } else if (nearBottom && scrollMode === 'user-scroll') {
+      // User is at bottom (might have scrolled via other means) → switch to auto-scroll
+      setScrollMode('auto-scroll');
+      scrollModeRef.current = 'auto-scroll';
     }
 
     lastScrollTopRef.current = currentScrollTop;
@@ -143,85 +136,27 @@ export function ChatScrollBox({
       setIsNearBottom(nearBottom);
       onScrollPositionChange?.(nearBottom);
     }
-  }, [checkScrollPosition, isNearBottom, onScrollPositionChange]);
+  }, [checkIsNearBottom, scrollMode, isNearBottom, onScrollPositionChange]);
 
   /**
-   * Attempt to scroll to bottom if conditions are met
-   * This is called both by scrollKey changes and ResizeObserver
+   * Initial mount: scroll to bottom instantly before first paint
    */
-  const attemptAutoScroll = useCallback(() => {
-    if (!autoScroll || isInitialMountRef.current) return;
+  useLayoutEffect(() => {
+    if (!autoScroll) return;
 
     const container = containerRef.current;
     if (!container) return;
 
-    const shouldScroll = checkScrollPosition();
-    const isScrollingAway = isUserScrolling && !shouldScroll;
-
-    if (shouldScroll && !isScrollingAway) {
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        // Small delay to ensure content is fully rendered
-        window.setTimeout(() => {
-          scrollToBottom();
-        }, 50);
-      });
-    }
-  }, [autoScroll, checkScrollPosition, isUserScrolling, scrollToBottom]);
-
-  /**
-   * Initial mount: scroll to bottom instantly (no animation)
-   * Uses double RAF to ensure content is fully rendered before scrolling
-   */
-  useEffect(() => {
-    if (!autoScroll || !isInitialMountRef.current) return;
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    let rafId1: number | null = null;
-    let rafId2: number | null = null;
-    let timeoutId: number | null = null;
-
-    // Use double requestAnimationFrame to ensure DOM is fully updated
-    rafId1 = requestAnimationFrame(() => {
-      rafId2 = requestAnimationFrame(() => {
-        // Small timeout to ensure all content is rendered, then scroll instantly
-        timeoutId = window.setTimeout(() => {
-          container.scrollTop = container.scrollHeight;
-          isInitialMountRef.current = false;
-        }, 0);
-      });
-    });
-
-    return () => {
-      if (rafId1 !== null) {
-        cancelAnimationFrame(rafId1);
-      }
-      if (rafId2 !== null) {
-        cancelAnimationFrame(rafId2);
-      }
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
+    // Scroll to bottom instantly on initial mount
+    container.scrollTop = container.scrollHeight;
+    isInitialMountRef.current = false;
+    setScrollMode('auto-scroll');
+    scrollModeRef.current = 'auto-scroll';
   }, [autoScroll]);
 
   /**
-   * Auto-scroll when scrollKey changes
-   * This provides explicit control over when to check for scrolling
-   */
-  useEffect(() => {
-    if (!autoScroll || isInitialMountRef.current || scrollKey === undefined) return;
-
-    attemptAutoScroll();
-  }, [autoScroll, scrollKey, attemptAutoScroll]);
-
-  /**
-   * Auto-detect content changes via ResizeObserver
-   * This provides automatic scrolling when content height changes,
-   * regardless of whether scrollKey is provided.
-   * Works independently to catch any DOM changes.
+   * Auto-scroll when content changes (ResizeObserver)
+   * Only scrolls when in auto-scroll mode
    */
   useEffect(() => {
     if (!autoScroll || isInitialMountRef.current) return;
@@ -235,10 +170,11 @@ export function ChatScrollBox({
     const resizeObserver = new ResizeObserver(() => {
       const currentHeight = container.scrollHeight;
 
-      // Only trigger if height actually increased (new content added, not removed)
-      // This prevents scrolling when content shrinks
-      if (currentHeight > lastHeightRef.current) {
-        attemptAutoScroll();
+      // Only auto-scroll if:
+      // 1. Content height increased (new content added)
+      // 2. We're in auto-scroll mode
+      if (currentHeight > lastHeightRef.current && scrollModeRef.current === 'auto-scroll') {
+        scrollToBottomInstant();
       }
 
       lastHeightRef.current = currentHeight;
@@ -249,18 +185,19 @@ export function ChatScrollBox({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [autoScroll, attemptAutoScroll]);
+  }, [autoScroll, scrollToBottomInstant]);
 
   /**
-   * Cleanup timeouts on unmount
+   * Auto-scroll when scrollKey changes
+   * Only scrolls when in auto-scroll mode
    */
   useEffect(() => {
-    return () => {
-      if (userScrollTimeoutRef.current) {
-        window.clearTimeout(userScrollTimeoutRef.current);
-      }
-    };
-  }, []);
+    if (!autoScroll || isInitialMountRef.current || scrollKey === undefined) return;
+
+    if (scrollModeRef.current === 'auto-scroll') {
+      scrollToBottomInstant();
+    }
+  }, [autoScroll, scrollKey, scrollToBottomInstant]);
 
   return (
     <div
