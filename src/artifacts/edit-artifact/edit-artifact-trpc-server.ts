@@ -11,10 +11,11 @@ export const editArtifactRouter = router({
       z.object({
         artifactId: ArtifactId.schema,
         name: z.string().optional(),
+        filename: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { artifactId, name } = input;
+      const { artifactId, name, filename } = input;
 
       // Update and fetch the artifact in a transaction
       const updatedArtifact = await ctx.db.transaction(async (tx) => {
@@ -22,6 +23,7 @@ export const editArtifactRouter = router({
           .update(schema.artifacts)
           .set({
             name: name ?? undefined,
+            filename: filename ?? undefined,
             updated_at: new Date(),
           })
           .where(eq(schema.artifacts.id, artifactId));

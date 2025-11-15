@@ -11,6 +11,7 @@ import { ArtifactId } from '../artifact-id';
 export interface EditArtifactParams {
   artifactId: ArtifactId;
   name?: string;
+  filename?: string;
 }
 
 export function useEditArtifact({
@@ -29,6 +30,7 @@ export function useEditArtifact({
       // Optimistically update the entity store
       entityStore.updateEntity('artifacts', params.artifactId, {
         name: params.name,
+        filename: params.filename,
         updated_at: new Date(),
       });
 
@@ -36,6 +38,7 @@ export function useEditArtifact({
       const rawUpdatedArtifact: any = await trpcClient.artifact.edit.update.mutate({
         artifactId: params.artifactId,
         name: params.name,
+        filename: params.filename,
       });
 
       // Convert date strings to Date objects

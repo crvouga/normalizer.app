@@ -1,14 +1,14 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { isOk, type Result } from '~/src/lib/result';
+import { Form } from '~/src/ui/form';
 import { Modal } from '~/src/ui/modal';
 import { ModalActions } from '~/src/ui/modal-actions';
-import { TextField } from '~/src/ui/text-field/text-field';
-import { TabularFileInputField } from '~/src/ui/tabular-file-input/tabular-file-input-field';
 import type { TabularFile } from '~/src/ui/tabular-file-input/tabular-file';
+import { TabularFileInputField } from '~/src/ui/tabular-file-input/tabular-file-input-field';
+import { TextField } from '~/src/ui/text-field/text-field';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
 import { useEditArtifact } from './use-edit-artifact';
-import { Form } from '~/src/ui/form';
 
 export interface EditArtifactModalProps {
   isOpen: boolean;
@@ -24,24 +24,37 @@ export function EditArtifactModal({
   onEditComplete,
 }: EditArtifactModalProps) {
   const { t } = useI18n();
+  const [artifactState, setArtifactState] = useState<Artifact | null>(null);
   const [artifactName, setArtifactName] = useState<string>('');
+  const [artifactFilename, setArtifactFilename] = useState<string>('');
+  const prevArtifactRef = useRef<Artifact | null>(null);
 
-  // Initialize form with artifact data when modal opens
   useEffect(() => {
-    if (artifact) {
-      setArtifactName(artifact.name || artifact.filename || '');
+    if (isOpen && artifact) {
+      setArtifactState(artifact);
+      prevArtifactRef.current = artifact;
+    } else if (isOpen && !artifact && prevArtifactRef.current) {
+      setArtifactState(prevArtifactRef.current);
+    } else if (!isOpen) {
+      prevArtifactRef.current = artifactState || artifact || null;
     }
-  }, [artifact]);
+  }, [isOpen, artifact, artifactState]);
 
-  // Convert artifact to TabularFile format
-  const tabularFiles: TabularFile[] = artifact
+  useEffect(() => {
+    if (artifactState) {
+      setArtifactName(artifactState.name || '');
+      setArtifactFilename(artifactState.filename || '');
+    }
+  }, [artifactState?.id]);
+
+  const tabularFiles: TabularFile[] = artifactState
     ? [
         {
-          id: String(artifact.id),
-          name: artifact.name || artifact.filename,
-          downloadUrl: artifact.download_url || '',
-          size: artifact.size,
-          contentType: artifact.content_type,
+          id: String(artifactState.id),
+          name: artifactState.filename || artifactState.name || '',
+          downloadUrl: artifactState.download_url || '',
+          size: artifactState.size,
+          contentType: artifactState.content_type,
         },
       ]
     : [];
@@ -57,10 +70,11 @@ export function EditArtifactModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (artifact) {
+    if (artifactState) {
       await editArtifact({
-        artifactId: artifact.id,
+        artifactId: artifactState.id,
         ...(artifactName ? { name: artifactName } : {}),
+        filename: artifactFilename,
       });
     }
   };
@@ -68,6 +82,7 @@ export function EditArtifactModal({
   const handleClose = () => {
     if (!isEditing) {
       onClose();
+      setTimeout(() => setArtifactState(null), 250);
     }
   };
 
@@ -79,32 +94,44 @@ export function EditArtifactModal({
       size="2xl"
       disabled={isEditing}
     >
-      <Form onSubmit={handleSubmit} className="space-y-4">
-        <TextField
-          id="artifact-name"
-          type="text"
-          label={t('artifact.nameLabel')}
-          value={artifactName}
-          onChange={(e) => setArtifactName(e.target.value)}
-          placeholder={t('artifact.namePlaceholder')}
-          disabled={isEditing}
-        />
+      {artifactState && (
+        <Form onSubmit={handleSubmit} contentClassName="space-y-4">
+          <TextField
+            id="artifact-name"
+            type="text"
+            label={t('artifact.nameLabel')}
+            value={artifactName}
+            onChange={(e) => setArtifactName(e.target.value)}
+            placeholder={t('artifact.namePlaceholder')}
+            disabled={isEditing}
+          />
 
-        <TabularFileInputField
-          id="artifact-file"
-          label={t('artifact.fileLabel') || 'File'}
-          readOnly={true}
-          files={tabularFiles}
-        />
+          <TextField
+            id="artifact-filename"
+            type="text"
+            label={t('artifact.filenameLabel')}
+            value={artifactFilename}
+            onChange={(e) => setArtifactFilename(e.target.value)}
+            placeholder={t('artifact.filenamePlaceholder')}
+            disabled={isEditing}
+          />
 
-        <ModalActions
-          cancelText={t('common.cancel')}
-          onCancel={handleClose}
-          cancelDisabled={isEditing}
-          submitText={t('artifact.save')}
-          submitLoading={isEditing}
-        />
-      </Form>
+          <TabularFileInputField
+            id="artifact-file"
+            label={t('artifact.fileLabel') || 'File'}
+            readOnly={true}
+            files={tabularFiles}
+          />
+
+          <ModalActions
+            cancelText={t('common.cancel')}
+            onCancel={handleClose}
+            cancelDisabled={isEditing}
+            submitText={t('artifact.save')}
+            submitLoading={isEditing}
+          />
+        </Form>
+      )}
     </Modal>
   );
 }

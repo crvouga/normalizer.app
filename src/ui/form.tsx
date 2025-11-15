@@ -17,10 +17,12 @@ const Form = ({
   children,
   onSubmit,
   disabled = false,
+  contentClassName,
   ...props
 }: React.ComponentProps<'form'> & {
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   disabled?: boolean;
+  contentClassName?: string;
 }) => {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -51,7 +53,7 @@ const Form = ({
   return (
     <FormContext.Provider value={{ errors, setError, clearError, disabled }}>
       <form data-slot="form" onSubmit={handleSubmit} onClick={handleClick} {...props}>
-        <fieldset disabled={disabled} className="contents">
+        <fieldset disabled={disabled} className={cn('contents', contentClassName)}>
           {children}
         </fieldset>
       </form>

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { TabularFileInput } from './tabular-file-input';
 import { TabularFileList } from './tabular-file-list';
 import type { TabularFile } from './tabular-file';
+import type { TabularFileAction } from './tabular-file-item';
 
 interface TabularFileInputFieldProps {
   id: string;
@@ -14,6 +15,7 @@ interface TabularFileInputFieldProps {
   multiple?: boolean;
   readOnly?: boolean;
   files?: TabularFile[];
+  customActions?: TabularFileAction[];
 }
 
 export const TabularFileInputField: React.FC<TabularFileInputFieldProps> = ({
@@ -27,6 +29,7 @@ export const TabularFileInputField: React.FC<TabularFileInputFieldProps> = ({
   multiple,
   readOnly = false,
   files = [],
+  customActions,
 }) => {
   const [showPreviews, setShowPreviews] = React.useState<Record<number, boolean>>({
     0: true,
@@ -52,6 +55,7 @@ export const TabularFileInputField: React.FC<TabularFileInputFieldProps> = ({
               }}
               onRemoveFile={() => {}}
               onClearAll={() => {}}
+              customActions={customActions || []}
             />
           </div>
         )}
