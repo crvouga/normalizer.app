@@ -1,14 +1,14 @@
-import { and, inArray, isNull } from 'drizzle-orm';
-import type { TaskHandler } from '../lib/graphile-worker-lib';
-import type { NormalizationJobPayload } from '../shared/graphile-worker';
-import { createDb } from '../shared/sql';
-import type { Tx } from '../shared/sql';
-import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
-import { getNormalizationSessionOwner } from './normalization-session-permissions';
+import { ArtifactDb } from '../artifacts/artifact-db';
 import { ArtifactId } from '../artifacts/artifact-id';
 import * as schema from '../db/schema';
-import { NormalizationSessionEventId } from './normalization-session-event/normalization-session-event-id';
+import type { TaskHandler } from '../lib/graphile-worker-lib';
+import type { NormalizationJobPayload } from '../shared/graphile-worker';
+import type { Tx } from '../shared/sql';
+import { createDb } from '../shared/sql';
 import { NormalizationSessionEventEntity } from './normalization-session-event/normalization-session-event-entity';
+import { NormalizationSessionEventId } from './normalization-session-event/normalization-session-event-id';
+import { getNormalizationSessionOwner } from './normalization-session-permissions';
+import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
 
 /**
  * Normalization task handler
@@ -59,15 +59,8 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
     // Perform normalization in a single transaction
     await db.transaction(async (tx: Tx) => {
       // 1. Load input artifacts
-      const inputArtifacts = await tx
-        .select()
-        .from(schema.artifacts)
-        .where(
-          and(
-            inArray(schema.artifacts.id, inProgressEntry.inputArtifactIds),
-            isNull(schema.artifacts.deleted),
-          ),
-        );
+      const artifactDb = new ArtifactDb(tx, logger);
+      const inputArtifacts = await artifactDb.getByIds(inProgressEntry.inputArtifactIds);
 
       if (inputArtifacts.length !== inProgressEntry.inputArtifactIds.length) {
         logger.warn('Some input artifacts not found', {
@@ -85,15 +78,11 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
         const outputArtifactId = ArtifactId.generate();
         outputArtifactIds.push(outputArtifactId);
 
-        // Clone the artifact with a new ID and updated timestamps
-        const clonedArtifact = {
-          ...inputArtifact,
-          id: outputArtifactId,
-          created_at: now,
-          updated_at: now,
-        };
-
-        await tx.insert(schema.artifacts).values(clonedArtifact);
+        // Get the raw database row for cloning
+        const rawArtifact = await artifactDb.getRawById(inputArtifact.id);
+        if (rawArtifact) {
+          await artifactDb.clone(rawArtifact, outputArtifactId);
+        }
       }
 
       logger.info('Created cloned artifacts', {

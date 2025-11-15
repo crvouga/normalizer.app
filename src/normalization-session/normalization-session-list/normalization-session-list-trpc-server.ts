@@ -1,11 +1,10 @@
-import { and, desc, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { refreshArtifactUrls } from '~/src/artifacts/artifact-urls-refresh';
 import { Artifact } from '../../artifacts/artifact';
-import * as schema from '../../db/schema';
+import { ArtifactDb } from '../../artifacts/artifact-db';
 import { procedure, router } from '../../shared/trpc-server';
 import { UserId } from '../../users/user-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 
@@ -30,34 +29,12 @@ export const normalizationSessionListRouter = router({
     .input(InputSchema)
     .output(OutputSchema)
     .mutation(async ({ input, ctx }): Promise<OutputSchema> => {
-      const conditions = [
-        sql`COALESCE(
-          ${schema.normalizationSessionProjections.projection}->>'startedByUserId',
-          (${schema.normalizationSessionProjections.projection}#>>'{}')::jsonb->>'startedByUserId'
-        ) = ${input.userId}`,
-      ];
-      if (input.cursor) {
-        conditions.push(
-          lt(schema.normalizationSessionProjections.updated_at, new Date(input.cursor)),
-        );
-      }
-
-      const query = ctx.db
-        .select()
-        .from(schema.normalizationSessionProjections)
-        .where(and(...conditions))
-        .orderBy(desc(schema.normalizationSessionProjections.updated_at))
-        .limit(input.limit + 1);
-
-      const rows = await query;
-      const sessions = rows.slice(0, input.limit).flatMap((row) => {
-        const parsed = NormalizationSessionProjection.schema.safeParse(row.projection);
-        return parsed.success ? [parsed.data] : [];
+      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
+      const { sessions, hasMore, nextCursor } = await projectionDb.listByStartedByUser({
+        userId: input.userId,
+        ...(input.cursor && { cursor: input.cursor }),
+        limit: input.limit,
       });
-
-      const hasMore = rows.length > input.limit;
-      const lastRow = rows[input.limit - 1];
-      const nextCursor = hasMore && lastRow?.updated_at ? lastRow.updated_at.toISOString() : null;
 
       const artifactIds = Array.from(
         new Set(sessions.flatMap((projection) => projection.targetArtifactIds)),
@@ -65,16 +42,13 @@ export const normalizationSessionListRouter = router({
 
       let artifacts: Artifact[] = [];
       if (artifactIds.length > 0) {
-        const artifactRows = await ctx.db
-          .select()
-          .from(schema.artifacts)
-          .where(and(inArray(schema.artifacts.id, artifactIds), isNull(schema.artifacts.deleted)));
-
-        artifacts = artifactRows.flatMap((row) => {
-          const parsed = Artifact.schema.safeParse(row);
-          return parsed.success ? [parsed.data] : [];
+        const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
+        artifacts = await artifactDb.getByIds(artifactIds);
+        artifacts = await artifactDb.refreshUrls({
+          artifacts,
+          s3: ctx.s3,
+          s3Endpoint: ctx.s3Endpoint,
         });
-        artifacts = await refreshArtifactUrls({ ...ctx, artifacts });
       }
 
       const resourceOwnerships: ResourceOwnershipEntity[] = sessions.map((projection) => ({

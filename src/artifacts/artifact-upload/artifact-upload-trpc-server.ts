@@ -1,9 +1,8 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import * as schema from '../../db/schema';
 import { procedure, router } from '../../shared/trpc-server';
 import { getS3Config } from '../../shared/s3-config';
 import { ArtifactId } from '../artifact-id';
+import { ArtifactDb } from '../artifact-db';
 
 export const artifactUploadRouter = router({
   // Get presigned upload URL (mutation because it creates DB record)
@@ -27,7 +26,8 @@ export const artifactUploadRouter = router({
         sessionId: ctx.sessionId,
       });
 
-      await ctx.db.insert(schema.artifacts).values({
+      const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
+      await artifactDb.create({
         id: artifactId,
         filename: input.filename,
         content_type: input.contentType,
@@ -37,8 +37,6 @@ export const artifactUploadRouter = router({
         s3_bucket: s3Bucket,
         s3_key: s3Key,
         name: input.name ?? null,
-        created_at: new Date(),
-        updated_at: new Date(),
         uploaded_by_user_id: ctx.userId,
       });
 
@@ -56,13 +54,7 @@ export const artifactUploadRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      await ctx.db
-        .update(schema.artifacts)
-        .set({
-          status: 'uploaded',
-          size: input.size,
-          updated_at: new Date(),
-        })
-        .where(eq(schema.artifacts.id, input.artifactId));
+      const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
+      await artifactDb.updateStatus(input.artifactId, 'uploaded', input.size);
     }),
 });

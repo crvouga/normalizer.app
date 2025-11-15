@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, desc, lt, eq, sql } from 'drizzle-orm';
 import { AppNotification } from '~/src/shared/app-notification';
 import type { Logger } from '~/src/lib/logger';
 import type { Db, Tx } from '~/src/shared/sql';
@@ -104,5 +104,49 @@ export class NormalizationSessionProjectionDb {
     });
 
     return projection;
+  }
+
+  /**
+   * Lists normalization session projections by startedByUserId with pagination
+   */
+  async listByStartedByUser(params: { userId: UserId; cursor?: string; limit: number }): Promise<{
+    sessions: NormalizationSessionProjection[];
+    hasMore: boolean;
+    nextCursor: string | null;
+  }> {
+    const { userId, cursor, limit } = params;
+
+    const conditions = [
+      sql`COALESCE(
+        ${schema.normalizationSessionProjections.projection}->>'startedByUserId',
+        (${schema.normalizationSessionProjections.projection}#>>'{}')::jsonb->>'startedByUserId'
+      ) = ${userId}`,
+    ];
+
+    if (cursor) {
+      conditions.push(lt(schema.normalizationSessionProjections.updated_at, new Date(cursor)));
+    }
+
+    const rows = await this.tx
+      .select()
+      .from(schema.normalizationSessionProjections)
+      .where(and(...conditions))
+      .orderBy(desc(schema.normalizationSessionProjections.updated_at))
+      .limit(limit + 1);
+
+    const sessions = rows.slice(0, limit).flatMap((row) => {
+      const parsed = NormalizationSessionProjection.schema.safeParse(row.projection);
+      return parsed.success ? [parsed.data] : [];
+    });
+
+    const hasMore = rows.length > limit;
+    const lastRow = rows[limit - 1];
+    const nextCursor = hasMore && lastRow?.updated_at ? lastRow.updated_at.toISOString() : null;
+
+    return {
+      sessions,
+      hasMore,
+      nextCursor,
+    };
   }
 }

@@ -1,12 +1,10 @@
-import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import * as schema from '../db/schema';
 import { procedure, router } from '../shared/trpc-server';
 import { Artifact } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { artifactUploadRouter } from './artifact-upload/artifact-upload-trpc-server';
-import { refreshArtifactUrls } from './artifact-urls-refresh';
 import { editArtifactRouter } from './edit-artifact/edit-artifact-trpc-server';
+import { ArtifactDb } from './artifact-db';
 
 export const artifactRouter = router({
   upload: artifactUploadRouter,
@@ -27,12 +25,8 @@ export const artifactRouter = router({
 
       // For get operation, only filter by artifact ID and soft delete status
       // Having the artifact ID (UUID) is sufficient authorization
-      const artifact = await ctx.db
-        .select()
-        .from(schema.artifacts)
-        .where(and(eq(schema.artifacts.id, input.artifactId), isNull(schema.artifacts.deleted)))
-        .limit(1)
-        .then((rows) => rows[0]);
+      const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
+      const artifact = await artifactDb.getById(input.artifactId);
 
       if (!artifact) {
         ctx.logger.info('Artifact not found', { artifactId: input.artifactId });
@@ -44,13 +38,11 @@ export const artifactRouter = router({
         uploadedByUserId: artifact.uploaded_by_user_id,
       });
 
-      // Validate and transform to Artifact type
-      const validatedArtifact = Artifact.schema.parse(artifact);
-
       // Refresh artifact URLs and persist to database if needed
-      const artifactsWithUrls = await refreshArtifactUrls({
-        ...ctx,
-        artifacts: [validatedArtifact],
+      const artifactsWithUrls = await artifactDb.refreshUrls({
+        artifacts: [artifact],
+        s3: ctx.s3,
+        s3Endpoint: ctx.s3Endpoint,
       });
 
       return artifactsWithUrls[0] ?? null;
@@ -66,27 +58,16 @@ export const artifactRouter = router({
       });
 
       // Only select artifacts that are uploaded and not deleted and belong to the current user
-      const files = await ctx.db
-        .select()
-        .from(schema.artifacts)
-        .where(
-          and(
-            eq(schema.artifacts.status, 'uploaded'),
-            eq(schema.artifacts.uploaded_by_user_id, ctx.userId),
-            isNull(schema.artifacts.deleted),
-          ),
-        )
-        .orderBy(schema.artifacts.created_at);
+      const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
+      const validatedArtifacts = await artifactDb.listByUser(ctx.userId);
 
-      ctx.logger.info('Artifact list result', { count: files.length });
-
-      // Validate and transform to Artifact type array
-      const validatedArtifacts = z.array(Artifact.schema).parse(files);
+      ctx.logger.info('Artifact list result', { count: validatedArtifacts.length });
 
       // Refresh artifact URLs and persist to database if needed
-      const artifactsWithUrls = await refreshArtifactUrls({
-        ...ctx,
+      const artifactsWithUrls = await artifactDb.refreshUrls({
         artifacts: validatedArtifacts,
+        s3: ctx.s3,
+        s3Endpoint: ctx.s3Endpoint,
       });
 
       return artifactsWithUrls;

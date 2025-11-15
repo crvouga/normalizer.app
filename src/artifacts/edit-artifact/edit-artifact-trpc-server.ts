@@ -1,9 +1,7 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import * as schema from '../../db/schema';
 import { procedure, router } from '../../shared/trpc-server';
+import { ArtifactDb } from '../artifact-db';
 import { ArtifactId } from '../artifact-id';
-import { Artifact } from '../artifact';
 
 export const editArtifactRouter = router({
   update: procedure
@@ -19,30 +17,13 @@ export const editArtifactRouter = router({
 
       // Update and fetch the artifact in a transaction
       const updatedArtifact = await ctx.db.transaction(async (tx) => {
-        await tx
-          .update(schema.artifacts)
-          .set({
-            name: name ?? undefined,
-            filename: filename ?? undefined,
-            updated_at: new Date(),
-          })
-          .where(eq(schema.artifacts.id, artifactId));
-
-        const artifact = await tx
-          .select()
-          .from(schema.artifacts)
-          .where(eq(schema.artifacts.id, artifactId))
-          .limit(1)
-          .then((rows) => rows[0]);
-
-        if (!artifact) {
-          throw new Error('Artifact not found after update');
-        }
-
-        return artifact;
+        const artifactDb = new ArtifactDb(tx, ctx.logger);
+        return await artifactDb.update(artifactId, {
+          name: name ?? null,
+          filename: filename ?? null,
+        });
       });
 
-      // Validate and return
-      return Artifact.schema.parse(updatedArtifact);
+      return updatedArtifact;
     }),
 });
