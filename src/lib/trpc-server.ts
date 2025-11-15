@@ -4,7 +4,7 @@ import type { Logger } from './logger';
 import type { Db } from '../sql';
 import type { MinioClient } from './minio/minio-client';
 import { getSessionId } from './session-id-cookie';
-import type { SessionId } from './session-id';
+import { SessionId } from './session-id';
 import type { UserId } from '../users/user-id';
 import type { UserSessionId } from '../users/user-session-id';
 import { users, userSessions } from '../db/schema';
@@ -138,11 +138,7 @@ export const createContext = async (config: {
   req: Request;
 }): Promise<Context> => {
   const { db, s3, s3Endpoint, minioClient, logger, req } = config;
-  const sessionId = getSessionId(req);
-
-  if (!sessionId) {
-    throw new Error('No session ID found');
-  }
+  const sessionId = getSessionId(req) ?? SessionId.generate();
 
   // Try to find existing session (authenticated or anonymous)
   const currentSession = await findCurrentUserSession(db, sessionId);
