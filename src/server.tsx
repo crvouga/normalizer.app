@@ -85,33 +85,49 @@ const main = async () => {
   // User profile picture endpoints
   const profilePictureEndpoints = createUserProfilePictureEndpoints({ s3: s3Client, logger });
 
-  const server = serve({
-    port: process.env.PORT ? parseInt(process.env.PORT) : 5000,
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 
-    routes: {
-      // Google OAuth endpoints
-      ...googleAuthEndpoints,
+  try {
+    const server = serve({
+      port,
 
-      // User profile picture endpoints
-      ...profilePictureEndpoints,
+      routes: {
+        // Google OAuth endpoints
+        ...googleAuthEndpoints,
 
-      // tRPC endpoint
-      '/api/trpc/*': {
-        GET: trpcHandler('GET'),
-        POST: trpcHandler('POST'),
+        // User profile picture endpoints
+        ...profilePictureEndpoints,
+
+        // tRPC endpoint
+        '/api/trpc/*': {
+          GET: trpcHandler('GET'),
+          POST: trpcHandler('POST'),
+        },
+
+        async '/health'() {
+          return Response.json({ status: 'ok' });
+        },
+
+        '/*': clientHtml,
       },
 
-      async '/health'() {
-        return Response.json({ status: 'ok' });
-      },
+      development: process.env.NODE_ENV !== 'production',
+    });
 
-      '/*': clientHtml,
-    },
-
-    development: process.env.NODE_ENV !== 'production',
-  });
-
-  logger.info(`🚀 Server running at ${server.url}`);
+    logger.info(`🚀 Server running at ${server.url}`);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'EADDRINUSE') {
+      logger.error(
+        `Port ${port} is already in use. Please stop the existing server or use a different port (set PORT environment variable).`,
+      );
+      logger.error(
+        `To find and kill the process using port ${port}, run: lsof -ti:${port} | xargs kill -9`,
+      );
+    } else {
+      logger.error('Failed to start server:', error as Record<string, unknown>);
+    }
+    throw error;
+  }
 };
 
 main().catch((error) => {

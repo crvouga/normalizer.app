@@ -36,7 +36,7 @@ bun run db:migrate
 bun run server
 ```
 
-The app will be available at `http://localhost:5000`.
+The app will be available at `http://localhost:8080`.
 
 ## Environment Variables
 
@@ -54,8 +54,8 @@ To enable Google Sign-In:
 2. Create a new project or select an existing one
 3. Enable the Google+ API or Google Identity Services
 4. Create OAuth 2.0 credentials (Web application):
-   - **Authorized JavaScript origins**: `http://localhost:5000`, `https://yourdomain.com`
-   - **Authorized redirect URIs**: `http://localhost:5000/api/auth/google/callback`
+   - **Authorized JavaScript origins**: `http://localhost:8080`, `https://yourdomain.com`
+   - **Authorized redirect URIs**: `http://localhost:8080/api/auth/google/callback`
 5. Add these environment variables to your `.env` file:
 
 ```bash

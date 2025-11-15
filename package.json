@@ -29,7 +29,7 @@
     "e2e:ui": "playwright test --ui",
     "format": "bun x sort-package-json && bun x prettier --write .",
     "format:check": "bun x prettier --check .",
-    "kp": "bun x kill-port 5000",
+    "kp": "bun x kill-port 8080",
     "server": "bun run --watch src/server.tsx",
     "tc": "bun type-check",
     "test": "bun test",

@@ -5,8 +5,8 @@ describe('parseAndValidateURL', () => {
   it('parses and returns valid http and https URLs unchanged (normalized)', () => {
     expect(parseAndValidateURL('https://example.com')).toBe('https://example.com/');
     expect(parseAndValidateURL('http://example.com')).toBe('http://example.com/');
-    expect(parseAndValidateURL('https://example.com:5000/path')).toBe(
-      'https://example.com:5000/path',
+    expect(parseAndValidateURL('https://example.com:8080/path')).toBe(
+      'https://example.com:8080/path',
     );
   });
 
