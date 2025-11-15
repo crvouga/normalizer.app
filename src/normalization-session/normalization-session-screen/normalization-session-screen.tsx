@@ -14,6 +14,7 @@ import {
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
 import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
+import { useRequestNormalization } from './use-request-normalization';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -27,15 +28,7 @@ export const NormalizationSessionScreen = (props: {
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
   );
 
-  const handleNormalize = () => {
-    // TODO: Implement normalization logic
-    console.log('Normalize with input artifacts:', inputArtifactIds);
-    // trpcClient.normalizationSession.events.append.mutate({
-    //   event: {
-    //     type: ""
-    //   }
-    // })
-  };
+  const requestNormalization = useRequestNormalization(props.normalizationSessionId);
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;
 
@@ -65,7 +58,11 @@ export const NormalizationSessionScreen = (props: {
           <div className="flex w-full flex-col items-center px-8 py-8">
             <div className="w-full max-w-2xl">
               {/* Placeholder for future content */}
-              <div className="mb-8">{/* Future normalization results will appear here */}</div>
+              <div className="mb-8">
+                {normalizationSessionProjection.entries.map((entry) => (
+                  <div key={entry.id}>{entry.normalizationRunId}</div>
+                ))}
+              </div>
 
               {/* Input form at the end of content */}
               <div className="space-y-4">
@@ -79,7 +76,8 @@ export const NormalizationSessionScreen = (props: {
                     size="lg"
                     startIcon={<IconSparkles className="size-6" />}
                     text={t('normalizationSession.normalize')}
-                    onClick={handleNormalize}
+                    onClick={() => requestNormalization.mutate({ inputArtifactIds })}
+                    loading={requestNormalization.isPending}
                     disabled={inputArtifactIds.length === 0}
                   />
                 </div>

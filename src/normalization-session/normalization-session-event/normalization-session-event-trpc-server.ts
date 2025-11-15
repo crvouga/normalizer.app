@@ -27,6 +27,13 @@ export const normalizationSessionEventRouter = router({
         event: NormalizationSessionEvent.schema,
       }),
     )
+    .output(
+      z.object({
+        eventId: NormalizationSessionEventId.schema,
+        projection: NormalizationSessionProjection.schema,
+        event: NormalizationSessionEventEntity.schema,
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const eventId = NormalizationSessionEventId.generate();
 
@@ -37,14 +44,16 @@ export const normalizationSessionEventRouter = router({
         userId: ctx.userId,
       });
 
+      const event: NormalizationSessionEventEntity = {
+        id: eventId,
+        normalization_session_id: input.sessionId,
+        event: input.event,
+        created_at: new Date(),
+      };
+
       const projection = await ctx.db.transaction(async (tx) => {
         // Insert the new event
-        await tx.insert(schema.normalizationSessionEvents).values({
-          id: eventId,
-          normalization_session_id: input.sessionId,
-          event: input.event,
-          created_at: new Date(),
-        });
+        await tx.insert(schema.normalizationSessionEvents).values(event);
 
         // Refresh the projection
         return await refreshNormalizationSessionProjection({
@@ -58,6 +67,7 @@ export const normalizationSessionEventRouter = router({
       return {
         eventId,
         projection,
+        event,
       };
     }),
 

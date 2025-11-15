@@ -22,6 +22,7 @@ export function NormalizationSessionListItem({
   const targetArtifacts = useEntityStoreSelector((store) =>
     projection.targetArtifactIds.map((id) => store.entities.artifacts.byId[id]),
   );
+
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}

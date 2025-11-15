@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import { UserId } from '../../users/user-id';
 import { NormalizationSessionId } from '../normalization-session-id';
+import { NormalizationRunId } from '../normalization-run-id';
 
 const schema = z.discriminatedUnion('type', [
   // legacy event type
@@ -21,10 +22,12 @@ const schema = z.discriminatedUnion('type', [
     startedByUserId: UserId.schema,
   }),
   z.object({
-    type: z.literal('user-clicked-normalize'),
+    type: z.literal('user-requested-normalization'),
     sessionId: NormalizationSessionId.schema,
-    clickedAt: z.coerce.date(),
-    clickedByUserId: UserId.schema,
+    inputArtifactIds: z.array(ArtifactId.schema),
+    requestedAt: z.coerce.date(),
+    requestedByUserId: UserId.schema,
+    normalizationRunId: NormalizationRunId.schema,
   }),
 ]);
 

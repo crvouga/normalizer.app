@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
 import type { ArtifactId } from '../../artifacts/artifact-id';
-import type { RemoteResult, Result } from '../../lib/result';
-import { Err, Failure, Loading, NotAsked, Ok, Success } from '../../lib/result';
+import type { Result } from '../../lib/result';
+import { Err, Ok } from '../../lib/result';
+import { useMutation } from '../../lib/use-mutation';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import { useCurrentUserResult } from '../../users/use-current-user';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionId as NormalizationSessionIdGenerator } from '../normalization-session-id';
+import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 
 export interface StartNormalizationSessionParams {
   targetArtifactIds: ArtifactId[];
@@ -22,23 +23,18 @@ export function useStartNormalizationSession({
 }: {
   onStartComplete?: (result: Result<StartNormalizationSessionResult, Error>) => void;
 }) {
-  const [state, setState] =
-    useState<RemoteResult<StartNormalizationSessionResult, Error>>(NotAsked);
   const entityStore = useEntityStore();
   const { currentUserResult } = useCurrentUserResult();
 
-  const startSession = async (params: StartNormalizationSessionParams) => {
-    // Check if user is loaded
-    if (currentUserResult.tag !== 'ok') {
-      const error = new Error('User not loaded');
-      setState(Failure(error));
-      onStartComplete?.(Err(error));
-      return;
-    }
+  const mutation = useMutation<StartNormalizationSessionResult, StartNormalizationSessionParams>({
+    async mutationFn(params) {
+      // Check if user is loaded
+      if (currentUserResult.tag !== 'ok') {
+        const error = new Error('User not loaded');
+        onStartComplete?.(Err(error));
+        throw error;
+      }
 
-    setState(Loading);
-
-    try {
       const sessionId = NormalizationSessionIdGenerator.generate();
       const startedAt = new Date();
       const startedByUserId = currentUserResult.value.id;
@@ -53,47 +49,32 @@ export function useStartNormalizationSession({
       };
 
       // Call the backend to append the event
-      const { eventId, projection } = await trpcClient.normalizationSession.events.append.mutate({
+      const output = await trpcClient.normalizationSession.events.append.mutate({
         sessionId,
         event,
       });
 
       // Add the event to the entity store
       entityStore.addEntity('normalizationSessionEvents', {
-        id: eventId,
+        id: output.eventId,
         normalization_session_id: sessionId,
         event,
         created_at: startedAt,
       });
 
       // Add the projection to the entity store (convert string date if needed)
-      const projectionWithDate = {
-        ...projection,
-        startedAt:
-          typeof projection.startedAt === 'string'
-            ? new Date(projection.startedAt)
-            : projection.startedAt,
-      };
-      entityStore.addEntity('normalizationSessionProjections', projectionWithDate);
+      const projection = NormalizationSessionProjection.schema.parse(output.projection);
+      entityStore.addEntity('normalizationSessionProjections', projection);
 
-      const result: StartNormalizationSessionResult = { sessionId, eventId };
-
-      setState(Success(result));
+      const result: StartNormalizationSessionResult = { sessionId, eventId: output.eventId };
       onStartComplete?.(Ok(result));
-
       return result;
-    } catch (error) {
-      setState(Failure(error as Error));
-      onStartComplete?.(Err(error as Error));
-      throw error;
-    }
-  };
-
-  const isStarting = useMemo(() => state.tag === 'loading', [state]);
+    },
+  });
 
   return {
-    startSession,
-    state,
-    isStarting,
+    startSession: mutation.mutate,
+    state: mutation.state,
+    isStarting: mutation.isPending,
   };
 }

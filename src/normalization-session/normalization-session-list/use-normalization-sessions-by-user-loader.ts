@@ -3,7 +3,7 @@ import { useInfiniteScrollLoader } from '../../lib/use-infinite-scroll-loader';
 import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../trpc-client';
 import type { UserId } from '../../users/user-id';
-import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
 import type { Artifact } from '~/src/artifacts/artifact';
 
 /**
@@ -24,13 +24,10 @@ export function useNormalizationSessionsByUserLoader(userId: UserId) {
       });
 
       // Convert string dates to Date objects and store projections in entity store
-      const sessionsWithDates: NormalizationSessionProjection[] = response.sessions.map(
-        (session) => ({
-          ...session,
-          startedAt: new Date(session.startedAt),
-        }),
+      const projections: NormalizationSessionProjection[] = response.sessions.map((projection) =>
+        NormalizationSessionProjection.schema.parse(projection),
       );
-      entityStore.addManyEntities('normalizationSessionProjections', sessionsWithDates);
+      entityStore.addManyEntities('normalizationSessionProjections', projections);
 
       const artifacts: Artifact[] = response.artifacts.map(
         (artifact): Artifact => ({
