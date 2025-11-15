@@ -190,4 +190,92 @@ describe('PostgresNotification', () => {
       await notification.unlisten(channel);
     }
   });
+
+  test('subscribe generator API - yields notifications as they arrive', async () => {
+    const notification = new PostgresNotification(db, sqlConnection ?? undefined);
+    const channel = 'test_generator_channel';
+    const testPayload = 'generator-payload-123';
+
+    // Set up generator
+    const generator = notification.subscribe(channel);
+
+    // Start consuming immediately (this ensures the generator is active)
+    const firstNextPromise = generator.next();
+
+    // Wait a bit to ensure listener is set up
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Send notification
+    await notification.notify(channel, testPayload);
+
+    // Get the first value from the generator (with timeout)
+    const firstResult = await Promise.race([
+      firstNextPromise,
+      new Promise<IteratorResult<string, void>>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout waiting for first notification')), 2000),
+      ),
+    ]);
+    expect(firstResult.done).toBe(false);
+    expect(firstResult.value).toBe(testPayload);
+
+    // Start waiting for the second notification
+    const secondNextPromise = generator.next();
+
+    // Send another notification
+    const testPayload2 = 'generator-payload-456';
+    await notification.notify(channel, testPayload2);
+
+    // Get the second value (with timeout)
+    const secondResult = await Promise.race([
+      secondNextPromise,
+      new Promise<IteratorResult<string, void>>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout waiting for second notification')), 2000),
+      ),
+    ]);
+    expect(secondResult.done).toBe(false);
+    expect(secondResult.value).toBe(testPayload2);
+
+    // Close the generator (cleanup happens automatically)
+    await generator.return(undefined);
+  });
+
+  test('subscribe generator API - works with for await loop', async () => {
+    const notification = new PostgresNotification(db, sqlConnection ?? undefined);
+    const channel = 'test_for_await_channel';
+    const payloads = ['first', 'second', 'third'];
+    const receivedPayloads: string[] = [];
+
+    // Start the generator
+    const generator = notification.subscribe(channel);
+
+    // Wait a bit to ensure listener is set up
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Start consuming in the background
+    const consumePromise = (async () => {
+      for await (const payload of generator) {
+        receivedPayloads.push(payload);
+        if (receivedPayloads.length === payloads.length) {
+          break;
+        }
+      }
+    })();
+
+    // Send notifications
+    for (const payload of payloads) {
+      await notification.notify(channel, payload);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    // Wait for all to be received
+    await Promise.race([
+      consumePromise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout waiting for notifications')), 3000),
+      ),
+    ]);
+
+    // Verify all notifications were received
+    expect(receivedPayloads).toEqual(payloads);
+  });
 });

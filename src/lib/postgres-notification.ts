@@ -156,4 +156,124 @@ export class PostgresNotification {
     // Payload is automatically parameterized by drizzle's sql template
     await this.tx.execute(sql`SELECT pg_notify(${channel}::text, ${payloadString})`);
   }
+
+  /**
+   * Create an async generator that yields notifications from a channel.
+   * Perfect for use with tRPC subscriptions and other streaming APIs.
+   *
+   * The generator will automatically clean up the listener when it's closed or done.
+   *
+   * @param channel - Notification channel name (must be a valid PostgreSQL identifier)
+   * @returns Async generator that yields notification payloads as strings
+   *
+   * @example
+   * ```ts
+   * // In a tRPC subscription
+   * .subscription(async function* ({ input, ctx }) {
+   *   const notification = new PostgresNotification(ctx.db, sqlConnection);
+   *   for await (const payload of notification.subscribe('my_channel')) {
+   *     yield { data: payload };
+   *   }
+   * })
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Direct usage
+   * const notification = new PostgresNotification(db, sqlConnection);
+   * const generator = notification.subscribe('user_updates');
+   * for await (const payload of generator) {
+   *   console.log('Received:', payload);
+   * }
+   * ```
+   */
+  async *subscribe(channel: string): AsyncGenerator<string, void, unknown> {
+    if (!this.sqlConnection) {
+      throw new Error(
+        'Cannot receive notifications: postgres connection instance is required. ' +
+          'Pass the postgres Sql instance to the constructor to enable notification subscriptions.',
+      );
+    }
+
+    validateChannelName(channel);
+
+    // Buffer to hold notifications that arrive before we're ready
+    const notificationBuffer: string[] = [];
+    // Queue to hold pending notification resolvers
+    const queue: Array<{ resolve: (value: string) => void; reject: (error: Error) => void }> = [];
+    let isActive = true;
+
+    // Callback that will be invoked when notifications arrive
+    const callback = (payload: string) => {
+      if (!isActive) {
+        return;
+      }
+
+      // If there's a waiting promise, resolve it with the payload
+      const next = queue.shift();
+      if (next) {
+        next.resolve(payload);
+      } else {
+        // No waiting promise, buffer the notification for later
+        notificationBuffer.push(payload);
+      }
+    };
+
+    try {
+      // Set up the listener
+      await this.listen(channel, callback);
+
+      // Generator loop: yield notifications as they arrive
+      while (isActive) {
+        // Check if we have a buffered notification first
+        const buffered = notificationBuffer.shift();
+        if (buffered) {
+          yield buffered;
+          continue;
+        }
+
+        // Create a promise that will be resolved when a notification arrives
+        const promise = new Promise<string>((resolve, reject) => {
+          // Check if we're still active before adding to queue
+          if (!isActive) {
+            reject(new Error('Subscription closed'));
+            return;
+          }
+          queue.push({ resolve, reject });
+        });
+
+        try {
+          // Wait for the next notification
+          const payload = await promise;
+          // Check again after promise resolves (in case we were closed while waiting)
+          if (!isActive) {
+            break;
+          }
+          yield payload;
+        } catch (err) {
+          // If the subscription was closed, break the loop
+          if (err instanceof Error && err.message === 'Subscription closed') {
+            break;
+          }
+          // Re-throw other errors
+          throw err;
+        }
+      }
+    } finally {
+      // Cleanup: stop accepting new notifications and unlisten
+      isActive = false;
+
+      // Clear the notification buffer
+      notificationBuffer.length = 0;
+
+      // Reject any pending promises
+      for (const { reject } of queue) {
+        reject(new Error('Subscription closed'));
+      }
+      queue.length = 0;
+
+      // Remove the callback and unlisten
+      await this.unlisten(channel, callback);
+    }
+  }
 }
