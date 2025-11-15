@@ -67,7 +67,7 @@ export function ArtifactsInput(props: ArtifactsInputProps) {
   return (
     <div className="space-y-4">
       <SelectedArtifactsList
-        artifacts={props.value}
+        artifactIds={props.value}
         onRemove={removeArtifact}
         onClearAll={handleClearAll}
         readOnly={props.readOnly ?? false}

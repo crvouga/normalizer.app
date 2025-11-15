@@ -9,7 +9,7 @@ export const EntryArtifactsSection = (props: { artifactIds: ArtifactId[]; labelK
   return (
     <div className="mt-4 w-full max-w-lg">
       <SelectedArtifactsList
-        artifacts={props.artifactIds}
+        artifactIds={props.artifactIds}
         onRemove={() => {}}
         readOnly
         showPreview={true}

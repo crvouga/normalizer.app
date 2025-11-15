@@ -13,7 +13,7 @@ import { useI18n } from '../../i18n/use-i18n';
 import { IconPencil } from '~/src/ui/icons';
 
 export interface SelectedArtifactsListProps {
-  artifacts: ArtifactId[];
+  artifactIds: ArtifactId[];
   onRemove: (artifactId: ArtifactId) => void;
   onClearAll?: () => void;
   showPreview?: boolean;
@@ -27,7 +27,7 @@ type ModalState =
   | { type: 'edit'; artifact: Artifact };
 
 export function SelectedArtifactsList({
-  artifacts,
+  artifactIds,
   onRemove,
   onClearAll,
   showPreview = true,
@@ -40,11 +40,11 @@ export function SelectedArtifactsList({
 
   // Convert artifacts to TabularFiles
   const tabularFiles = React.useMemo(() => {
-    return artifacts
+    return artifactIds
       .map((id) => artifactsById[id])
       .filter((artifact): artifact is NonNullable<typeof artifact> => artifact !== undefined)
       .map(artifactToTabularFile);
-  }, [artifacts, artifactsById]);
+  }, [artifactIds, artifactsById]);
 
   const handleTogglePreview = React.useCallback((index: number) => {
     setShowPreviews((prev) => ({
@@ -55,12 +55,12 @@ export function SelectedArtifactsList({
 
   const handleRemoveFile = React.useCallback(
     (index: number) => {
-      const artifactId = artifacts[index];
+      const artifactId = artifactIds[index];
       if (artifactId) {
         onRemove(artifactId);
       }
     },
-    [artifacts, onRemove],
+    [artifactIds, onRemove],
   );
 
   const handleClearAll = React.useCallback(() => {
@@ -70,13 +70,13 @@ export function SelectedArtifactsList({
 
   const handleEdit = React.useCallback(
     (_file: any, index: number) => {
-      const artifactId = artifacts[index];
+      const artifactId = artifactIds[index];
       const artifact = artifactId ? artifactsById[artifactId] : null;
       if (artifact) {
         setModalState({ type: 'edit', artifact });
       }
     },
-    [artifacts, artifactsById],
+    [artifactIds, artifactsById],
   );
 
   const handleEditComplete = React.useCallback(() => {
@@ -87,27 +87,27 @@ export function SelectedArtifactsList({
   const artifactIndexToFileIndex = React.useMemo(() => {
     const map = new Map<number, number>();
     let fileIndex = 0;
-    artifacts.forEach((id, artifactIndex) => {
+    artifactIds.forEach((id, artifactIndex) => {
       if (artifactsById[id]) {
         map.set(artifactIndex, fileIndex);
         fileIndex++;
       }
     });
     return map;
-  }, [artifacts, artifactsById]);
+  }, [artifactIds, artifactsById]);
 
   // Create a reverse map for removing files
   const fileIndexToArtifactIndex = React.useMemo(() => {
     const map = new Map<number, number>();
     let fileIndex = 0;
-    artifacts.forEach((id, artifactIndex) => {
+    artifactIds.forEach((id, artifactIndex) => {
       if (artifactsById[id]) {
         map.set(fileIndex, artifactIndex);
         fileIndex++;
       }
     });
     return map;
-  }, [artifacts, artifactsById]);
+  }, [artifactIds, artifactsById]);
 
   const handleRemoveFileFromList = React.useCallback(
     (fileIndex: number) => {
@@ -163,14 +163,12 @@ export function SelectedArtifactsList({
     [t, handleEditFromList],
   );
 
-  if (artifacts.length === 0) {
-    return null;
-  }
+  if (artifactIds.length === 0) return null;
 
   return (
     <>
       <div className="space-y-3">
-        {artifacts.map((artifactId, artifactIndex) => {
+        {artifactIds.map((artifactId, artifactIndex) => {
           const artifact = artifactsById[artifactId];
           if (!artifact) return <TabularFileItemSkeleton key={artifactId} />;
 
