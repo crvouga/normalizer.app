@@ -1,12 +1,11 @@
-import { eq, sql, type ExtractTablesWithRelations } from 'drizzle-orm';
-import type { BunSQLQueryResultHKT } from 'drizzle-orm/bun-sql';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
+import type { Db, Tx } from '~/src/sql';
 import type { UserId } from '~/src/users/user-id';
 import * as schema from '../../db/schema';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionProjection } from './normalization-session-projection';
+import { loadNormalizationSessionProjection } from './normalization-session-projection-load';
 
 /**
  * Refreshes the projection for a normalization session by:
@@ -15,39 +14,14 @@ import { NormalizationSessionProjection } from './normalization-session-projecti
  * 3. Upserting the projection to the database
  */
 export async function refreshNormalizationSessionProjection(params: {
-  tx: PgTransaction<BunSQLQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+  tx: Tx | Db;
   sessionId: NormalizationSessionId;
   startedByUserId: UserId;
   logger: Logger;
 }): Promise<NormalizationSessionProjection> {
-  const { tx, sessionId, startedByUserId, logger } = params;
+  const { tx, sessionId, logger } = params;
 
-  // Query all events for this session
-  const events = await tx
-    .select()
-    .from(schema.normalizationSessionEvents)
-    .where(eq(schema.normalizationSessionEvents.normalization_session_id, sessionId))
-    .orderBy(schema.normalizationSessionEvents.created_at);
-
-  // Validate events
-  const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap((event) => {
-    const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
-    if (parsedEvent.success) {
-      return [parsedEvent.data];
-    }
-    return [];
-  });
-
-  // Compute projection by reducing all events
-  const initialState = NormalizationSessionProjection.init({
-    sessionId,
-    targetArtifactIds: [],
-    startedAt: new Date(),
-    startedByUserId: startedByUserId,
-    lastUpdatedAt: new Date(),
-  });
-
-  const projection = NormalizationSessionProjection.reduce(validatedEvents, initialState);
+  const projection = await loadNormalizationSessionProjection(params);
 
   // Upsert the projection for this normalization session
   // Cast JSON string to jsonb to prevent double-encoding
@@ -71,7 +45,7 @@ export async function refreshNormalizationSessionProjection(params: {
 
   logger.info('Normalization session projection updated', {
     sessionId,
-    eventCount: events.length,
+    entryCount: projection.entries.length,
   });
 
   return projection;

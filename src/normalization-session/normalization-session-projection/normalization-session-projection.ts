@@ -118,9 +118,24 @@ const reduce = (
   return events.reduce((state, eventEntity) => reducer(state, eventEntity.event), initialState);
 };
 
+const isNormalizing = (state: NormalizationSessionProjection): boolean => {
+  return state.entries.some(
+    (entry) => entry.type === 'normalization' && entry.status === 'in_progress',
+  );
+};
+
+const shouldStartNormalization = (
+  before: NormalizationSessionProjection,
+  after: NormalizationSessionProjection,
+): boolean => {
+  return !isNormalizing(before) && isNormalizing(after);
+};
+
 export const NormalizationSessionProjection = {
   schema,
   reducer,
   init,
   reduce,
+  isNormalizing,
+  shouldStartNormalization,
 };

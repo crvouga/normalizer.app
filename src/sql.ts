@@ -1,9 +1,17 @@
 import { SQL } from 'bun';
-import { drizzle } from 'drizzle-orm/bun-sql';
+import { drizzle, type BunSQLQueryResultHKT } from 'drizzle-orm/bun-sql';
 import type { Logger } from './lib/logger';
 import * as schema from './db/schema';
+import type { PgTransaction } from 'drizzle-orm/pg-core';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
 
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
+
+export type Tx = PgTransaction<
+  BunSQLQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;
 
 // Global connection instance to prevent multiple connections during hot reload
 let globalDb: Db | null = null;

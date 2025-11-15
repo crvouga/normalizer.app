@@ -2,19 +2,20 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import * as schema from '../../db/schema';
 import { procedure, router } from '../../lib/trpc-server';
+import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
+import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 import { NormalizationSessionEvent } from '../normalization-session-event/normalization-session-event';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '../normalization-session-id';
-import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
 import {
   canViewNormalizationSession,
-  viewNormalizationSessionPolicy,
   getNormalizationSessionOwner,
+  viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
-import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
-import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import { loadNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-load';
+import { refreshNormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection-refresh';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -50,19 +51,27 @@ export const normalizationSessionEventRouter = router({
         event: input.event,
         created_at: new Date(),
       };
+      const params = {
+        tx: ctx.db,
+        sessionId: input.sessionId,
+        startedByUserId: ctx.userId,
+        logger: ctx.logger,
+      };
+
+      const projectionBefore = await loadNormalizationSessionProjection(params);
 
       const projection = await ctx.db.transaction(async (tx) => {
         await tx.insert(schema.normalizationSessionEvents).values(event);
-        return await refreshNormalizationSessionProjection({
-          tx: tx,
-          sessionId: input.sessionId,
-          startedByUserId: ctx.userId,
-          logger: ctx.logger,
-        });
+        const projection = await refreshNormalizationSessionProjection({ ...params, tx });
+
+        if (NormalizationSessionProjection.shouldStartNormalization(projectionBefore, projection)) {
+        }
+        return projection;
       });
 
       return {
         eventId,
+        projectionBefore,
         projection,
         event,
       };
