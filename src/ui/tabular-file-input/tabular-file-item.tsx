@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useFileLoader } from '../../lib/use-file-loader';
 import type { I18nText } from '../../i18n/types';
+import { toI18nText } from '../../i18n/types';
 import { ButtonBase } from '../button-base';
 import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
@@ -68,13 +69,19 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <Typography variant="sm" weight="medium" color="primary" className="truncate">
-            {tabularFile.name}
-          </Typography>
+          <Typography
+            variant="sm"
+            weight="medium"
+            color="primary"
+            className="truncate"
+            text={toI18nText(tabularFile.name)}
+          />
           {tabularFile.size !== undefined && (
-            <Typography variant="xs" color="muted">
-              {formatFileSize(tabularFile.size)}
-            </Typography>
+            <Typography
+              variant="xs"
+              color="muted"
+              text={toI18nText(formatFileSize(tabularFile.size))}
+            />
           )}
         </div>
       </div>
@@ -96,9 +103,8 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
                 variant="xs"
                 color="muted"
                 className="hover:text-slate-900 dark:hover:text-slate-100"
-              >
-                {action.label}
-              </Typography>
+                text={action.label}
+              />
             </ButtonBase>
           );
         })}
@@ -156,9 +162,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
         <div className="border-t border-slate-200 dark:border-slate-700">
           {error ? (
             <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
-              <Typography variant="sm" color="error">
-                {error}
-              </Typography>
+              <Typography variant="sm" color="error" text={toI18nText(error)} />
             </div>
           ) : isLoading || !loadedFile ? (
             <TabularFilePreviewTable

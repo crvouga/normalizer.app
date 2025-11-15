@@ -56,13 +56,13 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
           <UploadIcon className="size-8" />
 
           <div className="space-y-1">
-            <Typography variant="sm" weight="medium" color="primary">
-              {defaultPlaceholder}
-            </Typography>
+            <Typography variant="sm" weight="medium" color="primary" text={defaultPlaceholder} />
             {accept && (
-              <Typography variant="xs" color="muted">
-                {t('tabularFileInput.acceptedFormats', { formats: accept })}
-              </Typography>
+              <Typography
+                variant="xs"
+                color="muted"
+                text={t('tabularFileInput.acceptedFormats', { formats: accept })}
+              />
             )}
           </div>
         </div>

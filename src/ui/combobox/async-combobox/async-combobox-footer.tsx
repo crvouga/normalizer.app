@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { Spinner } from '../../spinner';
 import { Typography } from '../../typography';
+import { toI18nText } from '../../../i18n/types';
 
 export interface AsyncComboboxFooterProps {
   hasMore: boolean;
@@ -27,9 +28,7 @@ export function AsyncComboboxFooter({
       {isLoadingMore ? (
         <div className="flex items-center justify-center gap-2">
           <Spinner size="sm" />
-          <Typography variant="xs" color="muted">
-            Loading more...
-          </Typography>
+          <Typography variant="xs" color="muted" text={toI18nText('Loading more...')} />
         </div>
       ) : (
         <div className="h-2" />

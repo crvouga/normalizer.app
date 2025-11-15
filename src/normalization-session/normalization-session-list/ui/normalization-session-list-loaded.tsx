@@ -4,6 +4,7 @@ import type { NormalizationSessionProjection } from '../../normalization-session
 import { NormalizationSessionListItem } from './normalization-session-list-item';
 import { Spinner } from '~/src/ui/spinner';
 import { Typography } from '~/src/ui/typography';
+import { toI18nText } from '~/src/i18n/types';
 
 interface NormalizationSessionListLoadedProps {
   sessions: NormalizationSessionProjection[];
@@ -47,9 +48,13 @@ export function NormalizationSessionListLoaded({
         {/* No more results indicator */}
         {!hasMore && sessions.length > 0 && (
           <div className="py-4 text-center">
-            <Typography variant="xs" color="muted" as="p" className="text-center">
-              No more sessions
-            </Typography>
+            <Typography
+              variant="xs"
+              color="muted"
+              as="p"
+              className="text-center"
+              text={toI18nText('No more sessions')}
+            />
           </div>
         )}
       </div>

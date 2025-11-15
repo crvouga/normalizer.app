@@ -83,9 +83,13 @@ export function Modal({
               {title && (
                 <div className="mb-4 flex items-center justify-between">
                   <DialogTitle as="div">
-                    <Typography as="h2" variant="lg" weight="semibold" color="primary">
-                      {title}
-                    </Typography>
+                    <Typography
+                      as="h2"
+                      variant="lg"
+                      weight="semibold"
+                      color="primary"
+                      text={title}
+                    />
                   </DialogTitle>
                   <ButtonBase
                     onClick={handleClose}
@@ -99,9 +103,7 @@ export function Modal({
               )}
 
               {/* Content */}
-              <Typography as="div" color="primary">
-                {children}
-              </Typography>
+              <div className="text-slate-900 dark:text-slate-100">{children}</div>
             </DialogPanel>
           </TransitionChild>
         </div>

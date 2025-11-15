@@ -1,5 +1,6 @@
 import { IconAlertCircle } from '../../icons';
 import { Typography } from '../../typography';
+import { toI18nText } from '../../../i18n/types';
 
 export interface ComboboxErrorStateProps {
   error: Error | string;
@@ -16,9 +17,7 @@ export function ComboboxErrorState({ error }: ComboboxErrorStateProps) {
   return (
     <div className="flex items-center gap-2 px-4 py-8">
       <IconAlertCircle />
-      <Typography variant="sm" color="error">
-        {errorMessage}
-      </Typography>
+      <Typography variant="sm" color="error" text={toI18nText(errorMessage)} />
     </div>
   );
 }

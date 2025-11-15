@@ -38,9 +38,7 @@ export function SignInModal({ isOpen, onClose, onGoogleSignIn }: SignInModalProp
       disabled={isSigningIn}
     >
       <div className="space-y-6">
-        <Typography variant="base" color="secondary">
-          {t('auth.signInMessage')}
-        </Typography>
+        <Typography variant="base" color="secondary" text={t('auth.signInMessage')} />
 
         <div className="space-y-3">
           <Button

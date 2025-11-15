@@ -15,9 +15,11 @@ export function ComboboxEmptyState({ query }: ComboboxEmptyStateProps) {
 
   return (
     <div className="px-4 py-8 text-center">
-      <Typography variant="sm" color="muted">
-        {query ? t('combobox.noResultsFound', { query }) : t('combobox.noOptionsAvailable')}
-      </Typography>
+      <Typography
+        variant="sm"
+        color="muted"
+        text={query ? t('combobox.noResultsFound', { query }) : t('combobox.noOptionsAvailable')}
+      />
     </div>
   );
 }

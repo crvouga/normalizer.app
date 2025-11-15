@@ -23,9 +23,13 @@ export const PromptInputField: React.FC<PromptInputFieldProps> = ({
   const { t } = useI18n();
   return (
     <div className="flex flex-col gap-2">
-      <Typography as="label" weight="medium" color="primary" {...({ htmlFor: id } as any)}>
-        {label ?? t('prompt.label')}
-      </Typography>
+      <Typography
+        as="label"
+        weight="medium"
+        color="primary"
+        text={label ?? t('prompt.label')}
+        {...({ htmlFor: id } as any)}
+      />
       <textarea
         id={id}
         rows={rows}

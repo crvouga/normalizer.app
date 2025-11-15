@@ -40,9 +40,8 @@ export function RadioGroup<T extends string = string>({
           weight="semibold"
           color="primary"
           className="mb-3 block"
-        >
-          {label}
-        </Typography>
+          text={label}
+        />
       )}
 
       <HeadlessRadioGroup value={value} onChange={onChange}>

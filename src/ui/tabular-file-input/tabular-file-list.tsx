@@ -58,15 +58,16 @@ export const TabularFileList: React.FC<FileListProps> = ({
           <div className="flex items-center gap-2">
             {onAddMore && (
               <ButtonBase type="button" onClick={onAddMore} className="transition-colors">
-                <Typography variant="xs" color="info" className="hover:opacity-80">
-                  {t('tabularFileInput.addMore')}
-                </Typography>
+                <Typography
+                  variant="xs"
+                  color="info"
+                  className="hover:opacity-80"
+                  text={t('tabularFileInput.addMore')}
+                />
               </ButtonBase>
             )}
             <ButtonBase type="button" onClick={onClearAll} className="transition-colors">
-              <Typography variant="xs" color="muted">
-                {t('tabularFileInput.clearAll')}
-              </Typography>
+              <Typography variant="xs" color="muted" text={t('tabularFileInput.clearAll')} />
             </ButtonBase>
           </div>
         </div>

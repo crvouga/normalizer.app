@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
-import { Typography } from '../typography';
+import { toI18nText } from '../../i18n/types';
 import { useI18n } from '../../i18n/use-i18n';
+import { Typography } from '../typography';
 
 interface TabularFilePreviewTableProps {
   data: Record<string, string | number | boolean | null | undefined>[] | null;
@@ -18,6 +19,24 @@ interface TableCellProps {
 }
 
 const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title }) => {
+  // If children is a React element (not a string), render it directly
+  if (
+    React.isValidElement(children) ||
+    (typeof children !== 'string' &&
+      typeof children !== 'number' &&
+      children !== null &&
+      children !== undefined)
+  ) {
+    return (
+      <div className="block max-w-[200px] truncate" title={title}>
+        {children}
+      </div>
+    );
+  }
+
+  // Convert string/number to I18nText for Typography
+  const text = toI18nText(String(children ?? ''));
+
   if (isHeader) {
     return (
       <Typography
@@ -26,15 +45,18 @@ const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title
         color="muted"
         className="block max-w-[200px] truncate"
         title={title}
-      >
-        {children}
-      </Typography>
+        text={text}
+      />
     );
   }
   return (
-    <Typography variant="sm" color="primary" className="block max-w-[200px] truncate" title={title}>
-      {children}
-    </Typography>
+    <Typography
+      variant="sm"
+      color="primary"
+      className="block max-w-[200px] truncate"
+      title={title}
+      text={text}
+    />
   );
 };
 
@@ -80,8 +102,11 @@ const TableStructure: React.FC<TableStructureProps> = ({
                   return (
                     <td key={colIndex} className="min-w-[200px] p-3 whitespace-nowrap">
                       <TableCell title={typeof cellValue === 'string' ? cellValue : undefined}>
-                        {/* @ts-ignore */}
-                        {cellValue}
+                        {typeof cellValue === 'string' ||
+                        typeof cellValue === 'number' ||
+                        React.isValidElement(cellValue)
+                          ? cellValue
+                          : null}
                       </TableCell>
                     </td>
                   );
@@ -92,10 +117,8 @@ const TableStructure: React.FC<TableStructureProps> = ({
         </table>
       </div>
       {showFooter && (
-        <div className="border-t border-slate-200 bg-slate-100 p-3 text-center dark:border-slate-700 dark:bg-slate-800">
-          <Typography variant="xs" color="muted">
-            {footerContent}
-          </Typography>
+        <div className="flex h-10 items-center justify-center border-t border-slate-200 bg-slate-100 text-center dark:border-slate-700 dark:bg-slate-800">
+          {footerContent}
         </div>
       )}
     </div>
@@ -147,9 +170,7 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
   if (!data || data.length === 0) {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-100 p-6 text-center dark:border-slate-700 dark:bg-slate-800">
-        <Typography variant="sm" color="muted">
-          {t('tabularFilePreview.noData')}
-        </Typography>
+        <Typography variant="sm" color="muted" text={t('tabularFilePreview.noData')} />
       </div>
     );
   }
@@ -164,12 +185,18 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
       rows={truncatedData}
       showFooter={data.length > maxRows}
       footerContent={
-        data.length > maxRows
-          ? t('tabularFilePreview.showingRows', {
-              showing: maxRows.toLocaleString(),
-              total: data.length.toLocaleString(),
-            })
-          : undefined
+        <Typography
+          variant="xs"
+          color="muted"
+          text={
+            data.length > maxRows
+              ? t('tabularFilePreview.showingRows', {
+                  showing: maxRows.toLocaleString(),
+                  total: data.length.toLocaleString(),
+                })
+              : t('tabularFilePreview.noData')
+          }
+        />
       }
       className={className}
     />

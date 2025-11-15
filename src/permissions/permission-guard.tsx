@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { SpinnerBlock } from '../ui/spinner-block';
 import { Typography } from '../ui/typography';
+import { toI18nText } from '../i18n/types';
 
 export interface PermissionGuardProps {
   /**
@@ -48,9 +49,7 @@ function AccessDeniedRedirect({ onRedirect }: AccessDeniedRedirectProps) {
 
   return (
     <div className="flex h-full w-full items-center justify-center">
-      <Typography color="muted" variant="lg">
-        Access denied. Redirecting...
-      </Typography>
+      <Typography color="muted" variant="lg" text={toI18nText('Access denied. Redirecting...')} />
     </div>
   );
 }
@@ -78,12 +77,12 @@ export function PermissionGuard({
       errorComponent || (
         <div className="flex h-full w-full items-center justify-center">
           <div className="flex flex-col gap-4 text-center">
-            <Typography color="error" variant="lg">
-              Error checking permissions
-            </Typography>
-            <Typography color="muted" variant="sm">
-              {error.message}
-            </Typography>
+            <Typography
+              color="error"
+              variant="lg"
+              text={toI18nText('Error checking permissions')}
+            />
+            <Typography color="muted" variant="sm" text={toI18nText(error.message)} />
           </div>
         </div>
       )

@@ -194,11 +194,7 @@ const TabularFileInput = React.forwardRef<HTMLInputElement, TabularFileInputProp
         )}
 
         {/* Error Message */}
-        {error && (
-          <Typography variant="sm" color="error" className="mt-2">
-            {error}
-          </Typography>
-        )}
+        {error && <Typography variant="sm" color="error" className="mt-2" text={error} />}
 
         {/* Selected Files */}
         <TabularFileList

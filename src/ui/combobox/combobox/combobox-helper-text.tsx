@@ -1,4 +1,5 @@
 import type { I18nText } from '../../../i18n/types';
+import { toI18nText } from '../../../i18n/types';
 import { Typography } from '../../typography';
 
 export interface ComboboxHelperTextProps {
@@ -19,8 +20,11 @@ export function ComboboxHelperText({ helperText, error }: ComboboxHelperTextProp
   const errorMessage = error ? (error instanceof Error ? error.message : String(error)) : null;
 
   return (
-    <Typography variant="xs" color={error ? 'error' : 'muted'} className="mt-1">
-      {errorMessage || helperText}
-    </Typography>
+    <Typography
+      variant="xs"
+      color={error ? 'error' : 'muted'}
+      className="mt-1"
+      text={errorMessage ? toI18nText(errorMessage) : helperText!}
+    />
   );
 }

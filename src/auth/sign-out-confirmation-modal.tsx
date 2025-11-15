@@ -36,9 +36,7 @@ export function SignOutConfirmationModal({
       disabled={isLoggingOut}
     >
       <div className="space-y-4">
-        <Typography variant="base" color="secondary">
-          {t('auth.signOutConfirmMessage')}
-        </Typography>
+        <Typography variant="base" color="secondary" text={t('auth.signOutConfirmMessage')} />
 
         <ModalActions
           cancelText={t('common.cancel')}

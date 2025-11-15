@@ -23,9 +23,8 @@ export function TextFieldLabel({ label, htmlFor }: TextFieldLabelProps) {
       weight="medium"
       color="secondary"
       className="mb-2 block"
+      text={label}
       {...(htmlFor ? { htmlFor } : {})}
-    >
-      {label}
-    </Typography>
+    />
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Typography } from './typography';
 import { ButtonBase } from './button-base';
+import { toI18nText } from '../i18n/types';
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <aside className="flex h-full w-sm shrink-0 flex-col border-r border-slate-200 bg-slate-100 text-slate-900 select-none dark:border-slate-800 dark:bg-slate-800 dark:text-white">
@@ -14,9 +15,20 @@ export const SidebarHeader: React.FC<{
 }> = ({ icon, title }) => (
   <div className="flex items-center gap-2 px-6 py-6">
     {icon}
-    <Typography as="span" variant="lg" weight="bold" color="primary" className="tracking-wide">
-      {title}
-    </Typography>
+    {typeof title === 'string' ? (
+      <Typography
+        as="span"
+        variant="lg"
+        weight="bold"
+        color="primary"
+        className="tracking-wide"
+        text={toI18nText(title)}
+      />
+    ) : (
+      <span className="text-lg font-bold tracking-wide text-slate-900 dark:text-slate-100">
+        {title}
+      </span>
+    )}
   </div>
 );
 
@@ -71,16 +83,20 @@ export const SidebarAvatar: React.FC<{
   avatarContent?: React.ReactNode;
 }> = ({ name, avatarContent }) => (
   <div className="flex items-center gap-2 overflow-hidden">
-    <Typography
-      as="div"
-      weight="semibold"
-      className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
-    >
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300">
       {avatarContent}
-    </Typography>
-    <Typography as="span" variant="sm" color="secondary" className="truncate">
-      {name}
-    </Typography>
+    </div>
+    {typeof name === 'string' ? (
+      <Typography
+        as="span"
+        variant="sm"
+        color="secondary"
+        className="truncate"
+        text={toI18nText(name)}
+      />
+    ) : (
+      <span className="truncate text-sm text-slate-700 dark:text-slate-200">{name}</span>
+    )}
   </div>
 );
 

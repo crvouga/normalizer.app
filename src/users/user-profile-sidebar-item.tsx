@@ -6,6 +6,7 @@ import { useGoogleAuthEnabled } from '~/src/auth/use-google-auth-enabled';
 import { useSignOut } from '~/src/auth/use-sign-out';
 import { useSignIn } from '~/src/auth/use-sign-in';
 import { useI18n } from '~/src/i18n/use-i18n';
+import { toI18nText } from '~/src/i18n/types';
 import { cn } from '~/src/lib/cn';
 import { SettingsModal } from '~/src/settings/settings-modal';
 import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
@@ -48,17 +49,22 @@ const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolea
         />
       )}
       <div className="min-w-0 flex-1 text-left">
-        <Typography variant="sm" weight="medium" color="primary" className="truncate">
-          {user.name || user.email || 'Anonymous User'}
-        </Typography>
+        <Typography
+          variant="sm"
+          weight="medium"
+          color="primary"
+          className="truncate"
+          text={toI18nText(user.name || user.email || 'Anonymous User')}
+        />
         {isAnonymous ? (
-          <Typography variant="xs" color="muted">
-            Not signed in
-          </Typography>
+          <Typography variant="xs" color="muted" text={toI18nText('Not signed in')} />
         ) : user.email ? (
-          <Typography variant="xs" color="muted" className="truncate">
-            {user.email}
-          </Typography>
+          <Typography
+            variant="xs"
+            color="muted"
+            className="truncate"
+            text={toI18nText(user.email)}
+          />
         ) : null}
       </div>
     </MenuButton>
@@ -104,17 +110,21 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
 
           {authState.type === 'loaded' && !isAnonymous && (
             <div className="px-4 py-3">
-              <Typography variant="xs" color="muted">
-                Signed in as {user.email || user.name}
-              </Typography>
+              <Typography
+                variant="xs"
+                color="muted"
+                text={toI18nText(`Signed in as ${user.email || user.name}`)}
+              />
             </div>
           )}
 
           {authState.type === 'loaded' && isAnonymous && !authState.isEnabled && (
             <div className="flex items-center justify-center px-4 py-6">
-              <Typography variant="xs" color="muted">
-                Authentication not configured
-              </Typography>
+              <Typography
+                variant="xs"
+                color="muted"
+                text={toI18nText('Authentication not configured')}
+              />
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { Typography } from '../../typography';
+import { toI18nText } from '../../../i18n/types';
 
 export interface AsyncComboboxEmptyStateProps {
   query: string;
@@ -12,15 +13,23 @@ export interface AsyncComboboxEmptyStateProps {
 export function AsyncComboboxEmptyState({ query, minQueryLength }: AsyncComboboxEmptyStateProps) {
   if (query.length < minQueryLength) {
     return (
-      <Typography variant="sm" color="muted" className="p-4">
-        Type at least {minQueryLength} character{minQueryLength !== 1 ? 's' : ''} to search
-      </Typography>
+      <Typography
+        variant="sm"
+        color="muted"
+        className="p-4"
+        text={toI18nText(
+          `Type at least ${minQueryLength} character${minQueryLength !== 1 ? 's' : ''} to search`,
+        )}
+      />
     );
   }
 
   return (
-    <Typography variant="sm" color="muted" className="p-4">
-      No results found for "{query}"
-    </Typography>
+    <Typography
+      variant="sm"
+      color="muted"
+      className="p-4"
+      text={toI18nText(`No results found for "${query}"`)}
+    />
   );
 }

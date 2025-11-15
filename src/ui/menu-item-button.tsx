@@ -23,9 +23,7 @@ export function MenuItemButton({ onClick, icon, label, disabled = false }: MenuI
           disabled={disabled}
         >
           <div className="size-5 shrink-0 text-slate-600 dark:text-slate-400">{icon}</div>
-          <Typography variant="sm" color="secondary">
-            {label}
-          </Typography>
+          <Typography variant="sm" color="secondary" text={label} />
         </ButtonBase>
       </div>
     </MenuItem>

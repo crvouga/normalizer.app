@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
+import type { I18nText } from '~/src/i18n/types';
 
 type TypographyVariant = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl';
 type TypographyColor =
@@ -20,7 +21,7 @@ interface TypographyProps {
   weight?: TypographyWeight;
   as?: TypographyElement;
   className?: string;
-  children?: React.ReactNode;
+  text: I18nText;
 }
 
 const variantClasses: Record<TypographyVariant, string> = {
@@ -59,7 +60,7 @@ export function Typography<E extends TypographyElement = 'p'>({
   weight = 'normal',
   as,
   className,
-  children,
+  text,
   ...props
 }: PolymorphicProps<E>) {
   const Component = (as || 'p') as React.ElementType;
@@ -69,7 +70,7 @@ export function Typography<E extends TypographyElement = 'p'>({
       className={cn(variantClasses[variant], colorClasses[color], weightClasses[weight], className)}
       {...(props as any)}
     >
-      {children}
+      {text}
     </Component>
   );
 }
