@@ -31,6 +31,7 @@
     "kp": "bun x kill-port 5000",
     "server": "bun run --hot src/server.tsx",
     "tc": "bun type-check",
+    "worker": "bun run --hot src/worker.tsx",
     "test": "bun test",
     "type-check": "tsc --noEmit --watch",
     "type-check:once": "tsc --noEmit"
@@ -42,6 +43,7 @@
     "arctic": "^3.7.0",
     "bun-plugin-tailwind": "^0.0.14",
     "drizzle-orm": "^0.44.7",
+    "graphile-worker": "^0.16.6",
     "lru-cache": "^11.2.2",
     "minio": "^8.0.6",
     "react": "^19",
