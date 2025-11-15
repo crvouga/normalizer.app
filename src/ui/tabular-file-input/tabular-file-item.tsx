@@ -160,7 +160,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
 
       {isPreviewVisible && showPreview && (
         <div className="border-t border-slate-200 dark:border-slate-700">
-          <div className="w-full max-w-[80%]">
+          <div className="w-full">
             {error ? (
               <div className="rounded-lg bg-red-100 p-6 text-center dark:bg-red-900/20">
                 <Typography variant="sm" color="error" text={toI18nText(error)} />

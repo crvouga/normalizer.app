@@ -10,7 +10,7 @@ const StatusIcon = () => {
   );
 };
 
-export const FailedEntry = (props: { entry: NormalizationSessionProjectionEntry }) => {
+export const FailedEntry = (_props: { entry: NormalizationSessionProjectionEntry }) => {
   const { t } = useI18n();
 
   return (

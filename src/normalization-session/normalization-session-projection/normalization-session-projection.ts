@@ -12,6 +12,7 @@ const schema = z.object({
   startedAt: z.coerce.date(),
   startedByUserId: UserId.schema,
   entries: z.array(NormalizationSessionProjectionEntry.schema).default([]),
+  lastUpdatedAt: z.coerce.date().default(() => new Date()),
 });
 
 export type NormalizationSessionProjection = z.infer<typeof schema>;
@@ -99,6 +100,7 @@ const init = (input: {
   targetArtifactIds: ArtifactId[];
   startedAt: Date;
   startedByUserId: UserId;
+  lastUpdatedAt: Date;
 }): NormalizationSessionProjection => {
   return {
     id: input.sessionId,
@@ -106,6 +108,7 @@ const init = (input: {
     startedAt: input.startedAt,
     startedByUserId: input.startedByUserId,
     entries: [],
+    lastUpdatedAt: input.lastUpdatedAt,
   };
 };
 

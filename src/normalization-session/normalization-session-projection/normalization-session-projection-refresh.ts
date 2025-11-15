@@ -39,6 +39,7 @@ export async function refreshNormalizationSessionProjection(params: {
     targetArtifactIds: [],
     startedAt: new Date(),
     startedByUserId: startedByUserId,
+    lastUpdatedAt: new Date(),
   });
 
   const projection = NormalizationSessionProjection.reduce(validatedEvents, initialState);
