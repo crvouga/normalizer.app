@@ -90,8 +90,6 @@ export class NormalizationSessionProjectionDb {
         },
       });
 
-    // Send PostgreSQL NOTIFY (trigger will also send this, but we do it explicitly for reliability)
-    // All replicas will receive this notification via PostgreSQL LISTEN/NOTIFY
     const appNotification = new AppNotification(this.tx);
     await appNotification.notify({
       type: 'normalization_session_projection_update',

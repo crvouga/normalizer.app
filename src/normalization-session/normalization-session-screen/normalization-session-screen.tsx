@@ -12,13 +12,13 @@ import {
 import { NormalizationSessionEntry } from './normalization-session-entry';
 import { NormalizationSessionHeader } from './normalization-session-screen-header';
 import { NormalizationSessionScreenInputForm } from './normalization-session-screen-input-form';
-import { useNormalizationSessionLoader } from './use-normalization-session-events-loader';
+import { useNormalizationSessionSubscription } from './use-normalization-session-subscription';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
 }) => {
   const { setCurrentScreen } = useCurrentScreen();
-  useNormalizationSessionLoader(props.normalizationSessionId);
+  useNormalizationSessionSubscription(props.normalizationSessionId);
 
   const normalizationSessionProjection = useEntityStoreSelector(
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
