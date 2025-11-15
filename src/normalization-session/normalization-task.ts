@@ -78,11 +78,8 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
         const outputArtifactId = ArtifactId.generate();
         outputArtifactIds.push(outputArtifactId);
 
-        // Get the raw database row for cloning
-        const rawArtifact = await artifactDb.getRawById(inputArtifact.id);
-        if (rawArtifact) {
-          await artifactDb.clone(rawArtifact, outputArtifactId);
-        }
+        // Clone the artifact with a new ID
+        await artifactDb.clone(inputArtifact, outputArtifactId);
       }
 
       logger.info('Created cloned artifacts', {

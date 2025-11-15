@@ -6,7 +6,6 @@ import { UserId } from '../users/user-id';
 import * as schema from '../db/schema';
 import { Artifact } from './artifact';
 import { ArtifactId } from './artifact-id';
-import type { IArtifact } from '../db/schema';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
 /**
@@ -228,27 +227,31 @@ export class ArtifactDb {
   }
 
   /**
-   * Get raw database row by ID (for operations that need the raw row, like cloning)
-   */
-  async getRawById(artifactId: ArtifactId): Promise<IArtifact | null> {
-    const row = await this.tx
-      .select()
-      .from(schema.artifacts)
-      .where(eq(schema.artifacts.id, artifactId))
-      .limit(1)
-      .then((rows) => rows[0]);
-
-    return row ?? null;
-  }
-
-  /**
    * Clone an artifact with a new ID
+   * Creates a copy of the artifact with a new ID and updated timestamps
    */
-  async clone(artifact: IArtifact, newId: ArtifactId): Promise<void> {
+  async clone(artifact: Artifact, newId: ArtifactId): Promise<void> {
     const now = new Date();
     await this.tx.insert(schema.artifacts).values({
-      ...artifact,
       id: newId,
+      filename: artifact.filename,
+      content_type: artifact.content_type,
+      size: artifact.size,
+      file_type: artifact.file_type,
+      status: artifact.status,
+      s3_bucket: artifact.s3_bucket,
+      s3_key: artifact.s3_key,
+      name: artifact.name ?? null,
+      uploaded_by_user_id: artifact.uploaded_by_user_id ?? null,
+      upload_ip: artifact.upload_ip ?? null,
+      sha256: artifact.sha256 ?? null,
+      download_url: artifact.download_url ?? null,
+      download_url_expires_at: artifact.download_url_expires_at ?? null,
+      upload_url: artifact.upload_url ?? null,
+      upload_url_expires_at: artifact.upload_url_expires_at ?? null,
+      tags: artifact.tags ?? null,
+      description: artifact.description ?? null,
+      deleted: artifact.deleted ?? null,
       created_at: now,
       updated_at: now,
     });

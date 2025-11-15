@@ -23,8 +23,6 @@ export const artifactRouter = router({
         sessionId: ctx.sessionId,
       });
 
-      // For get operation, only filter by artifact ID and soft delete status
-      // Having the artifact ID (UUID) is sufficient authorization
       const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
       const artifact = await artifactDb.getById(input.artifactId);
 
@@ -38,7 +36,6 @@ export const artifactRouter = router({
         uploadedByUserId: artifact.uploaded_by_user_id,
       });
 
-      // Refresh artifact URLs and persist to database if needed
       const artifactsWithUrls = await artifactDb.refreshUrls({
         artifacts: [artifact],
         s3: ctx.s3,
@@ -48,7 +45,6 @@ export const artifactRouter = router({
       return artifactsWithUrls[0] ?? null;
     }),
 
-  // List files for user
   list: procedure
     .output(z.array(Artifact.schema))
     .mutation(async ({ ctx }): Promise<Artifact[]> => {
@@ -57,17 +53,15 @@ export const artifactRouter = router({
         sessionId: ctx.sessionId,
       });
 
-      // Only select artifacts that are uploaded and not deleted and belong to the current user
       const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
-      const validatedArtifacts = await artifactDb.listByUser(ctx.userId);
+      const artifacts = await artifactDb.listByUser(ctx.userId);
 
-      ctx.logger.info('Artifact list result', { count: validatedArtifacts.length });
+      ctx.logger.info('Artifact list result', { count: artifacts.length });
 
-      // Refresh artifact URLs and persist to database if needed
       const artifactsWithUrls = await artifactDb.refreshUrls({
-        artifacts: validatedArtifacts,
-        s3: ctx.s3,
         s3Endpoint: ctx.s3Endpoint,
+        artifacts,
+        s3: ctx.s3,
       });
 
       return artifactsWithUrls;
