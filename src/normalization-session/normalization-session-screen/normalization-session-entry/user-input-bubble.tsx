@@ -8,7 +8,7 @@ export const UserInputBubble = (props: { artifactIds: ArtifactId[] }) => {
 
   return (
     <div className="flex justify-end">
-      <div className="w-full max-w-[80%] rounded-2xl rounded-tr-sm bg-slate-100 p-4 dark:bg-slate-800/50">
+      <div className="w-full max-w-lg">
         <SelectedArtifactsList
           artifacts={props.artifactIds}
           onRemove={() => {}}
