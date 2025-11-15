@@ -41,6 +41,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", "prettier.config.mjs"],
   "exclude": ["node_modules"]
 }

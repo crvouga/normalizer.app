@@ -6,6 +6,7 @@
   "main": "src/server.tsx",
   "module": "src/server.tsx",
   "scripts": {
+    "check:graphile-worker": "bun run src/lib/check-graphile-worker.ts",
     "circular": "madge --circular --extensions ts,tsx src",
     "cloc": "bun x cloc src",
     "db": "bun run db:studio",
@@ -14,7 +15,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:up": "bun run db:migrate",
-    "check:graphile-worker": "bun run src/lib/check-graphile-worker.ts",
     "docker": "bun docker:down && bun docker:up",
     "docker:destroy": "docker-compose down -v --remove-orphans",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
@@ -32,10 +32,10 @@
     "kp": "bun x kill-port 5000",
     "server": "bun run --watch src/server.tsx",
     "tc": "bun type-check",
-    "worker": "bun run --watch src/worker.tsx",
     "test": "bun test",
     "type-check": "tsc --noEmit --watch",
-    "type-check:once": "tsc --noEmit"
+    "type-check:once": "tsc --noEmit",
+    "worker": "bun run --watch src/worker.tsx"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
