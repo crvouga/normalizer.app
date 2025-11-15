@@ -49,7 +49,7 @@ export const NormalizationSessionScreen = (props: {
                 label={t('normalizationSession.targetArtifactsLabel')}
                 value={normalizationSessionProjection.targetArtifactIds}
                 onChange={() => {}}
-                readOnly={true}
+                readOnly
               />
             </div>
           </div>
