@@ -36,7 +36,7 @@ services:
       - all
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./infra/server.Dockerfile
     ports:
       - '5000:5000'
     extra_hosts:
@@ -60,6 +60,33 @@ services:
         bun run db:migrate &&
         echo 'Starting development server with hot reload...' &&
         exec bun run server
+      "
+
+  worker:
+    profiles:
+      - all
+    build:
+      context: .
+      dockerfile: ./infra/worker.Dockerfile
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:5432/postgres?sslmode=disable
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Running database migrations...' &&
+        bun run db:migrate &&
+        echo 'Starting worker with hot reload...' &&
+        exec bun run worker
       "
 
 volumes:
