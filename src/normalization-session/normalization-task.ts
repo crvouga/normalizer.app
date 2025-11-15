@@ -24,6 +24,8 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
   const db = await createDb({ logger });
 
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
     // Get the session owner
     const startedByUserId = await getNormalizationSessionOwner(db, sessionId);
     if (!startedByUserId) {
