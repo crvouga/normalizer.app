@@ -13,7 +13,7 @@ export const UserInputBubble = (props: { artifactIds: ArtifactId[] }) => {
           artifacts={props.artifactIds}
           onRemove={() => {}}
           readOnly
-          showPreview={false}
+          showPreview={true}
         />
       </div>
     </div>
