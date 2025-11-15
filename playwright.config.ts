@@ -43,7 +43,7 @@ export default defineConfig({
     env: {
       PORT: '5001',
       DATABASE_URL:
-        process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/postgres',
+        process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres',
       S3_ENDPOINT: process.env.S3_ENDPOINT || 'http://localhost:9010',
       S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || 'minioadmin',
       S3_SECRET_KEY: process.env.S3_SECRET_KEY || 'minioadmin',
