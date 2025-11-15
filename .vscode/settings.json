@@ -43,6 +43,7 @@
     "tablename",
     "timestamptz",
     "typesafe",
+    "UNLISTEN",
     "Upserting"
   ],
   "cursor.cpp.disabledLanguages": [],

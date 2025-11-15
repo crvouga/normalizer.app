@@ -1,4 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
+import { AppNotification } from '~/src/lib/app-notification';
 import type { Logger } from '~/src/lib/logger';
 import type { Db, Tx } from '~/src/sql';
 import type { UserId } from '~/src/users/user-id';
@@ -89,9 +90,11 @@ export class NormalizationSessionProjectionDb {
 
     // Send PostgreSQL NOTIFY (trigger will also send this, but we do it explicitly for reliability)
     // All replicas will receive this notification via PostgreSQL LISTEN/NOTIFY
-    await this.tx.execute(
-      sql`SELECT pg_notify('normalization_session_projection_update', ${sessionId})`,
-    );
+    const appNotification = new AppNotification(this.tx);
+    await appNotification.notify({
+      type: 'normalization_session_projection_update',
+      payload: sessionId,
+    });
 
     this.logger.info('Normalization session projection updated', {
       sessionId,
