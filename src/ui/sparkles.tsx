@@ -49,7 +49,7 @@ export function Sparkles({ size = 'lg', className, glow = true }: SparklesProps)
         <IconSparkles
           className={cn(
             sizeConfig[size],
-            `relative drop-shadow-[0_0_2px_rgba(${fuchsia500rgb[0]},${fuchsia500rgb[1]},${fuchsia500rgb[2]},0.10)]`,
+            `relative drop-shadow-[0_0_2px_rgba(${fuchsia500rgb[0]},${fuchsia500rgb[1]},${fuchsia500rgb[2]},0.10)] animate-pulse`,
           )}
           style={{ fill: 'url(#fuchsia-radial-gradient)' }}
         />

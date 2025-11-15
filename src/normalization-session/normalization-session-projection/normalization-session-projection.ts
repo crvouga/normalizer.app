@@ -32,6 +32,12 @@ const reducer = (
         entries: [],
       };
     case 'user-requested-normalization':
+      const latestEntry = state.entries[state.entries.length - 1];
+
+      if (latestEntry?.status === 'in_progress' || latestEntry?.status === 'pending') {
+        return state;
+      }
+
       const entryNew: NormalizationSessionProjectionEntry = {
         type: 'normalization',
         normalizationRunId: event.normalizationRunId,

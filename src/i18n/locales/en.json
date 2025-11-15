@@ -102,7 +102,12 @@
     "artifactsLabel": "Artifacts",
     "targetArtifactsLabel": "Target Artifact",
     "inputArtifactsLabel": "Input Artifact",
+    "outputArtifactsLabel": "Output Artifacts",
     "normalize": "Normalize",
+    "normalizing": "Normalizing...",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "failed": "Failed",
     "list": {
       "failedToLoad": "Failed to load sessions"
     }
