@@ -1,8 +1,11 @@
 import * as React from 'react';
 import type { ArtifactId } from '../artifact-id';
 import { useEntityStoreSelector } from '../../store/entity-store';
-import { TabularFileList } from '~/src/ui/tabular-file-input/tabular-file-list';
-import type { TabularFileAction } from '~/src/ui/tabular-file-input/tabular-file-item';
+import {
+  TabularFileItem,
+  TabularFileItemSkeleton,
+  type TabularFileAction,
+} from '~/src/ui/tabular-file-input/tabular-file-item';
 import { artifactToTabularFile } from './artifact-to-tabular-file';
 import { EditArtifactModal } from '../edit-artifact/edit-artifact-modal';
 import type { Artifact } from '../artifact';
@@ -80,15 +83,84 @@ export function SelectedArtifactsList({
     setModalState({ type: 'closed' });
   }, []);
 
-  const customActions: TabularFileAction[] = React.useMemo(
+  // Create a map of artifact index to tabular file index
+  const artifactIndexToFileIndex = React.useMemo(() => {
+    const map = new Map<number, number>();
+    let fileIndex = 0;
+    artifacts.forEach((id, artifactIndex) => {
+      if (artifactsById[id]) {
+        map.set(artifactIndex, fileIndex);
+        fileIndex++;
+      }
+    });
+    return map;
+  }, [artifacts, artifactsById]);
+
+  // Create a reverse map for removing files
+  const fileIndexToArtifactIndex = React.useMemo(() => {
+    const map = new Map<number, number>();
+    let fileIndex = 0;
+    artifacts.forEach((id, artifactIndex) => {
+      if (artifactsById[id]) {
+        map.set(fileIndex, artifactIndex);
+        fileIndex++;
+      }
+    });
+    return map;
+  }, [artifacts, artifactsById]);
+
+  const handleRemoveFileFromList = React.useCallback(
+    (fileIndex: number) => {
+      const artifactIndex = fileIndexToArtifactIndex.get(fileIndex);
+      if (artifactIndex !== undefined) {
+        handleRemoveFile(artifactIndex);
+      }
+    },
+    [fileIndexToArtifactIndex, handleRemoveFile],
+  );
+
+  const handleTogglePreviewFromList = React.useCallback(
+    (fileIndex: number) => {
+      const artifactIndex = fileIndexToArtifactIndex.get(fileIndex);
+      if (artifactIndex !== undefined) {
+        handleTogglePreview(artifactIndex);
+      }
+    },
+    [fileIndexToArtifactIndex, handleTogglePreview],
+  );
+
+  const handleEditFromList = React.useCallback(
+    (_file: any, fileIndex: number) => {
+      const artifactIndex = fileIndexToArtifactIndex.get(fileIndex);
+      if (artifactIndex !== undefined) {
+        handleEdit(_file, artifactIndex);
+      }
+    },
+    [fileIndexToArtifactIndex, handleEdit],
+  );
+
+  // Map showPreviews from artifact indices to file indices
+  const showPreviewsForFiles = React.useMemo(() => {
+    const mapped: Record<number, boolean> = {};
+    Object.entries(showPreviews).forEach(([artifactIndexStr, value]) => {
+      const artifactIndex = Number(artifactIndexStr);
+      const fileIndex = artifactIndexToFileIndex.get(artifactIndex);
+      if (fileIndex !== undefined) {
+        mapped[fileIndex] = value;
+      }
+    });
+    return mapped;
+  }, [showPreviews, artifactIndexToFileIndex]);
+
+  const customActionsForFiles: TabularFileAction[] = React.useMemo(
     () => [
       {
         label: t('artifact.edit'),
-        onClick: handleEdit,
+        onClick: handleEditFromList,
         icon: IconPencil,
       },
     ],
-    [t, handleEdit],
+    [t, handleEditFromList],
   );
 
   if (artifacts.length === 0) {
@@ -97,16 +169,45 @@ export function SelectedArtifactsList({
 
   return (
     <>
-      <TabularFileList
-        files={tabularFiles}
-        showPreview={showPreview}
-        showPreviews={showPreviews}
-        onTogglePreview={handleTogglePreview}
-        onRemoveFile={handleRemoveFile}
-        onClearAll={handleClearAll}
-        customActions={customActions}
-        readOnly={readOnly}
-      />
+      <div className="space-y-3">
+        {artifacts.map((artifactId, artifactIndex) => {
+          const artifact = artifactsById[artifactId];
+          if (!artifact) return <TabularFileItemSkeleton key={artifactId} />;
+
+          const fileIndex = artifactIndexToFileIndex.get(artifactIndex);
+          if (fileIndex === undefined) return <TabularFileItemSkeleton key={artifactId} />;
+
+          const tabularFile = tabularFiles[fileIndex];
+          if (!tabularFile) return <TabularFileItemSkeleton key={artifactId} />;
+
+          return (
+            <TabularFileItem
+              key={artifactId}
+              tabularFile={tabularFile}
+              index={fileIndex}
+              showPreview={showPreview}
+              isPreviewVisible={showPreviewsForFiles[fileIndex] || false}
+              onTogglePreview={handleTogglePreviewFromList}
+              onRemove={handleRemoveFileFromList}
+              customActions={customActionsForFiles}
+              readOnly={readOnly}
+            />
+          );
+        })}
+        {!readOnly && (
+          <div className="flex items-center justify-end">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="rounded px-2 py-1 text-xs text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+              >
+                {t('tabularFileInput.clearAll')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       <EditArtifactModal
         isOpen={modalState.type === 'edit'}
         onClose={() => setModalState({ type: 'closed' })}

@@ -75,7 +75,7 @@ export function ChatScrollBox({
   }, [scrollThreshold]);
 
   /**
-   * Scroll to bottom instantly (for auto-scroll)
+   * Scroll to bottom instantly (for initial mount)
    */
   const scrollToBottomInstant = useCallback(() => {
     const container = containerRef.current;
@@ -87,6 +87,24 @@ export function ChatScrollBox({
     requestAnimationFrame(() => {
       isProgrammaticScrollRef.current = false;
     });
+  }, []);
+
+  /**
+   * Scroll to bottom smoothly (for auto-scroll when new content appears)
+   */
+  const scrollToBottomSmooth = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    isProgrammaticScrollRef.current = true;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    });
+    // Reset flag after smooth scroll completes (smooth scroll takes ~500ms)
+    setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 500);
   }, []);
 
   /**
@@ -148,11 +166,12 @@ export function ChatScrollBox({
     if (!container) return;
 
     // Scroll to bottom instantly on initial mount
-    container.scrollTop = container.scrollHeight;
+
+    scrollToBottomInstant();
     isInitialMountRef.current = false;
     setScrollMode('auto-scroll');
     scrollModeRef.current = 'auto-scroll';
-  }, [autoScroll]);
+  }, [autoScroll, scrollToBottomInstant]);
 
   /**
    * Auto-scroll when content changes (ResizeObserver)
@@ -174,7 +193,7 @@ export function ChatScrollBox({
       // 1. Content height increased (new content added)
       // 2. We're in auto-scroll mode
       if (currentHeight > lastHeightRef.current && scrollModeRef.current === 'auto-scroll') {
-        scrollToBottomInstant();
+        scrollToBottomSmooth();
       }
 
       lastHeightRef.current = currentHeight;
@@ -185,7 +204,7 @@ export function ChatScrollBox({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [autoScroll, scrollToBottomInstant]);
+  }, [autoScroll, scrollToBottomSmooth]);
 
   /**
    * Auto-scroll when scrollKey changes
@@ -195,9 +214,9 @@ export function ChatScrollBox({
     if (!autoScroll || isInitialMountRef.current || scrollKey === undefined) return;
 
     if (scrollModeRef.current === 'auto-scroll') {
-      scrollToBottomInstant();
+      scrollToBottomSmooth();
     }
-  }, [autoScroll, scrollKey, scrollToBottomInstant]);
+  }, [autoScroll, scrollKey, scrollToBottomSmooth]);
 
   return (
     <div

@@ -28,6 +28,40 @@ export interface TabularFileItemHeaderProps {
   readOnly?: boolean;
 }
 
+/**
+ * Shared container wrapper for TabularFileItem and TabularFileItemSkeleton.
+ * Ensures consistent styling between the two components.
+ */
+const TabularFileItemContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="w-full overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
+      {children}
+    </div>
+  );
+};
+
+/**
+ * Shared header structure for TabularFileItem and TabularFileItemSkeleton.
+ * Ensures consistent layout between the two components.
+ */
+const TabularFileItemHeaderStructure: React.FC<{
+  icon: React.ReactNode;
+  content: React.ReactNode;
+  actions: React.ReactNode;
+}> = ({ icon, content, actions }) => {
+  return (
+    <div className="flex items-center justify-between p-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="shrink-0">
+          <div className="flex size-10 items-center justify-center rounded-lg">{icon}</div>
+        </div>
+        <div className="min-w-0 flex-1">{content}</div>
+      </div>
+      <div className="flex items-center gap-2">{actions}</div>
+    </div>
+  );
+};
+
 export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   tabularFile,
   index,
@@ -60,57 +94,51 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
     });
   }
 
-  return (
-    <div className="flex items-center justify-between p-3">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="shrink-0">
-          <div className="flex size-10 items-center justify-center rounded-lg">
-            {isImage ? <ImageIcon className="size-6" /> : <FileIcon className="size-6" />}
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <Typography
-            variant="sm"
-            weight="medium"
-            color="primary"
-            className="truncate"
-            text={toI18nText(tabularFile.name)}
-          />
-          {tabularFile.size !== undefined && (
-            <Typography
-              variant="xs"
-              color="muted"
-              text={toI18nText(formatFileSize(tabularFile.size))}
-            />
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {actions.map((action, actionIndex) => {
-          const IconComponent = action.icon;
-          return (
-            <ButtonBase
-              key={`${action.label}-${actionIndex}`}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                action.onClick(tabularFile, index);
-              }}
-              className="flex items-center gap-1 rounded px-2 py-1 transition-colors"
-            >
-              <IconComponent className="size-3.5 shrink-0" />
-              <Typography
-                variant="xs"
-                color="muted"
-                className="hover:text-slate-900 dark:hover:text-slate-100"
-                text={action.label}
-              />
-            </ButtonBase>
-          );
-        })}
-      </div>
-    </div>
+  const icon = isImage ? <ImageIcon className="size-6" /> : <FileIcon className="size-6" />;
+
+  const content = (
+    <>
+      <Typography
+        variant="sm"
+        weight="medium"
+        color="primary"
+        className="truncate"
+        text={toI18nText(tabularFile.name)}
+      />
+      {tabularFile.size !== undefined && (
+        <Typography
+          variant="xs"
+          color="muted"
+          text={toI18nText(formatFileSize(tabularFile.size))}
+        />
+      )}
+    </>
   );
+
+  const actionsContent = actions.map((action, actionIndex) => {
+    const IconComponent = action.icon;
+    return (
+      <ButtonBase
+        key={`${action.label}-${actionIndex}`}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          action.onClick(tabularFile, index);
+        }}
+        className="flex items-center gap-1 rounded px-2 py-1 transition-colors"
+      >
+        <IconComponent className="size-3.5 shrink-0" />
+        <Typography
+          variant="xs"
+          color="muted"
+          className="hover:text-slate-900 dark:hover:text-slate-100"
+          text={action.label}
+        />
+      </ButtonBase>
+    );
+  });
+
+  return <TabularFileItemHeaderStructure icon={icon} content={content} actions={actionsContent} />;
 };
 
 export interface TabularFileItemProps {
@@ -146,7 +174,7 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
   });
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <TabularFileItemContainer>
       <TabularFileItemHeader
         tabularFile={tabularFile}
         index={index}
@@ -184,6 +212,28 @@ export const TabularFileItem: React.FC<TabularFileItemProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </TabularFileItemContainer>
+  );
+};
+
+/**
+ * Skeleton placeholder for a TabularFileItem that hasn't loaded yet.
+ * Matches the height and structure of TabularFileItem to prevent layout shift.
+ * Colocated with TabularFileItem to ensure they stay in sync.
+ */
+export const TabularFileItemSkeleton: React.FC = () => {
+  return (
+    <TabularFileItemContainer>
+      <TabularFileItemHeaderStructure
+        icon={<FileIcon className="size-6 text-slate-300 dark:text-slate-600" />}
+        content={
+          <div className="space-y-1">
+            <div className="h-4 w-32 animate-pulse rounded bg-slate-300 dark:bg-slate-600" />
+            <div className="h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+        }
+        actions={<div className="h-6 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />}
+      />
+    </TabularFileItemContainer>
   );
 };
