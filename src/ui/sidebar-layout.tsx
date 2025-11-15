@@ -76,5 +76,5 @@ const SidebarContainer: React.FC<{
 
 // Main content area (flex child)
 const MainContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex-1 shrink-0">{children}</div>
+  <div className="flex-1 shrink-0 overflow-hidden">{children}</div>
 );

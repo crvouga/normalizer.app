@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
 import { PolicyCheckGuard } from '~/src/permissions/policy-check-guard';
 import { useEntityStoreSelector } from '~/src/store/entity-store';
 import { SpinnerBlock } from '~/src/ui/spinner-block';
+import { ChatScrollBox } from '~/src/ui/chat-scrollbox';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import {
@@ -23,19 +23,6 @@ export const NormalizationSessionScreen = (props: {
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
   );
 
-  const scrollableContainerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to bottom when entries change
-  useEffect(() => {
-    const container = scrollableContainerRef.current;
-    if (container && normalizationSessionProjection) {
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-  }, [normalizationSessionProjection?.entries.length, normalizationSessionProjection]);
-
   if (!normalizationSessionProjection) return <SpinnerBlock />;
 
   return (
@@ -44,32 +31,39 @@ export const NormalizationSessionScreen = (props: {
       policy={viewNormalizationSessionPolicy}
       onRedirect={() => setCurrentScreen({ type: 'start-normalization-session' })}
     >
-      <div className="flex h-full w-full flex-col">
+      <div className="relative flex h-full w-full flex-col">
         <NormalizationSessionHeader
           targetArtifactIds={normalizationSessionProjection.targetArtifactIds}
         />
 
-        <div
-          ref={scrollableContainerRef}
-          className="flex w-full flex-1 flex-col overflow-y-scroll px-4 py-8 md:px-8"
+        <ChatScrollBox
+          className="px-4 py-8 md:px-8"
+          contentClassName="gap-6 max-w-4xl"
+          bottomPadding="pb-56 md:pb-64"
+          scrollTriggers={[normalizationSessionProjection?.entries.length]}
+          autoScroll
+          smoothScroll
         >
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-            {normalizationSessionProjection.entries.map((entry) => (
-              <NormalizationSessionEntry
-                key={entry.id}
-                entry={entry}
-                normalizationSessionId={props.normalizationSessionId}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-          <div className="mx-auto flex w-full max-w-4xl flex-col px-4 py-4 md:px-8">
-            <NormalizationSessionScreenInputForm
+          {normalizationSessionProjection.entries.map((entry) => (
+            <NormalizationSessionEntry
+              key={entry.id}
+              entry={entry}
               normalizationSessionId={props.normalizationSessionId}
-              normalizationSessionProjection={normalizationSessionProjection}
             />
+          ))}
+          {/* Spacer to ensure last entry isn't cut off by floating input */}
+          <div className="h-8 md:h-12" />
+        </ChatScrollBox>
+
+        {/* Floating input section */}
+        <div className="absolute right-0 bottom-0 left-0 z-10 shrink-0 bg-transparent">
+          <div className="mx-auto flex w-full max-w-4xl flex-col px-4 md:px-8">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5 dark:border-slate-700 dark:bg-slate-800">
+              <NormalizationSessionScreenInputForm
+                normalizationSessionId={props.normalizationSessionId}
+                normalizationSessionProjection={normalizationSessionProjection}
+              />
+            </div>
           </div>
         </div>
       </div>
