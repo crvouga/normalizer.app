@@ -1,5 +1,5 @@
-import { SQL } from 'bun';
-import { drizzle, type BunSQLQueryResultHKT } from 'drizzle-orm/bun-sql';
+import postgres from 'postgres';
+import { drizzle, type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 import type { Logger } from './lib/logger';
 import * as schema from './db/schema';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
@@ -8,14 +8,14 @@ import type { ExtractTablesWithRelations } from 'drizzle-orm';
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
 
 export type Tx = PgTransaction<
-  BunSQLQueryResultHKT,
+  PostgresJsQueryResultHKT,
   typeof schema,
   ExtractTablesWithRelations<typeof schema>
 >;
 
 // Global connection instance to prevent multiple connections during hot reload
 let globalDb: Db | null = null;
-let globalSQL: SQL | null = null;
+let globalSQL: ReturnType<typeof postgres> | null = null;
 let isInitialized = false;
 
 export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
@@ -64,7 +64,7 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
   }
 
   logger.info('Creating new database connection...');
-  const sql = new SQL(dbUrlObj.toString());
+  const sql = postgres(dbUrlObj.toString());
 
   logger.info('Checking database health...');
   try {
@@ -88,12 +88,20 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
   return db;
 };
 
+// Get the underlying postgres connection
+// This is needed for PostgresNotification to enable LISTEN/NOTIFY callbacks
+export const getPostgresConnection = (): ReturnType<typeof postgres> | null => {
+  return globalSQL;
+};
+
 // Cleanup function to close connections gracefully
 export const cleanupDb = async (logger: Logger): Promise<void> => {
   if (globalSQL || globalDb) {
     try {
       logger.info('Closing database connection...');
-      // Note: Bun's SQL doesn't have an explicit close method, but we can clear the reference
+      if (globalSQL) {
+        await globalSQL.end();
+      }
       globalSQL = null;
       globalDb = null;
       isInitialized = false;

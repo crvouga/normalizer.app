@@ -1,5 +1,6 @@
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { Db, Tx } from '../sql';
+import { getPostgresConnection } from '../sql';
 import { PostgresNotification } from '../lib/postgres-notification';
 
 /**
@@ -18,7 +19,9 @@ export class AppNotification {
   private readonly pgNotify: PostgresNotification;
 
   constructor(private readonly tx: Tx | Db) {
-    this.pgNotify = new PostgresNotification(this.tx);
+    // Pass the postgres connection if available (for Db instances, not transactions)
+    const sqlConnection = getPostgresConnection();
+    this.pgNotify = new PostgresNotification(this.tx, sqlConnection ?? undefined);
   }
 
   /**

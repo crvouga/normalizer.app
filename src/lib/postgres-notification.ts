@@ -1,4 +1,4 @@
-import { SQL } from 'bun';
+import type postgres from 'postgres';
 import { sql } from 'drizzle-orm';
 import type { Db, Tx } from '../sql';
 
@@ -19,16 +19,15 @@ function validateChannelName(channel: string): void {
  * PostgreSQL LISTEN/NOTIFY subscription management
  * Provides type-safe wrappers for PostgreSQL's LISTEN, UNLISTEN, and NOTIFY commands
  *
- * To receive notifications, provide the underlying SQL connection instance in the constructor.
+ * To receive notifications, provide the underlying postgres connection instance in the constructor.
  * Without it, you can still send notifications but cannot receive them.
  */
 export class PostgresNotification {
   private readonly callbacks = new Map<string, Set<(payload: string) => void>>();
-  private notificationHandlerSetup = false;
 
   constructor(
     private readonly tx: Tx | Db,
-    private readonly sqlConnection?: SQL,
+    private readonly sqlConnection?: postgres.Sql,
   ) {}
 
   /**
@@ -50,12 +49,12 @@ export class PostgresNotification {
     // Channel name is validated and safe to use as a literal identifier
     await this.tx.execute(sql.raw(`LISTEN ${channel}`));
 
-    // If a callback is provided, store it and set up notification handler
+    // If a callback is provided, use postgres package's built-in listen method
     if (callback) {
       if (!this.sqlConnection) {
         throw new Error(
-          'Cannot receive notifications: SQL connection instance is required. ' +
-            'Pass the SQL instance to the constructor to enable notification callbacks.',
+          'Cannot receive notifications: postgres connection instance is required. ' +
+            'Pass the postgres Sql instance to the constructor to enable notification callbacks.',
         );
       }
 
@@ -65,77 +64,22 @@ export class PostgresNotification {
       }
       this.callbacks.get(channel)!.add(callback);
 
-      // Set up notification handler if not already done
-      if (!this.notificationHandlerSetup) {
-        this.setupNotificationHandler();
-        this.notificationHandlerSetup = true;
-      }
-    }
-  }
-
-  /**
-   * Sets up the notification handler on the SQL connection
-   * This is called automatically when the first callback is registered
-   */
-  private setupNotificationHandler(): void {
-    if (!this.sqlConnection) {
-      return;
-    }
-
-    // Try multiple approaches to access the underlying connection
-    // Bun's SQL might expose the connection in different ways
-    type EventEmitter = {
-      on(event: string, handler: (msg: { channel: string; payload: string }) => void): void;
-    };
-
-    let eventEmitter: EventEmitter | null = null;
-
-    // Approach 1: Check if SQL instance itself has an 'on' method
-    if (
-      typeof this.sqlConnection === 'object' &&
-      this.sqlConnection !== null &&
-      'on' in this.sqlConnection &&
-      typeof (this.sqlConnection as Record<string, unknown>).on === 'function'
-    ) {
-      eventEmitter = this.sqlConnection as unknown as EventEmitter;
-    }
-    // Approach 2: Try accessing a nested 'connection' property
-    else if (typeof this.sqlConnection === 'object' && this.sqlConnection !== null) {
-      const sqlAny = this.sqlConnection as Record<string, unknown>;
-      const connection = sqlAny.connection || sqlAny.client || sqlAny.pg;
-      if (
-        connection &&
-        typeof connection === 'object' &&
-        'on' in connection &&
-        typeof (connection as Record<string, unknown>).on === 'function'
-      ) {
-        eventEmitter = connection as unknown as EventEmitter;
-      }
-    }
-
-    if (eventEmitter) {
-      // Set up the notification event handler
-      eventEmitter.on('notification', (msg: { channel: string; payload: string }) => {
-        const callbacks = this.callbacks.get(msg.channel);
+      // Use postgres package's built-in listen method
+      // The callback will be called when notifications arrive
+      this.sqlConnection.listen(channel, (payload: string) => {
+        const callbacks = this.callbacks.get(channel);
         if (callbacks) {
           // Invoke all callbacks for this channel
-          for (const callback of callbacks) {
+          for (const cb of callbacks) {
             try {
-              callback(msg.payload);
+              cb(payload);
             } catch (error) {
               // Log error but don't break other callbacks
-              console.error(`Error in notification callback for channel ${msg.channel}:`, error);
+              console.error(`Error in notification callback for channel ${channel}:`, error);
             }
           }
         }
       });
-    } else {
-      // If we can't set up the handler, warn the user
-      console.warn(
-        'PostgresNotification: Unable to set up notification handler. ' +
-          'The SQL connection may not support event handlers, or the connection structure has changed. ' +
-          'Notifications will be sent but not received. Consider checking Bun SQL documentation for notification support.',
-      );
     }
   }
 

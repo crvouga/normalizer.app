@@ -1,10 +1,10 @@
-import { SQL } from 'bun';
-import { drizzle } from 'drizzle-orm/bun-sql';
-import { migrate } from 'drizzle-orm/bun-sql/migrator';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import type { Logger } from '../lib/logger';
 
 /**
- * Runs drizzle migrations using Bun's built-in SQL driver
+ * Runs drizzle migrations using postgres npm package
  * Provides verbose logging for debugging and traceability
  */
 export async function runMigrations(logger: Logger): Promise<void> {
@@ -48,7 +48,7 @@ export async function runMigrations(logger: Logger): Promise<void> {
     }
 
     logger.info('Connecting to the database...');
-    const sql = new SQL(url.toString());
+    const sql = postgres(url.toString());
 
     logger.debug('Instantiating drizzle ORM...');
     const db = drizzle(sql);
@@ -56,6 +56,9 @@ export async function runMigrations(logger: Logger): Promise<void> {
     logger.info('Running schema migrations from "./migrations"...');
     await migrate(db, { migrationsFolder: './migrations' });
     logger.info('✅ Database migrations complete.');
+
+    // Cleanup connection
+    await sql.end();
   } catch (err) {
     logger.error('❌ Failed to run database migrations:', { error: err });
     throw err;
