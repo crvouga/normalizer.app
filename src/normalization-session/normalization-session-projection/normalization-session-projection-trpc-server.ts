@@ -20,6 +20,7 @@ import { NormalizationSessionProjection } from './normalization-session-projecti
 import { NormalizationSessionProjectionDb } from './normalization-session-projection-db';
 import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import { NormalizationSessionPayload } from '../normalization-session-payload';
 
 export const normalizationSessionProjectionRouter = router({
   fetch: procedure
@@ -28,14 +29,7 @@ export const normalizationSessionProjectionRouter = router({
         id: NormalizationSessionId.schema,
       }),
     )
-    .output(
-      z.object({
-        events: z.array(NormalizationSessionEventEntity.schema),
-        projection: NormalizationSessionProjection.schema,
-        artifacts: z.array(Artifact.schema),
-        resourceOwnership: z.array(ResourceOwnershipEntity.schema),
-      }),
-    )
+    .output(NormalizationSessionPayload.schema)
     .query(async ({ input, ctx }) => {
       const { id: sessionId } = input;
       const permission = canViewNormalizationSession(sessionId);
@@ -65,12 +59,7 @@ export const normalizationSessionProjectionRouter = router({
     )
     .output(
       zAsyncIterable({
-        yield: z.object({
-          events: z.array(NormalizationSessionEventEntity.schema),
-          projection: NormalizationSessionProjection.schema,
-          artifacts: z.array(Artifact.schema),
-          resourceOwnership: z.array(ResourceOwnershipEntity.schema),
-        }),
+        yield: NormalizationSessionPayload.schema,
       }),
     )
     .subscription(async function* ({ input, ctx }) {
@@ -137,7 +126,7 @@ const load = async (input: {
   s3: S3Client;
   s3Endpoint: string;
 }): Promise<{
-  projection: NormalizationSessionProjection;
+  projections: NormalizationSessionProjection[];
   artifacts: Artifact[];
   resourceOwnership: ResourceOwnershipEntity[];
   events: NormalizationSessionEventEntity[];
@@ -191,7 +180,7 @@ const load = async (input: {
     ];
 
     return {
-      projection,
+      projections: [projection],
       artifacts,
       resourceOwnership,
       events,

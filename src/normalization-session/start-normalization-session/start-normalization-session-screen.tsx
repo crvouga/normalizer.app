@@ -10,14 +10,17 @@ import { trpcClient } from '~/src/shared/trpc-client';
 import { NormalizationSessionId } from '../normalization-session-id';
 import { useMutation } from '~/src/lib/use-mutation';
 import { useCurrentUser } from '~/src/users/use-current-user';
-import { useAddProjectionPayloadToStore } from '../normalization-session-projection/add-projection-payload-to-store';
+import {
+  NormalizationSessionPayload,
+  useAddNormalizationSessionPayloadToStore,
+} from '../normalization-session-payload';
 
 export const StartNormalizationSessionScreen = () => {
   const { t } = useI18n();
   const [targetArtifactIds, setTargetArtifactIds] = useState<ArtifactId[]>([]);
   const currentScreen = useCurrentScreen();
   const currentUser = useCurrentUser();
-  const addToStore = useAddProjectionPayloadToStore();
+  const addToStore = useAddNormalizationSessionPayloadToStore();
 
   // Start session mutation
   const mutation = useMutation({
@@ -34,10 +37,12 @@ export const StartNormalizationSessionScreen = () => {
         startedByUserId,
       };
 
-      const payload = await trpcClient.normalizationSession.events.append.mutate({
+      const response = await trpcClient.normalizationSession.events.append.mutate({
         sessionId,
         event,
       });
+
+      const payload = NormalizationSessionPayload.schema.parse(response);
 
       return { sessionId, payload };
     },

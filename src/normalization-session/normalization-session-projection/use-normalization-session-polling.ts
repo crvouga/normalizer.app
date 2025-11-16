@@ -3,13 +3,16 @@ import type { RemoteResult } from '~/src/lib/result';
 import { Failure, Loading, NotAsked, Success } from '~/src/lib/result';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { trpcClient } from '~/src/shared/trpc-client';
-import { useAddProjectionPayloadToStore } from './add-projection-payload-to-store';
+import {
+  NormalizationSessionPayload,
+  useAddNormalizationSessionPayloadToStore,
+} from '../normalization-session-payload';
 
 export function useNormalizationSessionPolling(
   id: NormalizationSessionId,
   intervalMs = 5000,
 ): RemoteResult<void, Error> {
-  const addToStore = useAddProjectionPayloadToStore();
+  const addToStore = useAddNormalizationSessionPayloadToStore();
   const [state, setState] = useState<RemoteResult<void, Error>>(NotAsked);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isActiveRef = useRef(false);
@@ -18,7 +21,8 @@ export function useNormalizationSessionPolling(
     () => async () => {
       try {
         const data = await trpcClient.normalizationSession.projection.fetch.query({ id });
-        addToStore(data);
+        const payload = NormalizationSessionPayload.schema.parse(data);
+        addToStore(payload);
         setState((prev) =>
           prev.tag === 'notAsked' || prev.tag === 'loading' ? Success(undefined) : prev,
         );

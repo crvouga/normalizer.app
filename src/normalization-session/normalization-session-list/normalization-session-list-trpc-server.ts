@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { Artifact } from '../../artifacts/artifact';
 import { ArtifactDb } from '../../artifacts/artifact-db';
-import { procedure, router } from '../../shared/trpc-server';
-import { UserId } from '../../users/user-id';
-import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
+import { procedure, router } from '../../shared/trpc-server';
+import { UserId } from '../../users/user-id';
+import { NormalizationSessionPayload } from '../normalization-session-payload';
+import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 
 const InputSchema = z.object({
   userId: UserId.schema,
@@ -16,11 +16,9 @@ const InputSchema = z.object({
 type InputSchema = z.infer<typeof InputSchema>;
 
 const OutputSchema = z.object({
-  sessions: z.array(NormalizationSessionProjection.schema),
-  artifacts: z.array(Artifact.schema),
-  resourceOwnerships: z.array(ResourceOwnershipEntity.schema),
   nextCursor: z.string().nullable(),
   hasMore: z.boolean(),
+  payload: NormalizationSessionPayload.schema,
 });
 type OutputSchema = z.infer<typeof OutputSchema>;
 
@@ -58,10 +56,15 @@ export const normalizationSessionListRouter = router({
         ownerId: projection.startedByUserId,
       }));
 
-      return {
-        sessions,
+      const payload: NormalizationSessionPayload = {
+        events: [],
+        projections: sessions,
         artifacts,
-        resourceOwnerships,
+        resourceOwnership: resourceOwnerships,
+      };
+
+      return {
+        payload,
         nextCursor,
         hasMore,
       };

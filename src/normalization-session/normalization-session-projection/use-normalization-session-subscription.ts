@@ -3,7 +3,10 @@ import type { RemoteResult } from '../../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../../lib/result';
 import { trpcClient } from '../../shared/trpc-client';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import { useAddProjectionPayloadToStore } from './add-projection-payload-to-store';
+import {
+  NormalizationSessionPayload,
+  useAddNormalizationSessionPayloadToStore,
+} from '../normalization-session-payload';
 
 /**
  * Hook for subscribing to normalization session projection updates from the server via SSE.
@@ -15,7 +18,7 @@ import { useAddProjectionPayloadToStore } from './add-projection-payload-to-stor
 export function useNormalizationSessionSubscription(
   id: NormalizationSessionId,
 ): RemoteResult<void, Error> {
-  const addProjectionPayloadToStore = useAddProjectionPayloadToStore();
+  const addToStore = useAddNormalizationSessionPayloadToStore();
   const [state, setState] = useState<RemoteResult<void, Error>>(NotAsked);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const isSubscribedRef = useRef(false);
@@ -30,7 +33,9 @@ export function useNormalizationSessionSubscription(
         onData: (data) => {
           if (!isSubscribedRef.current) return;
 
-          addProjectionPayloadToStore(data);
+          const payload = NormalizationSessionPayload.schema.parse(data);
+
+          addToStore(payload);
 
           setState((prevState) => {
             if (prevState.tag === 'loading' || prevState.tag === 'notAsked') {
@@ -56,7 +61,7 @@ export function useNormalizationSessionSubscription(
         unsubscribeRef.current = null;
       }
     };
-  }, [id, addProjectionPayloadToStore]);
+  }, [id, addToStore]);
 
   return state;
 }

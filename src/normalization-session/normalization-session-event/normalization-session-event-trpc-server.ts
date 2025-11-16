@@ -14,6 +14,7 @@ import { ArtifactId } from '~/src/artifacts/artifact-id';
 import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
 import { getNormalizationSessionOwner } from '../normalization-session-permissions';
+import { NormalizationSessionPayload } from '../normalization-session-payload';
 
 export const normalizationSessionEventRouter = router({
   /**
@@ -26,14 +27,7 @@ export const normalizationSessionEventRouter = router({
         event: NormalizationSessionEvent.schema,
       }),
     )
-    .output(
-      z.object({
-        events: z.array(NormalizationSessionEventEntity.schema),
-        projection: NormalizationSessionProjection.schema,
-        artifacts: z.array(Artifact.schema),
-        resourceOwnership: z.array(ResourceOwnershipEntity.schema),
-      }),
-    )
+    .output(NormalizationSessionPayload.schema)
     .mutation(async ({ input, ctx }) => {
       const eventId = NormalizationSessionEventId.generate();
       ctx.logger.info('Normalization session event append', {
@@ -103,11 +97,13 @@ export const normalizationSessionEventRouter = router({
         },
       ];
 
-      return {
+      const payload: NormalizationSessionPayload = {
         events,
-        projection,
+        projections: [projection],
         artifacts,
         resourceOwnership,
       };
+
+      return payload;
     }),
 });

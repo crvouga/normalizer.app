@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import { useInfiniteScrollLoader } from '../../lib/use-infinite-scroll-loader';
-import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../shared/trpc-client';
 import type { UserId } from '../../users/user-id';
-import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import { Artifact } from '~/src/artifacts/artifact';
+import {
+  NormalizationSessionPayload,
+  useAddNormalizationSessionPayloadToStore,
+} from '../normalization-session-payload';
 
 /**
  * Hook for loading normalization session projections by user ID with infinite scroll support.
@@ -13,7 +14,7 @@ import { Artifact } from '~/src/artifacts/artifact';
  * @returns Loading state, hasMore flag, loadMore function, and loadMoreRef for infinite scroll
  */
 export function useNormalizationSessionsByUserLoader(userId: UserId) {
-  const entityStore = useEntityStore();
+  const addToStore = useAddNormalizationSessionPayloadToStore();
 
   const loadData = useCallback(
     async (cursor: string | undefined, limit: number) => {
@@ -22,24 +23,14 @@ export function useNormalizationSessionsByUserLoader(userId: UserId) {
         cursor,
         limit,
       });
-      const projections = response.sessions.flatMap((projection) => {
-        const parsed = NormalizationSessionProjection.schema.safeParse(projection);
-        return parsed.success ? [parsed.data] : [];
-      });
-      const artifacts = response.artifacts.flatMap((artifact) => {
-        const parsed = Artifact.schema.safeParse(artifact);
-        return parsed.success ? [parsed.data] : [];
-      });
-      entityStore.addManyEntities('normalizationSessionProjections', projections);
-      entityStore.addManyEntities('artifacts', artifacts);
-      entityStore.addManyEntities('resourceOwnerships', response.resourceOwnerships);
-
+      const payload = NormalizationSessionPayload.schema.parse(response.payload);
+      addToStore(payload);
       return {
         nextCursor: response.nextCursor,
         hasMore: response.hasMore,
       };
     },
-    [userId, entityStore],
+    [userId, addToStore],
   );
 
   return useInfiniteScrollLoader({
