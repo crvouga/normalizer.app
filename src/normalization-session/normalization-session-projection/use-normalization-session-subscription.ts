@@ -1,14 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RemoteResult } from '../../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../../lib/result';
-import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../shared/trpc-client';
-import { Artifact } from '../../artifacts/artifact';
-import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import z from 'zod';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import { useAddProjectionPayloadToStore } from './add-projection-payload-to-store';
 
 /**
  * Hook for subscribing to normalization session projection updates from the server via SSE.
@@ -20,7 +15,7 @@ import { NormalizationSessionEventEntity } from '../normalization-session-event/
 export function useNormalizationSessionSubscription(
   id: NormalizationSessionId,
 ): RemoteResult<void, Error> {
-  const entityStore = useEntityStore();
+  const addProjectionPayloadToStore = useAddProjectionPayloadToStore();
   const [state, setState] = useState<RemoteResult<void, Error>>(NotAsked);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const isSubscribedRef = useRef(false);
@@ -34,25 +29,8 @@ export function useNormalizationSessionSubscription(
       {
         onData: (data) => {
           if (!isSubscribedRef.current) return;
-          const projection = NormalizationSessionProjection.schema.safeParse(data.projection);
-          const artifacts = z.array(Artifact.schema).safeParse(data.artifacts);
-          const resourceOwnership = z
-            .array(ResourceOwnershipEntity.schema)
-            .safeParse(data.resourceOwnership);
-          const events = z.array(NormalizationSessionEventEntity.schema).safeParse(data.events);
 
-          if (events.success) {
-            entityStore.addManyEntities('normalizationSessionEvents', events.data);
-          }
-          if (projection.success) {
-            entityStore.addManyEntities('normalizationSessionProjections', [projection.data]);
-          }
-          if (artifacts.success) {
-            entityStore.addManyEntities('artifacts', artifacts.data);
-          }
-          if (resourceOwnership.success) {
-            entityStore.addManyEntities('resourceOwnerships', resourceOwnership.data);
-          }
+          addProjectionPayloadToStore(data);
 
           setState((prevState) => {
             if (prevState.tag === 'loading' || prevState.tag === 'notAsked') {
@@ -78,7 +56,7 @@ export function useNormalizationSessionSubscription(
         unsubscribeRef.current = null;
       }
     };
-  }, [id, entityStore]);
+  }, [id, addProjectionPayloadToStore]);
 
   return state;
 }

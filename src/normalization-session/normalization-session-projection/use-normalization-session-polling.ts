@@ -3,7 +3,7 @@ import type { RemoteResult } from '~/src/lib/result';
 import { Failure, Loading, NotAsked, Success } from '~/src/lib/result';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import { trpcClient } from '~/src/shared/trpc-client';
-import { useAddProjectionPayloadToStore } from '../normalization-session-projection/add-projection-payload-to-store';
+import { useAddProjectionPayloadToStore } from './add-projection-payload-to-store';
 
 export function useNormalizationSessionPolling(
   id: NormalizationSessionId,

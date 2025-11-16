@@ -1,24 +1,25 @@
+import { useScrollbarWidth } from '~/src/lib/use-scrollbar-width';
 import { PolicyCheckGuard } from '~/src/permissions/policy-check-guard';
 import { useEntityStoreSelector } from '~/src/store/entity-store';
-import { SpinnerBlock } from '~/src/ui/spinner-block';
 import { ChatScrollBox } from '~/src/ui/chat-scrollbox';
-import { useScrollbarWidth } from '~/src/lib/use-scrollbar-width';
+import { SpinnerBlock } from '~/src/ui/spinner-block';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import {
   canViewNormalizationSession,
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
+import { useNormalizationSessionSubscription } from '../normalization-session-projection/use-normalization-session-subscription';
 import { NormalizationSessionEntry } from './normalization-session-entry';
 import { NormalizationSessionHeader } from './normalization-session-screen-header';
 import { NormalizationSessionScreenInputForm } from './normalization-session-screen-input-form';
-import { useNormalizationSessionPolling } from './use-normalization-session-polling';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
 }) => {
   const { setCurrentScreen } = useCurrentScreen();
-  useNormalizationSessionPolling(props.normalizationSessionId);
+  // useNormalizationSessionPolling(props.normalizationSessionId);
+  useNormalizationSessionSubscription(props.normalizationSessionId);
 
   const normalizationSessionProjection = useEntityStoreSelector(
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
