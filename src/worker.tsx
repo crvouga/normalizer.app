@@ -1,7 +1,7 @@
 import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
 import { checkGraphileWorkerSetup, createTaskList } from './shared/graphile-worker';
-import { normalizationTask } from './normalization-session/normalization-task';
+import { normalizationTask } from './normalization-session/normalization-task/normalization-task';
 import { createDb } from './shared/sql';
 
 const main = async () => {

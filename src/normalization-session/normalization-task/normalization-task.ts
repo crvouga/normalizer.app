@@ -1,14 +1,15 @@
-import { ArtifactDb } from '../artifacts/artifact-db';
-import { ArtifactId } from '../artifacts/artifact-id';
-import * as schema from '../db/schema';
-import type { TaskHandler } from '../lib/graphile-worker-lib';
-import type { NormalizationJobPayload } from '../shared/graphile-worker';
-import type { Tx } from '../shared/sql';
-import { createDb } from '../shared/sql';
-import { NormalizationSessionEventEntity } from './normalization-session-event/normalization-session-event-entity';
-import { NormalizationSessionEventId } from './normalization-session-event/normalization-session-event-id';
-import { getNormalizationSessionOwner } from './normalization-session-permissions';
-import { NormalizationSessionProjectionDb } from './normalization-session-projection/normalization-session-projection-db';
+import { ArtifactDb } from '../../artifacts/artifact-db';
+import { ArtifactId } from '../../artifacts/artifact-id';
+import * as schema from '../../db/schema';
+import type { TaskHandler } from '../../lib/graphile-worker-lib';
+import type { NormalizationJobPayload } from '../../shared/graphile-worker';
+import type { Tx } from '../../shared/sql';
+import { createDb } from '../../shared/sql';
+import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
+import { getNormalizationSessionOwner } from '../normalization-session-permissions';
+import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
+import { toNormalizedFileName } from './normalized-file-name';
 
 /**
  * Normalization task handler
@@ -80,6 +81,13 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
 
         // Clone the artifact with a new ID
         await artifactDb.clone(inputArtifact, outputArtifactId);
+
+        // Append "_NORMALIZED" to the artifact name, with incrementing number if already exists
+        const baseName = inputArtifact.name || inputArtifact.filename;
+        const normalizedName = toNormalizedFileName(baseName);
+        await artifactDb.update(outputArtifactId, {
+          name: normalizedName,
+        });
       }
 
       logger.info('Created cloned artifacts', {
