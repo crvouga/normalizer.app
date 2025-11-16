@@ -22,6 +22,41 @@ import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 
 export const normalizationSessionProjectionRouter = router({
+  fetch: procedure
+    .input(
+      z.object({
+        id: NormalizationSessionId.schema,
+      }),
+    )
+    .output(
+      z.object({
+        events: z.array(NormalizationSessionEventEntity.schema),
+        projection: NormalizationSessionProjection.schema,
+        artifacts: z.array(Artifact.schema),
+        resourceOwnership: z.array(ResourceOwnershipEntity.schema),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { id: sessionId } = input;
+      const permission = canViewNormalizationSession(sessionId);
+      const resourceOwnerId = await getNormalizationSessionOwner(ctx.db, sessionId);
+
+      if (!resourceOwnerId) throw new Error('Normalization session not found');
+
+      await ctx.authorize(permission, viewNormalizationSessionPolicy, { resourceOwnerId });
+
+      const data = await load({
+        db: ctx.db,
+        logger: ctx.logger,
+        sessionId,
+        ownerId: resourceOwnerId,
+        s3: ctx.s3,
+        s3Endpoint: ctx.s3Endpoint,
+      });
+
+      if (!data) throw new Error('Failed to load projection');
+      return data;
+    }),
   subscribe: procedure
     .input(
       z.object({

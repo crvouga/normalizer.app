@@ -8,6 +8,7 @@ import { IconSparkles } from '~/src/ui/icons';
 import { useCurrentUser } from '~/src/users/use-current-user';
 import { NormalizationRunId } from '../normalization-run-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
+import { useAddProjectionPayloadToStore } from '../normalization-session-projection/add-projection-payload-to-store';
 
 export const StartNormalizationButton = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -18,11 +19,12 @@ export const StartNormalizationButton = (props: {
 }) => {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
+  const addToStore = useAddProjectionPayloadToStore();
 
   const mutation = useMutation({
     async mutationFn({ inputArtifactIds }: { inputArtifactIds: ArtifactId[] }) {
       const normalizationRunId = NormalizationRunId.generate();
-      await trpcClient.normalizationSession.events.append.mutate({
+      const payload = await trpcClient.normalizationSession.events.append.mutate({
         event: {
           type: 'user-requested-normalization',
           sessionId: props.normalizationSessionId,
@@ -33,8 +35,10 @@ export const StartNormalizationButton = (props: {
         },
         sessionId: props.normalizationSessionId,
       });
+      return { payload };
     },
-    onSuccess() {
+    onSuccess(data) {
+      addToStore(data.payload);
       props.onStart();
     },
   });

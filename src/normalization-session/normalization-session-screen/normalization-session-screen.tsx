@@ -12,13 +12,13 @@ import {
 import { NormalizationSessionEntry } from './normalization-session-entry';
 import { NormalizationSessionHeader } from './normalization-session-screen-header';
 import { NormalizationSessionScreenInputForm } from './normalization-session-screen-input-form';
-import { useNormalizationSessionSubscription } from './use-normalization-session-subscription';
+import { useNormalizationSessionPolling } from './use-normalization-session-polling';
 
 export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
 }) => {
   const { setCurrentScreen } = useCurrentScreen();
-  useNormalizationSessionSubscription(props.normalizationSessionId);
+  useNormalizationSessionPolling(props.normalizationSessionId);
 
   const normalizationSessionProjection = useEntityStoreSelector(
     (s) => s.entities.normalizationSessionProjections.byId[props.normalizationSessionId],
@@ -26,7 +26,7 @@ export const NormalizationSessionScreen = (props: {
   const scrollbarWidth = useScrollbarWidth();
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;
-
+  console.log(normalizationSessionProjection.entries.length);
   return (
     <PolicyCheckGuard
       permission={canViewNormalizationSession(props.normalizationSessionId)}

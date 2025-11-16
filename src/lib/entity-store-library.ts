@@ -127,11 +127,6 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
           }
         }
 
-        if (Object.keys(newById).length === Object.keys(slice.byId).length && newIds.length === 0) {
-          // No changes if all entities already existed
-          return state;
-        }
-
         let newState = {
           ...state,
           entities: {

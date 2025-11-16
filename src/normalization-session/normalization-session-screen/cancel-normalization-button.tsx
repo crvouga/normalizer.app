@@ -6,6 +6,7 @@ import { IconX } from '~/src/ui/icons';
 import { useCurrentUser } from '~/src/users/use-current-user';
 import { NormalizationRunId } from '../normalization-run-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
+import { useAddProjectionPayloadToStore } from '../normalization-session-projection/add-projection-payload-to-store';
 
 export const CancelNormalizationButton = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -13,10 +14,11 @@ export const CancelNormalizationButton = (props: {
 }) => {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
+  const addToStore = useAddProjectionPayloadToStore();
 
   const mutation = useMutation({
     async mutationFn() {
-      await trpcClient.normalizationSession.events.append.mutate({
+      const payload = await trpcClient.normalizationSession.events.append.mutate({
         event: {
           type: 'user-canceled-normalization',
           sessionId: props.normalizationSessionId,
@@ -26,6 +28,10 @@ export const CancelNormalizationButton = (props: {
         },
         sessionId: props.normalizationSessionId,
       });
+      return { payload };
+    },
+    onSuccess(data) {
+      addToStore(data.payload);
     },
   });
 
