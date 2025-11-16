@@ -14,7 +14,7 @@ export const StartNormalizationButton = (props: {
   inputArtifactIds: ArtifactId[];
   onStart: () => void;
   disabled?: boolean;
-  onSubmitRef?: React.MutableRefObject<(() => void) | null>;
+  onSubmitRef?: React.RefObject<(() => void) | null>;
 }) => {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
