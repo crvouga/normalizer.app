@@ -1,16 +1,13 @@
 import * as React from 'react';
+import type { ArtifactId } from '~/src/artifacts/artifact-id';
+import { useI18n } from '~/src/i18n/use-i18n';
 import { useMutation } from '~/src/lib/use-mutation';
-import { useEntityStore } from '~/src/store/entity-store';
 import { trpcClient } from '~/src/shared/trpc-client';
 import { Button } from '~/src/ui/button';
 import { IconSparkles } from '~/src/ui/icons';
 import { useCurrentUser } from '~/src/users/use-current-user';
-import type { ArtifactId } from '~/src/artifacts/artifact-id';
-import { useI18n } from '~/src/i18n/use-i18n';
-import type { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationRunId } from '../normalization-run-id';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
-import { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
+import type { NormalizationSessionId } from '../normalization-session-id';
 
 export const StartNormalizationButton = (props: {
   normalizationSessionId: NormalizationSessionId;
@@ -20,13 +17,12 @@ export const StartNormalizationButton = (props: {
   onSubmitRef?: React.MutableRefObject<(() => void) | null>;
 }) => {
   const { t } = useI18n();
-  const entityStore = useEntityStore();
   const currentUser = useCurrentUser();
 
   const mutation = useMutation({
     async mutationFn({ inputArtifactIds }: { inputArtifactIds: ArtifactId[] }) {
       const normalizationRunId = NormalizationRunId.generate();
-      const output = await trpcClient.normalizationSession.events.append.mutate({
+      await trpcClient.normalizationSession.events.append.mutate({
         event: {
           type: 'user-requested-normalization',
           sessionId: props.normalizationSessionId,
@@ -37,12 +33,8 @@ export const StartNormalizationButton = (props: {
         },
         sessionId: props.normalizationSessionId,
       });
-      const projection = NormalizationSessionProjection.schema.parse(output.projection);
-      const event = NormalizationSessionEventEntity.schema.parse(output.event);
-      entityStore.addEntity('normalizationSessionProjections', projection);
-      entityStore.addEntity('normalizationSessionEvents', event);
     },
-    onStart() {
+    onSuccess() {
       props.onStart();
     },
   });

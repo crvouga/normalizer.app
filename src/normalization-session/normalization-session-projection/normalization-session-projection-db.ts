@@ -17,15 +17,7 @@ export class NormalizationSessionProjectionDb {
     private readonly logger: Logger,
   ) {}
 
-  /**
-   * Loads the projection for a normalization session by:
-   * 1. Querying all events for the session
-   * 2. Reducing them to compute the current state
-   */
-  async load(
-    sessionId: NormalizationSessionId,
-    startedByUserId: UserId,
-  ): Promise<NormalizationSessionProjection> {
+  async loadEvents(sessionId: NormalizationSessionId): Promise<NormalizationSessionEventEntity[]> {
     // Query all events for this session
     const events = await this.tx
       .select()
@@ -44,7 +36,20 @@ export class NormalizationSessionProjectionDb {
       },
     );
 
-    // Compute projection by reducing all events
+    return validatedEvents;
+  }
+
+  /**
+   * Loads the projection for a normalization session by:
+   * 1. Querying all events for the session
+   * 2. Reducing them to compute the current state
+   */
+  async load(
+    sessionId: NormalizationSessionId,
+    startedByUserId: UserId,
+  ): Promise<NormalizationSessionProjection> {
+    const events = await this.loadEvents(sessionId);
+
     const initialState = NormalizationSessionProjection.init({
       sessionId,
       targetArtifactIds: [],
@@ -53,7 +58,7 @@ export class NormalizationSessionProjectionDb {
       lastUpdatedAt: new Date(),
     });
 
-    const projection = NormalizationSessionProjection.reduce(validatedEvents, initialState);
+    const projection = NormalizationSessionProjection.reduce(events, initialState);
 
     return projection;
   }

@@ -19,6 +19,7 @@ import {
 import { NormalizationSessionProjection } from './normalization-session-projection';
 import { NormalizationSessionProjectionDb } from './normalization-session-projection-db';
 import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
+import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 
 export const normalizationSessionProjectionRouter = router({
   subscribe: procedure
@@ -30,6 +31,7 @@ export const normalizationSessionProjectionRouter = router({
     .output(
       zAsyncIterable({
         yield: z.object({
+          events: z.array(NormalizationSessionEventEntity.schema),
           projection: NormalizationSessionProjection.schema,
           artifacts: z.array(Artifact.schema),
           resourceOwnership: z.array(ResourceOwnershipEntity.schema),
@@ -103,10 +105,13 @@ const load = async (input: {
   projection: NormalizationSessionProjection;
   artifacts: Artifact[];
   resourceOwnership: ResourceOwnershipEntity[];
+  events: NormalizationSessionEventEntity[];
 } | null> => {
   const { db, logger, sessionId, ownerId, s3, s3Endpoint } = input;
   try {
     const projectionDb = new NormalizationSessionProjectionDb(db, logger);
+    const events = await projectionDb.loadEvents(sessionId);
+
     const projection = await projectionDb.load(sessionId, ownerId);
 
     // Collect all artifact IDs from the projection
@@ -154,6 +159,7 @@ const load = async (input: {
       projection,
       artifacts,
       resourceOwnership,
+      events,
     };
   } catch (error) {
     logger.error('Failed to load projection', {

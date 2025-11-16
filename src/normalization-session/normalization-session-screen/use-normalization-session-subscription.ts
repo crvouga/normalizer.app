@@ -8,6 +8,7 @@ import { NormalizationSessionProjection } from '../normalization-session-project
 import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-entity';
 import type { NormalizationSessionId } from '../normalization-session-id';
 import z from 'zod';
+import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 
 /**
  * Hook for subscribing to normalization session projection updates from the server via SSE.
@@ -33,25 +34,25 @@ export function useNormalizationSessionSubscription(
       {
         onData: (data) => {
           if (!isSubscribedRef.current) return;
-
           const projection = NormalizationSessionProjection.schema.safeParse(data.projection);
           const artifacts = z.array(Artifact.schema).safeParse(data.artifacts);
           const resourceOwnership = z
             .array(ResourceOwnershipEntity.schema)
             .safeParse(data.resourceOwnership);
+          const events = z.array(NormalizationSessionEventEntity.schema).safeParse(data.events);
 
-          if (!projection.success || !artifacts.success || !resourceOwnership.success) {
-            console.error('Failed to parse subscription data', {
-              projection: projection.success ? 'ok' : projection.error,
-              artifacts: artifacts.success ? 'ok' : artifacts.error,
-              resourceOwnership: resourceOwnership.success ? 'ok' : resourceOwnership.error,
-            });
-            return;
+          if (events.success) {
+            entityStore.addManyEntities('normalizationSessionEvents', events.data);
           }
-
-          entityStore.addManyEntities('normalizationSessionProjections', [projection.data]);
-          entityStore.addManyEntities('artifacts', artifacts.data);
-          entityStore.addManyEntities('resourceOwnerships', resourceOwnership.data);
+          if (projection.success) {
+            entityStore.addManyEntities('normalizationSessionProjections', [projection.data]);
+          }
+          if (artifacts.success) {
+            entityStore.addManyEntities('artifacts', artifacts.data);
+          }
+          if (resourceOwnership.success) {
+            entityStore.addManyEntities('resourceOwnerships', resourceOwnership.data);
+          }
 
           setState((prevState) => {
             if (prevState.tag === 'loading' || prevState.tag === 'notAsked') {
