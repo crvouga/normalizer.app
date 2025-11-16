@@ -1,5 +1,4 @@
 import type { z } from 'zod';
-import type { Result } from '../result';
 
 /**
  * Message role in a conversation
@@ -72,9 +71,100 @@ export interface ToolCall {
 }
 
 /**
- * Options for chat completion
+ * Token usage information
  */
-export interface ChatCompletionOptions {
+export interface Usage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/**
+ * Base stream chunk types for incremental responses (without schema)
+ */
+export type StreamChunk =
+  | {
+      /**
+       * Content delta - incremental text chunk
+       */
+      type: 'content';
+      delta: string;
+    }
+  | {
+      /**
+       * Tool call - emitted when a tool call is complete
+       */
+      type: 'tool_call';
+      toolCall: ToolCall;
+    }
+  | {
+      /**
+       * Done - final chunk with complete response data
+       */
+      type: 'done';
+      /**
+       * Complete content string
+       */
+      content: string;
+      /**
+       * All tool calls made during the response (if any)
+       */
+      toolCalls?: ToolCall[];
+      /**
+       * Token usage information (if available)
+       */
+      usage?: Usage;
+      /**
+       * Parsed and validated data (only present when schema is provided)
+       */
+      data?: unknown;
+    };
+
+/**
+ * Stream chunk types for structured JSON responses (with schema type)
+ */
+export type StreamChunkWithSchema<T> =
+  | {
+      /**
+       * Content delta - incremental text chunk
+       */
+      type: 'content';
+      delta: string;
+    }
+  | {
+      /**
+       * Tool call - emitted when a tool call is complete
+       */
+      type: 'tool_call';
+      toolCall: ToolCall;
+    }
+  | {
+      /**
+       * Done - final chunk with complete response data
+       */
+      type: 'done';
+      /**
+       * Complete content string
+       */
+      content: string;
+      /**
+       * All tool calls made during the response (if any)
+       */
+      toolCalls?: ToolCall[];
+      /**
+       * Token usage information (if available)
+       */
+      usage?: Usage;
+      /**
+       * Parsed and validated data matching the provided schema (always present when schema is provided)
+       */
+      data: T;
+    };
+
+/**
+ * Options for streaming completion
+ */
+export interface StreamOptions {
   /**
    * Temperature for response randomness (0-2, higher = more random)
    */
@@ -100,75 +190,17 @@ export interface ChatCompletionOptions {
    */
   stop?: string[];
   /**
-   * Whether to stream the response
-   */
-  stream?: boolean;
-  /**
    * Tools/function definitions available to the LLM for function calling
    */
   tools?: ToolDefinition[];
-}
-
-/**
- * Response from a chat completion
- */
-export interface ChatCompletionResponse {
   /**
-   * The generated message content
+   * Zod schema for structured JSON output (if provided, enables structured JSON mode)
    */
-  content: string;
+  schema?: z.ZodType<unknown>;
   /**
-   * Tool calls made by the assistant (if any)
-   */
-  toolCalls?: ToolCall[];
-  /**
-   * Token usage information
-   */
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-}
-
-/**
- * Options for structured JSON output
- */
-export interface StructuredJsonOptions<T extends z.ZodType<unknown>> {
-  /**
-   * Zod schema that defines the expected JSON structure
-   */
-  schema: T;
-  /**
-   * Whether to strictly enforce the schema (fail if output doesn't match)
+   * Whether to strictly enforce the schema (only applies when schema is provided)
    */
   strict?: boolean;
-  /**
-   * Tools/function definitions available to the LLM for function calling
-   */
-  tools?: ToolDefinition[];
-}
-
-/**
- * Response from structured JSON completion
- */
-export interface StructuredJsonResponse<T> {
-  /**
-   * Parsed and validated JSON data matching the provided schema
-   */
-  data: T;
-  /**
-   * Raw JSON string before parsing
-   */
-  rawJson?: string;
-  /**
-   * Token usage information
-   */
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
 }
 
 /**
@@ -178,26 +210,21 @@ export interface StructuredJsonResponse<T> {
  */
 export interface LLM {
   /**
-   * Complete a chat conversation.
+   * Stream a chat conversation completion with structured JSON output.
    * @param messages Array of messages in the conversation
-   * @param options Optional configuration for the completion, including optional tools for function calling
-   * @returns Result containing the completion response (with potential tool calls if tools were provided) or an error
+   * @param options Configuration including a schema for structured JSON output
+   * @returns AsyncIterable of stream chunks with type-safe data field matching the schema
    */
-  chat(
+  stream<T extends z.ZodType<unknown>>(
     messages: Message[],
-    options?: ChatCompletionOptions,
-  ): Promise<Result<ChatCompletionResponse, string>>;
+    options: StreamOptions & { schema: T },
+  ): AsyncIterable<StreamChunkWithSchema<z.infer<T>>>;
 
   /**
-   * Generate a structured JSON response that matches a Zod schema.
+   * Stream a chat conversation completion.
    * @param messages Array of messages in the conversation
-   * @param options Configuration including the schema to validate against and optional tools for function calling
-   * @param completionOptions Optional additional configuration for the completion
-   * @returns Result containing the parsed and validated JSON data (with potential tool calls if tools were provided) or an error
+   * @param options Optional configuration for the completion, including optional tools
+   * @returns AsyncIterable of stream chunks containing content deltas, tool calls, and final response data
    */
-  structuredJson<T extends z.ZodType<unknown>>(
-    messages: Message[],
-    options: StructuredJsonOptions<T>,
-    completionOptions?: ChatCompletionOptions,
-  ): Promise<Result<StructuredJsonResponse<z.infer<T>>, string>>;
+  stream(messages: Message[], options?: StreamOptions): AsyncIterable<StreamChunk>;
 }

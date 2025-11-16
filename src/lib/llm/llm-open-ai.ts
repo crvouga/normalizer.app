@@ -1,15 +1,14 @@
-import { z } from 'zod';
 import OpenAI from 'openai';
+import type { z } from 'zod';
 import type { Logger } from '../logger';
-import { Err, Ok, type Result } from '../result';
 import { zodToJsonSchema } from '../zod-to-json-schema';
 import type {
-  ChatCompletionOptions,
-  ChatCompletionResponse,
   LLM,
   Message,
-  StructuredJsonOptions,
-  StructuredJsonResponse,
+  StreamChunk,
+  StreamChunkWithSchema,
+  StreamOptions,
+  ToolCall,
   ToolDefinition,
 } from './llm';
 
@@ -61,99 +60,6 @@ type OpenAIMessage =
   | OpenAI.Chat.Completions.ChatCompletionToolMessageParam;
 
 /**
- * Convert our Message format to OpenAI SDK format
- */
-function convertMessageToOpenAI(message: Message): OpenAIMessage {
-  if (message.role === 'tool') {
-    const toolCallId = 'toolCallId' in message ? message.toolCallId : undefined;
-    return {
-      role: 'tool',
-      content: message.content,
-      tool_call_id: toolCallId || '',
-    };
-  }
-
-  if (message.role === 'assistant' && 'toolCalls' in message && message.toolCalls) {
-    return {
-      role: 'assistant',
-      content: message.content || null,
-      tool_calls: message.toolCalls.map((tc) => ({
-        id: tc.id,
-        type: 'function' as const,
-        function: {
-          name: tc.name,
-          arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments),
-        },
-      })),
-    };
-  }
-
-  return {
-    role: message.role,
-    content: message.content,
-  } as OpenAIMessage;
-}
-
-/**
- * Convert OpenAI SDK message format to our format
- */
-function convertMessageFromOpenAI(message: OpenAI.Chat.Completions.ChatCompletionMessage): Message {
-  if (message.role === 'assistant') {
-    const content = typeof message.content === 'string' ? message.content : '';
-
-    if (message.tool_calls && message.tool_calls.length > 0) {
-      return {
-        role: 'assistant',
-        content,
-        toolCalls: message.tool_calls.map((tc) => {
-          // Handle both standard and custom tool calls
-          if ('function' in tc) {
-            return {
-              id: tc.id,
-              name: tc.function.name,
-              arguments: JSON.parse(tc.function.arguments),
-            };
-          }
-          // For custom tool calls, we need to extract the function info differently
-          // This shouldn't happen in normal usage, but handle it gracefully
-          return {
-            id: tc.id,
-            name: 'unknown',
-            arguments: {},
-          };
-        }),
-      };
-    }
-
-    return {
-      role: 'assistant',
-      content,
-    };
-  }
-
-  // For system and user messages
-  return {
-    role: message.role,
-    content: typeof message.content === 'string' ? message.content : '',
-  };
-}
-
-/**
- * Convert ToolDefinition to OpenAI function format
- */
-function convertToolToOpenAI(tool: ToolDefinition): {
-  name: string;
-  description?: string;
-  parameters: Record<string, unknown>;
-} {
-  return {
-    name: tool.name,
-    ...(tool.description !== undefined && { description: tool.description }),
-    parameters: zodToJsonSchema(tool.parameters),
-  };
-}
-
-/**
  * OpenAI implementation of the LLM interface
  */
 export class LLMOpenAI implements LLM {
@@ -172,66 +78,43 @@ export class LLMOpenAI implements LLM {
     }
   }
 
-  async chat(
+  // Implementation satisfies both overloads - TypeScript can't verify this for async generators
+  // The return type is a union that satisfies both overload signatures
+  // @ts-expect-error - TypeScript can't verify overload compatibility for async generators.
+  // The implementation correctly satisfies both overloads at runtime - when schema is provided,
+  // the done chunk always includes typed data; when not provided, it uses the base StreamChunk type.
+  async *stream<T extends z.ZodType<unknown>>(
     messages: Message[],
-    options?: ChatCompletionOptions,
-  ): Promise<Result<ChatCompletionResponse, string>> {
+    options?: StreamOptions | (StreamOptions & { schema: T }),
+  ): AsyncIterable<StreamChunk | StreamChunkWithSchema<z.infer<T>>> {
     try {
-      const openAIMessages = messages.map(convertMessageToOpenAI);
+      const openAIMessages = messages.map(this.convertMessageToOpenAI);
 
-      this.logger?.debug('OpenAI API request', {
+      this.logger?.debug('OpenAI API request (streaming)', {
         model: this.model,
         messageCount: openAIMessages.length,
+        hasSchema: options?.schema !== undefined,
       });
 
-      const response = await this.client.chat.completions.create({
-        model: this.model,
-        messages: openAIMessages,
-        ...(options?.temperature !== undefined && { temperature: options.temperature }),
-        ...(options?.maxTokens !== undefined && { max_tokens: options.maxTokens }),
-        ...(options?.topP !== undefined && { top_p: options.topP }),
-        ...(options?.frequencyPenalty !== undefined && {
-          frequency_penalty: options.frequencyPenalty,
-        }),
-        ...(options?.presencePenalty !== undefined && {
-          presence_penalty: options.presencePenalty,
-        }),
-        ...(options?.stop && options.stop.length > 0 && { stop: options.stop }),
-        ...(options?.tools &&
-          options.tools.length > 0 && {
-            tools: options.tools.map((tool) => ({
-              type: 'function' as const,
-              function: convertToolToOpenAI(tool),
-            })),
-          }),
-      });
+      const requestParams = this.buildRequestParams(openAIMessages, options);
+      const stream = await this.client.chat.completions.create(requestParams);
 
-      const choice = response.choices[0];
-      if (!choice) {
-        return Err('No response from OpenAI');
-      }
-
-      const assistantMessage = choice.message;
-      if (assistantMessage.role !== 'assistant') {
-        return Err('Unexpected message role from OpenAI');
-      }
-
-      const convertedMessage = convertMessageFromOpenAI(assistantMessage);
-
-      const result: ChatCompletionResponse = {
-        content: convertedMessage.content,
-        ...('toolCalls' in convertedMessage &&
-          convertedMessage.toolCalls && { toolCalls: convertedMessage.toolCalls }),
-        ...(response.usage && {
-          usage: {
-            promptTokens: response.usage.prompt_tokens,
-            completionTokens: response.usage.completion_tokens,
-            totalTokens: response.usage.total_tokens,
-          },
-        }),
+      const state = {
+        accumulatedContent: '',
+        toolCalls: [] as ToolCall[],
+        toolCallBuffers: new Map<number, { id: string; name: string; arguments: string }>(),
+        usage: undefined as
+          | { promptTokens: number; completionTokens: number; totalTokens: number }
+          | undefined,
       };
 
-      return Ok(result);
+      yield* this.processStreamChunks(stream, state);
+
+      yield* this.processRemainingToolCalls(state);
+
+      const parsedData = this.parseAndValidateResponse(state.accumulatedContent, options);
+
+      yield this.createDoneChunk(state, parsedData, options);
     } catch (error) {
       const errorMessage =
         error instanceof OpenAI.APIError
@@ -239,110 +122,291 @@ export class LLMOpenAI implements LLM {
           : error instanceof Error
             ? error.message
             : String(error);
-      this.logger?.error('OpenAI chat error', { error: errorMessage });
-      return Err(errorMessage);
+      this.logger?.error('OpenAI stream error', { error: errorMessage });
+      throw new Error(errorMessage);
     }
   }
 
-  async structuredJson<T extends z.ZodType<unknown>>(
-    messages: Message[],
-    options: StructuredJsonOptions<T>,
-    completionOptions?: ChatCompletionOptions,
-  ): Promise<Result<StructuredJsonResponse<z.infer<T>>, string>> {
-    try {
-      const openAIMessages = messages.map(convertMessageToOpenAI);
+  private buildRequestParams(
+    messages: OpenAIMessage[],
+    options?: StreamOptions | (StreamOptions & { schema: z.ZodType<unknown> }),
+  ): OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming {
+    const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
+      model: this.model,
+      messages,
+      stream: true,
+      ...(options?.temperature !== undefined && { temperature: options.temperature }),
+      ...(options?.maxTokens !== undefined && { max_tokens: options.maxTokens }),
+      ...(options?.topP !== undefined && { top_p: options.topP }),
+      ...(options?.frequencyPenalty !== undefined && {
+        frequency_penalty: options.frequencyPenalty,
+      }),
+      ...(options?.presencePenalty !== undefined && {
+        presence_penalty: options.presencePenalty,
+      }),
+      ...(options?.stop && options.stop.length > 0 && { stop: options.stop }),
+      ...(options?.tools &&
+        options.tools.length > 0 && {
+          tools: options.tools.map((tool) => ({
+            type: 'function' as const,
+            function: this.convertToolToOpenAI(tool),
+          })),
+        }),
+    };
 
-      // Convert Zod schema to JSON Schema
+    if (options?.schema) {
       const jsonSchema = zodToJsonSchema(options.schema);
-
-      this.logger?.debug('OpenAI API request (structured JSON)', {
-        model: this.model,
-        messageCount: openAIMessages.length,
-      });
-
-      const response = await this.client.chat.completions.create({
-        model: this.model,
-        messages: openAIMessages,
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'response',
-            schema: jsonSchema,
-            strict: options.strict ?? false,
-          },
+      requestParams.response_format = {
+        type: 'json_schema',
+        json_schema: {
+          name: 'response',
+          schema: jsonSchema,
+          strict: options.strict ?? false,
         },
-        ...(completionOptions?.temperature !== undefined && {
-          temperature: completionOptions.temperature,
-        }),
-        ...(completionOptions?.maxTokens !== undefined && {
-          max_tokens: completionOptions.maxTokens,
-        }),
-        ...(completionOptions?.topP !== undefined && { top_p: completionOptions.topP }),
-        ...(completionOptions?.frequencyPenalty !== undefined && {
-          frequency_penalty: completionOptions.frequencyPenalty,
-        }),
-        ...(completionOptions?.presencePenalty !== undefined && {
-          presence_penalty: completionOptions.presencePenalty,
-        }),
-        ...(completionOptions?.stop &&
-          completionOptions.stop.length > 0 && { stop: completionOptions.stop }),
-        ...(options.tools &&
-          options.tools.length > 0 && {
-            tools: options.tools.map((tool) => ({
-              type: 'function' as const,
-              function: convertToolToOpenAI(tool),
-            })),
-          }),
-      });
-
-      const choice = response.choices[0];
-      if (!choice) {
-        return Err('No response from OpenAI');
-      }
-
-      const content = choice.message.content;
-      if (!content || typeof content !== 'string') {
-        return Err('Empty response from OpenAI');
-      }
-
-      // Parse and validate JSON
-      let parsedJson: unknown;
-      try {
-        parsedJson = JSON.parse(content);
-      } catch (parseError) {
-        return Err(
-          `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-        );
-      }
-
-      // Validate against Zod schema
-      const validationResult = options.schema.safeParse(parsedJson);
-      if (!validationResult.success) {
-        return Err(`Response does not match schema: ${validationResult.error.message}`);
-      }
-
-      const result: StructuredJsonResponse<z.infer<T>> = {
-        data: validationResult.data,
-        rawJson: content,
-        ...(response.usage && {
-          usage: {
-            promptTokens: response.usage.prompt_tokens,
-            completionTokens: response.usage.completion_tokens,
-            totalTokens: response.usage.total_tokens,
-          },
-        }),
       };
-
-      return Ok(result);
-    } catch (error) {
-      const errorMessage =
-        error instanceof OpenAI.APIError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : String(error);
-      this.logger?.error('OpenAI structuredJson error', { error: errorMessage });
-      return Err(errorMessage);
     }
+
+    return requestParams;
+  }
+
+  private async *processStreamChunks(
+    stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+    state: {
+      accumulatedContent: string;
+      toolCalls: ToolCall[];
+      toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
+      usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+    },
+  ): AsyncIterable<StreamChunk> {
+    for await (const chunk of stream) {
+      const choice = chunk.choices[0];
+      if (!choice) {
+        continue;
+      }
+
+      const delta = choice.delta;
+
+      if (delta.content) {
+        yield* this.handleContentDelta(delta.content, state);
+      }
+
+      if (delta.tool_calls) {
+        this.handleToolCallDelta(delta.tool_calls, state);
+      }
+
+      if (chunk.usage) {
+        state.usage = {
+          promptTokens: chunk.usage.prompt_tokens,
+          completionTokens: chunk.usage.completion_tokens,
+          totalTokens: chunk.usage.total_tokens,
+        };
+      }
+
+      if (choice.finish_reason === 'tool_calls') {
+        yield* this.processToolCalls(state);
+      }
+    }
+  }
+
+  private *handleContentDelta(
+    content: string,
+    state: { accumulatedContent: string },
+  ): Generator<StreamChunk> {
+    state.accumulatedContent += content;
+    yield { type: 'content', delta: content };
+  }
+
+  private handleToolCallDelta(
+    toolCallDeltas: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[],
+    state: {
+      toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
+    },
+  ): void {
+    for (const toolCallDelta of toolCallDeltas) {
+      if (toolCallDelta.index === undefined) {
+        continue;
+      }
+
+      const index = toolCallDelta.index;
+      const callId = toolCallDelta.id;
+
+      if (!state.toolCallBuffers.has(index)) {
+        state.toolCallBuffers.set(index, { id: callId || '', name: '', arguments: '' });
+      }
+
+      const buffer = state.toolCallBuffers.get(index)!;
+
+      if (callId) {
+        buffer.id = callId;
+      }
+
+      if (toolCallDelta.function?.name) {
+        buffer.name = toolCallDelta.function.name;
+      }
+
+      if (toolCallDelta.function?.arguments) {
+        buffer.arguments += toolCallDelta.function.arguments;
+      }
+    }
+  }
+
+  private *processToolCalls(state: {
+    toolCalls: ToolCall[];
+    toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
+  }): Generator<StreamChunk> {
+    for (const [index, buffer] of state.toolCallBuffers.entries()) {
+      if (!buffer.id || !buffer.name || !buffer.arguments) {
+        continue;
+      }
+
+      try {
+        const parsedArgs = JSON.parse(buffer.arguments);
+        const newToolCall: ToolCall = {
+          id: buffer.id,
+          name: buffer.name,
+          arguments: parsedArgs,
+        };
+        state.toolCalls.push(newToolCall);
+        yield { type: 'tool_call', toolCall: newToolCall };
+      } catch (error) {
+        this.logger?.warn('Failed to parse tool call arguments', {
+          index,
+          callId: buffer.id,
+          arguments: buffer.arguments,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  private *processRemainingToolCalls(state: {
+    toolCalls: ToolCall[];
+    toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
+  }): Generator<StreamChunk> {
+    for (const [index, buffer] of state.toolCallBuffers.entries()) {
+      if (!buffer.id || !buffer.name || !buffer.arguments) {
+        continue;
+      }
+
+      const alreadyEmitted = state.toolCalls.some((tc) => tc.id === buffer.id);
+      if (alreadyEmitted) {
+        continue;
+      }
+
+      try {
+        const parsedArgs = JSON.parse(buffer.arguments);
+        const newToolCall: ToolCall = {
+          id: buffer.id,
+          name: buffer.name,
+          arguments: parsedArgs,
+        };
+        state.toolCalls.push(newToolCall);
+        yield { type: 'tool_call', toolCall: newToolCall };
+      } catch (error) {
+        this.logger?.warn('Failed to parse tool call arguments', {
+          index,
+          callId: buffer.id,
+          arguments: buffer.arguments,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  private parseAndValidateResponse(
+    accumulatedContent: string,
+    options?: StreamOptions | (StreamOptions & { schema: z.ZodType<unknown> }),
+  ): unknown | undefined {
+    if (!options?.schema) {
+      return undefined;
+    }
+
+    let parsedData: unknown;
+    try {
+      parsedData = JSON.parse(accumulatedContent);
+    } catch (parseError) {
+      throw new Error(
+        `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+      );
+    }
+
+    const validationResult = options.schema.safeParse(parsedData);
+    if (!validationResult.success) {
+      throw new Error(`Response does not match schema: ${validationResult.error.message}`);
+    }
+
+    return validationResult.data;
+  }
+
+  private createDoneChunk<T extends z.ZodType<unknown>>(
+    state: {
+      accumulatedContent: string;
+      toolCalls: ToolCall[];
+      usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+    },
+    parsedData: unknown | undefined,
+    options?: StreamOptions | (StreamOptions & { schema: T }),
+  ): StreamChunk | StreamChunkWithSchema<z.infer<T>> {
+    if (options?.schema && parsedData !== undefined) {
+      return {
+        type: 'done' as const,
+        content: state.accumulatedContent,
+        ...(state.toolCalls.length > 0 && { toolCalls: state.toolCalls }),
+        ...(state.usage && { usage: state.usage }),
+        data: parsedData,
+      } as StreamChunkWithSchema<z.infer<typeof options.schema>>;
+    }
+
+    return {
+      type: 'done' as const,
+      content: state.accumulatedContent,
+      ...(state.toolCalls.length > 0 && { toolCalls: state.toolCalls }),
+      ...(state.usage && { usage: state.usage }),
+      ...(parsedData !== undefined && { data: parsedData }),
+    } as StreamChunk;
+  }
+
+  private convertMessageToOpenAI(message: Message): OpenAIMessage {
+    if (message.role === 'tool') {
+      const toolCallId = 'toolCallId' in message ? message.toolCallId : undefined;
+      return {
+        role: 'tool',
+        content: message.content,
+        tool_call_id: toolCallId || '',
+      };
+    }
+
+    if (message.role === 'assistant' && 'toolCalls' in message && message.toolCalls) {
+      return {
+        role: 'assistant',
+        content: message.content || null,
+        tool_calls: message.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.name,
+            arguments:
+              typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments),
+          },
+        })),
+      };
+    }
+
+    return {
+      role: message.role,
+      content: message.content,
+    } as OpenAIMessage;
+  }
+
+  private convertToolToOpenAI(tool: ToolDefinition): {
+    name: string;
+    description?: string;
+    parameters: Record<string, unknown>;
+  } {
+    return {
+      name: tool.name,
+      ...(tool.description !== undefined && { description: tool.description }),
+      parameters: zodToJsonSchema(tool.parameters),
+    };
   }
 }
