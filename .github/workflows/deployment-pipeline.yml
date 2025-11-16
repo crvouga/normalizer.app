@@ -87,18 +87,6 @@ jobs:
           echo "✅ Environment file created from template"
           cat .env
 
-      - name: Inject OPENAI_API_KEY from secrets
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "❌ ERROR: OPENAI_API_KEY secret is not set"
-            echo "Please add OPENAI_API_KEY to your GitHub repository secrets"
-            exit 1
-          fi
-          echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env
-          echo "✅ OPENAI_API_KEY injected into .env"
-
       - name: Start services with docker-compose
         run: docker compose up -d
 
@@ -131,6 +119,8 @@ jobs:
         run: echo "✅ Database migrations completed successfully"
 
       - name: Run tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -a
           source .env
@@ -161,18 +151,6 @@ jobs:
           sed -i 's/S3_BUCKET=main/S3_BUCKET=test-bucket/' .env
           echo "✅ Environment file created from template"
           cat .env
-
-      - name: Inject OPENAI_API_KEY from secrets
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "❌ ERROR: OPENAI_API_KEY secret is not set"
-            echo "Please add OPENAI_API_KEY to your GitHub repository secrets"
-            exit 1
-          fi
-          echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env
-          echo "✅ OPENAI_API_KEY injected into .env"
 
       - name: Start services with docker-compose
         run: docker compose up -d
