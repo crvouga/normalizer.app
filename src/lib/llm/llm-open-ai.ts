@@ -10,6 +10,7 @@ import type {
   StreamOptions,
   ToolCall,
   ToolDefinition,
+  Usage,
 } from './llm';
 
 /**
@@ -60,6 +61,16 @@ type OpenAIMessage =
   | OpenAI.Chat.Completions.ChatCompletionToolMessageParam;
 
 /**
+ * Internal state for processing stream chunks
+ */
+interface StreamState {
+  accumulatedContent: string;
+  toolCalls: ToolCall[];
+  toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
+  usage: Usage | undefined;
+}
+
+/**
  * OpenAI implementation of the LLM interface
  */
 export class LLMOpenAI implements LLM {
@@ -99,13 +110,11 @@ export class LLMOpenAI implements LLM {
       const requestParams = this.buildRequestParams(openAIMessages, options);
       const stream = await this.client.chat.completions.create(requestParams);
 
-      const state = {
+      const state: StreamState = {
         accumulatedContent: '',
-        toolCalls: [] as ToolCall[],
+        toolCalls: [],
         toolCallBuffers: new Map<number, { id: string; name: string; arguments: string }>(),
-        usage: undefined as
-          | { promptTokens: number; completionTokens: number; totalTokens: number }
-          | undefined,
+        usage: undefined,
       };
 
       yield* this.processStreamChunks(stream, state);
@@ -171,12 +180,7 @@ export class LLMOpenAI implements LLM {
 
   private async *processStreamChunks(
     stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
-    state: {
-      accumulatedContent: string;
-      toolCalls: ToolCall[];
-      toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
-      usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
-    },
+    state: StreamState,
   ): AsyncIterable<StreamChunk> {
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
@@ -250,10 +254,7 @@ export class LLMOpenAI implements LLM {
     }
   }
 
-  private *processToolCalls(state: {
-    toolCalls: ToolCall[];
-    toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
-  }): Generator<StreamChunk> {
+  private *processToolCalls(state: StreamState): Generator<StreamChunk> {
     for (const [index, buffer] of state.toolCallBuffers.entries()) {
       if (!buffer.id || !buffer.name || !buffer.arguments) {
         continue;
@@ -279,10 +280,7 @@ export class LLMOpenAI implements LLM {
     }
   }
 
-  private *processRemainingToolCalls(state: {
-    toolCalls: ToolCall[];
-    toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
-  }): Generator<StreamChunk> {
+  private *processRemainingToolCalls(state: StreamState): Generator<StreamChunk> {
     for (const [index, buffer] of state.toolCallBuffers.entries()) {
       if (!buffer.id || !buffer.name || !buffer.arguments) {
         continue;
@@ -339,31 +337,28 @@ export class LLMOpenAI implements LLM {
   }
 
   private createDoneChunk<T extends z.ZodType<unknown>>(
-    state: {
-      accumulatedContent: string;
-      toolCalls: ToolCall[];
-      usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
-    },
+    state: StreamState,
     parsedData: unknown | undefined,
     options?: StreamOptions | (StreamOptions & { schema: T }),
   ): StreamChunk | StreamChunkWithSchema<z.infer<T>> {
-    if (options?.schema && parsedData !== undefined) {
-      return {
-        type: 'done' as const,
-        content: state.accumulatedContent,
-        ...(state.toolCalls.length > 0 && { toolCalls: state.toolCalls }),
-        ...(state.usage && { usage: state.usage }),
-        data: parsedData,
-      } as StreamChunkWithSchema<z.infer<typeof options.schema>>;
-    }
-
-    return {
+    const baseChunk = {
       type: 'done' as const,
       content: state.accumulatedContent,
       ...(state.toolCalls.length > 0 && { toolCalls: state.toolCalls }),
       ...(state.usage && { usage: state.usage }),
+    };
+
+    if (options?.schema && parsedData !== undefined) {
+      return {
+        ...baseChunk,
+        data: parsedData,
+      } satisfies StreamChunkWithSchema<z.infer<typeof options.schema>>;
+    }
+
+    return {
+      ...baseChunk,
       ...(parsedData !== undefined && { data: parsedData }),
-    } as StreamChunk;
+    } satisfies StreamChunk;
   }
 
   private convertMessageToOpenAI(message: Message): OpenAIMessage {
@@ -395,7 +390,7 @@ export class LLMOpenAI implements LLM {
     return {
       role: message.role,
       content: message.content,
-    } as OpenAIMessage;
+    } satisfies OpenAIMessage;
   }
 
   private convertToolToOpenAI(tool: ToolDefinition): {
