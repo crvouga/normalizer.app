@@ -23,17 +23,27 @@ const formatMessage = (level: string, message: string, meta?: Record<string, unk
   return `${baseMessage} ${JSON.stringify(meta)}`;
 };
 
-export const createLogger = (): Logger => ({
-  error: (message: string, meta?: Record<string, unknown>) => {
-    console.error(formatMessage('error', message, meta));
-  },
-  warn: (message: string, meta?: Record<string, unknown>) => {
-    console.warn(formatMessage('warn', message, meta));
-  },
-  info: (message: string, meta?: Record<string, unknown>) => {
-    console.info(formatMessage('info', message, meta));
-  },
-  debug: (message: string, meta?: Record<string, unknown>) => {
-    console.debug(formatMessage('debug', message, meta));
-  },
-});
+export const createLogger = (config?: { noop?: boolean }): Logger => {
+  if (config?.noop) {
+    return {
+      error: () => {},
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    };
+  }
+  return {
+    error: (message: string, meta?: Record<string, unknown>) => {
+      console.error(formatMessage('error', message, meta));
+    },
+    warn: (message: string, meta?: Record<string, unknown>) => {
+      console.warn(formatMessage('warn', message, meta));
+    },
+    info: (message: string, meta?: Record<string, unknown>) => {
+      console.info(formatMessage('info', message, meta));
+    },
+    debug: (message: string, meta?: Record<string, unknown>) => {
+      console.debug(formatMessage('debug', message, meta));
+    },
+  };
+};

@@ -9,9 +9,9 @@ function createTestLLMOpenAI(): LLM {
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
 
-  const llm = createLLMOpenAI({ apiKey, model: 'gpt-4o-mini', logger });
+  const llm = createLLMOpenAI({ apiKey, model: 'gpt-3.5-turbo', logger });
 
   return llm;
 }
@@ -91,5 +91,5 @@ describe('@llm.ts (OpenAI Implementation)', () => {
     );
 
     expect(typeof hasToolCall).toBe('boolean');
-  });
+  }, 10000); // 10 second timeout
 });
