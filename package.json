@@ -48,6 +48,7 @@
     "graphile-worker": "^0.16.6",
     "lru-cache": "^11.2.2",
     "minio": "^8.0.6",
+    "openai": "^6.9.0",
     "postgres": "^3.4.7",
     "react": "^19",
     "react-dom": "^19",
