@@ -48,7 +48,7 @@ export interface OpenAIConfig {
   /**
    * Logger instance
    */
-  logger?: Logger;
+  logger: Logger;
 }
 
 /**
@@ -76,7 +76,7 @@ interface StreamState {
 export class LLMOpenAI implements LLM {
   private client: OpenAI;
   private model: OpenAIModel;
-  private logger?: Logger;
+  private logger: Logger;
 
   constructor(config: OpenAIConfig) {
     this.client = new OpenAI({
@@ -84,9 +84,7 @@ export class LLMOpenAI implements LLM {
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
     this.model = config.model || 'gpt-4';
-    if (config.logger !== undefined) {
-      this.logger = config.logger;
-    }
+    this.logger = config.logger;
   }
 
   // Implementation satisfies both overloads - TypeScript can't verify this for async generators
@@ -101,7 +99,7 @@ export class LLMOpenAI implements LLM {
     try {
       const openAIMessages = messages.map(this.convertMessageToOpenAI);
 
-      this.logger?.debug('OpenAI API request (streaming)', {
+      this.logger.debug('OpenAI API request (streaming)', {
         model: this.model,
         messageCount: openAIMessages.length,
         hasSchema: options?.schema !== undefined,
@@ -131,7 +129,7 @@ export class LLMOpenAI implements LLM {
           : error instanceof Error
             ? error.message
             : String(error);
-      this.logger?.error('OpenAI stream error', { error: errorMessage });
+      this.logger.error('OpenAI stream error', { error: errorMessage });
       throw new Error(errorMessage);
     }
   }
@@ -270,7 +268,7 @@ export class LLMOpenAI implements LLM {
         state.toolCalls.push(newToolCall);
         yield { type: 'tool_call', toolCall: newToolCall };
       } catch (error) {
-        this.logger?.warn('Failed to parse tool call arguments', {
+        this.logger.warn('Failed to parse tool call arguments', {
           index,
           callId: buffer.id,
           arguments: buffer.arguments,
@@ -301,7 +299,7 @@ export class LLMOpenAI implements LLM {
         state.toolCalls.push(newToolCall);
         yield { type: 'tool_call', toolCall: newToolCall };
       } catch (error) {
-        this.logger?.warn('Failed to parse tool call arguments', {
+        this.logger.warn('Failed to parse tool call arguments', {
           index,
           callId: buffer.id,
           arguments: buffer.arguments,
