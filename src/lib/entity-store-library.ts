@@ -110,6 +110,29 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
         const newIds: string[] = [];
         const oldEntitiesMap = new Map<string, unknown>();
 
+        // Helper function to perform one-level-deep upsert
+        const upsertEntity = (oldEntity: unknown, newEntity: unknown): unknown => {
+          if (
+            !oldEntity ||
+            typeof oldEntity !== 'object' ||
+            !newEntity ||
+            typeof newEntity !== 'object'
+          ) {
+            return newEntity;
+          }
+
+          // Create a shallow merge: top-level properties from newEntity, but keep oldEntity's nested objects if not in newEntity
+          const merged = { ...(oldEntity as Record<string, unknown>) };
+          const newEntityRecord = newEntity as Record<string, unknown>;
+          for (const key in newEntityRecord) {
+            if (Object.prototype.hasOwnProperty.call(newEntityRecord, key)) {
+              // For one-level deep, we replace nested objects/arrays entirely, not merge recursively
+              merged[key] = newEntityRecord[key];
+            }
+          }
+          return merged;
+        };
+
         for (const entity of entities) {
           if (
             entity &&
@@ -119,11 +142,14 @@ export function createEntityStoreReducer<TStore extends StoreConfig<any>>(
           ) {
             const entityId = entity.id;
             if (entityId in newById) {
-              oldEntitiesMap.set(entityId, newById[entityId]);
+              const oldEntity = newById[entityId];
+              oldEntitiesMap.set(entityId, oldEntity);
+              // Perform one-level-deep upsert
+              newById[entityId] = upsertEntity(oldEntity, entity);
             } else {
               newIds.push(entityId);
+              newById[entityId] = entity;
             }
-            newById[entityId] = entity;
           }
         }
 

@@ -16,3 +16,6 @@ MINIO_SERVER_URL=http://localhost:9000
 # Google OAuth (optional)
 # GOOGLE_CLIENT_ID=
 # GOOGLE_CLIENT_SECRET=
+
+# OpenAI API Key
+# OPENAI_API_KEY=

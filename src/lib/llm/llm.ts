@@ -205,17 +205,63 @@ export interface StreamOptions {
 
 /**
  * Abstraction over Large Language Model services.
- * This interface allows swapping between different LLM providers (OpenAI, Anthropic, etc.)
+ * This abstract class allows swapping between different LLM providers (OpenAI, Anthropic, etc.)
  * at runtime without changing the calling code.
  */
-export interface LLM {
+export abstract class LLM {
+  /**
+   * Get a chat completion (non-streaming).
+   * @param messages Array of messages in the conversation
+   * @param options Optional configuration for the completion, including optional tools
+   * @returns Promise that resolves to an array of messages including the assistant's response
+   */
+  async completions(messages: Message[], options?: StreamOptions): Promise<Message[]> {
+    const result: Message[] = [...messages];
+    let assistantMessage: ToolCallMessage | null = null;
+
+    for await (const chunk of this.stream(messages, options)) {
+      if (chunk.type === 'tool_call') {
+        if (!assistantMessage) {
+          assistantMessage = {
+            role: 'assistant',
+            content: '',
+            toolCalls: [],
+          };
+        }
+        if (!assistantMessage.toolCalls) {
+          assistantMessage.toolCalls = [];
+        }
+        assistantMessage.toolCalls.push(chunk.toolCall);
+      } else if (chunk.type === 'done') {
+        if (!assistantMessage) {
+          assistantMessage = {
+            role: 'assistant',
+            content: chunk.content,
+            ...(chunk.toolCalls && chunk.toolCalls.length > 0 && { toolCalls: chunk.toolCalls }),
+          };
+        } else {
+          assistantMessage.content = chunk.content;
+          if (chunk.toolCalls && chunk.toolCalls.length > 0) {
+            assistantMessage.toolCalls = chunk.toolCalls;
+          }
+        }
+      }
+    }
+
+    if (assistantMessage) {
+      result.push(assistantMessage);
+    }
+
+    return result;
+  }
+
   /**
    * Stream a chat conversation completion with structured JSON output.
    * @param messages Array of messages in the conversation
    * @param options Configuration including a schema for structured JSON output
    * @returns AsyncIterable of stream chunks with type-safe data field matching the schema
    */
-  stream<T extends z.ZodType<unknown>>(
+  abstract stream<T extends z.ZodType<unknown>>(
     messages: Message[],
     options: StreamOptions & { schema: T },
   ): AsyncIterable<StreamChunkWithSchema<z.infer<T>>>;
@@ -226,5 +272,5 @@ export interface LLM {
    * @param options Optional configuration for the completion, including optional tools
    * @returns AsyncIterable of stream chunks containing content deltas, tool calls, and final response data
    */
-  stream(messages: Message[], options?: StreamOptions): AsyncIterable<StreamChunk>;
+  abstract stream(messages: Message[], options?: StreamOptions): AsyncIterable<StreamChunk>;
 }

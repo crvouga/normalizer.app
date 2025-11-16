@@ -2,32 +2,21 @@ import OpenAI from 'openai';
 import type { z } from 'zod';
 import type { Logger } from '../logger';
 import { zodToJsonSchema } from '../zod-to-json-schema';
-import type {
+import {
   LLM,
-  Message,
-  StreamChunk,
-  StreamChunkWithSchema,
-  StreamOptions,
-  ToolCall,
-  ToolDefinition,
-  Usage,
+  type Message,
+  type StreamChunk,
+  type StreamChunkWithSchema,
+  type StreamOptions,
+  type ToolCall,
+  type ToolDefinition,
+  type Usage,
 } from './llm';
 
 /**
- * Supported OpenAI models
+ * Supported OpenAI models - extracted from OpenAI client library types
  */
-export type OpenAIModel =
-  | 'gpt-4'
-  | 'gpt-4-turbo'
-  | 'gpt-4-turbo-preview'
-  | 'gpt-4-0125-preview'
-  | 'gpt-4-1106-preview'
-  | 'gpt-4o'
-  | 'gpt-4o-mini'
-  | 'gpt-3.5-turbo'
-  | 'gpt-3.5-turbo-16k'
-  | 'gpt-3.5-turbo-0125'
-  | 'gpt-3.5-turbo-1106';
+export type OpenAIModel = OpenAI.ChatModel;
 
 /**
  * Configuration for OpenAI LLM client
@@ -73,12 +62,13 @@ interface StreamState {
 /**
  * OpenAI implementation of the LLM interface
  */
-export class LLMOpenAI implements LLM {
+export class LLMOpenAI extends LLM {
   private client: OpenAI;
   private model: OpenAIModel;
   private logger: Logger;
 
   constructor(config: OpenAIConfig) {
+    super();
     this.client = new OpenAI({
       apiKey: config.apiKey,
       ...(config.baseUrl && { baseURL: config.baseUrl }),
@@ -142,25 +132,31 @@ export class LLMOpenAI implements LLM {
       model: this.model,
       messages,
       stream: true,
-      ...(options?.temperature !== undefined && { temperature: options.temperature }),
-      ...(options?.maxTokens !== undefined && { max_tokens: options.maxTokens }),
-      ...(options?.topP !== undefined && { top_p: options.topP }),
-      ...(options?.frequencyPenalty !== undefined && {
-        frequency_penalty: options.frequencyPenalty,
-      }),
-      ...(options?.presencePenalty !== undefined && {
-        presence_penalty: options.presencePenalty,
-      }),
-      ...(options?.stop && options.stop.length > 0 && { stop: options.stop }),
-      ...(options?.tools &&
-        options.tools.length > 0 && {
-          tools: options.tools.map((tool) => ({
-            type: 'function' as const,
-            function: this.convertToolToOpenAI(tool),
-          })),
-        }),
     };
-
+    if (options?.temperature !== undefined) {
+      requestParams.temperature = options.temperature;
+    }
+    if (options?.maxTokens !== undefined) {
+      requestParams.max_tokens = options.maxTokens;
+    }
+    if (options?.topP !== undefined) {
+      requestParams.top_p = options.topP;
+    }
+    if (options?.frequencyPenalty !== undefined) {
+      requestParams.frequency_penalty = options.frequencyPenalty;
+    }
+    if (options?.presencePenalty !== undefined) {
+      requestParams.presence_penalty = options.presencePenalty;
+    }
+    if (options?.stop && options.stop.length > 0) {
+      requestParams.stop = options.stop;
+    }
+    if (options?.tools && options.tools.length > 0) {
+      requestParams.tools = options.tools.map((tool) => ({
+        type: 'function' as const,
+        function: this.convertToolToOpenAI(tool),
+      }));
+    }
     if (options?.schema) {
       const jsonSchema = zodToJsonSchema(options.schema);
       requestParams.response_format = {
@@ -402,4 +398,8 @@ export class LLMOpenAI implements LLM {
       parameters: zodToJsonSchema(tool.parameters),
     };
   }
+}
+
+export function createLLMOpenAI(config: OpenAIConfig): LLM {
+  return new LLMOpenAI(config) as LLM;
 }
