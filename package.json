@@ -15,6 +15,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:up": "bun run db:migrate",
+    "s3:up": "bun run src/db/s3-migrations.ts",
     "docker": "bun docker:down && bun docker:up",
     "docker:destroy": "docker-compose down -v --remove-orphans",
     "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",

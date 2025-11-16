@@ -26,7 +26,7 @@ export const NormalizationSessionScreen = (props: {
   const scrollbarWidth = useScrollbarWidth();
 
   if (!normalizationSessionProjection) return <SpinnerBlock />;
-  console.log(normalizationSessionProjection.entries.length);
+
   return (
     <PolicyCheckGuard
       permission={canViewNormalizationSession(props.normalizationSessionId)}
