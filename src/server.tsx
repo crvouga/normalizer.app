@@ -99,6 +99,8 @@ const main = async () => {
       },
 
       development: process.env.NODE_ENV !== 'production',
+      // Allow long-lived connections for SSE subscriptions (max 255 seconds = ~4.25 minutes)
+      idleTimeout: 255,
     });
 
     logger.info(`🚀 Server running at ${server.url}`);
