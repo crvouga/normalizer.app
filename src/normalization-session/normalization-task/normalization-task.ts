@@ -7,7 +7,6 @@ import type { Tx } from '../../shared/sql';
 import { createDb } from '../../shared/sql';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
-import { getNormalizationSessionOwner } from '../normalization-session-permissions';
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import { toNormalizedFileName } from './normalized-file-name';
 
@@ -27,15 +26,15 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
   try {
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
+    // Load the current projection
+    const projectionDb = new NormalizationSessionProjectionDb(db, logger);
+
     // Get the session owner
-    const startedByUserId = await getNormalizationSessionOwner(db, sessionId);
+    const startedByUserId = await projectionDb.getOwner(sessionId);
     if (!startedByUserId) {
       logger.error('Normalization session not found', { sessionId });
       throw new Error(`Normalization session not found: ${sessionId}`);
     }
-
-    // Load the current projection
-    const projectionDb = new NormalizationSessionProjectionDb(db, logger);
     const projection = await projectionDb.load(sessionId, startedByUserId);
 
     // Find the in-progress normalization entry

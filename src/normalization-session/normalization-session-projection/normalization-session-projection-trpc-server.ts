@@ -16,7 +16,6 @@ import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 import {
   canViewNormalizationSession,
-  getNormalizationSessionOwner,
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
 import { NormalizationSessionProjectionDb } from './normalization-session-projection-db';
@@ -32,7 +31,8 @@ export const normalizationSessionProjectionRouter = router({
     .query(async ({ input, ctx }) => {
       const { id: sessionId } = input;
       const permission = canViewNormalizationSession(sessionId);
-      const resourceOwnerId = await getNormalizationSessionOwner(ctx.db, sessionId);
+      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
+      const resourceOwnerId = await projectionDb.getOwner(sessionId);
 
       if (!resourceOwnerId) throw new Error('Normalization session not found');
 
@@ -64,7 +64,8 @@ export const normalizationSessionProjectionRouter = router({
     .subscription(async function* ({ input, ctx }) {
       const { id: sessionId } = input;
       const permission = canViewNormalizationSession(sessionId);
-      const resourceOwnerId = await getNormalizationSessionOwner(ctx.db, sessionId);
+      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
+      const resourceOwnerId = await projectionDb.getOwner(sessionId);
 
       if (!resourceOwnerId) throw new Error('Normalization session not found');
 

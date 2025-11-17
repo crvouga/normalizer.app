@@ -13,7 +13,6 @@ import { ArtifactDb } from '~/src/artifacts/artifact-db';
 import { ArtifactId } from '~/src/artifacts/artifact-id';
 import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
-import { getNormalizationSessionOwner } from '../normalization-session-permissions';
 import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 
 export const normalizationSessionEventRouter = router({
@@ -55,12 +54,13 @@ export const normalizationSessionEventRouter = router({
         }
       });
       // After commit, load full payload to return
-      const ownerId = await getNormalizationSessionOwner(ctx.db, input.sessionId);
+      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
+      const ownerId = await projectionDb.getOwner(input.sessionId);
       if (!ownerId) {
         throw new Error('Normalization session not found');
       }
-      const projectionDb = new NormalizationSessionProjectionDb(ctx.db, ctx.logger);
-      const events = await projectionDb.loadEvents(input.sessionId);
+      const eventsDb = new NormalizationSessionEventDb(ctx.db, ctx.logger);
+      const events = await eventsDb.getBySessionId(input.sessionId);
       const projection = await projectionDb.load(input.sessionId, ownerId);
 
       // Collect all artifact IDs from the projection

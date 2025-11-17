@@ -1,4 +1,4 @@
-import { and, desc, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
 import { AppNotification } from '~/src/shared/app-notification';
 import type { Db, Tx } from '~/src/shared/sql';
@@ -130,5 +130,24 @@ export class NormalizationSessionProjectionDb {
       hasMore,
       nextCursor,
     };
+  }
+
+  /**
+   * Fetch the owner of a normalization session
+   */
+  async getOwner(sessionId: NormalizationSessionId): Promise<UserId | null> {
+    const projection = await this.tx
+      .select()
+      .from(schema.normalizationSessionProjections)
+      .where(eq(schema.normalizationSessionProjections.normalization_session_id, sessionId))
+      .limit(1);
+
+    const firstProjection = projection[0];
+    if (!firstProjection) {
+      return null;
+    }
+
+    const parsed = NormalizationSessionProjection.schema.parse(firstProjection.projection);
+    return parsed.startedByUserId;
   }
 }
