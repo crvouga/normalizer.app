@@ -11,7 +11,12 @@ export function useAddNormalizationSessionPayloadToStore() {
         console.error('Invalid projection payload', parsed.error);
         return;
       }
-      const { events, projections, artifacts, resourceOwnership } = parsed.data;
+      const {
+        sessionEvents: events,
+        sessionProjections: projections,
+        artifacts,
+        resourceOwnership,
+      } = parsed.data;
 
       if (events.length > 0) {
         entityStore.addManyEntities('normalizationSessionEvents', events);

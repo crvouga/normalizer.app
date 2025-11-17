@@ -15,36 +15,23 @@ export class NormalizationSessionEventDb {
     private readonly logger: Logger,
   ) {}
 
-  /**
-   * Get all events for a normalization session
-   * Returns events ordered by creation time
-   */
   async getBySessionId(
     sessionId: NormalizationSessionId,
   ): Promise<NormalizationSessionEventEntity[]> {
+    // Query all events for this session
     const events = await this.tx
       .select()
       .from(schema.normalizationSessionEvents)
       .where(eq(schema.normalizationSessionEvents.normalization_session_id, sessionId))
       .orderBy(schema.normalizationSessionEvents.created_at);
 
-    this.logger.debug('Retrieved normalization session events', {
-      sessionId,
-      count: events.length,
-    });
-
-    // Validate and parse events
+    // Validate events
     const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap(
       (event: (typeof events)[number]) => {
         const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
         if (parsedEvent.success) {
           return [parsedEvent.data];
         }
-        this.logger.warn('Failed to parse normalization session event', {
-          sessionId,
-          eventId: event.id,
-          error: parsedEvent.error,
-        });
         return [];
       },
     );

@@ -1,10 +1,10 @@
-import { and, desc, lt, eq, sql } from 'drizzle-orm';
-import { AppNotification } from '~/src/shared/app-notification';
+import { and, desc, lt, sql } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
+import { AppNotification } from '~/src/shared/app-notification';
 import type { Db, Tx } from '~/src/shared/sql';
 import type { UserId } from '~/src/users/user-id';
 import * as schema from '../../db/schema';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
+import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';
 import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationSessionProjection } from './normalization-session-projection';
 
@@ -17,28 +17,6 @@ export class NormalizationSessionProjectionDb {
     private readonly logger: Logger,
   ) {}
 
-  async loadEvents(sessionId: NormalizationSessionId): Promise<NormalizationSessionEventEntity[]> {
-    // Query all events for this session
-    const events = await this.tx
-      .select()
-      .from(schema.normalizationSessionEvents)
-      .where(eq(schema.normalizationSessionEvents.normalization_session_id, sessionId))
-      .orderBy(schema.normalizationSessionEvents.created_at);
-
-    // Validate events
-    const validatedEvents: NormalizationSessionEventEntity[] = events.flatMap(
-      (event: (typeof events)[number]) => {
-        const parsedEvent = NormalizationSessionEventEntity.schema.safeParse(event);
-        if (parsedEvent.success) {
-          return [parsedEvent.data];
-        }
-        return [];
-      },
-    );
-
-    return validatedEvents;
-  }
-
   /**
    * Loads the projection for a normalization session by:
    * 1. Querying all events for the session
@@ -48,7 +26,8 @@ export class NormalizationSessionProjectionDb {
     sessionId: NormalizationSessionId,
     startedByUserId: UserId,
   ): Promise<NormalizationSessionProjection> {
-    const events = await this.loadEvents(sessionId);
+    const normalizationSessionEventDb = new NormalizationSessionEventDb(this.tx, this.logger);
+    const events = await normalizationSessionEventDb.getBySessionId(sessionId);
 
     const initialState = NormalizationSessionProjection.init({
       sessionId,

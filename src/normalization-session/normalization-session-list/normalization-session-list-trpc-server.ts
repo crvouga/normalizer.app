@@ -57,8 +57,8 @@ export const normalizationSessionListRouter = router({
       }));
 
       const payload: NormalizationSessionPayload = {
-        events: [],
-        projections: sessions,
+        sessionEvents: [],
+        sessionProjections: sessions,
         artifacts,
         resourceOwnership: resourceOwnerships,
       };

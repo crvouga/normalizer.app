@@ -3,7 +3,7 @@ import { useI18n } from './i18n/use-i18n';
 import { NormalizationSessionId } from './normalization-session/normalization-session-id';
 import { NormalizationSessionProjectionList } from './normalization-session/normalization-session-list/normalization-session-list';
 import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
-import { StartNormalizationSessionScreen } from './normalization-session/start-normalization-session/start-normalization-session-screen';
+import { StartNormalizationSessionScreen } from './normalization-session/normalization-session-start-screen/normalization-session-start-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { Sparkles } from './ui/sparkles';
 import { Button } from './ui/button';

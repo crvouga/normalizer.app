@@ -1,26 +1,25 @@
-import { z } from 'zod';
 import type { S3Client } from 'bun';
+import { z } from 'zod';
+import { Artifact } from '~/src/artifacts/artifact';
+import { ArtifactDb } from '~/src/artifacts/artifact-db';
+import { ArtifactId } from '~/src/artifacts/artifact-id';
 import type { Logger } from '~/src/lib/logger';
+import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
+import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
+import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
 import { AppNotification } from '~/src/shared/app-notification';
 import type { Db, Tx } from '~/src/shared/sql';
 import { procedure, router } from '~/src/shared/trpc-server';
 import type { UserId } from '~/src/users/user-id';
-import { Artifact } from '~/src/artifacts/artifact';
-import { ArtifactDb } from '~/src/artifacts/artifact-db';
-import { ArtifactId } from '~/src/artifacts/artifact-id';
-import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
-import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
+import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';
 import { NormalizationSessionId } from '../normalization-session-id';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 import {
   canViewNormalizationSession,
   getNormalizationSessionOwner,
   viewNormalizationSessionPolicy,
 } from '../normalization-session-permissions';
-import { NormalizationSessionProjection } from './normalization-session-projection';
 import { NormalizationSessionProjectionDb } from './normalization-session-projection-db';
-import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
-import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
-import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 
 export const normalizationSessionProjectionRouter = router({
   fetch: procedure
@@ -125,29 +124,21 @@ const load = async (input: {
   ownerId: UserId;
   s3: S3Client;
   s3Endpoint: string;
-}): Promise<{
-  projections: NormalizationSessionProjection[];
-  artifacts: Artifact[];
-  resourceOwnership: ResourceOwnershipEntity[];
-  events: NormalizationSessionEventEntity[];
-} | null> => {
+}): Promise<NormalizationSessionPayload | null> => {
   const { db, logger, sessionId, ownerId, s3, s3Endpoint } = input;
   try {
-    const projectionDb = new NormalizationSessionProjectionDb(db, logger);
-    const events = await projectionDb.loadEvents(sessionId);
+    const sessionProjectionDb = new NormalizationSessionProjectionDb(db, logger);
+    const normalizationSessionEventDb = new NormalizationSessionEventDb(db, logger);
+    const sessionEvents = await normalizationSessionEventDb.getBySessionId(sessionId);
+    const sessionProjection = await sessionProjectionDb.load(sessionId, ownerId);
 
-    const projection = await projectionDb.load(sessionId, ownerId);
-
-    // Collect all artifact IDs from the projection
     const artifactIds = new Set<string>();
 
-    // Add target artifact IDs
-    for (const artifactId of projection.targetArtifactIds) {
+    for (const artifactId of sessionProjection.targetArtifactIds) {
       artifactIds.add(artifactId);
     }
 
-    // Add artifact IDs from entries (input and output)
-    for (const entry of projection.entries) {
+    for (const entry of sessionProjection.entries) {
       for (const artifactId of entry.inputArtifactIds) {
         artifactIds.add(artifactId);
       }
@@ -156,12 +147,11 @@ const load = async (input: {
       }
     }
 
-    // Fetch artifacts
     let artifacts: Artifact[] = [];
     if (artifactIds.size > 0) {
       const artifactDb = new ArtifactDb(db, logger);
       artifacts = await artifactDb.getByIds(Array.from(artifactIds) as ArtifactId[]);
-      // Populate artifact URLs
+
       artifacts = await artifactDb.refreshUrls({
         artifacts,
         s3,
@@ -169,7 +159,6 @@ const load = async (input: {
       });
     }
 
-    // Create resource ownership entity
     const resourceOwnership: ResourceOwnershipEntity[] = [
       {
         id: ResourceOwnershipEntityId.create('normalization-session', sessionId),
@@ -180,10 +169,10 @@ const load = async (input: {
     ];
 
     return {
-      projections: [projection],
+      sessionProjections: [sessionProjection],
+      sessionEvents,
       artifacts,
       resourceOwnership,
-      events,
     };
   } catch (error) {
     logger.error('Failed to load projection', {
