@@ -5,6 +5,15 @@ import { NormalizationSessionId } from '../normalization-session-id';
 import { NormalizationRunId } from '../normalization-run-id';
 
 const schema = z.discriminatedUnion('type', [
+  // legacy events
+  z.object({
+    type: z.literal('start-session'),
+    sessionId: NormalizationSessionId.schema,
+    targetArtifactIds: z.array(ArtifactId.schema),
+    startedAt: z.coerce.date(),
+    startedByUserId: UserId.schema,
+  }),
+  //
   z.object({
     type: z.literal('user-started-session'),
     sessionId: NormalizationSessionId.schema,
