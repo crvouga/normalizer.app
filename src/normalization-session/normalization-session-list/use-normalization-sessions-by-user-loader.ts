@@ -2,10 +2,8 @@ import { useCallback } from 'react';
 import { useInfiniteScrollLoader } from '../../lib/use-infinite-scroll-loader';
 import { trpcClient } from '../../shared/trpc-client';
 import type { UserId } from '../../users/user-id';
-import {
-  NormalizationSessionPayload,
-  useAddNormalizationSessionPayloadToStore,
-} from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
+import { useAddNormalizationSessionPayloadToStore } from '../normalization-session-payload/normalization-session-payload-store';
 
 /**
  * Hook for loading normalization session projections by user ID with infinite scroll support.

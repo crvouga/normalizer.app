@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RemoteResult } from '~/src/lib/result';
 import { Failure, Loading, NotAsked, Success } from '~/src/lib/result';
-import type { NormalizationSessionId } from '../normalization-session-id';
 import { trpcClient } from '~/src/shared/trpc-client';
-import {
-  NormalizationSessionPayload,
-  useAddNormalizationSessionPayloadToStore,
-} from '../normalization-session-payload';
+import type { NormalizationSessionId } from '../normalization-session-id';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
+import { useAddNormalizationSessionPayloadToStore } from '../normalization-session-payload/normalization-session-payload-store';
 
 export function useNormalizationSessionPolling(
   id: NormalizationSessionId,

@@ -8,10 +8,8 @@ import { IconSparkles } from '~/src/ui/icons';
 import { useCurrentUser } from '~/src/users/use-current-user';
 import { NormalizationRunId } from '../normalization-run-id';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import {
-  NormalizationSessionPayload,
-  useAddNormalizationSessionPayloadToStore,
-} from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
+import { useAddNormalizationSessionPayloadToStore } from '../normalization-session-payload/normalization-session-payload-store';
 
 export const StartNormalizationButton = (props: {
   normalizationSessionId: NormalizationSessionId;

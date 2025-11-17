@@ -14,7 +14,7 @@ import { ArtifactId } from '~/src/artifacts/artifact-id';
 import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
 import { getNormalizationSessionOwner } from '../normalization-session-permissions';
-import { NormalizationSessionPayload } from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 
 export const normalizationSessionEventRouter = router({
   /**

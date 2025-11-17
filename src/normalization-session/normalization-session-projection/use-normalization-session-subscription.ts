@@ -3,10 +3,8 @@ import type { RemoteResult } from '../../lib/result';
 import { Failure, Loading, NotAsked, Success } from '../../lib/result';
 import { trpcClient } from '../../shared/trpc-client';
 import type { NormalizationSessionId } from '../normalization-session-id';
-import {
-  NormalizationSessionPayload,
-  useAddNormalizationSessionPayloadToStore,
-} from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
+import { useAddNormalizationSessionPayloadToStore } from '../normalization-session-payload/normalization-session-payload-store';
 
 /**
  * Hook for subscribing to normalization session projection updates from the server via SSE.

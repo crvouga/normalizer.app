@@ -5,7 +5,7 @@ import { ResourceOwnershipEntity } from '../../permissions/resource-ownership-en
 import { ResourceOwnershipEntityId } from '../../permissions/resource-ownership-entity-id';
 import { procedure, router } from '../../shared/trpc-server';
 import { UserId } from '../../users/user-id';
-import { NormalizationSessionPayload } from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 
 const InputSchema = z.object({

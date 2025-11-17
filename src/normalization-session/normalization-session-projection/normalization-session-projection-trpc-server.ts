@@ -20,7 +20,7 @@ import { NormalizationSessionProjection } from './normalization-session-projecti
 import { NormalizationSessionProjectionDb } from './normalization-session-projection-db';
 import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
-import { NormalizationSessionPayload } from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
 
 export const normalizationSessionProjectionRouter = router({
   fetch: procedure

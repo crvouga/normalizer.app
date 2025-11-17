@@ -1,19 +1,17 @@
 import { useState } from 'react';
+import { useMutation } from '~/src/lib/use-mutation';
+import { trpcClient } from '~/src/shared/trpc-client';
+import { Button } from '~/src/ui/button';
+import { useCurrentUser } from '~/src/users/use-current-user';
 import type { ArtifactId } from '../../artifacts/artifact-id';
 import { ArtifactsField } from '../../artifacts/artifacts-input/artifacts-field';
 import { useI18n } from '../../i18n/use-i18n';
 import { useCurrentScreen } from '../../screen/use-current-screen';
 import { Form } from '../../ui/form';
 import { showErrorToast, showSuccessToast } from '../../ui/toast';
-import { Button } from '~/src/ui/button';
-import { trpcClient } from '~/src/shared/trpc-client';
 import { NormalizationSessionId } from '../normalization-session-id';
-import { useMutation } from '~/src/lib/use-mutation';
-import { useCurrentUser } from '~/src/users/use-current-user';
-import {
-  NormalizationSessionPayload,
-  useAddNormalizationSessionPayloadToStore,
-} from '../normalization-session-payload';
+import { NormalizationSessionPayload } from '../normalization-session-payload/normalization-session-payload';
+import { useAddNormalizationSessionPayloadToStore } from '../normalization-session-payload/normalization-session-payload-store';
 
 export const StartNormalizationSessionScreen = () => {
   const { t } = useI18n();
