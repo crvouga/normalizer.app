@@ -4,6 +4,10 @@ import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
 import { createLLMOpenAI } from './llm-open-ai';
 
+function isOpenAIEnabled(): boolean {
+  return process.env.OPENAI_API_KEY !== undefined;
+}
+
 function createTestLLMOpenAI(): LLM {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -16,7 +20,7 @@ function createTestLLMOpenAI(): LLM {
   return llm;
 }
 
-describe('@llm.ts (OpenAI Implementation)', () => {
+describe.skipIf(!isOpenAIEnabled())('@llm.ts (OpenAI Implementation)', () => {
   let llm: LLM;
 
   beforeEach(() => {
