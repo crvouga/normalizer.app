@@ -23,6 +23,7 @@
     "officedocument",
     "openxmlformats",
     "orpc",
+    "parquetjs",
     "pgsql",
     "PKCE",
     "pkey",

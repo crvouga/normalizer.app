@@ -53,6 +53,7 @@
     "react": "^19",
     "react-dom": "^19",
     "tailwindcss": "^4.0.6",
+    "parquetjs": "^0.11.2",
     "xlsx": "^0.18.5",
     "zod": "^3.24.2"
   },
