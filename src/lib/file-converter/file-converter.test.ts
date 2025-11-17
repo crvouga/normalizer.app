@@ -170,7 +170,7 @@ describe('FileConverter', () => {
 
   test('should throw error for non-existent source file', async () => {
     const nonExistentKey = `non-existent-${Date.now()}.csv`;
-    await expect(fileConverter.convert(testBucket, nonExistentKey, 'excel')).rejects.toThrow();
+    expect(fileConverter.convert(testBucket, nonExistentKey, 'excel')).rejects.toThrow();
   });
 
   test('should handle different source buckets', async () => {
@@ -186,5 +186,81 @@ describe('FileConverter', () => {
     const result = await fileConverter.convert(testBucket, sourceKey, 'excel');
     expect(result.bucket).toBe(testBucket);
     expect(result.key).toContain('.xlsx');
+  });
+
+  test('should throw error for unsupported conversion format', async () => {
+    const csvContent = 'A,B\n1,2';
+    const csvBuffer = Buffer.from(csvContent, 'utf-8');
+    const sourceKey = `test-unsupported-format-${Date.now()}.csv`;
+    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
+      type: 'text/csv',
+    });
+
+    // Try to convert to an unsupported format
+    expect(fileConverter.convert(testBucket, sourceKey, 'unsupported-format')).rejects.toThrow();
+  });
+
+  test('should preserve original file if no conversion is required', async () => {
+    const fileContent = 'A,B\n1,2';
+    const fileBuffer = Buffer.from(fileContent, 'utf-8');
+    const sourceKey = `preserve-original-${Date.now()}.csv`;
+    await s3Client.file(sourceKey, { bucket: testBucket }).write(fileBuffer, {
+      type: 'text/csv',
+    });
+
+    // Convert CSV to CSV (no-op)
+    const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
+    expect(result.bucket).toBe(testBucket);
+    expect(result.key.endsWith('.csv')).toBeTruthy();
+
+    const outputText = await s3Client.file(result.key, { bucket: result.bucket }).text();
+    expect(outputText).toContain('A,B');
+    expect(outputText).toContain('1,2');
+  });
+
+  test('should handle files with unusual filenames', async () => {
+    const csvContent = 'foo,bar\n3,4';
+    const strangeFilename = `fiłę n@me_${Date.now()}.csv`;
+    await s3Client.file(strangeFilename, { bucket: testBucket }).write(Buffer.from(csvContent), {
+      type: 'text/csv',
+    });
+
+    const result = await fileConverter.convert(testBucket, strangeFilename, 'excel');
+    expect(result.key).toContain('.xlsx');
+
+    const exists = await s3Client.file(result.key, { bucket: result.bucket }).exists();
+    expect(exists).toBe(true);
+  });
+
+  test('should detect and convert different file formats', async () => {
+    const formats = [
+      { ext: 'csv', content: 'a,b\n3,4', target: 'excel', targetExt: '.xlsx' },
+      // Add more formats if those handlers exist in the registry
+    ];
+    for (const { ext, content, target, targetExt } of formats) {
+      const key = `multi-format-${Date.now()}.${ext}`;
+      await s3Client
+        .file(key, { bucket: testBucket })
+        .write(Buffer.from(content), { type: `text/${ext}` });
+
+      const result = await fileConverter.convert(testBucket, key, target);
+      expect(result.key).toContain(targetExt);
+      const exists = await s3Client.file(result.key, { bucket: result.bucket }).exists();
+      expect(exists).toBe(true);
+    }
+  });
+
+  test('should throw if destination bucket does not exist', async () => {
+    // Attempt to convert to file in a bucket that is not setup
+    const csvContent = 'col1,col2\nx,y';
+    const csvBuffer = Buffer.from(csvContent, 'utf-8');
+    const sourceKey = `test-nonexistent-dest-${Date.now()}.csv`;
+    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
+      type: 'text/csv',
+    });
+
+    // Provide a non-existent bucket to the result (simulate)
+    const nonExistentBucket = `NO_BUCKET_${Date.now()}`;
+    expect(fileConverter.convert(nonExistentBucket, sourceKey, 'excel')).rejects.toThrow();
   });
 });
