@@ -1,16 +1,19 @@
 import type { S3Client } from 'bun';
 import type { ObjectStore } from './object-store';
+import type { MinioClient } from '../minio/minio-client';
 import { Ok, Err, type Result } from '../result';
 
 /**
- * S3 implementation of ObjectStore using Bun's S3Client.
+ * S3 implementation of ObjectStore using Bun's S3Client and MinioClient.
  * Provides object storage operations over S3-compatible storage.
  */
 export class S3ObjectStore implements ObjectStore {
   private s3Client: S3Client;
+  private minioClient: MinioClient;
 
-  constructor(s3Client: S3Client) {
+  constructor(s3Client: S3Client, minioClient: MinioClient) {
     this.s3Client = s3Client;
+    this.minioClient = minioClient;
   }
 
   async read(params: { bucket: string; key: string }): Promise<Result<Buffer, string>> {
@@ -100,6 +103,47 @@ export class S3ObjectStore implements ObjectStore {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return Err(`Failed to delete object: ${errorMessage}`);
       }
+    }
+  }
+
+  async bucketExists(bucket: string): Promise<Result<boolean, string>> {
+    try {
+      const exists = await this.minioClient.checkBucketExists(bucket);
+      return Ok(exists);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to check if bucket exists: ${errorMessage}`);
+    }
+  }
+
+  async createBucket(bucket: string): Promise<Result<void, string>> {
+    try {
+      // Check if bucket already exists - if it does, succeed (idempotent)
+      const exists = await this.minioClient.checkBucketExists(bucket);
+      if (exists) {
+        return Ok(undefined);
+      }
+
+      // Create the bucket
+      await this.minioClient.createBucket(bucket);
+      return Ok(undefined);
+    } catch (error) {
+      // If error is "Bucket already exists", that's okay (idempotent)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('already exists')) {
+        return Ok(undefined);
+      }
+      return Err(`Failed to create bucket: ${errorMessage}`);
+    }
+  }
+
+  async ensureBucketExists(bucket: string): Promise<Result<void, string>> {
+    try {
+      await this.minioClient.ensureBucketExists(bucket);
+      return Ok(undefined);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to ensure bucket exists: ${errorMessage}`);
     }
   }
 }

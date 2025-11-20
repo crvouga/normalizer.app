@@ -39,4 +39,27 @@ export interface ObjectStore {
    * @returns Result indicating success or failure
    */
   delete(params: { bucket: string; key: string }): Promise<Result<void, string>>;
+
+  /**
+   * Check if a bucket exists.
+   * @param bucket Bucket name to check
+   * @returns Result containing true if bucket exists, false otherwise, or an error message
+   */
+  bucketExists(bucket: string): Promise<Result<boolean, string>>;
+
+  /**
+   * Create a bucket.
+   * Succeeds even if the bucket already exists (idempotent).
+   * @param bucket Bucket name to create
+   * @returns Result indicating success or failure
+   */
+  createBucket(bucket: string): Promise<Result<void, string>>;
+
+  /**
+   * Ensure a bucket exists, creating it if necessary.
+   * This is a convenience method that combines bucketExists and createBucket.
+   * @param bucket Bucket name to ensure exists
+   * @returns Result indicating success or failure
+   */
+  ensureBucketExists(bucket: string): Promise<Result<void, string>>;
 }

@@ -25,7 +25,7 @@ describe('ObjectStore (S3 implementation)', () => {
 
   beforeEach(async () => {
     const { s3Client } = await createS3({ logger });
-    store = new S3ObjectStore(s3Client);
+    store = new S3ObjectStore(s3Client, minioClient);
     // Clean up any leftover test data before each test
     // Delete common test keys that might exist from previous test runs
     const testKeys = [
