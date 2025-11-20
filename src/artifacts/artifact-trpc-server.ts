@@ -38,7 +38,7 @@ export const artifactRouter = router({
 
       const artifactsWithUrls = await artifactDb.refreshUrls({
         artifacts: [artifact],
-        s3: ctx.s3,
+        objectStore: ctx.objectStore,
         s3Endpoint: ctx.s3Endpoint,
       });
 
@@ -61,7 +61,7 @@ export const artifactRouter = router({
       const artifactsWithUrls = await artifactDb.refreshUrls({
         s3Endpoint: ctx.s3Endpoint,
         artifacts,
-        s3: ctx.s3,
+        objectStore: ctx.objectStore,
       });
 
       return artifactsWithUrls;

@@ -1,8 +1,7 @@
 import { initTRPC } from '@trpc/server';
-import type { S3Client } from 'bun';
 import type { Logger } from '../lib/logger';
 import type { Db, Tx } from './sql';
-import type { MinioClient } from '../lib/minio/minio-client';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import { getSessionId } from './session-id-cookie';
 import { SessionId } from './session-id';
 import type { UserId } from '../users/user-id';
@@ -19,9 +18,8 @@ import type { Policy, PolicyContext } from '../permissions/policy';
 // Create context type
 export type Context = {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
-  minioClient: MinioClient;
   logger: Logger;
   sessionId: SessionId;
   userId: UserId;
@@ -42,18 +40,16 @@ export type Context = {
 // Helper to return context
 function buildContext({
   db,
-  s3,
+  objectStore,
   s3Endpoint,
-  minioClient,
   logger,
   sessionId,
   userId,
   userSessionId,
 }: {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
-  minioClient: MinioClient;
   logger: Logger;
   sessionId: SessionId;
   userId: UserId;
@@ -116,9 +112,8 @@ function buildContext({
 
   return {
     db,
-    s3,
+    objectStore,
     s3Endpoint,
-    minioClient,
     logger,
     sessionId,
     userId,
@@ -131,13 +126,12 @@ function buildContext({
 // Create context function: find first NON-ENDED authenticated session, else fall back to anonymous session
 export const createContext = async (config: {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
-  minioClient: MinioClient;
   logger: Logger;
   req: Request;
 }): Promise<Context> => {
-  const { db, s3, s3Endpoint, minioClient, logger, req } = config;
+  const { db, objectStore, s3Endpoint, logger, req } = config;
   const sessionId = getSessionId(req) ?? SessionId.generate();
 
   // Try to find existing session (authenticated or anonymous)
@@ -146,9 +140,8 @@ export const createContext = async (config: {
   if (currentSession) {
     return buildContext({
       db,
-      s3,
+      objectStore,
       s3Endpoint,
-      minioClient,
       logger,
       sessionId,
       userId: currentSession.user_id as UserId,
@@ -181,9 +174,8 @@ export const createContext = async (config: {
 
   return buildContext({
     db,
-    s3,
+    objectStore,
     s3Endpoint,
-    minioClient,
     logger,
     sessionId,
     userId: newUserId,

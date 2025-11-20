@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
-import type { S3Client } from 'bun';
 import { createLogger } from '../logger';
 import { createS3 } from '../../shared/s3';
 import { createMinioClient } from '../minio/minio-client';
 import { getS3Config } from '../../shared/s3-config';
 import { FileConverter } from './file-converter';
+import type { ObjectStore } from '../object-store/object-store';
+import { isOk } from '../result';
 import * as XLSX from 'xlsx';
 
 describe('FileConverter', () => {
@@ -18,15 +19,14 @@ describe('FileConverter', () => {
   });
   const testBucket = 'test-file-converter';
 
-  let s3Client: S3Client;
+  let objectStore: ObjectStore;
   let fileConverter: FileConverter;
 
   beforeAll(async () => {
     await minioClient.ensureBucketExists(testBucket);
-    const s3 = await createS3({ logger });
-    s3Client = s3.s3Client;
+    objectStore = await createS3({ logger });
     fileConverter = new FileConverter({
-      s3Client: s3.s3Client,
+      objectStore,
       logger,
       cacheBucket: testBucket,
     });
@@ -44,9 +44,15 @@ describe('FileConverter', () => {
     const targetFormat = 'csv' as const;
 
     // Upload file first
-    await s3Client.file(sourceKey, { bucket: sourceBucket }).write(excelBuffer, {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    const writeResult = await objectStore.write({
+      bucket: sourceBucket,
+      key: sourceKey,
+      data: excelBuffer,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
 
     // First conversion - should create cache
     const result1 = await fileConverter.convert(sourceBucket, sourceKey, targetFormat);
@@ -72,9 +78,15 @@ describe('FileConverter', () => {
 
     // Upload Excel file to S3
     const sourceKey = `test-excel-${Date.now()}.xlsx`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(excelBuffer, {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    const writeResult1 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: excelBuffer,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
+    if (!isOk(writeResult1)) {
+      throw new Error(`Failed to write: ${writeResult1.error}`);
+    }
 
     // Convert to CSV
     const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
@@ -82,9 +94,13 @@ describe('FileConverter', () => {
     expect(result.key).toContain('.csv');
 
     // Verify CSV content
-    const csvFile = s3Client.file(result.key, { bucket: result.bucket });
-    expect(await csvFile.exists()).toBe(true);
-    const csvContent = await csvFile.text();
+    const existsResult = await objectStore.exists({ bucket: result.bucket, key: result.key });
+    expect(isOk(existsResult) && existsResult.value).toBe(true);
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const csvContent = readResult.value.toString();
     expect(csvContent).toContain('Name');
     expect(csvContent).toContain('John');
     expect(csvContent).toContain('Jane');
@@ -97,9 +113,15 @@ describe('FileConverter', () => {
 
     // Upload CSV file to S3
     const sourceKey = `test-csv-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult2 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (!isOk(writeResult2)) {
+      throw new Error(`Failed to write: ${writeResult2.error}`);
+    }
 
     // Convert to Excel
     const result = await fileConverter.convert(testBucket, sourceKey, 'excel');
@@ -107,11 +129,15 @@ describe('FileConverter', () => {
     expect(result.key).toContain('.xlsx');
 
     // Verify Excel file exists
-    const excelFile = s3Client.file(result.key, { bucket: result.bucket });
-    expect(await excelFile.exists()).toBe(true);
+    const existsResult2 = await objectStore.exists({ bucket: result.bucket, key: result.key });
+    expect(isOk(existsResult2) && existsResult2.value).toBe(true);
 
     // Read and verify Excel content
-    const excelBuffer = Buffer.from(await excelFile.arrayBuffer());
+    const readResult2 = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult2)) {
+      throw new Error(`Failed to read: ${readResult2.error}`);
+    }
+    const excelBuffer = readResult2.value;
     const workbook = XLSX.read(excelBuffer, { type: 'buffer' });
     const firstSheetName = workbook.SheetNames[0];
     if (!firstSheetName) {
@@ -132,9 +158,15 @@ describe('FileConverter', () => {
     const csvContent = 'Name,Age\nJohn,30';
     const csvBuffer = Buffer.from(csvContent, 'utf-8');
     const sourceKey = `test-cache-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult3 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (!isOk(writeResult3)) {
+      throw new Error(`Failed to write: ${writeResult3.error}`);
+    }
 
     // First conversion
     const result1 = await fileConverter.convert(testBucket, sourceKey, 'excel');
@@ -153,17 +185,26 @@ describe('FileConverter', () => {
     const csvContent = 'Name,Age\nJohn,30';
     const csvBuffer = Buffer.from(csvContent, 'utf-8');
     const sourceKey = `test-same-format-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult4 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (writeResult4.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult4.error}`);
+    }
 
     // Convert CSV to CSV (should still work, just returns cached version)
     const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
     expect(result.key).toContain('.csv');
 
     // Verify content is preserved
-    const cachedFile = s3Client.file(result.key, { bucket: result.bucket });
-    const cachedContent = await cachedFile.text();
+    const readResult3 = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult3)) {
+      throw new Error(`Failed to read: ${readResult3.error}`);
+    }
+    const cachedContent = readResult3.value.toString();
     expect(cachedContent).toContain('Name');
     expect(cachedContent).toContain('John');
   });
@@ -178,9 +219,15 @@ describe('FileConverter', () => {
     const csvContent = 'Name,Age\nJohn,30';
     const csvBuffer = Buffer.from(csvContent, 'utf-8');
     const sourceKey = `test-bucket-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult5 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (writeResult5.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult5.error}`);
+    }
 
     // Convert - should work with same bucket
     const result = await fileConverter.convert(testBucket, sourceKey, 'excel');
@@ -192,9 +239,15 @@ describe('FileConverter', () => {
     const csvContent = 'A,B\n1,2';
     const csvBuffer = Buffer.from(csvContent, 'utf-8');
     const sourceKey = `test-unsupported-format-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult6 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (writeResult6.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult6.error}`);
+    }
 
     // Try to convert to an unsupported format
     expect(fileConverter.convert(testBucket, sourceKey, 'unsupported-format')).rejects.toThrow();
@@ -204,16 +257,26 @@ describe('FileConverter', () => {
     const fileContent = 'A,B\n1,2';
     const fileBuffer = Buffer.from(fileContent, 'utf-8');
     const sourceKey = `preserve-original-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(fileBuffer, {
-      type: 'text/csv',
+    const writeResult7 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: fileBuffer,
+      contentType: 'text/csv',
     });
+    if (writeResult7.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult7.error}`);
+    }
 
     // Convert CSV to CSV (no-op)
     const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
     expect(result.bucket).toBe(testBucket);
     expect(result.key.endsWith('.csv')).toBeTruthy();
 
-    const outputText = await s3Client.file(result.key, { bucket: result.bucket }).text();
+    const readResult4 = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (readResult4.tag !== 'ok') {
+      throw new Error(`Failed to read: ${readResult4.error}`);
+    }
+    const outputText = readResult4.value.toString();
     expect(outputText).toContain('A,B');
     expect(outputText).toContain('1,2');
   });
@@ -221,14 +284,21 @@ describe('FileConverter', () => {
   test('should handle files with unusual filenames', async () => {
     const csvContent = 'foo,bar\n3,4';
     const strangeFilename = `fiłę n@me_${Date.now()}.csv`;
-    await s3Client.file(strangeFilename, { bucket: testBucket }).write(Buffer.from(csvContent), {
-      type: 'text/csv',
+    const writeResult8 = await objectStore.write({
+      bucket: testBucket,
+      key: strangeFilename,
+      data: Buffer.from(csvContent),
+      contentType: 'text/csv',
     });
+    if (writeResult8.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult8.error}`);
+    }
 
     const result = await fileConverter.convert(testBucket, strangeFilename, 'excel');
     expect(result.key).toContain('.xlsx');
 
-    const exists = await s3Client.file(result.key, { bucket: result.bucket }).exists();
+    const existsResult3 = await objectStore.exists({ bucket: result.bucket, key: result.key });
+    const exists = isOk(existsResult3) && existsResult3.value;
     expect(exists).toBe(true);
   });
 
@@ -239,13 +309,20 @@ describe('FileConverter', () => {
     ];
     for (const { ext, content, target, targetExt } of formats) {
       const key = `multi-format-${Date.now()}.${ext}`;
-      await s3Client
-        .file(key, { bucket: testBucket })
-        .write(Buffer.from(content), { type: `text/${ext}` });
+      const writeResult9 = await objectStore.write({
+        bucket: testBucket,
+        key,
+        data: Buffer.from(content),
+        contentType: `text/${ext}`,
+      });
+      if (writeResult9.tag !== 'ok') {
+        throw new Error(`Failed to write: ${writeResult9.error}`);
+      }
 
       const result = await fileConverter.convert(testBucket, key, target);
       expect(result.key).toContain(targetExt);
-      const exists = await s3Client.file(result.key, { bucket: result.bucket }).exists();
+      const existsResult4 = await objectStore.exists({ bucket: result.bucket, key: result.key });
+      const exists = isOk(existsResult4) && existsResult4.value;
       expect(exists).toBe(true);
     }
   });
@@ -255,9 +332,15 @@ describe('FileConverter', () => {
     const csvContent = 'col1,col2\nx,y';
     const csvBuffer = Buffer.from(csvContent, 'utf-8');
     const sourceKey = `test-nonexistent-dest-${Date.now()}.csv`;
-    await s3Client.file(sourceKey, { bucket: testBucket }).write(csvBuffer, {
-      type: 'text/csv',
+    const writeResult10 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
     });
+    if (writeResult10.tag !== 'ok') {
+      throw new Error(`Failed to write: ${writeResult10.error}`);
+    }
 
     // Provide a non-existent bucket to the result (simulate)
     const nonExistentBucket = `NO_BUCKET_${Date.now()}`;

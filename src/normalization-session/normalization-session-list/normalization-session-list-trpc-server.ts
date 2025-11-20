@@ -44,7 +44,7 @@ export const normalizationSessionListRouter = router({
         artifacts = await artifactDb.getByIds(artifactIds);
         artifacts = await artifactDb.refreshUrls({
           artifacts,
-          s3: ctx.s3,
+          objectStore: ctx.objectStore,
           s3Endpoint: ctx.s3Endpoint,
         });
       }

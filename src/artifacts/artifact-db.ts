@@ -1,6 +1,6 @@
-import type { S3Client } from 'bun';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Logger } from '../lib/logger';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import type { Db, Tx } from '../shared/sql';
 import { UserId } from '../users/user-id';
 import * as schema from '../db/schema';
@@ -263,10 +263,10 @@ export class ArtifactDb {
    */
   async refreshUrls(params: {
     artifacts: Artifact[];
-    s3: S3Client;
+    objectStore: ObjectStore;
     s3Endpoint: string;
   }): Promise<Artifact[]> {
-    const { artifacts, s3, s3Endpoint } = params;
+    const { artifacts, objectStore, s3Endpoint } = params;
 
     if (artifacts.length === 0) {
       return artifacts;
@@ -275,7 +275,7 @@ export class ArtifactDb {
     // Populate URLs and get update metadata
     const { artifacts: artifactsWithUrls, updated } = await populateArtifactUrls({
       artifacts: artifacts,
-      s3,
+      objectStore,
       s3Endpoint,
     });
 

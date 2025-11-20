@@ -1,9 +1,9 @@
-import type { S3Client } from 'bun';
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { createLogger } from '../lib/logger';
-import { createMinioClient, type MinioClient } from '../lib/minio/minio-client';
+import { createMinioClient } from '../lib/minio/minio-client';
 import { createS3 } from '../shared/s3';
 import { getS3Config } from '../shared/s3-config';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import { Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
@@ -12,8 +12,8 @@ describe('Artifact.populateUrls', () => {
   const logger = createLogger();
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const testBucket = 'test';
-  let s3Client: S3Client;
-  let minioClient: MinioClient;
+  let objectStore: ObjectStore;
+  let minioClient: ReturnType<typeof createMinioClient>;
 
   beforeAll(async () => {
     minioClient = createMinioClient({
@@ -24,8 +24,7 @@ describe('Artifact.populateUrls', () => {
     });
     await minioClient.ensureBucketExists(testBucket);
 
-    const res = await createS3({ logger });
-    s3Client = res.s3Client;
+    objectStore = await createS3({ logger });
   });
 
   test('should generate valid presigned upload and download URLs', async () => {
@@ -50,7 +49,7 @@ describe('Artifact.populateUrls', () => {
 
     const { artifacts: populated, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
+      objectStore,
       s3Endpoint,
     });
 
@@ -92,7 +91,7 @@ describe('Artifact.populateUrls', () => {
     };
     const firstPop = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
+      objectStore,
       s3Endpoint,
     });
     const populated = firstPop.artifacts[0];
@@ -105,7 +104,7 @@ describe('Artifact.populateUrls', () => {
     // The second run should preserve the URLs (not update them, so the set will be empty)
     const secondPop = await populateArtifactUrls({
       artifacts: [populated],
-      s3: s3Client,
+      objectStore,
       s3Endpoint,
     });
     const again = secondPop.artifacts[0];
@@ -144,7 +143,7 @@ describe('Artifact.populateUrls', () => {
 
     const { artifacts: result, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
+      objectStore,
       s3Endpoint,
     });
 
@@ -183,7 +182,7 @@ describe('Artifact.populateUrls', () => {
 
     const { artifacts: result } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
+      objectStore,
       s3Endpoint,
     });
     const updatedArtifact = result[0];

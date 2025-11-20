@@ -34,7 +34,7 @@ const main = async () => {
   const db = await createDb({ logger });
 
   const { s3Endpoint } = getS3Config();
-  const { s3Client, minioClient } = await createS3({ logger });
+  const objectStore = await createS3({ logger });
 
   logger.info('Starting server...');
 
@@ -48,9 +48,8 @@ const main = async () => {
       createContext: async () => {
         const context = await createContext({
           db,
-          s3: s3Client,
+          objectStore,
           s3Endpoint,
-          minioClient,
           logger,
           req,
         });
@@ -67,10 +66,10 @@ const main = async () => {
   };
 
   // Google OAuth endpoints
-  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, s3: s3Client, s3Endpoint, logger });
+  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, objectStore, s3Endpoint, logger });
 
   // User profile picture endpoints
-  const profilePictureEndpoints = createUserProfilePictureEndpoints({ s3: s3Client, logger });
+  const profilePictureEndpoints = createUserProfilePictureEndpoints({ objectStore, logger });
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 

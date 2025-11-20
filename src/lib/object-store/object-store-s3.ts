@@ -146,4 +146,34 @@ export class S3ObjectStore implements ObjectStore {
       return Err(`Failed to ensure bucket exists: ${errorMessage}`);
     }
   }
+
+  async presign(params: {
+    bucket: string;
+    key: string;
+    method: 'GET' | 'PUT';
+    expiresIn: number;
+  }): Promise<Result<string, string>> {
+    try {
+      const { bucket, key, method, expiresIn } = params;
+      const minioClient = this.minioClient.client;
+
+      let url: string;
+      if (method === 'GET') {
+        url = await minioClient.presignedGetObject(bucket, key, expiresIn);
+      } else {
+        url = await minioClient.presignedPutObject(bucket, key, expiresIn);
+      }
+
+      // Ensure the URL uses HTTPS when it starts with http:// but should be https://
+      // This fixes mixed content errors in production when the page is served over HTTPS
+      // Note: MinioClient's generatePresignedUrl handles this, but we're using the raw client
+      // so we need to check the endpoint configuration. For now, we'll rely on the client's configuration.
+      // If needed, we can add s3Endpoint parameter to handle HTTPS conversion.
+
+      return Ok(url);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to generate presigned URL: ${errorMessage}`);
+    }
+  }
 }

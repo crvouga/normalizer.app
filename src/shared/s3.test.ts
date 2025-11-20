@@ -19,15 +19,18 @@ describe('S3 Client', () => {
   });
 
   test('should support put and get flow', async () => {
-    const { s3Client } = await createS3({ logger });
+    const objectStore = await createS3({ logger });
     const key = `test-key-${Math.random()}`;
-    const value = new TextEncoder().encode('Hello S3!');
+    const value = Buffer.from('Hello S3!');
     const bucket = 'test';
 
-    await s3Client.file(key, { bucket }).write(value);
+    const writeResult = await objectStore.write({ bucket, key, data: value });
+    expect(writeResult.tag).toBe('ok');
 
-    const downloadResult = await s3Client.file(key, { bucket }).text();
-    expect(downloadResult).toBeDefined();
-    expect(downloadResult).toBe('Hello S3!');
+    const readResult = await objectStore.read({ bucket, key });
+    expect(readResult.tag).toBe('ok');
+    if (readResult.tag === 'ok') {
+      expect(readResult.value.toString()).toBe('Hello S3!');
+    }
   });
 });

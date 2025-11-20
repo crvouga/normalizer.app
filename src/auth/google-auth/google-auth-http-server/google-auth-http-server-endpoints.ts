@@ -1,4 +1,4 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
 import type { Db } from '../../../shared/sql';
 import {
@@ -12,7 +12,7 @@ import {
  */
 export function createGoogleAuthEndpoints(config: {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
   logger: Logger;
 }) {

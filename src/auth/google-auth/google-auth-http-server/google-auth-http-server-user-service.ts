@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
 import type { Db } from '../../../shared/sql';
 import type { GoogleUserInfo } from '../google-oauth-service';
@@ -11,20 +11,20 @@ import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture'
 
 export type GoogleAuthUserServiceDeps = {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
   logger: Logger;
 };
 
 export class GoogleAuthUserService {
   private db: Db;
-  private s3: S3Client;
+  private objectStore: ObjectStore;
   private s3Endpoint: string;
   private logger: Logger;
 
-  constructor({ db, s3, s3Endpoint, logger }: GoogleAuthUserServiceDeps) {
+  constructor({ db, objectStore, s3Endpoint, logger }: GoogleAuthUserServiceDeps) {
     this.db = db;
-    this.s3 = s3;
+    this.objectStore = objectStore;
     this.s3Endpoint = s3Endpoint;
     this.logger = logger;
   }
@@ -90,7 +90,7 @@ export class GoogleAuthUserService {
     const { existingUser, googleUser, sessionId } = params;
     // Store profile picture in S3
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: existingUser.id as UserId,
       externalUrl: googleUser.picture,
       s3Endpoint: this.s3Endpoint,
@@ -143,7 +143,7 @@ export class GoogleAuthUserService {
 
     // Store profile picture in S3
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: userId,
       externalUrl: googleUser.picture,
       s3Endpoint: this.s3Endpoint,
@@ -193,7 +193,7 @@ export class GoogleAuthUserService {
     const { user, googleUser, sessionId } = params;
     // Update profile picture from Google (in case it changed)
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: user.id as UserId,
       externalUrl: googleUser.picture,
       s3Endpoint: this.s3Endpoint,

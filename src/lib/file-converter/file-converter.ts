@@ -1,10 +1,11 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../object-store/object-store';
 import type { Logger } from '../logger';
 import { FormatRegistry } from './format-registry';
 import type { FileFormatHandler } from './file-format-handler';
 import { ExcelHandler } from './handlers/excel-handler';
 import { CsvHandler } from './handlers/csv-handler';
 import { ParquetHandler } from './handlers/parquet-handler';
+import { isOk } from '../result';
 
 export interface ConvertResult {
   bucket: string;
@@ -12,25 +13,24 @@ export interface ConvertResult {
 }
 
 export class FileConverter {
-  private s3Client: S3Client;
+  private objectStore: ObjectStore;
   private logger: Logger;
   private cacheBucket: string;
   private registry: FormatRegistry;
 
   constructor({
-    s3Client,
+    objectStore,
     logger,
     cacheBucket,
     customHandlers,
   }: {
-    s3Client: S3Client;
+    objectStore: ObjectStore;
     logger: Logger;
     cacheBucket?: string;
     customHandlers?: FileFormatHandler[];
   }) {
-    this.s3Client = s3Client;
+    this.objectStore = objectStore;
     this.logger = logger;
-    // Use the default bucket from S3Client if cacheBucket not provided
     this.cacheBucket = cacheBucket || '';
 
     // Initialize registry with default handlers
@@ -160,8 +160,16 @@ export class FileConverter {
    */
   private async checkCache(bucket: string, cacheKey: string): Promise<boolean> {
     try {
-      const file = this.s3Client.file(cacheKey, { bucket });
-      return await file.exists();
+      const result = await this.objectStore.exists({ bucket, key: cacheKey });
+      if (isOk(result)) {
+        return result.value;
+      }
+      this.logger.warn('Error checking cache', {
+        bucket,
+        cacheKey,
+        error: result.error,
+      });
+      return false;
     } catch (error) {
       this.logger.warn('Error checking cache', {
         bucket,
@@ -189,12 +197,11 @@ export class FileConverter {
    */
   private async downloadFile(bucket: string, key: string): Promise<Buffer> {
     try {
-      const file = this.s3Client.file(key, { bucket });
-      if (!(await file.exists())) {
-        throw new Error(`File not found: ${bucket}/${key}`);
+      const result = await this.objectStore.read({ bucket, key });
+      if (!isOk(result)) {
+        throw new Error(`File not found: ${bucket}/${key}: ${result.error}`);
       }
-      const arrayBuffer = await file.arrayBuffer();
-      return Buffer.from(arrayBuffer);
+      return result.value;
     } catch (error) {
       this.logger.error('Error downloading file from S3', {
         bucket,
@@ -215,9 +222,15 @@ export class FileConverter {
     contentType: string,
   ): Promise<void> {
     try {
-      await this.s3Client.file(key, { bucket }).write(buffer, {
-        type: contentType,
+      const result = await this.objectStore.write({
+        bucket,
+        key,
+        data: buffer,
+        contentType,
       });
+      if (!isOk(result)) {
+        throw new Error(`Failed to upload file: ${result.error}`);
+      }
       this.logger.debug('File uploaded to S3', {
         bucket,
         key,

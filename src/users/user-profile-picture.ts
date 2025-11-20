@@ -1,6 +1,8 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import type { Logger } from '../lib/logger';
 import type { UserId } from './user-id';
+import { isOk } from '../lib/result';
+import { getS3Config } from '../shared/s3-config';
 
 const PROFILE_PICTURES_PREFIX = 'profile-pictures';
 
@@ -48,21 +50,29 @@ async function downloadImage(
  * Upload profile picture to S3
  */
 async function uploadProfilePictureToS3(params: {
-  s3: S3Client;
+  objectStore: ObjectStore;
   userId: UserId;
   buffer: Buffer;
   contentType: string;
   logger: Logger;
 }): Promise<string> {
-  const { s3, userId, buffer, contentType, logger } = params;
+  const { objectStore, userId, buffer, contentType, logger } = params;
   // Determine file extension from content type
   const extension = contentType.includes('png') ? 'png' : 'jpg';
   const s3Key = getProfilePictureS3Key(userId, extension);
+  const { s3Bucket } = getS3Config();
 
   try {
-    await s3.write(s3Key, buffer, {
-      type: contentType,
+    const result = await objectStore.write({
+      bucket: s3Bucket,
+      key: s3Key,
+      data: buffer,
+      contentType,
     });
+
+    if (!isOk(result)) {
+      throw new Error(`Failed to upload profile picture: ${result.error}`);
+    }
 
     logger.info('Uploaded profile picture to S3', {
       user_id: userId,
@@ -86,19 +96,19 @@ async function uploadProfilePictureToS3(params: {
  * Returns the URL to serve the profile picture from our server
  */
 export async function storeProfilePictureFromUrl(params: {
-  s3: S3Client;
+  objectStore: ObjectStore;
   userId: UserId;
   externalUrl: string;
   s3Endpoint: string;
   logger: Logger;
 }): Promise<string> {
-  const { s3, userId, externalUrl, s3Endpoint, logger } = params;
+  const { objectStore, userId, externalUrl, s3Endpoint, logger } = params;
   try {
     // Download the image
     const { buffer, contentType } = await downloadImage(externalUrl, logger);
 
     // Upload to S3
-    await uploadProfilePictureToS3({ s3, userId, buffer, contentType, logger });
+    await uploadProfilePictureToS3({ objectStore, userId, buffer, contentType, logger });
 
     // Return our server URL for serving the image
     return getProfilePictureUrl(userId, s3Endpoint);
@@ -117,25 +127,27 @@ export async function storeProfilePictureFromUrl(params: {
  * Get profile picture from S3
  */
 export async function getProfilePictureFromS3(
-  s3: S3Client,
+  objectStore: ObjectStore,
   userId: UserId,
   logger: Logger,
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
   // Try both jpg and png extensions
   const extensions = ['jpg', 'png'];
+  const { s3Bucket } = getS3Config();
 
   for (const extension of extensions) {
     const s3Key = getProfilePictureS3Key(userId, extension);
 
     try {
-      const file = await s3.file(s3Key);
+      const existsResult = await objectStore.exists({ bucket: s3Bucket, key: s3Key });
+      if (isOk(existsResult) && existsResult.value) {
+        const readResult = await objectStore.read({ bucket: s3Bucket, key: s3Key });
+        if (isOk(readResult)) {
+          const buffer = readResult.value;
+          const contentType = extension === 'png' ? 'image/png' : 'image/jpeg';
 
-      if (await file.exists()) {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const contentType = extension === 'png' ? 'image/png' : 'image/jpeg';
-
-        return { buffer, contentType };
+          return { buffer, contentType };
+        }
       }
     } catch (error) {
       // Continue to next extension
@@ -154,21 +166,24 @@ export async function getProfilePictureFromS3(
  * Delete profile picture from S3
  */
 export async function deleteProfilePicture(
-  s3: S3Client,
+  objectStore: ObjectStore,
   userId: UserId,
   logger: Logger,
 ): Promise<void> {
   const extensions = ['jpg', 'png'];
+  const { s3Bucket } = getS3Config();
 
   for (const extension of extensions) {
     const s3Key = getProfilePictureS3Key(userId, extension);
 
     try {
-      await s3.unlink(s3Key);
-      logger.info('Deleted profile picture from S3', {
-        user_id: userId,
-        s3_key: s3Key,
-      });
+      const result = await objectStore.delete({ bucket: s3Bucket, key: s3Key });
+      if (isOk(result)) {
+        logger.info('Deleted profile picture from S3', {
+          user_id: userId,
+          s3_key: s3Key,
+        });
+      }
     } catch (error) {
       // Ignore errors - file might not exist
       logger.debug('Failed to delete profile picture (might not exist)', {

@@ -1,4 +1,4 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
 import type { Db } from '../../../shared/sql';
 import { isGoogleAuthEnabled } from '../google-oauth-config';
@@ -17,7 +17,7 @@ import {
 
 export type GoogleAuthConfig = {
   db: Db;
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
   logger: Logger;
 };
@@ -74,7 +74,7 @@ export async function handleGoogleAuthCallback(
   req: Request,
   config: GoogleAuthConfig,
 ): Promise<Response> {
-  const { db, s3, s3Endpoint, logger } = config;
+  const { db, objectStore, s3Endpoint, logger } = config;
 
   // Return 404 if Google Auth is not configured
   if (!isGoogleAuthEnabled()) {
@@ -140,7 +140,7 @@ export async function handleGoogleAuthCallback(
 
     // Use GoogleAuthUserService to find or create user (handles all cases)
     // This always creates a new session record and ends any anonymous sessions
-    const userService = new GoogleAuthUserService({ db, s3, s3Endpoint, logger });
+    const userService = new GoogleAuthUserService({ db, objectStore, s3Endpoint, logger });
     await userService.findOrCreateUser({ googleUser, sessionId });
 
     // Redirect to app with success and set session cookie

@@ -1,21 +1,22 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import type { Artifact } from './artifact-type';
+import { isOk } from '../lib/result';
 
 /**
  * Populates the S3 signed upload and download URLs for a list of artifacts,
  * and sets their expiration timestamps, but only if missing, expired, or if the base URL doesn't match the s3 endpoint.
  *
  * @param artifacts - Array of Artifact objects.
- * @param s3 - S3 client for presigning URLs.
+ * @param objectStore - Object store for presigning URLs.
  * @param s3Endpoint - S3 endpoint URL (required, used to determine if HTTPS should be enforced and to validate base URLs).
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
 export async function populateArtifactUrls(params: {
   artifacts: Artifact[];
-  s3: S3Client;
+  objectStore: ObjectStore;
   s3Endpoint: string;
 }): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
-  const { artifacts, s3, s3Endpoint } = params;
+  const { artifacts, objectStore, s3Endpoint } = params;
 
   const expiresIn = 60 * 60 * 24 * 7; // 7 days
   const now = Date.now();
@@ -74,6 +75,7 @@ export async function populateArtifactUrls(params: {
       let download_url_expires_at = artifact.download_url_expires_at ?? null;
 
       const key = artifact.s3_key;
+      const bucket = artifact.s3_bucket;
 
       // Check if URLs need to be regenerated due to expiration, missing, or base URL mismatch
       const shouldUpdateUpload =
@@ -86,12 +88,28 @@ export async function populateArtifactUrls(params: {
       let newDownloadUrl: string | undefined;
 
       if (shouldUpdateUpload) {
-        newUploadUrl = ensureHTTPS(s3.presign(key, { method: 'PUT', expiresIn }));
-        upload_url_expires_at = expiresAt;
+        const presignResult = await objectStore.presign({
+          bucket,
+          key,
+          method: 'PUT',
+          expiresIn,
+        });
+        if (isOk(presignResult)) {
+          newUploadUrl = ensureHTTPS(presignResult.value);
+          upload_url_expires_at = expiresAt;
+        }
       }
       if (shouldUpdateDownload) {
-        newDownloadUrl = ensureHTTPS(s3.presign(key, { method: 'GET', expiresIn }));
-        download_url_expires_at = expiresAt;
+        const presignResult = await objectStore.presign({
+          bucket,
+          key,
+          method: 'GET',
+          expiresIn,
+        });
+        if (isOk(presignResult)) {
+          newDownloadUrl = ensureHTTPS(presignResult.value);
+          download_url_expires_at = expiresAt;
+        }
       }
 
       // Track if this artifact was modified

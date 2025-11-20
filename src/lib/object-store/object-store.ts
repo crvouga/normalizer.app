@@ -62,4 +62,16 @@ export interface ObjectStore {
    * @returns Result indicating success or failure
    */
   ensureBucketExists(bucket: string): Promise<Result<void, string>>;
+
+  /**
+   * Generate a presigned URL for an object.
+   * @param params Object containing bucket, key, HTTP method (GET or PUT), and expiration time in seconds
+   * @returns Result containing the presigned URL, or an error message
+   */
+  presign(params: {
+    bucket: string;
+    key: string;
+    method: 'GET' | 'PUT';
+    expiresIn: number;
+  }): Promise<Result<string, string>>;
 }
