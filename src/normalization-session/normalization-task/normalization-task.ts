@@ -29,8 +29,6 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
   const db = await createDb({ logger });
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
     // Load initial data
     const { startedByUserId, inProgressEntry } = await loadNormalizationData({
       db,
