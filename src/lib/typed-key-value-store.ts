@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { KeyValueStore } from './key-value-store';
+import type { KeyValueStore } from './key-value-store/key-value-store';
 import type { Result } from './result';
 
 /**

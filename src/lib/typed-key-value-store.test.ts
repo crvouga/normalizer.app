@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createDb, cleanupDb } from '../shared/sql';
 import { createLogger } from './logger';
 import { isOk } from './result';
-import { PostgresKeyValueStore } from './key-value-store-postgres';
+import { PostgresKeyValueStore } from './key-value-store/key-value-store-postgres';
 import { TypedKeyValueStore } from './typed-key-value-store';
 import type { Db } from '../shared/sql';
 

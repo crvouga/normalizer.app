@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { Result } from './result';
+import type { Result } from '../result';
 
 /**
  * Key-value store interface with minimal bulk operations.
