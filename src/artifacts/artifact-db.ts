@@ -264,9 +264,8 @@ export class ArtifactDb {
   async refreshUrls(params: {
     artifacts: Artifact[];
     objectStore: ObjectStore;
-    s3Endpoint: string;
   }): Promise<Artifact[]> {
-    const { artifacts, objectStore, s3Endpoint } = params;
+    const { artifacts, objectStore } = params;
 
     if (artifacts.length === 0) {
       return artifacts;
@@ -276,7 +275,6 @@ export class ArtifactDb {
     const { artifacts: artifactsWithUrls, updated } = await populateArtifactUrls({
       artifacts: artifacts,
       objectStore,
-      s3Endpoint,
     });
 
     // Update database for artifacts with refreshed URLs

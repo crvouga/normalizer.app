@@ -5,7 +5,6 @@ import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-s
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
 import { createS3 } from './shared/s3';
-import { getS3Config } from './shared/s3-config';
 import { SessionId } from './shared/session-id';
 import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
 import { cleanupDb, createDb } from './shared/sql';
@@ -33,7 +32,6 @@ const main = async () => {
 
   const db = await createDb({ logger });
 
-  const { s3Endpoint } = getS3Config();
   const objectStore = await createS3({ logger });
 
   logger.info('Starting server...');
@@ -49,7 +47,6 @@ const main = async () => {
         const context = await createContext({
           db,
           objectStore,
-          s3Endpoint,
           logger,
           req,
         });
@@ -66,7 +63,7 @@ const main = async () => {
   };
 
   // Google OAuth endpoints
-  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, objectStore, s3Endpoint, logger });
+  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, objectStore, logger });
 
   // User profile picture endpoints
   const profilePictureEndpoints = createUserProfilePictureEndpoints({ objectStore, logger });

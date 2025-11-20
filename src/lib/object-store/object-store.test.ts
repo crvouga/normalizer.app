@@ -33,7 +33,7 @@ describe('ObjectStore (S3 implementation)', () => {
       secretAccessKey: s3SecretAccessKey,
       bucket: config.s3Bucket,
     });
-    store = new S3ObjectStore(s3Client, minioClient);
+    store = new S3ObjectStore(s3Client, minioClient, s3Endpoint);
     // Clean up any leftover test data before each test
     // Delete common test keys that might exist from previous test runs
     const testKeys = [
@@ -382,5 +382,16 @@ describe('ObjectStore (S3 implementation)', () => {
     // Verify read fails
     const readResult3 = await store.read({ bucket: testBucket, key: 'key1' });
     expect(isOk(readResult3)).toBe(false);
+  });
+
+  test('getEndpointInfo should return base URL and HTTPS preference', async () => {
+    const result = await store.getEndpointInfo();
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value.baseUrl).toBeDefined();
+      expect(typeof result.value.baseUrl).toBe('string');
+      expect(result.value.baseUrl).toMatch(/^https?:\/\/.+/);
+      expect(typeof result.value.useHTTPS).toBe('boolean');
+    }
   });
 });

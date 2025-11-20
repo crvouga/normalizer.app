@@ -44,7 +44,6 @@ export const normalizationSessionProjectionRouter = router({
         sessionId,
         ownerId: resourceOwnerId,
         objectStore: ctx.objectStore,
-        s3Endpoint: ctx.s3Endpoint,
       });
 
       if (!data) throw new Error('Failed to load projection');
@@ -82,7 +81,6 @@ export const normalizationSessionProjectionRouter = router({
         sessionId,
         ownerId: resourceOwnerId,
         objectStore: ctx.objectStore,
-        s3Endpoint: ctx.s3Endpoint,
       });
       if (!data) throw new Error('Failed to load initial projection');
 
@@ -102,7 +100,6 @@ export const normalizationSessionProjectionRouter = router({
             sessionId,
             ownerId: resourceOwnerId,
             objectStore: ctx.objectStore,
-            s3Endpoint: ctx.s3Endpoint,
           });
 
           if (!data) continue;
@@ -124,9 +121,8 @@ const load = async (input: {
   sessionId: NormalizationSessionId;
   ownerId: UserId;
   objectStore: ObjectStore;
-  s3Endpoint: string;
 }): Promise<NormalizationSessionPayload | null> => {
-  const { db, logger, sessionId, ownerId, objectStore, s3Endpoint } = input;
+  const { db, logger, sessionId, ownerId, objectStore } = input;
   try {
     const sessionProjectionDb = new NormalizationSessionProjectionDb(db, logger);
     const normalizationSessionEventDb = new NormalizationSessionEventDb(db, logger);
@@ -156,7 +152,6 @@ const load = async (input: {
       artifacts = await artifactDb.refreshUrls({
         artifacts,
         objectStore,
-        s3Endpoint,
       });
     }
 

@@ -8,23 +8,28 @@ import { isOk } from '../lib/result';
  *
  * @param artifacts - Array of Artifact objects.
  * @param objectStore - Object store for presigning URLs.
- * @param s3Endpoint - S3 endpoint URL (required, used to determine if HTTPS should be enforced and to validate base URLs).
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
 export async function populateArtifactUrls(params: {
   artifacts: Artifact[];
   objectStore: ObjectStore;
-  s3Endpoint: string;
 }): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
-  const { artifacts, objectStore, s3Endpoint } = params;
+  const { artifacts, objectStore } = params;
 
   const expiresIn = 60 * 60 * 24 * 7; // 7 days
   const now = Date.now();
   const expiresAt = new Date(now + expiresIn * 1000);
   const updated = new Set<string>();
 
-  // Determine if we should use HTTPS based on the endpoint
-  const useHTTPS = s3Endpoint.startsWith('https://');
+  // Get endpoint metadata from object store
+  const endpointInfoResult = await objectStore.getEndpointInfo();
+  if (!isOk(endpointInfoResult)) {
+    // If we can't get endpoint info, we can't proceed with URL population
+    // Return artifacts unchanged
+    return { artifacts, updated };
+  }
+
+  const { baseUrl: expectedBaseUrl, useHTTPS } = endpointInfoResult.value;
 
   /**
    * Extracts the base URL (protocol + host + port) from a URL string.
@@ -37,9 +42,6 @@ export async function populateArtifactUrls(params: {
       return null;
     }
   }
-
-  // Get the expected base URL from the s3 endpoint
-  const expectedBaseUrl = getBaseUrl(s3Endpoint);
 
   /**
    * Checks if the URL's base URL matches the expected s3 endpoint base URL.

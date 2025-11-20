@@ -19,7 +19,6 @@ import type { Policy, PolicyContext } from '../permissions/policy';
 export type Context = {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
   sessionId: SessionId;
   userId: UserId;
@@ -41,7 +40,6 @@ export type Context = {
 function buildContext({
   db,
   objectStore,
-  s3Endpoint,
   logger,
   sessionId,
   userId,
@@ -49,7 +47,6 @@ function buildContext({
 }: {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
   sessionId: SessionId;
   userId: UserId;
@@ -113,7 +110,6 @@ function buildContext({
   return {
     db,
     objectStore,
-    s3Endpoint,
     logger,
     sessionId,
     userId,
@@ -127,11 +123,10 @@ function buildContext({
 export const createContext = async (config: {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
   req: Request;
 }): Promise<Context> => {
-  const { db, objectStore, s3Endpoint, logger, req } = config;
+  const { db, objectStore, logger, req } = config;
   const sessionId = getSessionId(req) ?? SessionId.generate();
 
   // Try to find existing session (authenticated or anonymous)
@@ -141,7 +136,6 @@ export const createContext = async (config: {
     return buildContext({
       db,
       objectStore,
-      s3Endpoint,
       logger,
       sessionId,
       userId: currentSession.user_id as UserId,
@@ -175,7 +169,6 @@ export const createContext = async (config: {
   return buildContext({
     db,
     objectStore,
-    s3Endpoint,
     logger,
     sessionId,
     userId: newUserId,

@@ -16,7 +16,7 @@ function getProfilePictureS3Key(userId: UserId, extension: string = 'jpg'): stri
 /**
  * Generate URL for serving a user's profile picture from our server
  */
-export function getProfilePictureUrl(userId: UserId, _s3Endpoint: string): string {
+export function getProfilePictureUrl(userId: UserId): string {
   // Using our server endpoint to serve profile pictures
   return `/api/users/${userId}/profile-picture`;
 }
@@ -99,10 +99,9 @@ export async function storeProfilePictureFromUrl(params: {
   objectStore: ObjectStore;
   userId: UserId;
   externalUrl: string;
-  s3Endpoint: string;
   logger: Logger;
 }): Promise<string> {
-  const { objectStore, userId, externalUrl, s3Endpoint, logger } = params;
+  const { objectStore, userId, externalUrl, logger } = params;
   try {
     // Download the image
     const { buffer, contentType } = await downloadImage(externalUrl, logger);
@@ -111,7 +110,7 @@ export async function storeProfilePictureFromUrl(params: {
     await uploadProfilePictureToS3({ objectStore, userId, buffer, contentType, logger });
 
     // Return our server URL for serving the image
-    return getProfilePictureUrl(userId, s3Endpoint);
+    return getProfilePictureUrl(userId);
   } catch (error) {
     logger.error('Failed to store profile picture', {
       user_id: userId,

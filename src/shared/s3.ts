@@ -21,7 +21,7 @@ export const createS3 = async ({ logger }: { logger: Logger }): Promise<ObjectSt
       logger,
     });
     logMinioInitSuccess(logger, s3Endpoint, s3Bucket);
-    return new S3ObjectStore(s3Client, minioClient);
+    return new S3ObjectStore(s3Client, minioClient, s3Endpoint);
   } catch (error) {
     logMinioInitError(logger, error, s3Endpoint, s3Bucket);
     throw new Error('Failed to initialize MinIO client');

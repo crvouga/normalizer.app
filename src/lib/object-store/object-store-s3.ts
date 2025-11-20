@@ -10,10 +10,12 @@ import { Ok, Err, type Result } from '../result';
 export class S3ObjectStore implements ObjectStore {
   private s3Client: S3Client;
   private minioClient: MinioClient;
+  private s3Endpoint: string;
 
-  constructor(s3Client: S3Client, minioClient: MinioClient) {
+  constructor(s3Client: S3Client, minioClient: MinioClient, s3Endpoint: string) {
     this.s3Client = s3Client;
     this.minioClient = minioClient;
+    this.s3Endpoint = s3Endpoint;
   }
 
   async read(params: { bucket: string; key: string }): Promise<Result<Buffer, string>> {
@@ -174,6 +176,27 @@ export class S3ObjectStore implements ObjectStore {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return Err(`Failed to generate presigned URL: ${errorMessage}`);
+    }
+  }
+
+  async getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>> {
+    try {
+      // Extract base URL (protocol + host) from endpoint
+      let baseUrl: string;
+      try {
+        const url = new URL(this.s3Endpoint);
+        baseUrl = `${url.protocol}//${url.host}`;
+      } catch {
+        return Err(`Invalid endpoint URL: ${this.s3Endpoint}`);
+      }
+
+      // Determine if HTTPS should be used based on endpoint protocol
+      const useHTTPS = this.s3Endpoint.startsWith('https://');
+
+      return Ok({ baseUrl, useHTTPS });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to get endpoint info: ${errorMessage}`);
     }
   }
 }

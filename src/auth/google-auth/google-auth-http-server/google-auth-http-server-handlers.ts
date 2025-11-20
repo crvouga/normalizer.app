@@ -18,7 +18,6 @@ import {
 export type GoogleAuthConfig = {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
 };
 
@@ -74,7 +73,7 @@ export async function handleGoogleAuthCallback(
   req: Request,
   config: GoogleAuthConfig,
 ): Promise<Response> {
-  const { db, objectStore, s3Endpoint, logger } = config;
+  const { db, objectStore, logger } = config;
 
   // Return 404 if Google Auth is not configured
   if (!isGoogleAuthEnabled()) {
@@ -140,7 +139,7 @@ export async function handleGoogleAuthCallback(
 
     // Use GoogleAuthUserService to find or create user (handles all cases)
     // This always creates a new session record and ends any anonymous sessions
-    const userService = new GoogleAuthUserService({ db, objectStore, s3Endpoint, logger });
+    const userService = new GoogleAuthUserService({ db, objectStore, logger });
     await userService.findOrCreateUser({ googleUser, sessionId });
 
     // Redirect to app with success and set session cookie

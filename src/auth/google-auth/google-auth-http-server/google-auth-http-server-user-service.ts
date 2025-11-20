@@ -12,20 +12,17 @@ import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture'
 export type GoogleAuthUserServiceDeps = {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
 };
 
 export class GoogleAuthUserService {
   private db: Db;
   private objectStore: ObjectStore;
-  private s3Endpoint: string;
   private logger: Logger;
 
-  constructor({ db, objectStore, s3Endpoint, logger }: GoogleAuthUserServiceDeps) {
+  constructor({ db, objectStore, logger }: GoogleAuthUserServiceDeps) {
     this.db = db;
     this.objectStore = objectStore;
-    this.s3Endpoint = s3Endpoint;
     this.logger = logger;
   }
 
@@ -93,7 +90,6 @@ export class GoogleAuthUserService {
       objectStore: this.objectStore,
       userId: existingUser.id as UserId,
       externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
       logger: this.logger,
     });
 
@@ -146,7 +142,6 @@ export class GoogleAuthUserService {
       objectStore: this.objectStore,
       userId: userId,
       externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
       logger: this.logger,
     });
 
@@ -196,7 +191,6 @@ export class GoogleAuthUserService {
       objectStore: this.objectStore,
       userId: user.id as UserId,
       externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
       logger: this.logger,
     });
 

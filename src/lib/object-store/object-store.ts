@@ -74,4 +74,10 @@ export interface ObjectStore {
     method: 'GET' | 'PUT';
     expiresIn: number;
   }): Promise<Result<string, string>>;
+
+  /**
+   * Get endpoint metadata including base URL and HTTPS preference.
+   * @returns Result containing base URL (protocol + host) and whether HTTPS should be used
+   */
+  getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>>;
 }

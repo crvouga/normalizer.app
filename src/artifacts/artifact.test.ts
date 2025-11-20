@@ -4,6 +4,7 @@ import { createMinioClient } from '../lib/minio/minio-client';
 import { createS3 } from '../shared/s3';
 import { getS3Config } from '../shared/s3-config';
 import type { ObjectStore } from '../lib/object-store/object-store';
+import { isOk } from '../lib/result';
 import { Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
@@ -50,7 +51,6 @@ describe('Artifact.populateUrls', () => {
     const { artifacts: populated, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
       objectStore,
-      s3Endpoint,
     });
 
     expect(updated.has(artifactId.toString())).toBe(true);
@@ -92,7 +92,6 @@ describe('Artifact.populateUrls', () => {
     const firstPop = await populateArtifactUrls({
       artifacts: [artifactForTest],
       objectStore,
-      s3Endpoint,
     });
     const populated = firstPop.artifacts[0];
     expect(populated).toBeDefined();
@@ -105,7 +104,6 @@ describe('Artifact.populateUrls', () => {
     const secondPop = await populateArtifactUrls({
       artifacts: [populated],
       objectStore,
-      s3Endpoint,
     });
     const again = secondPop.artifacts[0];
     expect(again).toBeDefined();
@@ -144,7 +142,6 @@ describe('Artifact.populateUrls', () => {
     const { artifacts: result, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
       objectStore,
-      s3Endpoint,
     });
 
     expect(updated.has(artifactId.toString())).toBe(true);
@@ -162,10 +159,13 @@ describe('Artifact.populateUrls', () => {
   });
 
   test('should enforce HTTPS on URLs if the S3 endpoint uses HTTPS', async () => {
-    if (!s3Endpoint.startsWith('https://')) {
+    // Check if endpoint uses HTTPS
+    const endpointInfoResult = await objectStore.getEndpointInfo();
+    if (!isOk(endpointInfoResult) || !endpointInfoResult.value.useHTTPS) {
       // Cannot test HTTPS rewriting if not using an HTTPS endpoint
       return;
     }
+
     const artifactId = ArtifactId.generate();
     const s3_key = `https-enforce/test-file-${Math.random()}`;
     const artifact = ArtifactModule.create({
@@ -183,7 +183,6 @@ describe('Artifact.populateUrls', () => {
     const { artifacts: result } = await populateArtifactUrls({
       artifacts: [artifactForTest],
       objectStore,
-      s3Endpoint,
     });
     const updatedArtifact = result[0];
     expect(updatedArtifact).toBeDefined();

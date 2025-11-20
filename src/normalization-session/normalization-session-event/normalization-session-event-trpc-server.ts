@@ -84,7 +84,6 @@ export const normalizationSessionEventRouter = router({
         artifacts = await artifactDb.refreshUrls({
           artifacts,
           objectStore: ctx.objectStore,
-          s3Endpoint: ctx.s3Endpoint,
         });
       }
 

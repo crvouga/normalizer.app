@@ -39,7 +39,6 @@ export const artifactRouter = router({
       const artifactsWithUrls = await artifactDb.refreshUrls({
         artifacts: [artifact],
         objectStore: ctx.objectStore,
-        s3Endpoint: ctx.s3Endpoint,
       });
 
       return artifactsWithUrls[0] ?? null;
@@ -59,7 +58,6 @@ export const artifactRouter = router({
       ctx.logger.info('Artifact list result', { count: artifacts.length });
 
       const artifactsWithUrls = await artifactDb.refreshUrls({
-        s3Endpoint: ctx.s3Endpoint,
         artifacts,
         objectStore: ctx.objectStore,
       });

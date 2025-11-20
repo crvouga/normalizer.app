@@ -13,7 +13,6 @@ import {
 export function createGoogleAuthEndpoints(config: {
   db: Db;
   objectStore: ObjectStore;
-  s3Endpoint: string;
   logger: Logger;
 }) {
   return {
