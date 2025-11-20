@@ -220,32 +220,7 @@ export abstract class LLM {
     let assistantMessage: ToolCallMessage | null = null;
 
     for await (const chunk of this.stream(messages, options)) {
-      if (chunk.type === 'tool_call') {
-        if (!assistantMessage) {
-          assistantMessage = {
-            role: 'assistant',
-            content: '',
-            toolCalls: [],
-          };
-        }
-        if (!assistantMessage.toolCalls) {
-          assistantMessage.toolCalls = [];
-        }
-        assistantMessage.toolCalls.push(chunk.toolCall);
-      } else if (chunk.type === 'done') {
-        if (!assistantMessage) {
-          assistantMessage = {
-            role: 'assistant',
-            content: chunk.content,
-            ...(chunk.toolCalls && chunk.toolCalls.length > 0 && { toolCalls: chunk.toolCalls }),
-          };
-        } else {
-          assistantMessage.content = chunk.content;
-          if (chunk.toolCalls && chunk.toolCalls.length > 0) {
-            assistantMessage.toolCalls = chunk.toolCalls;
-          }
-        }
-      }
+      assistantMessage = this.processStreamChunk(chunk, assistantMessage);
     }
 
     if (assistantMessage) {
@@ -253,6 +228,36 @@ export abstract class LLM {
     }
 
     return result;
+  }
+
+  private processStreamChunk(
+    chunk: StreamChunk,
+    assistantMessage: ToolCallMessage | null,
+  ): ToolCallMessage | null {
+    if (chunk.type === 'tool_call') {
+      return {
+        role: 'assistant',
+        content: assistantMessage?.content ?? '',
+        toolCalls: [...(assistantMessage?.toolCalls ?? []), chunk.toolCall],
+      };
+    }
+
+    if (chunk.type === 'done') {
+      if (!assistantMessage) {
+        return {
+          role: 'assistant',
+          content: chunk.content,
+          ...(chunk.toolCalls && chunk.toolCalls.length > 0 ? { toolCalls: chunk.toolCalls } : {}),
+        };
+      }
+      return {
+        ...assistantMessage,
+        content: chunk.content,
+        ...(chunk.toolCalls && chunk.toolCalls.length > 0 ? { toolCalls: chunk.toolCalls } : {}),
+      };
+    }
+
+    return assistantMessage;
   }
 
   /**
