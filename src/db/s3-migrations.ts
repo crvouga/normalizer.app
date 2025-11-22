@@ -1,6 +1,6 @@
 import { createLogger } from '../lib/logger';
 import { getS3Config } from '../shared/s3-config';
-import { createS3 } from '../shared/s3';
+import { createObjectStore } from '../shared/s3';
 import { isOk } from '../lib/result';
 
 /**
@@ -14,15 +14,12 @@ export const runS3Migrations = async (): Promise<void> => {
 
   try {
     const { s3Endpoint, s3Bucket } = getS3Config();
-
     logger.info('S3 configuration loaded', {
       endpoint: s3Endpoint,
       bucket: s3Bucket,
     });
-
     logger.info('Creating object store...');
-    const objectStore = await createS3({ logger });
-
+    const objectStore = await createObjectStore({ logger });
     logger.info('Ensuring bucket exists...', { bucket: s3Bucket });
     const result = await objectStore.ensureBucketExists(s3Bucket);
     if (!isOk(result)) {

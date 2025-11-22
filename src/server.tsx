@@ -4,7 +4,7 @@ import { appRouter } from './app-trpc-server';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
-import { createS3 } from './shared/s3';
+import { createObjectStore } from './shared/s3';
 import { SessionId } from './shared/session-id';
 import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
 import { cleanupDb, createDb } from './shared/sql';
@@ -32,7 +32,7 @@ const main = async () => {
 
   const db = await createDb({ logger });
 
-  const objectStore = await createS3({ logger });
+  const objectStore = await createObjectStore({ logger });
 
   logger.info('Starting server...');
 

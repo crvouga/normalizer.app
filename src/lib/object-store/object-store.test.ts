@@ -1,39 +1,18 @@
-import { describe, expect, test, beforeEach, beforeAll } from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { createObjectStore } from '~/src/shared/s3';
 import { createLogger } from '../logger';
-import { createMinioClient } from '../minio/minio-client';
-import { getS3Config } from '../../shared/s3-config';
 import { isOk } from '../result';
-import type { ObjectStore } from './object-store';
-import { S3ObjectStore } from './object-store-s3';
 
-describe('ObjectStore (S3 implementation)', () => {
+describe('ObjectStore (S3 implementation)', async () => {
   const logger = createLogger();
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
-  const minioClient = createMinioClient({
-    minioEndpoint: s3Endpoint,
-    accessKey: s3AccessKeyId,
-    secretKey: s3SecretAccessKey,
-    logger,
-  });
   const testBucket = 'test';
-  let store: ObjectStore;
+  const store = await createObjectStore({ logger });
 
   beforeAll(async () => {
-    await minioClient.ensureBucketExists(testBucket);
+    await store.ensureBucketExists(testBucket);
   });
 
   beforeEach(async () => {
-    // Create S3ObjectStore directly for tests with both clients
-    const { S3Client } = await import('bun');
-    const { getS3Config: getConfig } = await import('../../shared/s3-config');
-    const config = getConfig();
-    const s3Client = new S3Client({
-      endpoint: s3Endpoint,
-      accessKeyId: s3AccessKeyId,
-      secretAccessKey: s3SecretAccessKey,
-      bucket: config.s3Bucket,
-    });
-    store = new S3ObjectStore(s3Client, minioClient, s3Endpoint);
     // Clean up any leftover test data before each test
     // Delete common test keys that might exist from previous test runs
     const testKeys = [

@@ -1,30 +1,21 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
+import * as XLSX from 'xlsx';
+import { createObjectStore } from '../../shared/s3';
 import { createLogger } from '../logger';
-import { createS3 } from '../../shared/s3';
-import { createMinioClient } from '../minio/minio-client';
-import { getS3Config } from '../../shared/s3-config';
-import { FileConverter } from './file-converter';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk } from '../result';
-import * as XLSX from 'xlsx';
+import { FileConverter } from './file-converter';
 
 describe('FileConverter', () => {
   const logger = createLogger();
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
-  const minioClient = createMinioClient({
-    minioEndpoint: s3Endpoint,
-    accessKey: s3AccessKeyId,
-    secretKey: s3SecretAccessKey,
-    logger,
-  });
   const testBucket = 'test-file-converter';
 
   let objectStore: ObjectStore;
   let fileConverter: FileConverter;
 
   beforeAll(async () => {
-    await minioClient.ensureBucketExists(testBucket);
-    objectStore = await createS3({ logger });
+    objectStore = await createObjectStore({ logger });
+    await objectStore.ensureBucketExists(testBucket);
     fileConverter = new FileConverter({
       objectStore,
       logger,

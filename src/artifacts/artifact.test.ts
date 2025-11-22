@@ -1,32 +1,17 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { createLogger } from '../lib/logger';
-import { createMinioClient } from '../lib/minio/minio-client';
-import { createS3 } from '../shared/s3';
-import { getS3Config } from '../shared/s3-config';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { isOk } from '../lib/result';
+import { createObjectStore } from '../shared/s3';
 import { Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
-describe('Artifact.populateUrls', () => {
+describe('Artifact.populateUrls', async () => {
   const logger = createLogger();
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const testBucket = 'test';
-  let objectStore: ObjectStore;
-  let minioClient: ReturnType<typeof createMinioClient>;
-
-  beforeAll(async () => {
-    minioClient = createMinioClient({
-      minioEndpoint: s3Endpoint,
-      accessKey: s3AccessKeyId,
-      secretKey: s3SecretAccessKey,
-      logger,
-    });
-    await minioClient.ensureBucketExists(testBucket);
-
-    objectStore = await createS3({ logger });
-  });
+  const objectStore: ObjectStore = await createObjectStore({ logger });
+  await objectStore.ensureBucketExists(testBucket);
 
   test('should generate valid presigned upload and download URLs', async () => {
     const artifactId = ArtifactId.generate();

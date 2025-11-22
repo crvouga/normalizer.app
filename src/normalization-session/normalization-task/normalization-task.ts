@@ -7,7 +7,7 @@ import { Normalizer } from '../../lib/normalizer/normalizer';
 import type { TaskHandler } from '../../lib/graphile-worker-lib';
 import type { NormalizationJobPayload } from '../../shared/graphile-worker';
 import { getS3Config } from '../../shared/s3-config';
-import { createS3 } from '../../shared/s3';
+import { createObjectStore } from '../../shared/s3';
 import type { Db, Tx } from '../../shared/sql';
 import { createDb } from '../../shared/sql';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
@@ -137,7 +137,7 @@ async function performNormalization({
   inProgressEntry: NormalizationSessionProjectionEntry;
 }): Promise<ArtifactId[]> {
   // Create object store and normalizer
-  const objectStore = await createS3({ logger });
+  const objectStore = await createObjectStore({ logger });
   const normalizer = new Normalizer(objectStore, logger);
 
   // Load input artifacts

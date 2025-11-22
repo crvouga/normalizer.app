@@ -1,75 +1,73 @@
 import * as Minio from 'minio';
 import type { Logger } from '../logger';
+import { Err, Ok, type Result } from '../result';
 
-export const createMinioClient = ({
-  minioEndpoint,
-  accessKey,
-  secretKey,
-  logger,
-}: {
-  minioEndpoint: string;
-  accessKey: string;
-  secretKey: string;
-  logger: Logger;
-}) => {
-  // Parse the endpoint to extract host and port
-  const url = new URL(minioEndpoint);
-  const endPoint = url.hostname;
-  const port = url.port ? parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
-  const useSSL = url.protocol === 'https:';
+export class MinioClient {
+  private minioClient: Minio.Client;
+  private useSSL: boolean;
+  private logger: Logger;
 
-  // Create MinIO client instance
-  const minioClient = new Minio.Client({
-    endPoint,
-    port,
-    useSSL,
+  constructor({
+    minioEndpoint,
     accessKey,
     secretKey,
-  });
+    logger,
+  }: {
+    minioEndpoint: string;
+    accessKey: string;
+    secretKey: string;
+    logger: Logger;
+  }) {
+    const url = new URL(minioEndpoint);
+    const endPoint = url.hostname;
+    const port = url.port ? parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
+    this.useSSL = url.protocol === 'https:';
+    this.logger = logger;
+    this.minioClient = new Minio.Client({
+      endPoint,
+      port,
+      useSSL: this.useSSL,
+      accessKey,
+      secretKey,
+    });
+  }
 
-  const checkBucketExists = async (bucket: string): Promise<boolean> => {
+  async checkBucketExists(bucket: string): Promise<Result<boolean, string>> {
     try {
-      const exists = await minioClient.bucketExists(bucket);
-      logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', {
-        bucket,
-      });
-      return exists;
+      const exists = await this.minioClient.bucketExists(bucket);
+      this.logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', { bucket });
+      return Ok(exists);
     } catch (error) {
-      logger.warn('Error checking bucket existence', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.warn('Error checking bucket existence', {
         bucket,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      return false;
+      return Err(errorMessage);
     }
-  };
+  }
 
-  const createBucket = async (bucket: string): Promise<void> => {
-    logger.info('Creating bucket...', { bucket });
+  async createBucket(bucket: string): Promise<Result<void, string>> {
+    this.logger.info('Creating bucket...', { bucket });
 
     try {
-      // Check if bucket already exists first
-      // Try direct check first to catch connection errors early
       let exists: boolean;
       try {
-        exists = await minioClient.bucketExists(bucket);
-        logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', {
-          bucket,
-        });
+        exists = await this.minioClient.bucketExists(bucket);
+        this.logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', { bucket });
       } catch (error) {
-        // If connection error during check, throw it immediately rather than trying to create
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (
           errorMessage.toLowerCase().includes('unable to connect') ||
           errorMessage.toLowerCase().includes('access the url')
         ) {
-          logger.error('Error creating bucket', {
+          this.logger.error('Error creating bucket', {
             bucket,
             error: errorMessage,
           });
-          throw error;
+          return Err(errorMessage);
         }
-        // For other errors, log and assume bucket doesn't exist
-        logger.warn('Error checking bucket existence', {
+        this.logger.warn('Error checking bucket existence', {
           bucket,
           error: errorMessage,
         });
@@ -77,26 +75,26 @@ export const createMinioClient = ({
       }
 
       if (exists) {
-        throw new Error('Bucket already exists');
+        return Err('Bucket already exists');
       }
 
-      // Create bucket with default region (empty string for MinIO)
-      await minioClient.makeBucket(bucket, '');
-      logger.info('Successfully created bucket', { bucket });
+      await this.minioClient.makeBucket(bucket, '');
+      this.logger.info('Successfully created bucket', { bucket });
+      return Ok(undefined);
     } catch (error) {
-      logger.error('Error creating bucket', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error creating bucket', {
         bucket,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      throw error;
+      return Err(errorMessage);
     }
-  };
+  }
 
-  const setBucketPolicy = async (bucket: string): Promise<void> => {
-    logger.info('Setting bucket policy...', { bucket });
+  async setBucketPolicy(bucket: string): Promise<Result<void, string>> {
+    this.logger.info('Setting bucket policy...', { bucket });
 
     try {
-      // Policy that allows public read and write access to the bucket
       const policy = {
         Version: '2012-10-17',
         Statement: [
@@ -110,108 +108,127 @@ export const createMinioClient = ({
         ],
       };
 
-      await minioClient.setBucketPolicy(bucket, JSON.stringify(policy));
-      logger.info('Successfully set bucket policy', { bucket });
+      await this.minioClient.setBucketPolicy(bucket, JSON.stringify(policy));
+      this.logger.info('Successfully set bucket policy', { bucket });
+      return Ok(undefined);
     } catch (error) {
-      logger.error('Error setting bucket policy', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error setting bucket policy', {
         bucket,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      throw error;
+      return Err(errorMessage);
     }
-  };
+  }
 
-  const ensureBucketExists = async (bucket: string): Promise<void> => {
-    logger.info('Checking if bucket exists...', { bucket });
+  async ensureBucketExists(bucket: string): Promise<Result<void, string>> {
+    this.logger.info('Checking if bucket exists...', { bucket });
 
     try {
-      const exists = await checkBucketExists(bucket);
-      if (!exists) {
-        await createBucket(bucket);
-        // Set the bucket policy after creating the bucket
-        await setBucketPolicy(bucket);
-      } else {
-        // Even if bucket exists, ensure policy is set
-        try {
-          await setBucketPolicy(bucket);
-        } catch (error) {
-          logger.warn('Failed to set bucket policy on existing bucket', {
+      const existsResult = await this.checkBucketExists(bucket);
+      if (existsResult.tag === 'err') {
+        this.logger.error('Error ensuring bucket exists', {
+          bucket,
+          error: existsResult.error,
+        });
+        this.logger.warn('Continuing without S3 bucket - some features may not work');
+        return Err(existsResult.error);
+      }
+      if (!existsResult.value) {
+        const createResult = await this.createBucket(bucket);
+        if (createResult.tag === 'err') {
+          this.logger.error('Error creating bucket', {
             bucket,
-            error: error instanceof Error ? error.message : String(error),
+            error: createResult.error,
           });
+          this.logger.warn('Continuing without S3 bucket - some features may not work');
+          return Err(createResult.error);
         }
+        const policyResult = await this.setBucketPolicy(bucket);
+        if (policyResult.tag === 'err') {
+          this.logger.warn('Failed to set bucket policy on just-created bucket', {
+            bucket,
+            error: policyResult.error,
+          });
+          // Do not treat as hard error for bucket creation, still Ok.
+        }
+        return Ok(undefined);
+      } else {
+        const policyResult = await this.setBucketPolicy(bucket);
+        if (policyResult.tag === 'err') {
+          this.logger.warn('Failed to set bucket policy on existing bucket', {
+            bucket,
+            error: policyResult.error,
+          });
+          // We still say Ok for ensureBucketExists
+        }
+        return Ok(undefined);
       }
     } catch (error) {
-      logger.error('Error ensuring bucket exists', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error ensuring bucket exists', {
         bucket,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      // Don't throw the error - let the application continue without S3
-      logger.warn('Continuing without S3 bucket - some features may not work');
+      this.logger.warn('Continuing without S3 bucket - some features may not work');
+      return Err(errorMessage);
     }
-  };
+  }
 
-  const generatePresignedUrl = async (
+  async generatePresignedUrl(
     bucket: string,
     objectKey: string,
-    expiresIn: number = 86400, // 24 hours default
-  ): Promise<string> => {
+    expiresIn: number = 86400,
+  ): Promise<Result<string, string>> {
     try {
-      let url = await minioClient.presignedPutObject(bucket, objectKey, expiresIn);
+      let url = await this.minioClient.presignedPutObject(bucket, objectKey, expiresIn);
 
-      // Ensure the URL uses HTTPS when SSL is enabled
-      // This fixes mixed content errors in production when the page is served over HTTPS
-      if (useSSL && url.startsWith('http://')) {
+      if (this.useSSL && url.startsWith('http://')) {
         url = url.replace('http://', 'https://');
-        logger.info('Converted presigned URL from HTTP to HTTPS', {
+        this.logger.info('Converted presigned URL from HTTP to HTTPS', {
           bucket,
           objectKey,
         });
       }
 
-      logger.info('Generated presigned URL', {
+      this.logger.info('Generated presigned URL', {
         bucket,
         objectKey,
         expiresIn,
-        useSSL,
+        useSSL: this.useSSL,
       });
-      return url;
+      return Ok(url);
     } catch (error) {
-      logger.error('Error generating presigned URL', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error generating presigned URL', {
         bucket,
         objectKey,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      throw error;
+      return Err(errorMessage);
     }
-  };
+  }
 
-  const deleteObject = async (bucket: string, objectKey: string): Promise<void> => {
+  async deleteObject(bucket: string, objectKey: string): Promise<Result<void, string>> {
     try {
-      await minioClient.removeObject(bucket, objectKey);
-      logger.info('Successfully deleted object', {
+      await this.minioClient.removeObject(bucket, objectKey);
+      this.logger.info('Successfully deleted object', {
         bucket,
         objectKey,
       });
+      return Ok(undefined);
     } catch (error) {
-      logger.error('Error deleting object', {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error deleting object', {
         bucket,
         objectKey,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      throw error;
+      return Err(errorMessage);
     }
-  };
+  }
 
-  return {
-    checkBucketExists,
-    createBucket,
-    setBucketPolicy,
-    ensureBucketExists,
-    generatePresignedUrl,
-    deleteObject,
-    client: minioClient,
-  };
-};
-
-export type MinioClient = ReturnType<typeof createMinioClient>;
+  get client() {
+    return this.minioClient;
+  }
+}
