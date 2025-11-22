@@ -7,8 +7,8 @@
   "module": "src/server.tsx",
   "scripts": {
     "check:graphile-worker": "bun run src/lib/check-graphile-worker.ts",
-    "circular": "madge --circular --extensions ts,tsx src",
     "cir-deps": "bun run circular",
+    "circular": "madge --circular --extensions ts,tsx src",
     "cloc": "bun x cloc src",
     "db": "bun run db:studio",
     "db:generate": "drizzle-kit generate",

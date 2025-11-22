@@ -11,7 +11,7 @@ export const NormalizationSessionEntry = (props: {
   switch (props.entry.type) {
     case 'normalization':
       return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pb-8">
           <UserInputBubble artifactIds={props.entry.inputArtifactIds} />
           <OutputArea>
             <NormalizationEntry
