@@ -1,18 +1,18 @@
-import type { FileFormatHandler } from './file-format-handler';
+import type { TabularDataFormatHandler } from './tabular-data-format-handler';
 
 /**
  * Registry for managing file format handlers
  * Allows dynamic registration and format detection
  */
 export class FormatRegistry {
-  private handlers: Map<string, FileFormatHandler> = new Map();
-  private handlerOrder: FileFormatHandler[] = [];
+  private handlers: Map<string, TabularDataFormatHandler> = new Map();
+  private handlerOrder: TabularDataFormatHandler[] = [];
 
   /**
    * Register a file format handler
    * @param handler Handler instance to register
    */
-  register(handler: FileFormatHandler): void {
+  register(handler: TabularDataFormatHandler): void {
     const formatName = handler.getFormatName();
     this.handlers.set(formatName, handler);
     this.handlerOrder.push(handler);
@@ -23,7 +23,7 @@ export class FormatRegistry {
    * @param formatName Format identifier
    * @returns Handler instance or undefined if not found
    */
-  getHandler(formatName: string): FileFormatHandler | undefined {
+  getHandler(formatName: string): TabularDataFormatHandler | undefined {
     return this.handlers.get(formatName);
   }
 

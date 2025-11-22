@@ -1,10 +1,10 @@
 import * as XLSX from 'xlsx';
-import { FileFormatHandler } from '../file-format-handler';
+import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
  * Handler for Excel file formats (.xlsx, .xls, .xlsm)
  */
-export class ExcelHandler extends FileFormatHandler {
+export class ExcelHandler extends TabularDataFormatHandler {
   getFormatName(): string {
     return 'excel';
   }

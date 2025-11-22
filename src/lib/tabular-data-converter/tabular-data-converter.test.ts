@@ -4,7 +4,7 @@ import { createObjectStore } from '../../shared/s3';
 import { createLogger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk } from '../result';
-import { FileConverter } from './file-converter';
+import { FileConverter } from './tabular-data-converter';
 
 describe('FileConverter', () => {
   const logger = createLogger();

@@ -1,9 +1,9 @@
-import { FileFormatHandler } from '../file-format-handler';
+import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
  * Handler for CSV file format
  */
-export class CsvHandler extends FileFormatHandler {
+export class CsvHandler extends TabularDataFormatHandler {
   getFormatName(): string {
     return 'csv';
   }

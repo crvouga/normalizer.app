@@ -2,7 +2,7 @@
  * Abstract interface for file format handlers
  * Each handler knows how to detect, convert to/from CSV, and provide format metadata
  */
-export abstract class FileFormatHandler {
+export abstract class TabularDataFormatHandler {
   /**
    * Detect if the given buffer matches this file format
    * @param buffer File buffer to check

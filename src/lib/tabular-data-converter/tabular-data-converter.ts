@@ -1,7 +1,7 @@
 import type { ObjectStore } from '../object-store/object-store';
 import type { Logger } from '../logger';
 import { FormatRegistry } from './format-registry';
-import type { FileFormatHandler } from './file-format-handler';
+import type { TabularDataFormatHandler } from './tabular-data-format-handler';
 import { ExcelHandler } from './handlers/excel-handler';
 import { CsvHandler } from './handlers/csv-handler';
 import { ParquetHandler } from './handlers/parquet-handler';
@@ -27,7 +27,7 @@ export class FileConverter {
     objectStore: ObjectStore;
     logger: Logger;
     cacheBucket?: string;
-    customHandlers?: FileFormatHandler[];
+    customHandlers?: TabularDataFormatHandler[];
   }) {
     this.objectStore = objectStore;
     this.logger = logger;
