@@ -2,29 +2,13 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
-import { createLLMOpenAI } from './llm-open-ai';
-
-function isOpenAIEnabled(): boolean {
-  return process.env.OPENAI_API_KEY !== undefined;
-}
-
-function createTestLLMOpenAI(): LLM {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
-
-  const logger = createLogger({ noop: true });
-
-  const llm = createLLMOpenAI({ apiKey, model: 'gpt-3.5-turbo', logger });
-
-  return llm;
-}
+import { createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
 
 describe.skipIf(!isOpenAIEnabled())('@llm.ts (OpenAI Implementation)', () => {
   let llm: LLM;
 
   beforeEach(() => {
-    llm = createTestLLMOpenAI();
+    llm = createLLMOpenAI({ logger: createLogger({ noop: true }) });
   });
 
   test('completions: returns a text completion from a simple prompt', async () => {

@@ -1,31 +1,32 @@
-import { eq } from 'drizzle-orm';
+import { createLLMOpenAI } from '~/src/lib/llm/llm-open-ai';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import * as schema from '../../db/schema';
-import type { Logger } from '../../lib/logger';
-import { Normalizer } from '../../lib/normalizer/normalizer';
 import type { TaskHandler } from '../../lib/graphile-worker-lib';
+import type { Logger } from '../../lib/logger';
+import { createNormalizer } from '../../lib/normalizer/normalizer';
 import type { NormalizationJobPayload } from '../../shared/graphile-worker';
-import { getS3Config } from '../../shared/s3-config';
 import { createObjectStore } from '../../shared/s3';
+import { getS3Config } from '../../shared/s3-config';
 import type { Db, Tx } from '../../shared/sql';
 import { createDb } from '../../shared/sql';
+import type { UserId } from '../../users/user-id';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '../normalization-session-id';
 import type { NormalizationSessionProjection } from '../normalization-session-projection/normalization-session-projection';
-import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
-import type { UserId } from '../../users/user-id';
+import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
+import { enumerate } from '~/src/lib/array/enumerate';
 
 /**
  * Normalization task handler
  * Processes a normalization job for a given session
  */
-export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (payload, helpers) => {
+export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (payload, ctx) => {
   const { sessionId } = payload;
-  const { logger } = helpers;
+  const { logger } = ctx;
 
   logger.info('Starting normalization task', { sessionId });
 
@@ -34,7 +35,7 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
 
   try {
     // Load initial data
-    const { startedByUserId, inProgressEntry } = await loadNormalizationData({
+    const { startedByUserId, inProgressEntry, projection } = await loadNormalizationData({
       db,
       logger,
       sessionId,
@@ -54,6 +55,7 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
         logger,
         sessionId,
         inProgressEntry,
+        projection,
       });
 
       // Record the result
@@ -95,6 +97,7 @@ async function loadNormalizationData({
 
   // Get the session owner
   const startedByUserId = await projectionDb.getOwner(sessionId);
+
   if (!startedByUserId) {
     logger.error('Normalization session not found', { sessionId });
     throw new Error(`Normalization session not found: ${sessionId}`);
@@ -123,22 +126,25 @@ async function loadNormalizationData({
 }
 
 /**
- * Performs the normalization work: clones artifacts and renames them
+ * Performs the normalization work: normalizes inputs against targets and creates output artifacts
  */
 async function performNormalization({
   tx,
   logger,
   sessionId,
   inProgressEntry,
+  projection,
 }: {
   tx: Tx;
   logger: Logger;
   sessionId: NormalizationSessionId;
   inProgressEntry: NormalizationSessionProjectionEntry;
+  projection: NormalizationSessionProjection;
 }): Promise<ArtifactId[]> {
   // Create object store and normalizer
   const objectStore = await createObjectStore({ logger });
-  const normalizer = new Normalizer(objectStore, logger);
+  const llm = createLLMOpenAI({ logger });
+  const normalizer = createNormalizer({ objectStore, logger, llm });
 
   // Load input artifacts
   const artifactDb = new ArtifactDb(tx, logger);
@@ -152,52 +158,77 @@ async function performNormalization({
     });
   }
 
-  // Get S3 bucket configuration
-  const { s3Bucket } = getS3Config();
+  // Load target artifacts (if any)
+  const targetArtifacts = await artifactDb.getByIds(projection.targetArtifactIds);
 
-  // Create clone artifacts (copies of input artifacts with new IDs)
-  const outputArtifactIds: ArtifactId[] = [];
-
-  for (const inputArtifact of inputArtifacts) {
-    const outputArtifactId = ArtifactId.generate();
-    outputArtifactIds.push(outputArtifactId);
-
-    // Generate output S3 key
-    const outputS3Key = `artifacts/${outputArtifactId}/${inputArtifact.filename}`;
-
-    // Clone the artifact with a new ID
-    await artifactDb.clone(inputArtifact, outputArtifactId);
-
-    // Clone the S3 object from input to output
-    await normalizer.normalize({
-      inputKey: inputArtifact.s3_key,
-      inputBucket: inputArtifact.s3_bucket,
-      outputKey: outputS3Key,
-      outputBucket: s3Bucket,
+  if (
+    projection.targetArtifactIds.length > 0 &&
+    targetArtifacts.length !== projection.targetArtifactIds.length
+  ) {
+    logger.warn('Some target artifacts not found', {
+      sessionId,
+      expected: projection.targetArtifactIds.length,
+      found: targetArtifacts.length,
     });
-
-    // Update the artifact with new S3 key/bucket and normalized name
-    const baseName = inputArtifact.name || inputArtifact.filename;
-    const normalizedName = toNormalizedFileName(baseName);
-    await artifactDb.update(outputArtifactId, {
-      name: normalizedName,
-    });
-
-    // Update S3 key and bucket in the database
-    await tx
-      .update(schema.artifacts)
-      .set({
-        s3_key: outputS3Key,
-        s3_bucket: s3Bucket,
-        updated_at: new Date(),
-      })
-      .where(eq(schema.artifacts.id, outputArtifactId));
   }
 
-  logger.info('Created cloned artifacts', {
+  // Get S3 bucket configuration
+  const { s3Bucket } = getS3Config();
+  const normalizationRunId = inProgressEntry.normalizationRunId;
+
+  // Prepare inputs and targets for normalization
+  const inputs = inputArtifacts.map((artifact) => ({
+    objectKey: artifact.s3_key,
+    objectBucket: artifact.s3_bucket,
+  }));
+
+  const targets = targetArtifacts.map((artifact) => ({
+    objectKey: artifact.s3_key,
+    objectBucket: artifact.s3_bucket,
+  }));
+
+  // Call normalize with all inputs and targets
+  const { outputs } = await normalizer.normalize({
+    inputs,
+    targets,
+    outputObjectBucket: s3Bucket,
+    outputObjectKeyPrefix: `normalizer-output/${normalizationRunId}/`,
+  });
+
+  // Create artifacts for each output
+  const outputArtifactIds: ArtifactId[] = [];
+
+  for (const [index, output] of enumerate(outputs)) {
+    const outputArtifactId = ArtifactId.generate();
+
+    outputArtifactIds.push(outputArtifactId);
+
+    // Use the first input artifact as a template for cloning
+    const templateArtifact = inputArtifacts[0];
+
+    if (!templateArtifact) {
+      throw new Error('No input artifacts available to use as template');
+    }
+
+    // Clone the artifact with a new ID
+    await artifactDb.clone(templateArtifact, outputArtifactId);
+
+    // Update the artifact with output S3 key/bucket and normalized name
+    const baseName = templateArtifact.name || templateArtifact.filename;
+    const normalizedName = toNormalizedFileName(baseName);
+
+    await artifactDb.update(outputArtifactId, {
+      s3_key: output.objectKey,
+      s3_bucket: output.objectBucket,
+      name: outputs.length > 1 ? `${normalizedName}-${index}` : normalizedName,
+    });
+  }
+
+  logger.info('Created normalized artifacts', {
     sessionId,
-    normalizationRunId: inProgressEntry.normalizationRunId,
+    normalizationRunId,
     inputCount: inputArtifacts.length,
+    targetCount: targetArtifacts.length,
     outputCount: outputArtifactIds.length,
   });
 

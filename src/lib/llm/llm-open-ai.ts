@@ -400,6 +400,18 @@ export class LLMOpenAI extends LLM {
   }
 }
 
-export function createLLMOpenAI(config: OpenAIConfig): LLM {
-  return new LLMOpenAI(config) as LLM;
+export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel }): LLM {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
+
+  return new LLMOpenAI({
+    apiKey,
+    logger: params.logger,
+    model: params.model ?? 'gpt-4',
+  }) as LLM;
+}
+
+export function isOpenAIEnabled(): boolean {
+  return process.env.OPENAI_API_KEY !== undefined;
 }

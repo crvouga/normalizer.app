@@ -7,13 +7,8 @@ import type { Logger } from './logger';
  */
 export type TaskHandler<TPayload = unknown> = (
   payload: TPayload,
-  helpers: {
-    logger: {
-      info: (msg: string, meta?: Record<string, unknown>) => void;
-      error: (msg: string, meta?: Record<string, unknown>) => void;
-      warn: (msg: string, meta?: Record<string, unknown>) => void;
-      debug: (msg: string, meta?: Record<string, unknown>) => void;
-    };
+  ctx: {
+    logger: Logger;
   },
 ) => Promise<void>;
 
