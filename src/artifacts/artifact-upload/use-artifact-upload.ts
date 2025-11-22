@@ -51,17 +51,9 @@ export function useArtifactUpload({
         throw new Error('Failed to get upload URL');
       }
 
-      entityStore.addEntity('artifacts', {
-        ...before,
-        created_at: before.created_at ? new Date(before.created_at) : null,
-        updated_at: before.updated_at ? new Date(before.updated_at) : null,
-        download_url_expires_at: before.download_url_expires_at
-          ? new Date(before.download_url_expires_at)
-          : null,
-        upload_url_expires_at: before.upload_url_expires_at
-          ? new Date(before.upload_url_expires_at)
-          : null,
-      });
+      const beforeArtifact = Artifact.schema.parse(before);
+
+      entityStore.addEntity('artifacts', beforeArtifact);
 
       const uploadUrl = new URL(before.upload_url);
       uploadUrl.protocol = window.location.protocol;

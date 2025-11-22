@@ -1,9 +1,13 @@
+import { eq } from 'drizzle-orm';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import * as schema from '../../db/schema';
 import type { Logger } from '../../lib/logger';
+import { Normalizer } from '../../lib/normalizer/normalizer';
 import type { TaskHandler } from '../../lib/graphile-worker-lib';
 import type { NormalizationJobPayload } from '../../shared/graphile-worker';
+import { getS3Config } from '../../shared/s3-config';
+import { createS3 } from '../../shared/s3';
 import type { Db, Tx } from '../../shared/sql';
 import { createDb } from '../../shared/sql';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
@@ -132,6 +136,10 @@ async function performNormalization({
   sessionId: NormalizationSessionId;
   inProgressEntry: NormalizationSessionProjectionEntry;
 }): Promise<ArtifactId[]> {
+  // Create object store and normalizer
+  const objectStore = await createS3({ logger });
+  const normalizer = new Normalizer(objectStore, logger);
+
   // Load input artifacts
   const artifactDb = new ArtifactDb(tx, logger);
   const inputArtifacts = await artifactDb.getByIds(inProgressEntry.inputArtifactIds);
@@ -144,6 +152,9 @@ async function performNormalization({
     });
   }
 
+  // Get S3 bucket configuration
+  const { s3Bucket } = getS3Config();
+
   // Create clone artifacts (copies of input artifacts with new IDs)
   const outputArtifactIds: ArtifactId[] = [];
 
@@ -151,15 +162,36 @@ async function performNormalization({
     const outputArtifactId = ArtifactId.generate();
     outputArtifactIds.push(outputArtifactId);
 
+    // Generate output S3 key
+    const outputS3Key = `artifacts/${outputArtifactId}/${inputArtifact.filename}`;
+
     // Clone the artifact with a new ID
     await artifactDb.clone(inputArtifact, outputArtifactId);
 
-    // Append "_NORMALIZED" to the artifact name, with incrementing number if already exists
+    // Clone the S3 object from input to output
+    await normalizer.normalize({
+      inputKey: inputArtifact.s3_key,
+      inputBucket: inputArtifact.s3_bucket,
+      outputKey: outputS3Key,
+      outputBucket: s3Bucket,
+    });
+
+    // Update the artifact with new S3 key/bucket and normalized name
     const baseName = inputArtifact.name || inputArtifact.filename;
     const normalizedName = toNormalizedFileName(baseName);
     await artifactDb.update(outputArtifactId, {
       name: normalizedName,
     });
+
+    // Update S3 key and bucket in the database
+    await tx
+      .update(schema.artifacts)
+      .set({
+        s3_key: outputS3Key,
+        s3_bucket: s3Bucket,
+        updated_at: new Date(),
+      })
+      .where(eq(schema.artifacts.id, outputArtifactId));
   }
 
   logger.info('Created cloned artifacts', {
