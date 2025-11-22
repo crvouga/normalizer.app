@@ -3,7 +3,7 @@ import { createLogger } from '../lib/logger';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { isOk } from '../lib/result';
 import { createObjectStore } from '../shared/s3';
-import { Artifact as ArtifactModule } from './artifact';
+import { Artifact, Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
@@ -24,10 +24,10 @@ describe('Artifact.populateUrls', async () => {
       uploaded_by: 'user',
     });
     // Override S3 bucket and key for the test
-    const artifactForTest = {
+    const artifactForTest: Artifact = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
 
     // Ensure upload and download URLs are initially missing
@@ -73,8 +73,8 @@ describe('Artifact.populateUrls', async () => {
     // First run to get fresh URLs and expiration
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
     const firstPop = await populateArtifactUrls({
       artifacts: [artifactForTest],
@@ -119,8 +119,8 @@ describe('Artifact.populateUrls', async () => {
 
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
       upload_url: 'http://should-be-replaced',
       download_url: 'http://should-be-replaced',
       upload_url_expires_at: pastDate,
@@ -165,8 +165,8 @@ describe('Artifact.populateUrls', async () => {
 
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
 
     const { artifacts: result } = await populateArtifactUrls({
