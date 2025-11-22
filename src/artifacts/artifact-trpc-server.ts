@@ -44,7 +44,7 @@ export const artifactRouter = router({
       return artifactsWithUrls[0] ?? null;
     }),
 
-  list: procedure
+  listByUser: procedure
     .output(z.array(Artifact.schema))
     .mutation(async ({ ctx }): Promise<Artifact[]> => {
       ctx.logger.info('Artifact list', {

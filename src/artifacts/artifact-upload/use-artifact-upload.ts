@@ -28,6 +28,7 @@ export function useArtifactUpload({
         filename: file.name,
         content_type: file.type,
         ...(name ? { name } : {}),
+        uploaded_by: 'user',
       });
 
       entityStore.addEntity('artifacts', optimisticArtifact);

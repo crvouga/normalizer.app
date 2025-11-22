@@ -12,6 +12,7 @@ import { relations } from 'drizzle-orm';
 import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
+export const artifactUploadedByEnum = pgEnum('artifact_uploaded_by', ['system', 'user']);
 export const userTypeEnum = pgEnum('user_type', ['anonymous', 'authenticated']);
 
 export const artifacts = pgTable('artifacts', {
@@ -29,6 +30,7 @@ export const artifacts = pgTable('artifacts', {
   updated_at: timestamp('updated_at'),
 
   // Upload metadata
+  uploaded_by: artifactUploadedByEnum('uploaded_by').notNull(),
   uploaded_by_user_id: text('uploaded_by_user_id'),
   upload_ip: text('upload_ip'),
 

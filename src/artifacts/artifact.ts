@@ -8,6 +8,7 @@ const create = (input: {
   id: ArtifactId;
   filename: string;
   content_type: string;
+  uploaded_by: 'system' | 'user';
   name?: string;
 }): Artifact => {
   return {
@@ -21,6 +22,7 @@ const create = (input: {
     s3_key: '',
     created_at: new Date(),
     updated_at: new Date(),
+    uploaded_by: input.uploaded_by,
     uploaded_by_user_id: null,
     upload_ip: null,
     sha256: null,

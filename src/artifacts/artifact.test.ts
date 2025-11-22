@@ -21,6 +21,7 @@ describe('Artifact.populateUrls', async () => {
       id: artifactId,
       filename,
       content_type: 'text/plain',
+      uploaded_by: 'user',
     });
     // Override S3 bucket and key for the test
     const artifactForTest = {
@@ -63,6 +64,7 @@ describe('Artifact.populateUrls', async () => {
     const s3_key = `populate-valid/test-file-${Math.random()}`;
     const filename = 'valid.txt';
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename,
       content_type: 'text/plain',
@@ -107,6 +109,7 @@ describe('Artifact.populateUrls', async () => {
     const s3_key = `expire-test/test-file-${Math.random()}`;
     const filename = 'expire-me.txt';
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename,
       content_type: 'text/plain',
@@ -154,6 +157,7 @@ describe('Artifact.populateUrls', async () => {
     const artifactId = ArtifactId.generate();
     const s3_key = `https-enforce/test-file-${Math.random()}`;
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename: 'https-enforce.txt',
       content_type: 'text/plain',

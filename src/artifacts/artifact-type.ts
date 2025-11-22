@@ -17,6 +17,7 @@ export const artifactSchema = z.object({
   created_at: z.coerce.date().nullable().optional(),
   updated_at: z.coerce.date().nullable().optional(),
 
+  uploaded_by: z.enum(['system', 'user']),
   uploaded_by_user_id: z.string().nullable().optional(),
   upload_ip: z.string().nullable().optional(),
 

@@ -19,6 +19,7 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
+import type { Artifact } from '~/src/artifacts/artifact-type';
 
 /**
  * Normalization task handler
@@ -204,11 +205,16 @@ async function performNormalization({
     outputArtifactIds.push(outputArtifactId);
 
     // Use the first input artifact as a template for cloning
-    const templateArtifact = inputArtifacts[0];
+    const maybeTemplateArtifact = inputArtifacts[0];
 
-    if (!templateArtifact) {
+    if (!maybeTemplateArtifact) {
       throw new Error('No input artifacts available to use as template');
     }
+
+    const templateArtifact: Artifact = {
+      ...maybeTemplateArtifact,
+      uploaded_by: 'system',
+    };
 
     // Clone the artifact with a new ID
     await artifactDb.clone(templateArtifact, outputArtifactId);

@@ -38,6 +38,7 @@ export const artifactUploadRouter = router({
         s3_key: s3Key,
         name: input.name ?? null,
         uploaded_by_user_id: ctx.userId,
+        uploaded_by: 'user',
       });
 
       return {
