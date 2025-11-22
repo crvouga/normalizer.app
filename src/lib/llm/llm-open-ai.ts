@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { z } from 'zod';
 import type { Logger } from '../logger';
+import { SecretString } from '../secrets/secret-string';
 import { zodToJsonSchema } from '../zod-to-json-schema';
 import {
   LLM,
@@ -25,7 +26,7 @@ export interface OpenAIConfig {
   /**
    * OpenAI API key
    */
-  apiKey: string;
+  apiKey: SecretString;
   /**
    * Model to use
    */
@@ -70,7 +71,7 @@ export class LLMOpenAI extends LLM {
   constructor(config: OpenAIConfig) {
     super();
     this.client = new OpenAI({
-      apiKey: config.apiKey,
+      apiKey: config.apiKey.DANGEROUSLY_readValue(),
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
     this.model = config.model || 'gpt-4';
@@ -401,7 +402,7 @@ export class LLMOpenAI extends LLM {
 }
 
 export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel }): LLM {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = SecretString.fromEnvVar('OPENAI_API_KEY');
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 

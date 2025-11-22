@@ -1,3 +1,4 @@
+import { enumerate } from '~/src/lib/array/enumerate';
 import { createLLMOpenAI } from '~/src/lib/llm/llm-open-ai';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
@@ -18,7 +19,6 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
-import { enumerate } from '~/src/lib/array/enumerate';
 
 /**
  * Normalization task handler
