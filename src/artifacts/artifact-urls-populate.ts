@@ -128,14 +128,6 @@ function extractUrlBase(url: string | null | undefined): string | null {
 }
 
 /**
- * Ensures a URL uses HTTPS if the endpoint requires it.
- */
-function ensureHTTPS(url: string | undefined, useHTTPS: boolean): string | undefined {
-  if (!url || !useHTTPS) return url;
-  return url.startsWith('http://') ? url.replace('http://', 'https://') : url;
-}
-
-/**
  * Checks if a URL needs to be refreshed based on expiration and base URL match.
  */
 function urlNeedsUpdate(params: {
@@ -165,9 +157,9 @@ async function presignUrl(params: {
   useHTTPS: boolean;
 }): Promise<string | undefined> {
   const { objectStore, bucket, key, method, expiresIn, useHTTPS } = params;
-  const res = await objectStore.presign({ bucket, key, method, expiresIn });
+  const res = await objectStore.presign({ bucket, key, method, expiresIn, useHTTPS });
   if (isOk(res)) {
-    return ensureHTTPS(res.value, useHTTPS);
+    return res.value;
   }
   return undefined;
 }

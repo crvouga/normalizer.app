@@ -1,39 +1,30 @@
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { createObjectStore } from '~/src/shared/s3';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
+
+const TEST_KEYS = [
+  'key1',
+  'key2',
+  'key3',
+  'non-existent-key',
+  'non-existent',
+  'emptyKey',
+  'key.with.dots',
+  'key-with-dashes',
+  'key_with_underscores',
+  'key/slash',
+  'key with spaces',
+];
 
 describe('ObjectStore (S3 implementation)', async () => {
   const logger = createLogger();
   const testBucket = 'test';
   const store = await createObjectStore({ logger });
-
-  beforeAll(async () => {
-    await store.ensureBucketExists(testBucket);
-  });
+  await store.ensureBucketExists(testBucket);
 
   beforeEach(async () => {
-    // Clean up any leftover test data before each test
-    // Delete common test keys that might exist from previous test runs
-    const testKeys = [
-      'key1',
-      'key2',
-      'key3',
-      'non-existent-key',
-      'non-existent',
-      'emptyKey',
-      'key.with.dots',
-      'key-with-dashes',
-      'key_with_underscores',
-      'key/slash',
-      'key with spaces',
-    ];
-    for (const key of testKeys) {
-      const existsResult = await store.exists({ bucket: testBucket, key });
-      if (isOk(existsResult) && existsResult.value) {
-        await store.delete({ bucket: testBucket, key });
-      }
-    }
+    await Promise.all(TEST_KEYS.map((key) => store.delete({ bucket: testBucket, key: key })));
   });
 
   // READ TESTS
@@ -371,6 +362,87 @@ describe('ObjectStore (S3 implementation)', async () => {
       expect(typeof result.value.baseUrl).toBe('string');
       expect(result.value.baseUrl).toMatch(/^https?:\/\/.+/);
       expect(typeof result.value.useHTTPS).toBe('boolean');
+    }
+  });
+
+  // PRESIGN TESTS
+  test('presign: generates presigned GET URL', async () => {
+    const testData = Buffer.from('test data');
+    const writeResult = await store.write({
+      bucket: testBucket,
+      key: 'key1',
+      data: testData,
+    });
+    expect(isOk(writeResult)).toBe(true);
+
+    const presignResult = await store.presign({
+      bucket: testBucket,
+      key: 'key1',
+      method: 'GET',
+      expiresIn: 3600,
+    });
+    expect(isOk(presignResult)).toBe(true);
+    if (isOk(presignResult)) {
+      expect(presignResult.value).toBeDefined();
+      expect(typeof presignResult.value).toBe('string');
+      expect(presignResult.value).toMatch(/^https?:\/\/.+/);
+    }
+  });
+
+  test('presign: generates presigned PUT URL', async () => {
+    const presignResult = await store.presign({
+      bucket: testBucket,
+      key: 'key1',
+      method: 'PUT',
+      expiresIn: 3600,
+    });
+    expect(isOk(presignResult)).toBe(true);
+    if (isOk(presignResult)) {
+      expect(presignResult.value).toBeDefined();
+      expect(typeof presignResult.value).toBe('string');
+      expect(presignResult.value).toMatch(/^https?:\/\/.+/);
+    }
+  });
+
+  test('presign: useHTTPS converts http:// to https:// when true', async () => {
+    const presignResult = await store.presign({
+      bucket: testBucket,
+      key: 'key1',
+      method: 'GET',
+      expiresIn: 3600,
+      useHTTPS: true,
+    });
+    expect(isOk(presignResult)).toBe(true);
+    if (isOk(presignResult)) {
+      expect(presignResult.value).toBeDefined();
+      expect(typeof presignResult.value).toBe('string');
+      // If the URL starts with http://, it should be converted to https://
+      expect(presignResult.value).toMatch(/^https:\/\/.+/);
+    }
+  });
+
+  test('presign: useHTTPS does not affect URL when false or undefined', async () => {
+    const presignResultWithoutFlag = await store.presign({
+      bucket: testBucket,
+      key: 'key1',
+      method: 'GET',
+      expiresIn: 3600,
+    });
+    expect(isOk(presignResultWithoutFlag)).toBe(true);
+
+    const presignResultWithFalse = await store.presign({
+      bucket: testBucket,
+      key: 'key1',
+      method: 'GET',
+      expiresIn: 3600,
+      useHTTPS: false,
+    });
+    expect(isOk(presignResultWithFalse)).toBe(true);
+
+    if (isOk(presignResultWithoutFlag) && isOk(presignResultWithFalse)) {
+      // Both should return valid URLs (may be http:// or https:// depending on endpoint)
+      expect(presignResultWithoutFlag.value).toMatch(/^https?:\/\/.+/);
+      expect(presignResultWithFalse.value).toMatch(/^https?:\/\/.+/);
     }
   });
 });

@@ -215,9 +215,10 @@ export class S3ObjectStore implements ObjectStore {
     key: string;
     method: 'GET' | 'PUT';
     expiresIn: number;
+    useHTTPS?: boolean;
   }): Promise<Result<string, string>> {
-    const { bucket, key, method, expiresIn } = params;
-    this.logger.info('Generating presigned URL', { bucket, key, method, expiresIn });
+    const { bucket, key, method, expiresIn, useHTTPS } = params;
+    this.logger.info('Generating presigned URL', { bucket, key, method, expiresIn, useHTTPS });
     try {
       const minioClient = this.minioClient.client;
 
@@ -228,7 +229,19 @@ export class S3ObjectStore implements ObjectStore {
         url = await minioClient.presignedPutObject(bucket, key, expiresIn);
       }
 
-      this.logger.info('Generated presigned URL', { bucket, key, method, expiresIn, url });
+      // Ensure HTTPS if requested
+      if (useHTTPS && url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+
+      this.logger.info('Generated presigned URL', {
+        bucket,
+        key,
+        method,
+        expiresIn,
+        useHTTPS,
+        url,
+      });
       return Ok(url);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -237,6 +250,7 @@ export class S3ObjectStore implements ObjectStore {
         key,
         method,
         expiresIn,
+        useHTTPS,
         error: errorMessage,
       });
       return Err(`Failed to generate presigned URL: ${errorMessage}`);

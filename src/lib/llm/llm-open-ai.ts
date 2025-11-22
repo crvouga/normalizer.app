@@ -19,6 +19,8 @@ import {
  */
 export type OpenAIModel = OpenAI.ChatModel;
 
+export const CHEAPEST_MODEL: OpenAIModel = 'gpt-3.5-turbo';
+
 /**
  * Configuration for OpenAI LLM client
  */

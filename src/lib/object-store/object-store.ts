@@ -65,7 +65,7 @@ export interface ObjectStore {
 
   /**
    * Generate a presigned URL for an object.
-   * @param params Object containing bucket, key, HTTP method (GET or PUT), and expiration time in seconds
+   * @param params Object containing bucket, key, HTTP method (GET or PUT), expiration time in seconds, and optional useHTTPS flag
    * @returns Result containing the presigned URL, or an error message
    */
   presign(params: {
@@ -73,6 +73,7 @@ export interface ObjectStore {
     key: string;
     method: 'GET' | 'PUT';
     expiresIn: number;
+    useHTTPS?: boolean;
   }): Promise<Result<string, string>>;
 
   /**
