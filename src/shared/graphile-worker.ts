@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Tx } from './sql';
+import type { Tx } from './db';
 import { enqueueJob as enqueueJobLib, type TaskHandler } from '../lib/graphile-worker-lib';
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 

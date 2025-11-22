@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { Db, Tx } from '../shared/sql';
+import type { Db, Tx } from '../shared/db';
 import type { Logger } from './logger';
 
 /**

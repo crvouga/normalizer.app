@@ -8,7 +8,7 @@ import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
 import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
 import { AppNotification } from '~/src/shared/app-notification';
-import type { Db, Tx } from '~/src/shared/sql';
+import type { Db, Tx } from '~/src/shared/db';
 import { procedure, router } from '~/src/shared/trpc-server';
 import type { UserId } from '~/src/users/user-id';
 import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';

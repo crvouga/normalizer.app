@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { PostgresKeyValueStore } from '../../lib/key-value-store/key-value-store-postgres';
 import { isOk } from '../../lib/result';
 import { TypedKeyValueStore } from '../../lib/typed-key-value-store';
-import type { Db } from '../../shared/sql';
+import type { Db } from '../../shared/db';
 import { isGoogleAuthEnabled } from './google-oauth-config';
 
 // OAuth state schema for type-safe storage

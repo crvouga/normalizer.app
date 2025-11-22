@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import type { Db } from '../shared/sql';
-import { cleanupDb, createDb, getPostgresConnection } from '../shared/sql';
+import type { Db } from '../shared/db';
+import { cleanupDb, createDb, getPostgresConnection } from '../shared/db';
 import { createLogger } from './logger';
 import { PostgresNotification } from './postgres-notification';
 

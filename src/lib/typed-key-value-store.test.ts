@@ -1,11 +1,11 @@
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { z } from 'zod';
-import { createDb, cleanupDb } from '../shared/sql';
+import { createDb, cleanupDb } from '../shared/db';
 import { createLogger } from './logger';
 import { isOk } from './result';
 import { PostgresKeyValueStore } from './key-value-store/key-value-store-postgres';
 import { TypedKeyValueStore } from './typed-key-value-store';
-import type { Db } from '../shared/sql';
+import type { Db } from '../shared/db';
 
 describe('TypedKeyValueStore', () => {
   const logger = createLogger();

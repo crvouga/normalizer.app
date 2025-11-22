@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Logger } from '../lib/logger';
 import type { ObjectStore } from '../lib/object-store/object-store';
-import type { Db, Tx } from '../shared/sql';
+import type { Db, Tx } from '../shared/db';
 import { UserId } from '../users/user-id';
 import * as schema from '../db/schema';
 import { Artifact } from './artifact';

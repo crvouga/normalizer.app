@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
-import type { Db } from '../../../shared/sql';
+import type { Db } from '../../../shared/db';
 import type { GoogleUserInfo } from '../google-oauth-service';
 import { users, userSessions, type IUser } from '../../../db/schema';
 import { UserId } from '../../../users/user-id';

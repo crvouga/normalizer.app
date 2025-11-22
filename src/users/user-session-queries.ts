@@ -1,5 +1,5 @@
 import { and, desc, asc, eq, isNull } from 'drizzle-orm';
-import type { Db } from '../shared/sql';
+import type { Db } from '../shared/db';
 import { userSessions, users } from '../db/schema';
 import type { SessionId } from '../shared/session-id';
 

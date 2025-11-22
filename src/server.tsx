@@ -7,7 +7,7 @@ import { createLogger } from './lib/logger';
 import { createObjectStore } from './shared/s3';
 import { SessionId } from './shared/session-id';
 import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
-import { cleanupDb, createDb } from './shared/sql';
+import { cleanupDb, createDb } from './shared/db';
 import { createContext } from './shared/trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';

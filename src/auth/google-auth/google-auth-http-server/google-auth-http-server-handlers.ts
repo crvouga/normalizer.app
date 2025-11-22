@@ -1,6 +1,6 @@
 import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
-import type { Db } from '../../../shared/sql';
+import type { Db } from '../../../shared/db';
 import { isGoogleAuthEnabled } from '../google-oauth-config';
 import { generateAuthUrl, getUserInfo, validateCallback } from '../google-oauth-service';
 import { getCookie } from '../../../lib/http-cookie';

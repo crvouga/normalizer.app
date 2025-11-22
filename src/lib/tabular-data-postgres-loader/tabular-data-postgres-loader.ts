@@ -1,9 +1,10 @@
-import type postgres from 'postgres';
-import type { ObjectStore } from '../object-store/object-store';
-import type { Logger } from '../logger';
-import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
-import { isOk } from '../result';
+import { z } from 'zod';
 import { parseCsv, type ColumnSchema } from '../csv/csv';
+import type { Logger } from '../logger';
+import type { ObjectStore } from '../object-store/object-store';
+import { isOk, Ok } from '../result';
+import type { SqlDb } from '../sql-db/sql-db';
+import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
 /**
  * Tabular data structure with parsed data and schema
@@ -41,7 +42,7 @@ export class TabularDataPostgresLoader {
   private converter: TabularDataConverter;
 
   constructor(
-    private readonly sql: ReturnType<typeof postgres>,
+    private readonly sql: SqlDb,
     private readonly logger: Logger,
     private readonly objectStore: ObjectStore,
   ) {
@@ -186,18 +187,31 @@ export class TabularDataPostgresLoader {
     // Drop table if requested
     if (options.dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
-      await this.sql.unsafe(`DROP TABLE IF EXISTS ${this.escapeIdentifier(tableName)}`);
+      const dropResult = await this.sql.unsafe(
+        `DROP TABLE IF EXISTS ${this.escapeIdentifier(tableName)}`,
+      );
+      if (!isOk(dropResult)) {
+        throw new Error(`Failed to drop table: ${dropResult.error}`);
+      }
     }
 
     // Check if table exists
-    const tableExistsResult = await this.sql`
+    const tableExistsQuery = `
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name = ${tableName}
-      )
+        AND table_name = $1
+      ) as exists
     `;
-    const tableExists = tableExistsResult[0]?.exists ?? false;
+    const tableExistsResult = await this.sql.query(
+      tableExistsQuery,
+      z.object({ exists: z.boolean() }),
+      [tableName],
+    );
+    if (!isOk(tableExistsResult)) {
+      throw new Error(`Failed to check if table exists: ${tableExistsResult.error}`);
+    }
+    const tableExists = tableExistsResult.value[0]?.exists ?? false;
 
     if (!tableExists) {
       // Create table with schema
@@ -219,9 +233,12 @@ export class TabularDataPostgresLoader {
         })
         .join(', ');
 
-      await this.sql.unsafe(
+      const createResult = await this.sql.unsafe(
         `CREATE TABLE ${this.escapeIdentifier(tableName)} (${columnDefinitions})`,
       );
+      if (!isOk(createResult)) {
+        throw new Error(`Failed to create table: ${createResult.error}`);
+      }
     } else {
       this.logger.debug('Table already exists', { tableName });
     }
@@ -229,7 +246,12 @@ export class TabularDataPostgresLoader {
     // Truncate if requested
     if (options.truncate) {
       this.logger.debug('Truncating table', { tableName });
-      await this.sql.unsafe(`TRUNCATE TABLE ${this.escapeIdentifier(tableName)}`);
+      const truncateResult = await this.sql.unsafe(
+        `TRUNCATE TABLE ${this.escapeIdentifier(tableName)}`,
+      );
+      if (!isOk(truncateResult)) {
+        throw new Error(`Failed to truncate table: ${truncateResult.error}`);
+      }
     }
   }
 
@@ -254,7 +276,7 @@ export class TabularDataPostgresLoader {
     let totalInserted = 0;
 
     // Use a transaction for better performance and atomicity
-    await this.sql.begin(async (tx) => {
+    const transactionResult = await this.sql.begin(async (tx) => {
       for (let i = 0; i < dataRows.length; i += batchSize) {
         const batch = dataRows.slice(i, i + batchSize);
 
@@ -276,7 +298,10 @@ export class TabularDataPostgresLoader {
 
         // Execute batched insert
         const insertQuery = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
-        await tx.unsafe(insertQuery, values);
+        const insertResult = await tx.unsafe(insertQuery, values);
+        if (!isOk(insertResult)) {
+          throw new Error(`Failed to insert batch: ${insertResult.error}`);
+        }
 
         totalInserted += batch.length;
 
@@ -287,7 +312,13 @@ export class TabularDataPostgresLoader {
           progress: `${Math.round((totalInserted / dataRows.length) * 100)}%`,
         });
       }
+      // Return success result with total inserted count
+      return Ok(totalInserted);
     });
+
+    if (!isOk(transactionResult)) {
+      throw new Error(`Transaction failed: ${transactionResult.error}`);
+    }
 
     return totalInserted;
   }

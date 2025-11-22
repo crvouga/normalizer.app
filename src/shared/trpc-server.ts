@@ -1,6 +1,6 @@
 import { initTRPC } from '@trpc/server';
 import type { Logger } from '../lib/logger';
-import type { Db, Tx } from './sql';
+import type { Db, Tx } from './db';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { getSessionId } from './session-id-cookie';
 import { SessionId } from './session-id';
