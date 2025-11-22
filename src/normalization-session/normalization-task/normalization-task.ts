@@ -179,13 +179,13 @@ async function performNormalization({
 
   // Prepare inputs and targets for normalization
   const inputs = inputArtifacts.map((artifact) => ({
-    objectKey: artifact.s3_key,
-    objectBucket: artifact.s3_bucket,
+    objectKey: artifact.object_key,
+    objectBucket: artifact.object_bucket,
   }));
 
   const targets = targetArtifacts.map((artifact) => ({
-    objectKey: artifact.s3_key,
-    objectBucket: artifact.s3_bucket,
+    objectKey: artifact.object_key,
+    objectBucket: artifact.object_bucket,
   }));
 
   // Call normalize with all inputs and targets

@@ -22,8 +22,8 @@ export const artifacts = pgTable('artifacts', {
   size: integer('size').notNull(),
   file_type: text('file_type').notNull(),
   status: artifactStatusEnum('status').notNull(),
-  s3_bucket: text('s3_bucket').notNull(),
-  s3_key: text('s3_key').notNull(),
+  object_bucket: text('object_bucket').notNull(),
+  object_key: text('object_key').notNull(),
 
   // Common extra metadata
   created_at: timestamp('created_at'),

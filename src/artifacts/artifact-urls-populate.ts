@@ -82,8 +82,8 @@ async function updateArtifactUrls(params: {
   const newUploadUrl = uploadNeedsUpdate
     ? await presignUrl({
         objectStore,
-        bucket: artifact.s3_bucket,
-        key: artifact.s3_key,
+        bucket: artifact.object_bucket,
+        key: artifact.object_key,
         method: 'PUT',
         expiresIn: URL_EXPIRES_IN_SECONDS,
         useHTTPS,
@@ -93,8 +93,8 @@ async function updateArtifactUrls(params: {
   const newDownloadUrl = downloadNeedsUpdate
     ? await presignUrl({
         objectStore,
-        bucket: artifact.s3_bucket,
-        key: artifact.s3_key,
+        bucket: artifact.object_bucket,
+        key: artifact.object_key,
         method: 'GET',
         expiresIn: URL_EXPIRES_IN_SECONDS,
         useHTTPS,
