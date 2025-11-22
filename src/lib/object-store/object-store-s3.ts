@@ -220,6 +220,26 @@ export class S3ObjectStore implements ObjectStore {
     const { bucket, key, method, expiresIn, useHTTPS } = params;
     this.logger.info('Generating presigned URL', { bucket, key, method, expiresIn, useHTTPS });
     try {
+      // Verify bucket exists before attempting to presign
+      const bucketExistsResult = await this.bucketExists(bucket);
+      if (bucketExistsResult.tag === 'err') {
+        this.logger.error('Cannot generate presigned URL: bucket check failed', {
+          bucket,
+          key,
+          method,
+          error: bucketExistsResult.error,
+        });
+        return Err(`Bucket check failed: ${bucketExistsResult.error}`);
+      }
+      if (!bucketExistsResult.value) {
+        this.logger.error('Cannot generate presigned URL: bucket does not exist', {
+          bucket,
+          key,
+          method,
+        });
+        return Err(`Bucket does not exist: ${bucket}`);
+      }
+
       const minioClient = this.minioClient.client;
 
       let url: string;
@@ -227,6 +247,17 @@ export class S3ObjectStore implements ObjectStore {
         url = await minioClient.presignedGetObject(bucket, key, expiresIn);
       } else {
         url = await minioClient.presignedPutObject(bucket, key, expiresIn);
+      }
+
+      // Validate the generated URL
+      if (!url || typeof url !== 'string' || url.trim() === '') {
+        this.logger.error('Presigned URL generation returned empty or invalid URL', {
+          bucket,
+          key,
+          method,
+          url,
+        });
+        return Err('Presigned URL generation returned empty or invalid URL');
       }
 
       // Ensure HTTPS if requested
@@ -244,16 +275,32 @@ export class S3ObjectStore implements ObjectStore {
       });
       return Ok(url);
     } catch (error) {
+      // Enhanced error logging to capture full error details
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      const errorName = error instanceof Error ? error.name : undefined;
+      const errorString = error ? String(error) : 'Unknown error';
+      const errorJson = error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : 'null';
+
       this.logger.error('Failed to generate presigned URL', {
         bucket,
         key,
         method,
         expiresIn,
         useHTTPS,
-        error: errorMessage,
+        error: errorMessage || errorString,
+        errorName,
+        errorStack,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorJson,
+        s3Endpoint: this.s3Endpoint,
       });
-      return Err(`Failed to generate presigned URL: ${errorMessage}`);
+
+      // Provide a more descriptive error message
+      const descriptiveError =
+        errorMessage || errorString || 'Unknown error during presigned URL generation';
+      return Err(`Failed to generate presigned URL: ${descriptiveError}`);
     }
   }
 
