@@ -1,26 +1,20 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import * as XLSX from 'xlsx';
 import { createObjectStore } from '../../shared/s3';
 import { createLogger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk } from '../result';
-import { FileConverter } from './tabular-data-converter';
+import { TabularDataConverter } from './tabular-data-converter';
 
-describe('FileConverter', () => {
+describe('FileConverter', async () => {
   const logger = createLogger();
   const testBucket = 'test-file-converter';
-
-  let objectStore: ObjectStore;
-  let fileConverter: FileConverter;
-
-  beforeAll(async () => {
-    objectStore = await createObjectStore({ logger });
-    await objectStore.ensureBucketExists(testBucket);
-    fileConverter = new FileConverter({
-      objectStore,
-      logger,
-      cacheBucket: testBucket,
-    });
+  const objectStore: ObjectStore = await createObjectStore({ logger });
+  await objectStore.ensureBucketExists(testBucket);
+  const tabularDataConverter: TabularDataConverter = new TabularDataConverter({
+    objectStore,
+    logger,
+    cacheBucket: testBucket,
   });
 
   test('should generate deterministic cache keys', async () => {
@@ -46,13 +40,13 @@ describe('FileConverter', () => {
     }
 
     // First conversion - should create cache
-    const result1 = await fileConverter.convert(sourceBucket, sourceKey, targetFormat);
+    const result1 = await tabularDataConverter.convert(sourceBucket, sourceKey, targetFormat);
     expect(result1.bucket).toBe(testBucket);
     expect(result1.key).toContain('file-conversions/');
     expect(result1.key).toContain('/csv.csv');
 
     // Second conversion - should return cached result
-    const result2 = await fileConverter.convert(sourceBucket, sourceKey, targetFormat);
+    const result2 = await tabularDataConverter.convert(sourceBucket, sourceKey, targetFormat);
     expect(result2.key).toBe(result1.key); // Same cache key
   });
 
@@ -80,7 +74,7 @@ describe('FileConverter', () => {
     }
 
     // Convert to CSV
-    const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
     expect(result.bucket).toBe(testBucket);
     expect(result.key).toContain('.csv');
 
@@ -115,7 +109,7 @@ describe('FileConverter', () => {
     }
 
     // Convert to Excel
-    const result = await fileConverter.convert(testBucket, sourceKey, 'excel');
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'excel');
     expect(result.bucket).toBe(testBucket);
     expect(result.key).toContain('.xlsx');
 
@@ -160,10 +154,10 @@ describe('FileConverter', () => {
     }
 
     // First conversion
-    const result1 = await fileConverter.convert(testBucket, sourceKey, 'excel');
+    const result1 = await tabularDataConverter.convert(testBucket, sourceKey, 'excel');
 
     // Second conversion (should be cached)
-    const result2 = await fileConverter.convert(testBucket, sourceKey, 'excel');
+    const result2 = await tabularDataConverter.convert(testBucket, sourceKey, 'excel');
 
     // Should return same key
     expect(result1.key).toBe(result2.key);
@@ -187,7 +181,7 @@ describe('FileConverter', () => {
     }
 
     // Convert CSV to CSV (should still work, just returns cached version)
-    const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
     expect(result.key).toContain('.csv');
 
     // Verify content is preserved
@@ -202,7 +196,7 @@ describe('FileConverter', () => {
 
   test('should throw error for non-existent source file', async () => {
     const nonExistentKey = `non-existent-${Date.now()}.csv`;
-    expect(fileConverter.convert(testBucket, nonExistentKey, 'excel')).rejects.toThrow();
+    expect(tabularDataConverter.convert(testBucket, nonExistentKey, 'excel')).rejects.toThrow();
   });
 
   test('should handle different source buckets', async () => {
@@ -221,7 +215,7 @@ describe('FileConverter', () => {
     }
 
     // Convert - should work with same bucket
-    const result = await fileConverter.convert(testBucket, sourceKey, 'excel');
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'excel');
     expect(result.bucket).toBe(testBucket);
     expect(result.key).toContain('.xlsx');
   });
@@ -241,7 +235,9 @@ describe('FileConverter', () => {
     }
 
     // Try to convert to an unsupported format
-    expect(fileConverter.convert(testBucket, sourceKey, 'unsupported-format')).rejects.toThrow();
+    expect(
+      tabularDataConverter.convert(testBucket, sourceKey, 'unsupported-format'),
+    ).rejects.toThrow();
   });
 
   test('should preserve original file if no conversion is required', async () => {
@@ -259,7 +255,7 @@ describe('FileConverter', () => {
     }
 
     // Convert CSV to CSV (no-op)
-    const result = await fileConverter.convert(testBucket, sourceKey, 'csv');
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
     expect(result.bucket).toBe(testBucket);
     expect(result.key.endsWith('.csv')).toBeTruthy();
 
@@ -285,7 +281,7 @@ describe('FileConverter', () => {
       throw new Error(`Failed to write: ${writeResult8.error}`);
     }
 
-    const result = await fileConverter.convert(testBucket, strangeFilename, 'excel');
+    const result = await tabularDataConverter.convert(testBucket, strangeFilename, 'excel');
     expect(result.key).toContain('.xlsx');
 
     const existsResult3 = await objectStore.exists({ bucket: result.bucket, key: result.key });
@@ -310,7 +306,7 @@ describe('FileConverter', () => {
         throw new Error(`Failed to write: ${writeResult9.error}`);
       }
 
-      const result = await fileConverter.convert(testBucket, key, target);
+      const result = await tabularDataConverter.convert(testBucket, key, target);
       expect(result.key).toContain(targetExt);
       const existsResult4 = await objectStore.exists({ bucket: result.bucket, key: result.key });
       const exists = isOk(existsResult4) && existsResult4.value;
@@ -335,6 +331,6 @@ describe('FileConverter', () => {
 
     // Provide a non-existent bucket to the result (simulate)
     const nonExistentBucket = `NO_BUCKET_${Date.now()}`;
-    expect(fileConverter.convert(nonExistentBucket, sourceKey, 'excel')).rejects.toThrow();
+    expect(tabularDataConverter.convert(nonExistentBucket, sourceKey, 'excel')).rejects.toThrow();
   });
 });

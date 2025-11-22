@@ -12,7 +12,7 @@ export interface ConvertResult {
   key: string;
 }
 
-export class FileConverter {
+export class TabularDataConverter {
   private objectStore: ObjectStore;
   private logger: Logger;
   private cacheBucket: string;
