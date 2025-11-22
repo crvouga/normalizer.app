@@ -110,8 +110,8 @@ export class ArtifactDb {
     file_type: string;
     status: 'pending' | 'uploaded';
     uploaded_by: 'system' | 'user';
-    s3_bucket: string;
-    s3_key: string;
+    object_bucket: string;
+    object_key: string;
     name?: string | null;
     uploaded_by_user_id: UserId;
     created_at?: Date;
@@ -124,8 +124,8 @@ export class ArtifactDb {
       size: artifactData.size,
       file_type: artifactData.file_type,
       status: artifactData.status,
-      s3_bucket: artifactData.s3_bucket,
-      s3_key: artifactData.s3_key,
+      object_bucket: artifactData.object_bucket,
+      object_key: artifactData.object_key,
       name: artifactData.name ?? null,
       uploaded_by: artifactData.uploaded_by,
       uploaded_by_user_id: artifactData.uploaded_by_user_id,
@@ -251,8 +251,8 @@ export class ArtifactDb {
       size: artifact.size,
       file_type: artifact.file_type,
       status: artifact.status,
-      s3_bucket: artifact.object_bucket,
-      s3_key: artifact.object_key,
+      object_bucket: artifact.object_bucket,
+      object_key: artifact.object_key,
       name: artifact.name ?? null,
       uploaded_by: artifact.uploaded_by ?? 'user',
       uploaded_by_user_id: artifact.uploaded_by_user_id ?? null,
