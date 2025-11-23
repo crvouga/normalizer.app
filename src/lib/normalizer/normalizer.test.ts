@@ -39,8 +39,8 @@ describe.skipIf(!isOpenAIEnabled())('Normalizer', async () => {
         instructor_officeHours: '10:00-11:00',
       },
     ];
-
-    // TODO: Add test implementation
+    expect(inputFile).toHaveLength(1);
+    expect(targetFile).toHaveLength(1);
     expect(normalizer).toBeDefined();
   });
 });
