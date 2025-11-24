@@ -38,12 +38,23 @@ export class MinioClient {
       this.logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', { bucket });
       return Ok(exists);
     } catch (error) {
+      // Enhanced error handling to capture more details
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorString = String(error);
+      const errorJson = JSON.stringify(error, Object.getOwnPropertyNames(error));
+
+      // Provide a fallback error message if all attempts produce empty strings
+      const finalErrorMessage =
+        errorMessage || errorString || errorJson || 'Unknown error checking bucket existence';
+
       this.logger.warn('Error checking bucket existence', {
         bucket,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorJson,
       });
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 
@@ -57,19 +68,26 @@ export class MinioClient {
         this.logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', { bucket });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorString = String(error);
+        const finalErrorMessage = errorMessage || errorString || 'Unknown error';
+
         if (
-          errorMessage.toLowerCase().includes('unable to connect') ||
-          errorMessage.toLowerCase().includes('access the url')
+          finalErrorMessage.toLowerCase().includes('unable to connect') ||
+          finalErrorMessage.toLowerCase().includes('access the url')
         ) {
           this.logger.error('Error creating bucket', {
             bucket,
-            error: errorMessage,
+            error: finalErrorMessage,
+            errorType: typeof error,
+            errorConstructor: error?.constructor?.name,
           });
-          return Err(errorMessage);
+          return Err(finalErrorMessage);
         }
         this.logger.warn('Error checking bucket existence', {
           bucket,
-          error: errorMessage,
+          error: finalErrorMessage,
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
         });
         exists = false;
       }
@@ -83,11 +101,14 @@ export class MinioClient {
       return Ok(undefined);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalErrorMessage = errorMessage || String(error) || 'Unknown error creating bucket';
       this.logger.error('Error creating bucket', {
         bucket,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
       });
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 
@@ -113,11 +134,15 @@ export class MinioClient {
       return Ok(undefined);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalErrorMessage =
+        errorMessage || String(error) || 'Unknown error setting bucket policy';
       this.logger.error('Error setting bucket policy', {
         bucket,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
       });
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 
@@ -166,12 +191,16 @@ export class MinioClient {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalErrorMessage =
+        errorMessage || String(error) || 'Unknown error ensuring bucket exists';
       this.logger.error('Error ensuring bucket exists', {
         bucket,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
       });
       this.logger.warn('Continuing without S3 bucket - some features may not work');
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 
@@ -200,12 +229,16 @@ export class MinioClient {
       return Ok(url);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalErrorMessage =
+        errorMessage || String(error) || 'Unknown error generating presigned URL';
       this.logger.error('Error generating presigned URL', {
         bucket,
         objectKey,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
       });
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 
@@ -219,12 +252,15 @@ export class MinioClient {
       return Ok(undefined);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const finalErrorMessage = errorMessage || String(error) || 'Unknown error deleting object';
       this.logger.error('Error deleting object', {
         bucket,
         objectKey,
-        error: errorMessage,
+        error: finalErrorMessage,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
       });
-      return Err(errorMessage);
+      return Err(finalErrorMessage);
     }
   }
 

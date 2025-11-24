@@ -223,33 +223,14 @@ export class S3ObjectStore implements ObjectStore {
     const { bucket, key, method, expiresIn, useHTTPS } = params;
     this.logger.info('Generating presigned URL', { bucket, key, method, expiresIn, useHTTPS });
     try {
-      // Verify bucket exists before attempting to presign
-      const bucketExistsResult = await this.bucketExists(bucket);
-      if (bucketExistsResult.tag === 'err') {
-        this.logger.error('Cannot generate presigned URL: bucket check failed', {
-          bucket,
-          key,
-          method,
-          error: bucketExistsResult.error,
-        });
-        return Err(`Bucket check failed: ${bucketExistsResult.error}`);
-      }
-      if (!bucketExistsResult.value) {
-        this.logger.error('Cannot generate presigned URL: bucket does not exist', {
-          bucket,
-          key,
-          method,
-        });
-        return Err(`Bucket does not exist: ${bucket}`);
-      }
-
-      const minioClient = this.minioClient.client;
+      // Use Bun's S3Client to generate presigned URL
+      const file = this.s3Client.file(key, { bucket });
 
       let url: string;
       if (method === 'GET') {
-        url = await minioClient.presignedGetObject(bucket, key, expiresIn);
+        url = file.presign({ expiresIn, method: 'GET' });
       } else {
-        url = await minioClient.presignedPutObject(bucket, key, expiresIn);
+        url = file.presign({ expiresIn, method: 'PUT' });
       }
 
       // Validate the generated URL
