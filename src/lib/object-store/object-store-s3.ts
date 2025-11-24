@@ -1,4 +1,5 @@
 import { S3Client } from 'bun';
+import { handleError } from '../error';
 import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
 import { Err, Ok, type Result } from '../result';
@@ -64,9 +65,12 @@ export class S3ObjectStore implements ObjectStore {
       this.logger.info('Successfully read object from S3', { bucket, key });
       return Ok(Buffer.from(arrayBuffer));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to read object from S3', { bucket, key, error: errorMessage });
-      return Err(`Failed to read object: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to read object from S3',
+        context: { bucket, key },
+        errorPrefix: 'Failed to read object',
+      });
     }
   }
 
@@ -85,14 +89,12 @@ export class S3ObjectStore implements ObjectStore {
       this.logger.info('Successfully wrote object to S3', { bucket, key, contentType });
       return Ok(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to write object to S3', {
-        bucket,
-        key,
-        error: errorMessage,
-        contentType,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to write object to S3',
+        context: { bucket, key, contentType },
+        errorPrefix: 'Failed to write object',
       });
-      return Err(`Failed to write object: ${errorMessage}`);
     }
   }
 
@@ -105,13 +107,12 @@ export class S3ObjectStore implements ObjectStore {
       this.logger.info('Checked existence of object in S3', { bucket, key, exists });
       return Ok(exists);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to check if object exists in S3', {
-        bucket,
-        key,
-        error: errorMessage,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to check if object exists in S3',
+        context: { bucket, key },
+        errorPrefix: 'Failed to check if object exists',
       });
-      return Err(`Failed to check if object exists: ${errorMessage}`);
     }
   }
 
@@ -142,13 +143,12 @@ export class S3ObjectStore implements ObjectStore {
         const file = this.s3Client.file(key, { bucket });
         const stillExists = await file.exists();
         if (stillExists) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          this.logger.error('Failed to delete object from S3, still exists after error', {
-            bucket,
-            key,
-            error: errorMessage,
+          return handleError(error, {
+            logger: this.logger,
+            logMessage: 'Failed to delete object from S3, still exists after error',
+            context: { bucket, key },
+            errorPrefix: 'Failed to delete object',
           });
-          return Err(`Failed to delete object: ${errorMessage}`);
         }
 
         this.logger.info('Object not found after failed delete, considering deletion successful', {
@@ -157,13 +157,12 @@ export class S3ObjectStore implements ObjectStore {
         });
         return Ok(undefined);
       } catch (innerError) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.logger.error('Failed to delete object and re-check existence', {
-          bucket,
-          key,
-          error: errorMessage,
+        return handleError(error, {
+          logger: this.logger,
+          logMessage: 'Failed to delete object and re-check existence',
+          context: { bucket, key },
+          errorPrefix: 'Failed to delete object',
         });
-        return Err(`Failed to delete object: ${errorMessage}`);
       }
     }
   }
@@ -259,32 +258,20 @@ export class S3ObjectStore implements ObjectStore {
       });
       return Ok(url);
     } catch (error) {
-      // Enhanced error logging to capture full error details
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      const errorName = error instanceof Error ? error.name : undefined;
-      const errorString = error ? String(error) : 'Unknown error';
-      const errorJson = error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : 'null';
-
-      this.logger.error('Failed to generate presigned URL', {
-        bucket,
-        key,
-        method,
-        expiresIn,
-        useHTTPS,
-        error: errorMessage || errorString,
-        errorName,
-        errorStack,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorJson,
-        s3Endpoint: this.s3Endpoint,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to generate presigned URL',
+        context: {
+          bucket,
+          key,
+          method,
+          expiresIn,
+          useHTTPS,
+          s3Endpoint: this.s3Endpoint,
+        },
+        defaultMessage: 'Unknown error during presigned URL generation',
+        errorPrefix: 'Failed to generate presigned URL',
       });
-
-      // Provide a more descriptive error message
-      const descriptiveError =
-        errorMessage || errorString || 'Unknown error during presigned URL generation';
-      return Err(`Failed to generate presigned URL: ${descriptiveError}`);
     }
   }
 
@@ -305,12 +292,12 @@ export class S3ObjectStore implements ObjectStore {
       this.logger.info('Fetched endpoint info', { baseUrl, useHTTPS });
       return Ok({ baseUrl, useHTTPS });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to get endpoint info', {
-        s3Endpoint: this.s3Endpoint,
-        error: errorMessage,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to get endpoint info',
+        context: { s3Endpoint: this.s3Endpoint },
+        errorPrefix: 'Failed to get endpoint info',
       });
-      return Err(`Failed to get endpoint info: ${errorMessage}`);
     }
   }
 }

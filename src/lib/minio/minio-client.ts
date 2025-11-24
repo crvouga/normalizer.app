@@ -1,4 +1,5 @@
 import * as Minio from 'minio';
+import { handleError, handleErrorAsWarn } from '../error';
 import type { Logger } from '../logger';
 import { Err, Ok, type Result } from '../result';
 
@@ -38,23 +39,12 @@ export class MinioClient {
       this.logger.info(exists ? 'Bucket already exists' : 'Bucket does not exist', { bucket });
       return Ok(exists);
     } catch (error) {
-      // Enhanced error handling to capture more details
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorString = String(error);
-      const errorJson = JSON.stringify(error, Object.getOwnPropertyNames(error));
-
-      // Provide a fallback error message if all attempts produce empty strings
-      const finalErrorMessage =
-        errorMessage || errorString || errorJson || 'Unknown error checking bucket existence';
-
-      this.logger.warn('Error checking bucket existence', {
-        bucket,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorJson,
+      return handleErrorAsWarn(error, {
+        logger: this.logger,
+        logMessage: 'Error checking bucket existence',
+        context: { bucket },
+        defaultMessage: 'Unknown error checking bucket existence',
       });
-      return Err(finalErrorMessage);
     }
   }
 
@@ -75,16 +65,17 @@ export class MinioClient {
           finalErrorMessage.toLowerCase().includes('unable to connect') ||
           finalErrorMessage.toLowerCase().includes('access the url')
         ) {
-          this.logger.error('Error creating bucket', {
-            bucket,
-            error: finalErrorMessage,
-            errorType: typeof error,
-            errorConstructor: error?.constructor?.name,
+          return handleError(error, {
+            logger: this.logger,
+            logMessage: 'Error creating bucket',
+            context: { bucket },
+            defaultMessage: 'Unknown error',
           });
-          return Err(finalErrorMessage);
         }
+
+        const details = { bucket };
         this.logger.warn('Error checking bucket existence', {
-          bucket,
+          ...details,
           error: finalErrorMessage,
           errorType: typeof error,
           errorConstructor: error?.constructor?.name,
@@ -100,15 +91,12 @@ export class MinioClient {
       this.logger.info('Successfully created bucket', { bucket });
       return Ok(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalErrorMessage = errorMessage || String(error) || 'Unknown error creating bucket';
-      this.logger.error('Error creating bucket', {
-        bucket,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Error creating bucket',
+        context: { bucket },
+        defaultMessage: 'Unknown error creating bucket',
       });
-      return Err(finalErrorMessage);
     }
   }
 
@@ -133,16 +121,12 @@ export class MinioClient {
       this.logger.info('Successfully set bucket policy', { bucket });
       return Ok(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalErrorMessage =
-        errorMessage || String(error) || 'Unknown error setting bucket policy';
-      this.logger.error('Error setting bucket policy', {
-        bucket,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Error setting bucket policy',
+        context: { bucket },
+        defaultMessage: 'Unknown error setting bucket policy',
       });
-      return Err(finalErrorMessage);
     }
   }
 
@@ -190,17 +174,14 @@ export class MinioClient {
         return Ok(undefined);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalErrorMessage =
-        errorMessage || String(error) || 'Unknown error ensuring bucket exists';
-      this.logger.error('Error ensuring bucket exists', {
-        bucket,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
+      const result = handleError(error, {
+        logger: this.logger,
+        logMessage: 'Error ensuring bucket exists',
+        context: { bucket },
+        defaultMessage: 'Unknown error ensuring bucket exists',
       });
       this.logger.warn('Continuing without S3 bucket - some features may not work');
-      return Err(finalErrorMessage);
+      return result;
     }
   }
 
@@ -228,17 +209,12 @@ export class MinioClient {
       });
       return Ok(url);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalErrorMessage =
-        errorMessage || String(error) || 'Unknown error generating presigned URL';
-      this.logger.error('Error generating presigned URL', {
-        bucket,
-        objectKey,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Error generating presigned URL',
+        context: { bucket, objectKey },
+        defaultMessage: 'Unknown error generating presigned URL',
       });
-      return Err(finalErrorMessage);
     }
   }
 
@@ -251,16 +227,12 @@ export class MinioClient {
       });
       return Ok(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const finalErrorMessage = errorMessage || String(error) || 'Unknown error deleting object';
-      this.logger.error('Error deleting object', {
-        bucket,
-        objectKey,
-        error: finalErrorMessage,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Error deleting object',
+        context: { bucket, objectKey },
+        defaultMessage: 'Unknown error deleting object',
       });
-      return Err(finalErrorMessage);
     }
   }
 
