@@ -1,5 +1,6 @@
 import { enumerate } from '~/src/lib/array/enumerate';
 import { createLLMOpenAI } from '~/src/lib/llm/llm-open-ai';
+import { isOk } from '~/src/lib/result';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import * as schema from '../../db/schema';
@@ -189,12 +190,23 @@ async function performNormalization({
   }));
 
   // Call normalize with all inputs and targets
-  const { outputs } = await normalizer.normalize({
+  const normalizeResult = await normalizer.normalize({
     inputs,
     targets,
     outputObjectBucket: s3Bucket,
     outputObjectKeyPrefix: `normalizer-output/${normalizationRunId}/`,
   });
+
+  if (!isOk(normalizeResult)) {
+    logger.error('Normalization failed', {
+      sessionId,
+      normalizationRunId,
+      error: normalizeResult.error,
+    });
+    throw new Error(`Normalization failed: ${normalizeResult.error}`);
+  }
+
+  const { outputs } = normalizeResult.value;
 
   // Create artifacts for each output
   const outputArtifactIds: ArtifactId[] = [];

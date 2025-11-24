@@ -1,7 +1,7 @@
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
-import { isOk } from '../result';
+import { Err, Ok, isOk, type Result } from '../result';
 
 type ObjectLocation = {
   objectKey: string;
@@ -25,7 +25,7 @@ export class Normalizer {
     inputs: ObjectLocation[];
     outputObjectKeyPrefix: string;
     outputObjectBucket: string;
-  }): Promise<{ outputs: ObjectLocation[] }> {
+  }): Promise<Result<{ outputs: ObjectLocation[] }, string>> {
     this.logger.info('Normalizing objects', {
       inputCount: params.inputs.length,
       targetCount: params.targets.length,
@@ -34,15 +34,23 @@ export class Normalizer {
     });
 
     if (params.inputs.length === 0) {
-      throw new Error('No inputs provided');
+      this.logger.error('Normalization failed: No inputs provided');
+      return Err('No inputs provided');
     }
 
-    const messages = await this.llm.completions([
-      {
-        role: 'system',
-        content: 'You are a helpful assistant that normalizes objects.',
-      },
-    ]);
+    let messages;
+    try {
+      messages = await this.llm.completions([
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that normalizes objects.',
+        },
+      ]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to get LLM completions', { error: errorMessage });
+      return Err(`Failed to get LLM completions: ${errorMessage}`);
+    }
 
     this.logger.info('LLM messages', { messages });
 
@@ -55,7 +63,11 @@ export class Normalizer {
       });
 
       if (!isOk(readResult)) {
-        throw new Error(`Failed to read input object ${input.objectKey}: ${readResult.error}`);
+        this.logger.error('Failed to read input object', {
+          objectKey: input.objectKey,
+          error: readResult.error,
+        });
+        return Err(`Failed to read input object ${input.objectKey}: ${readResult.error}`);
       }
 
       inputData.push({ location: input, data: readResult.value });
@@ -70,7 +82,11 @@ export class Normalizer {
       });
 
       if (!isOk(readResult)) {
-        throw new Error(`Failed to read target object ${target.objectKey}: ${readResult.error}`);
+        this.logger.error('Failed to read target object', {
+          objectKey: target.objectKey,
+          error: readResult.error,
+        });
+        return Err(`Failed to read target object ${target.objectKey}: ${readResult.error}`);
       }
 
       targetData.push({ location: target, data: readResult.value });
@@ -89,16 +105,28 @@ export class Normalizer {
       const outputKey = `${params.outputObjectKeyPrefix}${i}${extension}`;
 
       // Process inputs and targets to produce output data
-      const outputData = this.processOutput(inputData, targetData, i);
+      const outputDataResult = this.processOutput(inputData, targetData, i);
+      if (!isOk(outputDataResult)) {
+        this.logger.error('Failed to process output', {
+          outputIndex: i,
+          error: outputDataResult.error,
+        });
+        return Err(`Failed to process output ${i}: ${outputDataResult.error}`);
+      }
 
       const writeResult = await this.objectStore.write({
         bucket: params.outputObjectBucket,
         key: outputKey,
-        data: outputData,
+        data: outputDataResult.value,
       });
 
       if (!isOk(writeResult)) {
-        throw new Error(`Failed to write output object ${i}: ${writeResult.error}`);
+        this.logger.error('Failed to write output object', {
+          outputIndex: i,
+          outputKey,
+          error: writeResult.error,
+        });
+        return Err(`Failed to write output object ${i}: ${writeResult.error}`);
       }
 
       outputs.push({
@@ -118,7 +146,7 @@ export class Normalizer {
       outputCount: outputs.length,
     });
 
-    return { outputs };
+    return Ok({ outputs });
   }
 
   /**
@@ -146,23 +174,23 @@ export class Normalizer {
     inputData: Array<{ location: ObjectLocation; data: Buffer }>,
     targetData: Array<{ location: ObjectLocation; data: Buffer }>,
     outputIndex: number,
-  ): Buffer {
+  ): Result<Buffer, string> {
     // Default: clone the input data at the output index
     // This can be overridden to implement custom normalization logic
     // Note: targetData is available for custom implementations
     void targetData;
 
     if (inputData.length === 0) {
-      throw new Error('No input data available to process');
+      return Err('No input data available to process');
     }
 
     const inputIndex = outputIndex % inputData.length;
     const input = inputData[inputIndex];
     if (!input) {
-      throw new Error(`Input data at index ${inputIndex} is undefined`);
+      return Err(`Input data at index ${inputIndex} is undefined`);
     }
 
-    return input.data;
+    return Ok(input.data);
   }
 
   /**
