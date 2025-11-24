@@ -2,6 +2,7 @@ import { S3Client } from 'bun';
 import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
 import { Err, Ok, type Result } from '../result';
+import { parseAndValidateURL } from '../url';
 import type { ObjectStore } from './object-store';
 
 /**
@@ -25,21 +26,23 @@ export class S3ObjectStore implements ObjectStore {
     s3SecretAccessKey: string;
     logger: Logger;
   }) {
-    this.s3Endpoint = s3Endpoint;
+    // Use parseAndValidateURL to validate and normalize the s3Endpoint
+    const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
+    this.s3Endpoint = validatedEndpoint;
     this.logger = logger;
 
     this.s3Client = new S3Client({
-      endpoint: s3Endpoint,
+      endpoint: validatedEndpoint,
       accessKeyId: s3AccessKeyId,
       secretAccessKey: s3SecretAccessKey,
     });
 
     this.logger.info('Initialized Bun S3Client', {
-      s3Endpoint,
+      s3Endpoint: validatedEndpoint,
     });
 
     this.minioClient = new MinioClient({
-      minioEndpoint: s3Endpoint,
+      minioEndpoint: validatedEndpoint,
       accessKey: s3AccessKeyId,
       secretKey: s3SecretAccessKey,
       logger: this.logger,
