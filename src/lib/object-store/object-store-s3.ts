@@ -30,7 +30,7 @@ export class S3ObjectStore implements ObjectStore {
     // Use parseAndValidateURL to validate and normalize the s3Endpoint
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
-    this.logger = logger;
+    this.logger = logger.child(S3ObjectStore.name);
 
     this.s3Client = new S3Client({
       endpoint: validatedEndpoint,
@@ -38,7 +38,7 @@ export class S3ObjectStore implements ObjectStore {
       secretAccessKey: s3SecretAccessKey,
     });
 
-    this.logger.info('Initialized Bun S3Client', {
+    this.logger.debug('Initialized Bun S3Client', {
       s3Endpoint: validatedEndpoint,
     });
 
@@ -52,7 +52,7 @@ export class S3ObjectStore implements ObjectStore {
 
   async read(params: { bucket: string; key: string }): Promise<Result<Buffer, string>> {
     const { bucket, key } = params;
-    this.logger.info('Reading object from S3', { bucket, key });
+    this.logger.debug('Reading object from S3', { bucket, key });
     try {
       const file = this.s3Client.file(key, { bucket });
 
@@ -62,7 +62,7 @@ export class S3ObjectStore implements ObjectStore {
       }
 
       const arrayBuffer = await file.arrayBuffer();
-      this.logger.info('Successfully read object from S3', { bucket, key });
+      this.logger.debug('Successfully read object from S3', { bucket, key });
       return Ok(Buffer.from(arrayBuffer));
     } catch (error) {
       return handleError(error, {
@@ -81,12 +81,12 @@ export class S3ObjectStore implements ObjectStore {
     contentType?: string;
   }): Promise<Result<void, string>> {
     const { bucket, key, data, contentType } = params;
-    this.logger.info('Writing object to S3', { bucket, key, contentType });
+    this.logger.debug('Writing object to S3', { bucket, key, contentType });
     try {
       await this.s3Client.file(key, { bucket }).write(data, {
         type: contentType ?? '',
       });
-      this.logger.info('Successfully wrote object to S3', { bucket, key, contentType });
+      this.logger.debug('Successfully wrote object to S3', { bucket, key, contentType });
       return Ok(undefined);
     } catch (error) {
       return handleError(error, {
@@ -100,11 +100,11 @@ export class S3ObjectStore implements ObjectStore {
 
   async exists(params: { bucket: string; key: string }): Promise<Result<boolean, string>> {
     const { bucket, key } = params;
-    this.logger.info('Checking existence of object in S3', { bucket, key });
+    this.logger.debug('Checking existence of object in S3', { bucket, key });
     try {
       const file = this.s3Client.file(key, { bucket });
       const exists = await file.exists();
-      this.logger.info('Checked existence of object in S3', { bucket, key, exists });
+      this.logger.debug('Checked existence of object in S3', { bucket, key, exists });
       return Ok(exists);
     } catch (error) {
       return handleError(error, {
@@ -118,25 +118,25 @@ export class S3ObjectStore implements ObjectStore {
 
   async delete(params: { bucket: string; key: string }): Promise<Result<void, string>> {
     const { bucket, key } = params;
-    this.logger.info('Deleting object from S3', { bucket, key });
+    this.logger.debug('Deleting object from S3', { bucket, key });
     try {
       const file = this.s3Client.file(key, { bucket });
 
       const fileExists = await file.exists();
       if (!fileExists) {
-        this.logger.info('Object does not exist in S3, nothing to delete', { bucket, key });
+        this.logger.debug('Object does not exist in S3, nothing to delete', { bucket, key });
         return Ok(undefined);
       }
 
       if (typeof file.delete === 'function') {
         await file.delete();
-        this.logger.info('Deleted object using file.delete', { bucket, key });
+        this.logger.debug('Deleted object using file.delete', { bucket, key });
       } else {
         await this.s3Client.unlink(key);
-        this.logger.info('Deleted object using S3Client.unlink', { bucket, key });
+        this.logger.debug('Deleted object using S3Client.unlink', { bucket, key });
       }
 
-      this.logger.info('Successfully deleted object from S3', { bucket, key });
+      this.logger.debug('Successfully deleted object from S3', { bucket, key });
       return Ok(undefined);
     } catch (error) {
       try {
@@ -151,7 +151,7 @@ export class S3ObjectStore implements ObjectStore {
           });
         }
 
-        this.logger.info('Object not found after failed delete, considering deletion successful', {
+        this.logger.debug('Object not found after failed delete, considering deletion successful', {
           bucket,
           key,
         });
@@ -168,10 +168,10 @@ export class S3ObjectStore implements ObjectStore {
   }
 
   async bucketExists(bucket: string): Promise<Result<boolean, string>> {
-    this.logger.info('Checking if bucket exists via MinioClient', { bucket });
+    this.logger.debug('Checking if bucket exists via MinioClient', { bucket });
     const exists = await this.minioClient.checkBucketExists(bucket);
     if (exists.tag === 'ok') {
-      this.logger.info('Bucket existence checked', { bucket, exists: exists.value });
+      this.logger.debug('Bucket existence checked', { bucket, exists: exists.value });
       return Ok(exists.value);
     }
     this.logger.error('Failed to check if bucket exists', { bucket, error: exists.error });
@@ -179,17 +179,17 @@ export class S3ObjectStore implements ObjectStore {
   }
 
   async createBucket(bucket: string): Promise<Result<void, string>> {
-    this.logger.info('Creating bucket', { bucket });
+    this.logger.debug('Creating bucket', { bucket });
 
     const exists = await this.minioClient.checkBucketExists(bucket);
     if (exists.tag === 'ok' && exists.value) {
-      this.logger.info('Bucket already exists, skipping creation', { bucket });
+      this.logger.debug('Bucket already exists, skipping creation', { bucket });
       return Ok(undefined);
     }
 
     const createResult = await this.minioClient.createBucket(bucket);
     if (createResult.tag === 'ok') {
-      this.logger.info('Bucket created successfully', { bucket });
+      this.logger.debug('Bucket created successfully', { bucket });
       return Ok(undefined);
     }
 
@@ -202,10 +202,10 @@ export class S3ObjectStore implements ObjectStore {
   }
 
   async ensureBucketExists(bucket: string): Promise<Result<void, string>> {
-    this.logger.info('Ensuring bucket exists', { bucket });
+    this.logger.debug('Ensuring bucket exists', { bucket });
     const result = await this.minioClient.ensureBucketExists(bucket);
     if (result.tag === 'ok') {
-      this.logger.info('Bucket ensured to exist', { bucket });
+      this.logger.debug('Bucket ensured to exist', { bucket });
       return Ok(undefined);
     }
     this.logger.error('Failed to ensure bucket exists', { bucket, error: result.error });
@@ -220,7 +220,7 @@ export class S3ObjectStore implements ObjectStore {
     useHTTPS?: boolean;
   }): Promise<Result<string, string>> {
     const { bucket, key, method, expiresIn, useHTTPS } = params;
-    this.logger.info('Generating presigned URL', { bucket, key, method, expiresIn, useHTTPS });
+    this.logger.debug('Generating presigned URL', { bucket, key, method, expiresIn, useHTTPS });
     try {
       // Use Bun's S3Client to generate presigned URL
       const file = this.s3Client.file(key, { bucket });
@@ -248,7 +248,7 @@ export class S3ObjectStore implements ObjectStore {
         url = url.replace('http://', 'https://');
       }
 
-      this.logger.info('Generated presigned URL', {
+      this.logger.debug('Generated presigned URL', {
         bucket,
         key,
         method,
@@ -276,20 +276,20 @@ export class S3ObjectStore implements ObjectStore {
   }
 
   async getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>> {
-    this.logger.info('Fetching endpoint info', { s3Endpoint: this.s3Endpoint });
+    this.logger.debug('Fetching endpoint info', { s3Endpoint: this.s3Endpoint });
     try {
       let baseUrl: string;
       try {
         const url = new URL(this.s3Endpoint);
         baseUrl = `${url.protocol}//${url.host}`;
-        this.logger.info('Parsed endpoint base URL', { baseUrl });
+        this.logger.debug('Parsed endpoint base URL', { baseUrl });
       } catch {
         this.logger.error('Invalid endpoint URL', { s3Endpoint: this.s3Endpoint });
         return Err(`Invalid endpoint URL: ${this.s3Endpoint}`);
       }
 
       const useHTTPS = this.s3Endpoint.startsWith('https://');
-      this.logger.info('Fetched endpoint info', { baseUrl, useHTTPS });
+      this.logger.debug('Fetched endpoint info', { baseUrl, useHTTPS });
       return Ok({ baseUrl, useHTTPS });
     } catch (error) {
       return handleError(error, {

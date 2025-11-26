@@ -3,16 +3,14 @@ import { createLogger } from './lib/logger';
 import { checkGraphileWorkerSetup, createTaskList } from './shared/graphile-worker';
 import { normalizationTask } from './normalization-session/normalization-task/normalization-task';
 import { createDb } from './shared/db';
+import { SecretString } from './lib/secrets/secret-string';
 
 const main = async () => {
-  const logger = createLogger();
+  const rootLogger = createLogger();
+  const logger = rootLogger.child('Worker');
 
-  const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
-    logger.error('DATABASE_URL environment variable is not set');
-    throw new Error('DATABASE_URL environment variable is not set');
-  }
+  const databaseUrl = SecretString.fromEnvVar('DATABASE_URL');
+  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
 
   // Create database connection to check worker setup
   const db = await createDb({ logger });
@@ -31,13 +29,18 @@ const main = async () => {
   logger.info('Starting Graphile Worker...');
 
   // Define task list with typesafe handlers
-  const taskList = createTaskList({
-    normalization: normalizationTask,
-  });
+  const taskList = createTaskList(
+    {
+      logger,
+    },
+    {
+      normalization: normalizationTask,
+    },
+  );
 
   // Run the worker
   const runner = await run({
-    connectionString: databaseUrl,
+    connectionString: databaseUrl.DANGEROUSLY_readValue(),
     concurrency: 5,
     taskList,
   });

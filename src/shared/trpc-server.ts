@@ -126,7 +126,8 @@ export const createContext = async (config: {
   logger: Logger;
   req: Request;
 }): Promise<Context> => {
-  const { db, objectStore, logger, req } = config;
+  const { db, objectStore, req } = config;
+  const logger = config.logger.child('TRPC');
   const sessionId = getSessionId(req) ?? SessionId.generate();
 
   // Try to find existing session (authenticated or anonymous)
