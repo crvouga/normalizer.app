@@ -19,17 +19,18 @@ export async function createObjectStore({ logger }: { logger: Logger }): Promise
     logger.debug('Ensuring bucket exists', { bucket: s3Bucket });
     const bucketResult = await objectStore.ensureBucketExists(s3Bucket);
     if (bucketResult.tag === 'err') {
-      logger.error('Failed to ensure bucket exists', {
+      logger.warn('Failed to ensure bucket exists - continuing anyway', {
         error: bucketResult.error,
         endpoint: s3Endpoint,
         bucket: s3Bucket,
       });
-      throw new Error(`Failed to ensure bucket exists: ${bucketResult.error}`);
+      logger.warn('Some S3 features may not work until the bucket is available');
+    } else {
+      logger.info('Successfully initialized S3 object store', {
+        endpoint: s3Endpoint,
+        bucket: s3Bucket,
+      });
     }
-    logger.info('Successfully initialized S3 object store', {
-      endpoint: s3Endpoint,
-      bucket: s3Bucket,
-    });
     return objectStore;
   } catch (error) {
     logger.error('Failed to initialize S3 object store', {
