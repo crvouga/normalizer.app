@@ -5,10 +5,10 @@ import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-s
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
 import { getOrGenerateTraceId, setTraceIdHeader } from './lib/trace-id';
+import { cleanupDb, createDb } from './shared/db';
 import { createObjectStore } from './shared/s3';
 import { SessionId } from './shared/session-id';
 import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
-import { cleanupDb, createDb } from './shared/db';
 import { createContext } from './shared/trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
