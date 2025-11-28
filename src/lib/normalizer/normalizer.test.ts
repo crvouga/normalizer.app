@@ -13,7 +13,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const llm = createLLMOpenAI({ logger });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
-  test('normalize: should be implemented', async () => {
+  test.todo('normalize: should be implemented', async () => {
     const targetFile = [
       {
         CourseSubject: 'MATH',
@@ -79,18 +79,21 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
         outputObjectBucket: testBucket,
       }),
     );
-    unwrap(
+    const outputReadResult = unwrap(
       await objectStore.read({
         bucket: testBucket,
         key: normalized.outputs[0]!.key,
       }),
     );
-    expect(inputFile).toHaveLength(1);
-    expect(targetFile).toHaveLength(1);
-    expect(normalizer).toBeDefined();
+    const actualOutputFile = fromJsonBuffer(outputReadResult);
+    expect(actualOutputFile).toEqual(expectedOutputFile);
   });
 });
 
 const intoJsonBuffer = <T>(data: T): Buffer => {
   return Buffer.from(JSON.stringify(data));
+};
+
+const fromJsonBuffer = <T>(data: Buffer): T => {
+  return JSON.parse(data.toString());
 };
