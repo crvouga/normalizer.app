@@ -1,6 +1,7 @@
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
-import type { ObjectLocation, ObjectStore } from '../object-store/object-store';
+import type { ObjectLocation } from '../object-store/object-location';
+import type { ObjectStore } from '../object-store/object-store';
 import { Err, Ok, isOk, type Result } from '../result';
 
 export class Normalizer {
@@ -49,51 +50,48 @@ export class Normalizer {
 
     this.logger.info('LLM messages', { messages });
 
-    // Read all inputs
-    const inputData: Array<{ location: ObjectLocation; data: Buffer }> = [];
-    for (const input of params.inputs) {
-      const readResult = await this.objectStore.read({
-        bucket: input.bucket,
-        key: input.key,
-      });
-
-      if (!isOk(readResult)) {
-        this.logger.error('Failed to read input object', {
-          objectKey: input.key,
-          error: readResult.error,
-        });
-        return Err(`Failed to read input object ${input.key}: ${readResult.error}`);
-      }
-
-      inputData.push({ location: input, data: readResult.value });
+    // Read all inputs using batch operation
+    const inputsReadResult = await this.objectStore.readMany(params.inputs);
+    if (!isOk(inputsReadResult)) {
+      this.logger.error('Failed to read input objects', { error: inputsReadResult.error });
+      return Err(`Failed to read input objects: ${inputsReadResult.error}`);
     }
 
-    // Read all targets
-    const targetData: Array<{ location: ObjectLocation; data: Buffer }> = [];
-    for (const target of params.targets) {
-      const readResult = await this.objectStore.read({
-        bucket: target.bucket,
-        key: target.key,
-      });
-
-      if (!isOk(readResult)) {
-        this.logger.error('Failed to read target object', {
-          objectKey: target.key,
-          error: readResult.error,
-        });
-        return Err(`Failed to read target object ${target.key}: ${readResult.error}`);
+    const inputData: Array<{ location: ObjectLocation; data: Buffer }> = [];
+    for (const item of inputsReadResult.value) {
+      if (item.data === null) {
+        this.logger.error('Failed to read input object', { objectKey: item.key });
+        return Err(`Failed to read input object ${item.key}: object not found`);
       }
 
-      targetData.push({ location: target, data: readResult.value });
+      inputData.push({ location: { bucket: item.bucket, key: item.key }, data: item.data });
+    }
+
+    // Read all targets using batch operation
+    const targetsReadResult = await this.objectStore.readMany(params.targets);
+    if (!isOk(targetsReadResult)) {
+      this.logger.error('Failed to read target objects', { error: targetsReadResult.error });
+      return Err(`Failed to read target objects: ${targetsReadResult.error}`);
+    }
+
+    const targetData: Array<{ location: ObjectLocation; data: Buffer }> = [];
+    for (const item of targetsReadResult.value) {
+      if (item.data === null) {
+        this.logger.error('Failed to read target object', { objectKey: item.key });
+        return Err(`Failed to read target object ${item.key}: object not found`);
+      }
+
+      targetData.push({ location: { bucket: item.bucket, key: item.key }, data: item.data });
     }
 
     // Determine number of outputs and process them
     const numberOfOutputs = this.determineNumberOfOutputs(inputData, targetData);
-    const outputs: ObjectLocation[] = [];
 
     // Extract extension from first target or input for naming
     const extension = this.getExtension(params.targets[0]?.key || params.inputs[0]?.key || '');
 
+    // Process all outputs and prepare write entries
+    const writeEntries: Array<ObjectLocation & { data: Buffer }> = [];
     for (let i = 0; i < numberOfOutputs; i++) {
       const outputKey = `${params.outputObjectKeyPrefix}${i}${extension}`;
 
@@ -107,31 +105,25 @@ export class Normalizer {
         return Err(`Failed to process output ${i}: ${outputDataResult.error}`);
       }
 
-      const writeResult = await this.objectStore.write({
+      writeEntries.push({
         bucket: params.outputObjectBucket,
         key: outputKey,
         data: outputDataResult.value,
       });
-
-      if (!isOk(writeResult)) {
-        this.logger.error('Failed to write output object', {
-          outputIndex: i,
-          outputKey,
-          error: writeResult.error,
-        });
-        return Err(`Failed to write output object ${i}: ${writeResult.error}`);
-      }
-
-      outputs.push({
-        key: outputKey,
-        bucket: params.outputObjectBucket,
-      });
-
-      this.logger.info('Successfully created output', {
-        outputKey,
-        outputIndex: i,
-      });
     }
+
+    // Write all outputs using batch operation
+    const writeResult = await this.objectStore.writeMany(writeEntries);
+    if (!isOk(writeResult)) {
+      this.logger.error('Failed to write output objects', { error: writeResult.error });
+      return Err(`Failed to write output objects: ${writeResult.error}`);
+    }
+
+    const outputs = writeResult.value;
+
+    this.logger.info('Successfully created all outputs', {
+      outputCount: outputs.length,
+    });
 
     this.logger.info('Normalization completed', {
       inputCount: params.inputs.length,
