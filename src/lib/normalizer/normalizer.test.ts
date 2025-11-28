@@ -60,6 +60,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
         bucket: testBucket,
         key: 'files/target.json',
         data: intoJsonBuffer(targetFile),
+        contentType: 'application/json',
       }),
     );
     const inputWriteResult = unwrap(
@@ -67,6 +68,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
         bucket: testBucket,
         key: 'files/input.json',
         data: intoJsonBuffer(inputFile),
+        contentType: 'application/json',
       }),
     );
     const normalized = unwrap(
