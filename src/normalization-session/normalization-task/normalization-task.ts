@@ -180,13 +180,13 @@ async function performNormalization({
 
   // Prepare inputs and targets for normalization
   const inputs = inputArtifacts.map((artifact) => ({
-    objectKey: artifact.object_key,
-    objectBucket: artifact.object_bucket,
+    key: artifact.object_key,
+    bucket: artifact.object_bucket,
   }));
 
   const targets = targetArtifacts.map((artifact) => ({
-    objectKey: artifact.object_key,
-    objectBucket: artifact.object_bucket,
+    key: artifact.object_key,
+    bucket: artifact.object_bucket,
   }));
 
   // Call normalize with all inputs and targets
@@ -236,8 +236,8 @@ async function performNormalization({
     const normalizedName = toNormalizedFileName(baseName);
 
     await artifactDb.update(outputArtifactId, {
-      s3_key: output.objectKey,
-      s3_bucket: output.objectBucket,
+      s3_key: output.key,
+      s3_bucket: output.bucket,
       name: outputs.length > 1 ? `${normalizedName}-${index}` : normalizedName,
     });
   }

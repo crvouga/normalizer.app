@@ -31,7 +31,7 @@ describe('TypedKeyValueStore', () => {
     baseStore = new PostgresKeyValueStore({ db });
     // Clean up test data
     const testKeys = ['key1', 'key2', 'user1', 'user2', 'num1', 'num2'];
-    await baseStore.delete(testKeys);
+    await baseStore.zap(testKeys);
   });
 
   test('get: returns typed values without passing codec', async () => {
@@ -166,6 +166,6 @@ describe('TypedKeyValueStore', () => {
     }
 
     // Clean up
-    await baseStore.delete(['testKey']);
+    await baseStore.zap(['testKey']);
   });
 });

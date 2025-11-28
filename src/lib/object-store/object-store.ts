@@ -1,5 +1,10 @@
 import type { Result } from '../result';
 
+export type ObjectLocation = {
+  key: string;
+  bucket: string;
+};
+
 /**
  * Object store interface for storing and retrieving binary objects.
  * Provides a simple, app-agnostic abstraction over object storage backends.
@@ -10,27 +15,24 @@ export interface ObjectStore {
    * @param params Object containing bucket and key
    * @returns Result containing the object data as a Buffer, or an error message
    */
-  read(params: { bucket: string; key: string }): Promise<Result<Buffer, string>>;
+  read(params: ObjectLocation): Promise<Result<Buffer, string>>;
 
   /**
    * Write an object to storage.
    * Overwrites existing objects if they already exist.
    * @param params Object containing bucket, key, data, and optional contentType
-   * @returns Result indicating success or failure
+   * @returns Result containing the key and bucket that were written to, or an error message
    */
-  write(params: {
-    bucket: string;
-    key: string;
-    data: Buffer;
-    contentType?: string;
-  }): Promise<Result<void, string>>;
+  write(
+    params: ObjectLocation & { data: Buffer; contentType?: string },
+  ): Promise<Result<ObjectLocation, string>>;
 
   /**
    * Check if an object exists in storage.
    * @param params Object containing bucket and key
    * @returns Result containing true if object exists, false otherwise, or an error message
    */
-  exists(params: { bucket: string; key: string }): Promise<Result<boolean, string>>;
+  exists(params: ObjectLocation): Promise<Result<boolean, string>>;
 
   /**
    * Delete an object from storage.
@@ -38,7 +40,7 @@ export interface ObjectStore {
    * @param params Object containing bucket and key
    * @returns Result indicating success or failure
    */
-  delete(params: { bucket: string; key: string }): Promise<Result<void, string>>;
+  delete(params: ObjectLocation): Promise<Result<void, string>>;
 
   /**
    * Check if a bucket exists.
@@ -68,13 +70,9 @@ export interface ObjectStore {
    * @param params Object containing bucket, key, HTTP method (GET or PUT), expiration time in seconds, and optional useHTTPS flag
    * @returns Result containing the presigned URL, or an error message
    */
-  presign(params: {
-    bucket: string;
-    key: string;
-    method: 'GET' | 'PUT';
-    expiresIn: number;
-    useHTTPS?: boolean;
-  }): Promise<Result<string, string>>;
+  presign(
+    params: ObjectLocation & { method: 'GET' | 'PUT'; expiresIn: number; useHTTPS?: boolean },
+  ): Promise<Result<string, string>>;
 
   /**
    * Get endpoint metadata including base URL and HTTPS preference.

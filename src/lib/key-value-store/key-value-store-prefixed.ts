@@ -84,10 +84,10 @@ export class PrefixedKeyValueStore implements KeyValueStore {
     return this.store.set(codec, prefixedEntries);
   }
 
-  async delete(keys: string[]): Promise<Result<void, string>> {
+  async zap(keys: string[]): Promise<Result<void, string>> {
     // Prefix all keys before deleting from the underlying store
     const prefixedKeys = keys.map((key) => this.prefixKey(key));
 
-    return this.store.delete(prefixedKeys);
+    return this.store.zap(prefixedKeys);
   }
 }

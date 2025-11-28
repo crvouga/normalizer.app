@@ -27,10 +27,10 @@ export interface KeyValueStore {
   set<T>(codec: z.ZodType<T>, entries: Record<string, T>): Promise<Result<void, string>>;
 
   /**
-   * Delete multiple keys at once.
+   * Zap multiple keys at once.
    * Succeeds even if some keys don't exist.
    * @param keys Array of keys to delete
    * @returns Result indicating success or failure
    */
-  delete(keys: string[]): Promise<Result<void, string>>;
+  zap(keys: string[]): Promise<Result<void, string>>;
 }

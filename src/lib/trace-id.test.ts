@@ -5,13 +5,14 @@ import {
   getTraceId,
   setTraceIdHeader,
   setTraceIdOnHeaders,
+  TRACE_ID_REGEXP,
 } from './trace-id';
 
 describe('trace-id', () => {
   describe('generateTraceId', () => {
     test('should generate a trace ID with correct format', () => {
       const traceId = generateTraceId();
-      expect(traceId).toMatch(/^trace[0-9a-f]{8}$/);
+      expect(traceId).toMatch(TRACE_ID_REGEXP);
     });
 
     test('should generate unique trace IDs', () => {
@@ -36,7 +37,7 @@ describe('trace-id', () => {
     test('should generate new trace ID when not present in headers', () => {
       const req = new Request('http://localhost');
       const traceId = getOrGenerateTraceId(req);
-      expect(traceId).toMatch(/^trace[0-9a-f]{8}$/);
+      expect(traceId).toMatch(TRACE_ID_REGEXP);
     });
   });
 

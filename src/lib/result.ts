@@ -114,3 +114,18 @@ export async function tryCatchAsync<T, E = unknown>(fn: () => Promise<T>): Promi
     return Err(error as E);
   }
 }
+
+/**
+ * Unsafely unwraps the value from a Result. Returns the value if Ok, throws if Err.
+ *
+ * @param result The Result to unwrap.
+ * @returns The value inside Ok.
+ * @throws The error inside Err if result is an Err.
+ */
+export function unwrap<T, E>(result: Result<T, E>): T {
+  if (result.tag === 'ok') {
+    return result.value;
+  } else {
+    throw result.error;
+  }
+}

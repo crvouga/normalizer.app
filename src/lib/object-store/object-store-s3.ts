@@ -79,7 +79,7 @@ export class S3ObjectStore implements ObjectStore {
     key: string;
     data: Buffer;
     contentType?: string;
-  }): Promise<Result<void, string>> {
+  }): Promise<Result<{ key: string; bucket: string }, string>> {
     const { bucket, key, data, contentType } = params;
     this.logger.debug('Writing object to S3', { bucket, key, contentType });
     try {
@@ -87,7 +87,7 @@ export class S3ObjectStore implements ObjectStore {
         type: contentType ?? '',
       });
       this.logger.debug('Successfully wrote object to S3', { bucket, key, contentType });
-      return Ok(undefined);
+      return Ok({ key, bucket });
     } catch (error) {
       return handleError(error, {
         logger: this.logger,

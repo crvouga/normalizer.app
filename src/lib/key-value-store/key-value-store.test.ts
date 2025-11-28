@@ -37,7 +37,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
       'key_with_underscores',
       'key/slash',
     ];
-    await store.delete(testKeys);
+    await store.zap(testKeys);
   });
 
   // GET TESTS
@@ -207,7 +207,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     const setResult = await store.set(stringCodec, { key1: 'value1' });
     expect(isOk(setResult)).toBe(true);
 
-    const deleteResult = await store.delete(['key1']);
+    const deleteResult = await store.zap(['key1']);
     expect(isOk(deleteResult)).toBe(true);
 
     const getResult = await store.get(stringCodec, ['key1']);
@@ -225,7 +225,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     });
     expect(isOk(setResult)).toBe(true);
 
-    const deleteResult = await store.delete(['key1', 'key2', 'key3']);
+    const deleteResult = await store.zap(['key1', 'key2', 'key3']);
     expect(isOk(deleteResult)).toBe(true);
 
     const getResult = await store.get(stringCodec, ['key1', 'key2', 'key3']);
@@ -238,7 +238,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
   });
 
   test('delete: succeeds when deleting non-existent keys', async () => {
-    const result = await store.delete(['non-existent-key']);
+    const result = await store.zap(['non-existent-key']);
     expect(isOk(result)).toBe(true);
   });
 
@@ -246,7 +246,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     const setResult = await store.set(stringCodec, { key1: 'value1' });
     expect(isOk(setResult)).toBe(true);
 
-    const deleteResult = await store.delete(['key1', 'non-existent']);
+    const deleteResult = await store.zap(['key1', 'non-existent']);
     expect(isOk(deleteResult)).toBe(true);
 
     const getResult = await store.get(stringCodec, ['key1']);
@@ -257,7 +257,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
   });
 
   test('delete: handles empty array', async () => {
-    const result = await store.delete([]);
+    const result = await store.zap([]);
     expect(isOk(result)).toBe(true);
   });
 
@@ -269,7 +269,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     });
     expect(isOk(setResult)).toBe(true);
 
-    const deleteResult = await store.delete(['key1']);
+    const deleteResult = await store.zap(['key1']);
     expect(isOk(deleteResult)).toBe(true);
 
     const getResult = await store.get(stringCodec, ['key1', 'key2', 'key3']);
@@ -311,7 +311,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     }
 
     // Delete one
-    const deleteResult = await store.delete(['key1']);
+    const deleteResult = await store.zap(['key1']);
     expect(isOk(deleteResult)).toBe(true);
 
     // Verify final state
@@ -341,7 +341,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
     }
 
     // Clean up
-    await store.delete(['testKey']);
+    await store.zap(['testKey']);
   });
 
   test('get: returns error when stored value is invalid JSON', async () => {
@@ -358,6 +358,6 @@ describe('KeyValueStore (Postgres implementation)', () => {
       expect(getResult.value['validKey']).toBe('valid value');
     }
 
-    await store.delete(['validKey']);
+    await store.zap(['validKey']);
   });
 });

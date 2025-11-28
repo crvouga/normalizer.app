@@ -123,7 +123,7 @@ export class PostgresKeyValueStore implements KeyValueStore {
     }
   }
 
-  async delete(keys: string[]): Promise<Result<void, string>> {
+  async zap(keys: string[]): Promise<Result<void, string>> {
     try {
       // Handle empty keys array
       if (keys.length === 0) {

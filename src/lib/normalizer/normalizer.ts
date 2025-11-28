@@ -1,12 +1,7 @@
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
-import type { ObjectStore } from '../object-store/object-store';
+import type { ObjectLocation, ObjectStore } from '../object-store/object-store';
 import { Err, Ok, isOk, type Result } from '../result';
-
-type ObjectLocation = {
-  objectKey: string;
-  objectBucket: string;
-};
 
 export class Normalizer {
   constructor(
@@ -58,16 +53,16 @@ export class Normalizer {
     const inputData: Array<{ location: ObjectLocation; data: Buffer }> = [];
     for (const input of params.inputs) {
       const readResult = await this.objectStore.read({
-        bucket: input.objectBucket,
-        key: input.objectKey,
+        bucket: input.bucket,
+        key: input.key,
       });
 
       if (!isOk(readResult)) {
         this.logger.error('Failed to read input object', {
-          objectKey: input.objectKey,
+          objectKey: input.key,
           error: readResult.error,
         });
-        return Err(`Failed to read input object ${input.objectKey}: ${readResult.error}`);
+        return Err(`Failed to read input object ${input.key}: ${readResult.error}`);
       }
 
       inputData.push({ location: input, data: readResult.value });
@@ -77,16 +72,16 @@ export class Normalizer {
     const targetData: Array<{ location: ObjectLocation; data: Buffer }> = [];
     for (const target of params.targets) {
       const readResult = await this.objectStore.read({
-        bucket: target.objectBucket,
-        key: target.objectKey,
+        bucket: target.bucket,
+        key: target.key,
       });
 
       if (!isOk(readResult)) {
         this.logger.error('Failed to read target object', {
-          objectKey: target.objectKey,
+          objectKey: target.key,
           error: readResult.error,
         });
-        return Err(`Failed to read target object ${target.objectKey}: ${readResult.error}`);
+        return Err(`Failed to read target object ${target.key}: ${readResult.error}`);
       }
 
       targetData.push({ location: target, data: readResult.value });
@@ -97,9 +92,7 @@ export class Normalizer {
     const outputs: ObjectLocation[] = [];
 
     // Extract extension from first target or input for naming
-    const extension = this.getExtension(
-      params.targets[0]?.objectKey || params.inputs[0]?.objectKey || '',
-    );
+    const extension = this.getExtension(params.targets[0]?.key || params.inputs[0]?.key || '');
 
     for (let i = 0; i < numberOfOutputs; i++) {
       const outputKey = `${params.outputObjectKeyPrefix}${i}${extension}`;
@@ -130,8 +123,8 @@ export class Normalizer {
       }
 
       outputs.push({
-        objectKey: outputKey,
-        objectBucket: params.outputObjectBucket,
+        key: outputKey,
+        bucket: params.outputObjectBucket,
       });
 
       this.logger.info('Successfully created output', {

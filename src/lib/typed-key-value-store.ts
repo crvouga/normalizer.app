@@ -58,6 +58,6 @@ export class TypedKeyValueStore<T> {
    * @returns Result indicating success or failure
    */
   delete(keys: string[]): Promise<Result<void, string>> {
-    return this.store.delete(keys);
+    return this.store.zap(keys);
   }
 }
