@@ -77,3 +77,40 @@ export function isNotAsked<T, E>(result: RemoteResult<T, E>): result is { tag: '
 export function isLoading<T, E>(result: RemoteResult<T, E>): result is { tag: 'loading' } {
   return result.tag === 'loading';
 }
+
+/**
+ * Executes a function and returns its result wrapped in a Result object.
+ * If the function throws, the error is caught and returned as an Err.
+ *
+ * @template T - The type of the successful result.
+ * @template E - The type of the error (default: unknown).
+ * @param fn - The function to execute.
+ * @returns {Result<T, E>} An Ok containing the function's return value,
+ *          or an Err containing the caught error if an exception occurs.
+ */
+export function tryCatch<T, E = unknown>(fn: () => T): Result<T, E> {
+  try {
+    return Ok(fn());
+  } catch (error) {
+    return Err(error as E);
+  }
+}
+
+/**
+ * Executes an async function and returns its result wrapped in a Result object.
+ * If the function throws or rejects, the error is caught and returned as an Err.
+ *
+ * @template T - The type of the successful result.
+ * @template E - The type of the error (default: unknown).
+ * @param fn - The async function to execute.
+ * @returns {Promise<Result<T, E>>} A promise that resolves to an Ok containing the function's return value,
+ *          or an Err containing the caught error if an exception or rejection occurs.
+ */
+export async function tryCatchAsync<T, E = unknown>(fn: () => Promise<T>): Promise<Result<T, E>> {
+  try {
+    const value = await fn();
+    return Ok(value);
+  } catch (error) {
+    return Err(error as E);
+  }
+}

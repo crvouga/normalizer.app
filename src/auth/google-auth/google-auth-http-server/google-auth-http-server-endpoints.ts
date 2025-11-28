@@ -1,10 +1,7 @@
 import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
 import type { Db } from '../../../shared/db';
-import {
-  handleGoogleAuthStart,
-  handleGoogleAuthCallback,
-} from './google-auth-http-server-handlers';
+import { GoogleAuthHttpServerHandlers } from './google-auth-http-server-handlers';
 
 /**
  * Create Google OAuth HTTP endpoints
@@ -15,13 +12,15 @@ export function createGoogleAuthEndpoints(config: {
   objectStore: ObjectStore;
   logger: Logger;
 }) {
+  const handlers = new GoogleAuthHttpServerHandlers(config);
+
   return {
     '/api/auth/google': {
-      GET: async (req: Request) => handleGoogleAuthStart(req, config),
+      GET: async (req: Request) => handlers.handleGoogleAuthStart(req),
     },
 
     '/api/auth/google/callback': {
-      GET: async (req: Request) => handleGoogleAuthCallback(req, config),
+      GET: async (req: Request) => handlers.handleGoogleAuthCallback(req),
     },
   };
 }

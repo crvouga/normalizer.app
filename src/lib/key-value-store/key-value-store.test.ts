@@ -1,12 +1,11 @@
-import { describe, expect, test, beforeEach, beforeAll, afterAll } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { createDb, cleanupDb } from '../../shared/db';
+import type { Db } from '../../shared/db';
+import { cleanupDb, createDb } from '../../shared/db';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
-
 import type { KeyValueStore } from './key-value-store';
 import { PostgresKeyValueStore } from './key-value-store-postgres';
-import type { Db } from '../../shared/db';
 
 describe('KeyValueStore (Postgres implementation)', () => {
   const logger = createLogger();
@@ -23,7 +22,7 @@ describe('KeyValueStore (Postgres implementation)', () => {
   });
 
   beforeEach(async () => {
-    store = new PostgresKeyValueStore(db);
+    store = new PostgresKeyValueStore({ db });
     // Clean up any leftover test data before each test
     // Delete common test keys that might exist from previous test runs
     const testKeys = [

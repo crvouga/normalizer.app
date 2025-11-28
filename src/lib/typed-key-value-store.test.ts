@@ -28,7 +28,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   beforeEach(async () => {
-    baseStore = new PostgresKeyValueStore(db);
+    baseStore = new PostgresKeyValueStore({ db });
     // Clean up test data
     const testKeys = ['key1', 'key2', 'user1', 'user2', 'num1', 'num2'];
     await baseStore.delete(testKeys);

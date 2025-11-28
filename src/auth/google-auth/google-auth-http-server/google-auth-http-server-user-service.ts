@@ -9,21 +9,15 @@ import { UserSessionId } from '../../../users/user-session-id';
 import type { SessionId } from '../../../shared/session-id';
 import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture';
 
-export type GoogleAuthUserServiceDeps = {
-  db: Db;
-  objectStore: ObjectStore;
-  logger: Logger;
-};
-
 export class GoogleAuthUserService {
   private db: Db;
   private objectStore: ObjectStore;
   private logger: Logger;
 
-  constructor({ db, objectStore, logger }: GoogleAuthUserServiceDeps) {
-    this.db = db;
-    this.objectStore = objectStore;
-    this.logger = logger;
+  constructor(config: { db: Db; objectStore: ObjectStore; logger: Logger }) {
+    this.db = config.db;
+    this.objectStore = config.objectStore;
+    this.logger = config.logger;
   }
 
   /**

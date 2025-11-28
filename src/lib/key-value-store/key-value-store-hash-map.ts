@@ -1,19 +1,17 @@
-import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import type { Db, Tx } from '../../shared/db';
-import * as schema from '../../db/schema';
 import type { KeyValueStore } from './key-value-store';
 import { Ok, Err, type Result } from '../result';
 
 /**
- * Postgres implementation of KeyValueStore using the key_value_store table.
- * Can be used with either a Db instance or a Tx (transaction) for transaction support.
+ * In-memory hash map implementation of KeyValueStore.
+ * Uses a JavaScript Map to store key-value pairs, with values stored as JSON strings.
+ * Useful for testing, caching, or when persistence is not required.
  */
-export class PostgresKeyValueStore implements KeyValueStore {
-  private db: Db | Tx;
+export class HashMapKeyValueStore implements KeyValueStore {
+  private store: Map<string, string>;
 
-  constructor(config: { db: Db | Tx }) {
-    this.db = config.db;
+  constructor() {
+    this.store = new Map<string, string>();
   }
 
   async get<T>(
@@ -29,22 +27,10 @@ export class PostgresKeyValueStore implements KeyValueStore {
       // Remove duplicates for efficient querying
       const uniqueKeys = Array.from(new Set(keys));
 
-      // Query database for existing keys
-      const rows = await this.db
-        .select()
-        .from(schema.keyValueStore)
-        .where(inArray(schema.keyValueStore.key, uniqueKeys));
-
-      // Create a map of found keys with their raw string values
-      const foundMap = new Map<string, string>();
-      for (const row of rows) {
-        foundMap.set(row.key, row.value);
-      }
-
-      // Parse each value using the codec and build result object
+      // Build result object by looking up each key in the map
       const result: Record<string, T | null> = {};
       for (const key of uniqueKeys) {
-        const rawValue = foundMap.get(key);
+        const rawValue = this.store.get(key);
         if (rawValue === undefined) {
           // Key not found
           result[key] = null;
@@ -94,27 +80,10 @@ export class PostgresKeyValueStore implements KeyValueStore {
         return Err(`Validation failed: ${validationErrors.join('; ')}`);
       }
 
-      // Convert entries to array of values for bulk insert
-      // Values are stored as JSON strings
-      const now = new Date();
-      const values = Object.entries(entries).map(([key, value]) => ({
-        key,
-        value: JSON.stringify(value),
-        updated_at: now,
-      }));
-
-      // Use upsert (insert with conflict resolution) to handle overwrites
-      // EXCLUDED references the row being inserted in PostgreSQL's ON CONFLICT clause
-      await this.db
-        .insert(schema.keyValueStore)
-        .values(values)
-        .onConflictDoUpdate({
-          target: schema.keyValueStore.key,
-          set: {
-            value: sql`EXCLUDED.value`,
-            updated_at: now,
-          },
-        });
+      // Store each entry in the map as a JSON string
+      for (const [key, value] of Object.entries(entries)) {
+        this.store.set(key, JSON.stringify(value));
+      }
 
       return Ok(undefined);
     } catch (error) {
@@ -133,10 +102,10 @@ export class PostgresKeyValueStore implements KeyValueStore {
       // Remove duplicates
       const uniqueKeys = Array.from(new Set(keys));
 
-      // Delete keys (succeeds even if keys don't exist)
-      await this.db
-        .delete(schema.keyValueStore)
-        .where(inArray(schema.keyValueStore.key, uniqueKeys));
+      // Delete keys from the map (succeeds even if keys don't exist)
+      for (const key of uniqueKeys) {
+        this.store.delete(key);
+      }
 
       return Ok(undefined);
     } catch (error) {
