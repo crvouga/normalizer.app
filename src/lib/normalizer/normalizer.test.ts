@@ -6,7 +6,7 @@ import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
 
 describe.if(isOpenAIEnabled())('Normalizer', async () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
@@ -54,7 +54,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
         CourseInstructorOfficeHours: '12:00-13:00',
       },
     ];
-    console.log('expectedOutputFile', expectedOutputFile);
+    logger.debug('expectedOutputFile', { expectedOutputFile: JSON.stringify(expectedOutputFile) });
     const targetWriteResult = unwrap(
       await objectStore.write({
         bucket: testBucket,

@@ -4,7 +4,7 @@ import { createLogger } from '../lib/logger';
 import { createDb, cleanupDb } from './db';
 
 describe('Database Client', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
 
   test('should initialize database client successfully', async () => {
     const db = await createDb({ logger });

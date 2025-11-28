@@ -8,7 +8,7 @@ import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
 describe('Artifact.populateUrls', async () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const testBucket = 'test';
   const objectStore: ObjectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);

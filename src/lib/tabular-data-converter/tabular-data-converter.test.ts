@@ -7,7 +7,7 @@ import { isOk } from '../result';
 import { TabularDataConverter } from './tabular-data-converter';
 
 describe('FileConverter', async () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const testBucket = 'test-file-converter';
   const objectStore: ObjectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);

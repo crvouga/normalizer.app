@@ -4,7 +4,7 @@ import { createLogger } from '../logger';
 import { getS3Config } from '../../shared/s3-config';
 
 describe('MinioClient', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const minioClient = new MinioClient({
     minioEndpoint: s3Endpoint,

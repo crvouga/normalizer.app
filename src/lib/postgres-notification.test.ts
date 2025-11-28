@@ -5,7 +5,7 @@ import { createLogger } from './logger';
 import { PostgresNotification } from './postgres-notification';
 
 describe('PostgresNotification', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let sqlConnection: ReturnType<typeof getPostgresConnection>;
 

@@ -6,7 +6,7 @@ import { createObjectStore } from './s3';
 import { getS3Config } from './s3-config';
 
 describe('S3 Client', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
   const objectStore: ObjectStore = new S3ObjectStore({
     s3Endpoint,

@@ -8,7 +8,7 @@ import { TypedKeyValueStore } from './typed-key-value-store';
 import type { Db } from '../shared/db';
 
 describe('TypedKeyValueStore', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let baseStore: PostgresKeyValueStore;
   const stringCodec = z.string();

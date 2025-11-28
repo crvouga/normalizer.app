@@ -8,7 +8,7 @@ import type { KeyValueStore } from './key-value-store';
 import { PostgresKeyValueStore } from './key-value-store-postgres';
 
 describe('KeyValueStore (Postgres implementation)', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let store: KeyValueStore;
   const stringCodec = z.string();

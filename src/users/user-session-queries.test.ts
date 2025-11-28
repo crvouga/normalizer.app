@@ -9,7 +9,7 @@ import { SessionId } from '../shared/session-id';
 import { eq } from 'drizzle-orm';
 
 describe('User Session Queries - Google Auth Bug', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Awaited<ReturnType<typeof createDb>>;
 
   beforeAll(async () => {

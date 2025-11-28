@@ -7,7 +7,7 @@ import { NormalizationSessionId } from '../normalization-session/normalization-s
 import { AppNotification } from './app-notification';
 
 describe('AppNotification', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let sqlConnection: ReturnType<typeof getPostgresConnection>;
 

@@ -18,7 +18,7 @@ const TEST_KEYS = [
 ];
 
 describe('ObjectStore (S3 implementation)', async () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   const testBucket = 'test';
   const store = await createObjectStore({ logger });
   await store.ensureBucketExists(testBucket);
