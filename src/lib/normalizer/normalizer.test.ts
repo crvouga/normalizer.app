@@ -5,7 +5,7 @@ import { createLogger } from '../logger';
 import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
 
-describe.skipIf(!isOpenAIEnabled())('Normalizer', async () => {
+describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const logger = createLogger();
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });

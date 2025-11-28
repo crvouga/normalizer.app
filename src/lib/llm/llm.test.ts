@@ -4,7 +4,7 @@ import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
 import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
 
-describe.skipIf(!isOpenAIEnabled())('@llm.ts (OpenAI Implementation)', () => {
+describe.if(isOpenAIEnabled())('LLM (OpenAI)', () => {
   const llm: LLM = createLLMOpenAI({
     logger: createLogger({ noop: true }),
     model: CHEAPEST_MODEL,
