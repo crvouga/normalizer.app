@@ -48,7 +48,7 @@ const formatMessage = (
 };
 
 const buildChildName = (parentName: string | undefined, childName: string): string => {
-  return parentName ? `${parentName}.${childName}` : childName;
+  return parentName ? `${parentName} ${childName}` : childName;
 };
 
 const buildNoopChildConfig = (

@@ -7,8 +7,8 @@ const TRACE_ID_HEADER = 'X-Trace-Id';
  * Example: trace1a2b3c4d
  */
 export const generateTraceId = (): TraceId => {
-  const uuid = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
-  return `trace${uuid}` as TraceId;
+  const uuid = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  return `trace_${uuid}` as TraceId;
 };
 
 /**
