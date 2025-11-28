@@ -21,17 +21,20 @@ export class S3ObjectStore extends ObjectStore {
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
+    serverBaseUrl: _serverBaseUrl,
     logger,
   }: {
     s3Endpoint: string;
     s3AccessKeyId: string;
     s3SecretAccessKey: string;
+    serverBaseUrl?: string;
     logger: Logger;
   }) {
     super();
     // Use parseAndValidateURL to validate and normalize the s3Endpoint
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
+    // Note: serverBaseUrl is accepted for API compatibility but S3 uses its own presigned URLs
     this.logger = logger.child(S3ObjectStore.name);
 
     this.s3Client = new S3Client({

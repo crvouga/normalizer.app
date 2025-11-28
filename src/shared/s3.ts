@@ -3,7 +3,13 @@ import type { ObjectStore } from '../lib/object-store/object-store';
 import { S3ObjectStore } from '../lib/object-store/object-store-s3';
 import { getS3Config } from './s3-config';
 
-export async function createObjectStore({ logger }: { logger: Logger }): Promise<ObjectStore> {
+export async function createObjectStore({
+  logger,
+  serverBaseUrl,
+}: {
+  logger: Logger;
+  serverBaseUrl?: string;
+}): Promise<ObjectStore> {
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } = getS3Config();
 
   logger.info('Initializing S3 object store...', { endpoint: s3Endpoint, bucket: s3Bucket });
@@ -13,6 +19,7 @@ export async function createObjectStore({ logger }: { logger: Logger }): Promise
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
+      serverBaseUrl: serverBaseUrl ?? '',
       logger,
     });
     logger.debug('S3 Endpoint validated', { endpoint: s3Endpoint });

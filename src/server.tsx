@@ -12,6 +12,7 @@ import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
 import { createContext } from './shared/trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
+import { createObjectStoreEndpoints } from './lib/object-store/object-store-http-endpoints';
 
 async function main() {
   const rootLogger = createLogger();
@@ -34,7 +35,13 @@ async function main() {
 
   const db = await createDb({ logger });
 
-  const objectStore = await createObjectStore({ logger });
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+
+  // Determine server base URL from environment variable or construct from port
+  const serverBaseUrl = process.env.SERVER_BASE_URL || `http://localhost:${port}`;
+
+  logger.info('Initializing object store...', { serverBaseUrl });
+  const objectStore = await createObjectStore({ logger, serverBaseUrl });
 
   logger.info('Starting server...');
 
@@ -70,7 +77,7 @@ async function main() {
 
   const profilePictureEndpoints = createUserProfilePictureEndpoints({ objectStore, logger });
 
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+  const objectStoreEndpoints = createObjectStoreEndpoints({ objectStore, logger });
 
   try {
     const server = serve({
@@ -80,6 +87,8 @@ async function main() {
         ...googleAuthEndpoints,
 
         ...profilePictureEndpoints,
+
+        ...objectStoreEndpoints,
 
         '/api/trpc/*': {
           GET: trpcHandler('GET'),

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { parseCsv, type ColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
-import { isOk, Ok } from '../result';
+import { isOk, Ok, Err, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
@@ -68,12 +68,12 @@ export class TabularDataPostgresLoader {
     bucket: string,
     key: string,
     options: LoadOptions,
-  ): Promise<{ tableName: string; rowCount: number }> {
+  ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
     const startTime = Date.now();
     this.logger.info('Starting tabular data load', { bucket, key, tableName: options.tableName });
 
+    // Step 1: Convert file to CSV format using TabularDataConverter
     try {
-      // Step 1: Convert file to CSV format using TabularDataConverter
       this.logger.debug('Converting file to CSV format', { bucket, key });
       const convertResult = await this.converter.convert(bucket, key, 'csv');
 
@@ -83,12 +83,12 @@ export class TabularDataPostgresLoader {
         key: convertResult.key,
       });
       if (!isOk(csvResult)) {
-        throw new Error(`Failed to read converted CSV: ${csvResult.error}`);
+        return Err(`Failed to read converted CSV: ${csvResult.error}`);
       }
 
       const csvContent = csvResult.value.toString('utf-8');
       if (!csvContent || csvContent.trim().length === 0) {
-        throw new Error('CSV file is empty');
+        return Err('CSV file is empty');
       }
 
       // Step 3: Parse CSV to extract schema and data
@@ -96,30 +96,45 @@ export class TabularDataPostgresLoader {
       const { schema, dataRows } = parseCsv(csvContent, (id) => this.sanitizeIdentifier(id));
 
       if (schema.length === 0) {
-        throw new Error('No columns found in CSV data');
-      }
-
-      if (dataRows.length === 0) {
-        this.logger.warn('No data rows found in CSV', { bucket, key });
-        // Still create the table with schema
-        const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
-        await this.createTable(sanitizedTableName, schema, options);
-        return { tableName: sanitizedTableName, rowCount: 0 };
+        return Err('No columns found in CSV data');
       }
 
       // Step 4: Sanitize table name
       const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
 
+      if (dataRows.length === 0) {
+        this.logger.warn('No data rows found in CSV', { bucket, key });
+        // Still create the table with schema
+        const createResult = await this.createTable(sanitizedTableName, schema, options);
+        if (!isOk(createResult)) {
+          this.logger.error('Failed to create table for empty dataset', {
+            error: createResult.error,
+          });
+          return Err(createResult.error);
+        }
+        return Ok({ tableName: sanitizedTableName, rowCount: 0 });
+      }
+
       // Step 5: Create table
-      await this.createTable(sanitizedTableName, schema, options);
+      const createResult = await this.createTable(sanitizedTableName, schema, options);
+      if (!isOk(createResult)) {
+        this.logger.error('Failed to create table', { error: createResult.error });
+        return Err(createResult.error);
+      }
 
       // Step 6: Load data using COPY FROM STDIN (fastest method)
       this.logger.debug('Loading data using COPY FROM STDIN', {
         tableName: sanitizedTableName,
         rowCount: dataRows.length,
       });
-      const rowCount = await this.copyData(sanitizedTableName, schema, dataRows);
+      const copyResult = await this.copyData(sanitizedTableName, schema, dataRows);
 
+      if (!isOk(copyResult)) {
+        this.logger.error('Failed to copy data', { error: copyResult.error });
+        return Err(copyResult.error);
+      }
+
+      const rowCount = copyResult.value;
       const duration = Date.now() - startTime;
       this.logger.info('Tabular data load completed', {
         tableName: sanitizedTableName,
@@ -128,7 +143,7 @@ export class TabularDataPostgresLoader {
         rowsPerSecond: Math.round((rowCount / duration) * 1000),
       });
 
-      return { tableName: sanitizedTableName, rowCount };
+      return Ok({ tableName: sanitizedTableName, rowCount });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to load tabular data', {
@@ -137,7 +152,7 @@ export class TabularDataPostgresLoader {
         tableName: options.tableName,
         error: errorMessage,
       });
-      throw new Error(`Failed to load tabular data: ${errorMessage}`);
+      return Err(`Failed to load tabular data: ${errorMessage}`);
     }
   }
 
@@ -177,13 +192,14 @@ export class TabularDataPostgresLoader {
   }
 
   /**
-   * Create PostgreSQL table with the given schema
+   * Create PostgreSQL table with the given schema.
+   * Returns Result<void, string>
    */
   private async createTable(
     tableName: string,
     schema: ColumnSchema[],
     options: LoadOptions,
-  ): Promise<void> {
+  ): Promise<Result<void, string>> {
     // Drop table if requested
     if (options.dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
@@ -191,7 +207,7 @@ export class TabularDataPostgresLoader {
         `DROP TABLE IF EXISTS ${this.escapeIdentifier(tableName)}`,
       );
       if (!isOk(dropResult)) {
-        throw new Error(`Failed to drop table: ${dropResult.error}`);
+        return Err(`Failed to drop table: ${dropResult.error}`);
       }
     }
 
@@ -209,7 +225,7 @@ export class TabularDataPostgresLoader {
       [tableName],
     );
     if (!isOk(tableExistsResult)) {
-      throw new Error(`Failed to check if table exists: ${tableExistsResult.error}`);
+      return Err(`Failed to check if table exists: ${tableExistsResult.error}`);
     }
     const tableExists = tableExistsResult.value[0]?.exists ?? false;
 
@@ -237,7 +253,7 @@ export class TabularDataPostgresLoader {
         `CREATE TABLE ${this.escapeIdentifier(tableName)} (${columnDefinitions})`,
       );
       if (!isOk(createResult)) {
-        throw new Error(`Failed to create table: ${createResult.error}`);
+        return Err(`Failed to create table: ${createResult.error}`);
       }
     } else {
       this.logger.debug('Table already exists', { tableName });
@@ -250,22 +266,24 @@ export class TabularDataPostgresLoader {
         `TRUNCATE TABLE ${this.escapeIdentifier(tableName)}`,
       );
       if (!isOk(truncateResult)) {
-        throw new Error(`Failed to truncate table: ${truncateResult.error}`);
+        return Err(`Failed to truncate table: ${truncateResult.error}`);
       }
     }
+    return Ok(undefined);
   }
 
   /**
    * Load data using high-performance bulk insert with parameterized queries
    * Uses large batches for maximum performance (fewer round trips to database)
+   * Returns Result<number, string>
    */
   private async copyData(
     tableName: string,
     schema: ColumnSchema[],
     dataRows: string[][],
-  ): Promise<number> {
+  ): Promise<Result<number, string>> {
     if (dataRows.length === 0) {
-      return 0;
+      return Ok(0);
     }
 
     const escapedColumnNames = schema.map((col) => this.escapeIdentifier(col.name)).join(', ');
@@ -277,49 +295,52 @@ export class TabularDataPostgresLoader {
 
     // Use a transaction for better performance and atomicity
     const transactionResult = await this.sql.begin(async (tx) => {
-      for (let i = 0; i < dataRows.length; i += batchSize) {
-        const batch = dataRows.slice(i, i + batchSize);
+      try {
+        for (let i = 0; i < dataRows.length; i += batchSize) {
+          const batch = dataRows.slice(i, i + batchSize);
 
-        // Build parameterized query with VALUES clause
-        // This is more performant than individual INSERTs and safer than string concatenation
-        const placeholders: string[] = [];
-        const values: (string | null)[] = [];
+          // Build parameterized query with VALUES clause
+          // This is more performant than individual INSERTs and safer than string concatenation
+          const placeholders: string[] = [];
+          const values: (string | null)[] = [];
 
-        batch.forEach((row) => {
-          const rowPlaceholders: string[] = [];
-          row.forEach((cell) => {
-            const paramIndex = values.length + 1;
-            rowPlaceholders.push(`$${paramIndex}`);
-            // Convert empty strings to NULL, preserve other values
-            values.push(cell === '' ? null : cell);
+          batch.forEach((row) => {
+            const rowPlaceholders: string[] = [];
+            row.forEach((cell) => {
+              const paramIndex = values.length + 1;
+              rowPlaceholders.push(`$${paramIndex}`);
+              // Convert empty strings to NULL, preserve other values
+              values.push(cell === '' ? null : cell);
+            });
+            placeholders.push(`(${rowPlaceholders.join(', ')})`);
           });
-          placeholders.push(`(${rowPlaceholders.join(', ')})`);
-        });
 
-        // Execute batched insert
-        const insertQuery = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
-        const insertResult = await tx.unsafe(insertQuery, values);
-        if (!isOk(insertResult)) {
-          throw new Error(`Failed to insert batch: ${insertResult.error}`);
+          // Execute batched insert
+          const insertQuery = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
+          const insertResult = await tx.unsafe(insertQuery, values);
+          if (!isOk(insertResult)) {
+            return Err(`Failed to insert batch: ${insertResult.error}`);
+          }
+
+          totalInserted += batch.length;
+
+          this.logger.debug('Inserted batch', {
+            tableName,
+            batchSize: batch.length,
+            totalInserted,
+            progress: `${Math.round((totalInserted / dataRows.length) * 100)}%`,
+          });
         }
-
-        totalInserted += batch.length;
-
-        this.logger.debug('Inserted batch', {
-          tableName,
-          batchSize: batch.length,
-          totalInserted,
-          progress: `${Math.round((totalInserted / dataRows.length) * 100)}%`,
-        });
+        // Return success result with total inserted count
+        return Ok(totalInserted);
+      } catch (e) {
+        return Err(`Bulk insert transaction failed: ${e instanceof Error ? e.message : String(e)}`);
       }
-      // Return success result with total inserted count
-      return Ok(totalInserted);
     });
 
     if (!isOk(transactionResult)) {
-      throw new Error(`Transaction failed: ${transactionResult.error}`);
+      return Err(`Transaction failed: ${transactionResult.error}`);
     }
-
-    return totalInserted;
+    return transactionResult;
   }
 }
