@@ -1,448 +1,714 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
-import { createObjectStore } from '~/src/shared/s3';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { z } from 'zod';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
+import type { SqlDb } from './sql-db';
+import { createSqlDb } from '../../shared/sql-db';
 
-const TEST_KEYS = [
-  'key1',
-  'key2',
-  'key3',
-  'non-existent-key',
-  'non-existent',
-  'emptyKey',
-  'key.with.dots',
-  'key-with-dashes',
-  'key_with_underscores',
-  'key/slash',
-  'key with spaces',
-];
+// Test table schema
+const testUserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string(),
+  age: z.number().nullable(),
+});
 
-describe('ObjectStore (S3 implementation)', async () => {
+const testTableName = 'sql_db_test_users';
+
+describe('SqlDb (Postgres implementation)', () => {
   const logger = createLogger({ noop: true });
-  const testBucket = 'test';
-  const sql = await createObjectStore({ logger });
-  await sql.ensureBucketExists(testBucket);
+  let db: SqlDb;
+
+  beforeAll(async () => {
+    db = await createSqlDb({ logger });
+
+    // Create test table
+    const createTableResult = await db.execute(`
+      CREATE TABLE IF NOT EXISTS ${testTableName} (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        age INTEGER
+      )
+    `);
+    expect(isOk(createTableResult)).toBe(true);
+  });
+
+  afterAll(async () => {
+    // Drop test table
+    const dropTableResult = await db.execute(`DROP TABLE IF EXISTS ${testTableName}`);
+    expect(isOk(dropTableResult)).toBe(true);
+
+    // Close connection
+    const closeResult = await db.close();
+    expect(isOk(closeResult)).toBe(true);
+  });
 
   beforeEach(async () => {
-    await Promise.all(TEST_KEYS.map((key) => sql.delete({ bucket: testBucket, key: key })));
+    // Clean up test data before each test
+    const deleteResult = await db.execute(`DELETE FROM ${testTableName}`);
+    expect(isOk(deleteResult)).toBe(true);
   });
 
-  // READ TESTS
-  test('read: returns error for non-existent object', async () => {
-    const result = await sql.read({ bucket: testBucket, key: 'non-existent-key' });
-    expect(isOk(result)).toBe(false);
-    if (!isOk(result)) {
-      expect(result.error).toBeDefined();
-      expect(typeof result.error).toBe('string');
-    }
-  });
-
-  test('read: reads existing object', async () => {
-    const testData = Buffer.from('Hello, World!');
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-    });
-    expect(isOk(writeResult)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(testData);
-      expect(readResult.value.toString()).toBe('Hello, World!');
-    }
-  });
-
-  test('read: reads binary data correctly', async () => {
-    const testData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-    });
-    expect(isOk(writeResult)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(testData);
-      expect(Array.from(readResult.value)).toEqual([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
-    }
-  });
-
-  test('read: reads empty buffer', async () => {
-    const testData = Buffer.alloc(0);
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'emptyKey',
-      data: testData,
-    });
-    expect(isOk(writeResult)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'emptyKey' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(testData);
-      expect(readResult.value.length).toBe(0);
-    }
-  });
-
-  test('read: reads large data correctly', async () => {
-    const testData = Buffer.alloc(1024 * 1024, 0x42); // 1MB of 0x42
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-    });
-    expect(isOk(writeResult)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value.length).toBe(1024 * 1024);
-      expect(readResult.value[0]).toBe(0x42);
-      expect(readResult.value[readResult.value.length - 1]).toBe(0x42);
-    }
-  });
-
-  // WRITE TESTS
-  test('write: writes single object', async () => {
-    const testData = Buffer.from('test data');
-    const result = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-    });
-    expect(isOk(result)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(testData);
-    }
-  });
-
-  test('write: overwrites existing object', async () => {
-    const initialData = Buffer.from('initial');
-    const writeResult1 = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: initialData,
-    });
-    expect(isOk(writeResult1)).toBe(true);
-
-    const updatedData = Buffer.from('updated');
-    const writeResult2 = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: updatedData,
-    });
-    expect(isOk(writeResult2)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(updatedData);
-      expect(readResult.value.toString()).toBe('updated');
-    }
-  });
-
-  test('write: writes with contentType', async () => {
-    const testData = Buffer.from('{"key": "value"}');
-    const result = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-      contentType: 'application/json',
-    });
-    expect(isOk(result)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value).toEqual(testData);
-    }
-  });
-
-  test('write: writes empty buffer', async () => {
-    const testData = Buffer.alloc(0);
-    const result = await sql.write({
-      bucket: testBucket,
-      key: 'emptyKey',
-      data: testData,
-    });
-    expect(isOk(result)).toBe(true);
-
-    const readResult = await sql.read({ bucket: testBucket, key: 'emptyKey' });
-    expect(isOk(readResult)).toBe(true);
-    if (isOk(readResult)) {
-      expect(readResult.value.length).toBe(0);
-    }
-  });
-
-  test('write: handles special characters in keys', async () => {
-    const testData = Buffer.from('test data');
-    const specialKeys = [
-      'key.with.dots',
-      'key-with-dashes',
-      'key_with_underscores',
-      'key/slash',
-      'key with spaces',
-    ];
-
-    for (const key of specialKeys) {
-      const writeResult = await sql.write({
-        bucket: testBucket,
-        key,
-        data: testData,
-      });
-      expect(isOk(writeResult)).toBe(true);
-
-      const readResult = await sql.read({ bucket: testBucket, key });
-      expect(isOk(readResult)).toBe(true);
-      if (isOk(readResult)) {
-        expect(readResult.value).toEqual(testData);
+  // QUERY TESTS
+  describe('query', () => {
+    test('query: returns empty array for empty table', async () => {
+      const result = await db.query(`SELECT * FROM ${testTableName}`, testUserSchema);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value).toEqual([]);
+        expect(Array.isArray(result.value)).toBe(true);
       }
-    }
-  });
-
-  // EXISTS TESTS
-  test('exists: returns false for non-existent object', async () => {
-    const result = await sql.exists({ bucket: testBucket, key: 'non-existent-key' });
-    expect(isOk(result)).toBe(true);
-    if (isOk(result)) {
-      expect(result.value).toBe(false);
-    }
-  });
-
-  test('exists: returns true for existing object', async () => {
-    const testData = Buffer.from('test data');
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
     });
-    expect(isOk(writeResult)).toBe(true);
 
-    const existsResult = await sql.exists({ bucket: testBucket, key: 'key1' });
-    expect(isOk(existsResult)).toBe(true);
-    if (isOk(existsResult)) {
-      expect(existsResult.value).toBe(true);
-    }
+    test('query: returns validated rows with schema', async () => {
+      // Insert test data
+      const insertResult = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['Alice', 'alice@example.com', 30],
+      );
+      expect(isOk(insertResult)).toBe(true);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Alice'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row).toMatchObject({
+            name: 'Alice',
+            email: 'alice@example.com',
+            age: 30,
+          });
+          expect(typeof row.id).toBe('number');
+        }
+      }
+    });
+
+    test('query: validates rows against schema', async () => {
+      // Insert test data
+      const insertResult = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['Bob', 'bob@example.com', 25],
+      );
+      expect(isOk(insertResult)).toBe(true);
+
+      // Query with schema that matches
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Bob'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.name).toBe('Bob');
+        }
+      }
+    });
+
+    test('query: returns error for invalid SQL', async () => {
+      const result = await db.query('SELECT * FROM nonexistent_table', testUserSchema);
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+        expect(result.error).toContain('nonexistent_table');
+      }
+    });
+
+    test('query: handles null values correctly', async () => {
+      // Insert test data with null age
+      const insertResult = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['Charlie', 'charlie@example.com', null],
+      );
+      expect(isOk(insertResult)).toBe(true);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Charlie'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.age).toBe(null);
+        }
+      }
+    });
+
+    test('query: handles multiple rows', async () => {
+      // Insert multiple rows
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'User1',
+        'user1@example.com',
+        20,
+      ]);
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'User2',
+        'user2@example.com',
+        25,
+      ]);
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'User3',
+        'user3@example.com',
+        30,
+      ]);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} ORDER BY id`,
+        testUserSchema,
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(3);
+        const row1 = queryResult.value[0];
+        const row2 = queryResult.value[1];
+        const row3 = queryResult.value[2];
+        expect(row1).toBeDefined();
+        expect(row2).toBeDefined();
+        expect(row3).toBeDefined();
+        if (row1 && row2 && row3) {
+          expect(row1.name).toBe('User1');
+          expect(row2.name).toBe('User2');
+          expect(row3.name).toBe('User3');
+        }
+      }
+    });
+
+    test('query: handles parameterized queries', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'ParamUser',
+        'param@example.com',
+        35,
+      ]);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE age > $1 AND age < $2`,
+        testUserSchema,
+        [30, 40],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.name).toBe('ParamUser');
+        }
+      }
+    });
   });
 
-  test('exists: returns false after deletion', async () => {
-    const testData = Buffer.from('test data');
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
+  // EXECUTE TESTS
+  describe('execute', () => {
+    test('execute: inserts row and returns rowCount', async () => {
+      const result = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['David', 'david@example.com', 28],
+      );
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.rowCount).toBe(1);
+      }
+
+      // Verify the insert
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['David'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+      }
     });
-    expect(isOk(writeResult)).toBe(true);
 
-    const deleteResult = await sql.delete({ bucket: testBucket, key: 'key1' });
-    expect(isOk(deleteResult)).toBe(true);
+    test('execute: updates rows and returns rowCount', async () => {
+      // Insert initial data
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Eve',
+        'eve@example.com',
+        22,
+      ]);
 
-    const existsResult = await sql.exists({ bucket: testBucket, key: 'key1' });
-    expect(isOk(existsResult)).toBe(true);
-    if (isOk(existsResult)) {
-      expect(existsResult.value).toBe(false);
-    }
+      // Update the row
+      const updateResult = await db.execute(
+        `UPDATE ${testTableName} SET age = $1 WHERE name = $2`,
+        [23, 'Eve'],
+      );
+      expect(isOk(updateResult)).toBe(true);
+      if (isOk(updateResult)) {
+        expect(updateResult.value.rowCount).toBe(1);
+      }
+
+      // Verify the update
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Eve'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.age).toBe(23);
+        }
+      }
+    });
+
+    test('execute: deletes rows and returns rowCount', async () => {
+      // Insert test data
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Frank',
+        'frank@example.com',
+        40,
+      ]);
+
+      // Delete the row
+      const deleteResult = await db.execute(`DELETE FROM ${testTableName} WHERE name = $1`, [
+        'Frank',
+      ]);
+      expect(isOk(deleteResult)).toBe(true);
+      if (isOk(deleteResult)) {
+        expect(deleteResult.value.rowCount).toBe(1);
+      }
+
+      // Verify deletion
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Frank'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(0);
+      }
+    });
+
+    test('execute: returns 0 rowCount when no rows affected', async () => {
+      const updateResult = await db.execute(
+        `UPDATE ${testTableName} SET age = $1 WHERE name = $2`,
+        [99, 'Nonexistent'],
+      );
+      expect(isOk(updateResult)).toBe(true);
+      if (isOk(updateResult)) {
+        expect(updateResult.value.rowCount).toBe(0);
+      }
+    });
+
+    test('execute: returns error for invalid SQL', async () => {
+      const result = await db.execute('INSERT INTO nonexistent_table VALUES (1)');
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    test('execute: handles DDL statements', async () => {
+      const createTableResult = await db.execute(`
+        CREATE TABLE IF NOT EXISTS sql_db_test_temp (
+          id INTEGER PRIMARY KEY
+        )
+      `);
+      expect(isOk(createTableResult)).toBe(true);
+
+      const dropTableResult = await db.execute(`DROP TABLE IF EXISTS sql_db_test_temp`);
+      expect(isOk(dropTableResult)).toBe(true);
+    });
   });
 
-  // DELETE TESTS
-  test('delete: deletes existing object', async () => {
-    const testData = Buffer.from('test data');
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
+  // UNSAFE TESTS
+  describe('unsafe', () => {
+    test('unsafe: executes query without schema validation', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Grace',
+        'grace@example.com',
+        27,
+      ]);
+
+      const result = await db.unsafe(`SELECT * FROM ${testTableName} WHERE name = $1`, ['Grace']);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(Array.isArray(result.value)).toBe(true);
+        if (Array.isArray(result.value)) {
+          expect(result.value.length).toBe(1);
+        }
+      }
     });
-    expect(isOk(writeResult)).toBe(true);
 
-    const deleteResult = await sql.delete({ bucket: testBucket, key: 'key1' });
-    expect(isOk(deleteResult)).toBe(true);
+    test('unsafe: validates result when schema provided', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Henry',
+        'henry@example.com',
+        32,
+      ]);
 
-    const existsResult = await sql.exists({ bucket: testBucket, key: 'key1' });
-    expect(isOk(existsResult)).toBe(true);
-    if (isOk(existsResult)) {
-      expect(existsResult.value).toBe(false);
-    }
+      const result = await db.unsafe<unknown[]>(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        ['Henry'],
+        z.array(testUserSchema),
+      );
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        // When schema is provided, result should be validated
+        // For SELECT queries, postgres returns an array, so we need to handle that
+        expect(Array.isArray(result.value)).toBe(true);
+      }
+    });
+
+    test('unsafe: handles non-array results', async () => {
+      const result = await db.unsafe(`SELECT COUNT(*) as count FROM ${testTableName}`);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        // COUNT returns an array with one row
+        expect(Array.isArray(result.value)).toBe(true);
+      }
+    });
+
+    test('unsafe: returns error for invalid SQL', async () => {
+      const result = await db.unsafe('SELECT * FROM nonexistent_table_123');
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    test('unsafe: handles DDL statements', async () => {
+      const createResult = await db.unsafe(`
+        CREATE TABLE IF NOT EXISTS sql_db_test_temp2 (
+          id INTEGER PRIMARY KEY,
+          data TEXT
+        )
+      `);
+      expect(isOk(createResult)).toBe(true);
+
+      const dropResult = await db.unsafe(`DROP TABLE IF EXISTS sql_db_test_temp2`);
+      expect(isOk(dropResult)).toBe(true);
+    });
   });
 
-  test('delete: succeeds when deleting non-existent object', async () => {
-    const result = await sql.delete({ bucket: testBucket, key: 'non-existent-key' });
-    expect(isOk(result)).toBe(true);
+  // TRANSACTION TESTS
+  describe('begin (transactions)', () => {
+    test('begin: commits transaction on success', async () => {
+      const result = await db.begin(async (tx) => {
+        const insertResult = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['Iris', 'iris@example.com', 29],
+        );
+        if (!isOk(insertResult)) {
+          return insertResult;
+        }
+
+        const queryResult = await tx.query(
+          `SELECT * FROM ${testTableName} WHERE name = $1`,
+          testUserSchema,
+          ['Iris'],
+        );
+        return queryResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.length).toBe(1);
+        const row = result.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.name).toBe('Iris');
+        }
+      }
+
+      // Verify data persists after transaction
+      const verifyResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Iris'],
+      );
+      expect(isOk(verifyResult)).toBe(true);
+      if (isOk(verifyResult)) {
+        expect(verifyResult.value.length).toBe(1);
+      }
+    });
+
+    test('begin: rolls back transaction on error', async () => {
+      const initialCountResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      const initialCount =
+        isOk(initialCountResult) && initialCountResult.value[0]
+          ? initialCountResult.value[0].count
+          : 0;
+
+      const result = await db.begin(async (tx) => {
+        // Insert a row
+        const insertResult = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['Jack', 'jack@example.com', 31],
+        );
+        if (!isOk(insertResult)) {
+          return insertResult;
+        }
+
+        // Return an error to trigger rollback
+        return { tag: 'err' as const, error: 'Test error for rollback' };
+      });
+
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toContain('Test error for rollback');
+      }
+
+      // Verify the insert was rolled back
+      const countResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      expect(isOk(countResult)).toBe(true);
+      if (isOk(countResult)) {
+        expect(countResult.value[0]?.count).toBe(initialCount);
+      }
+    });
+
+    test('begin: transaction can execute multiple operations', async () => {
+      const result = await db.begin(async (tx) => {
+        // Insert first row
+        const insert1Result = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['Kelly', 'kelly@example.com', 24],
+        );
+        if (!isOk(insert1Result)) {
+          return insert1Result;
+        }
+
+        // Insert second row
+        const insert2Result = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['Liam', 'liam@example.com', 26],
+        );
+        if (!isOk(insert2Result)) {
+          return insert2Result;
+        }
+
+        // Query both rows
+        const queryResult = await tx.query(
+          `SELECT * FROM ${testTableName} ORDER BY id`,
+          testUserSchema,
+        );
+        return queryResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.length).toBe(2);
+        const row1 = result.value[0];
+        const row2 = result.value[1];
+        expect(row1).toBeDefined();
+        expect(row2).toBeDefined();
+        if (row1 && row2) {
+          expect(row1.name).toBe('Kelly');
+          expect(row2.name).toBe('Liam');
+        }
+      }
+    });
+
+    test('begin: transaction query method works', async () => {
+      const result = await db.begin(async (tx) => {
+        await tx.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+          'Mia',
+          'mia@example.com',
+          33,
+        ]);
+
+        const queryResult = await tx.query(
+          `SELECT * FROM ${testTableName} WHERE name = $1`,
+          testUserSchema,
+          ['Mia'],
+        );
+        return queryResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.length).toBe(1);
+        const row = result.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.name).toBe('Mia');
+        }
+      }
+    });
+
+    test('begin: transaction execute method works', async () => {
+      const result = await db.begin(async (tx) => {
+        const insertResult = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['Noah', 'noah@example.com', 28],
+        );
+        return insertResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.rowCount).toBe(1);
+      }
+    });
+
+    test('begin: transaction unsafe method works', async () => {
+      const result = await db.begin(async (tx) => {
+        await tx.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+          'Olivia',
+          'olivia@example.com',
+          35,
+        ]);
+
+        const unsafeResult = await tx.unsafe(
+          `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+          undefined,
+          z.array(z.object({ count: z.number() })),
+        );
+        return unsafeResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(Array.isArray(result.value)).toBe(true);
+        if (Array.isArray(result.value) && result.value.length > 0) {
+          expect(typeof result.value[0]?.count).toBe('number');
+        }
+      }
+    });
+
+    test('begin: rolls back on SQL error', async () => {
+      const initialCountResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      const initialCount =
+        isOk(initialCountResult) && initialCountResult.value[0]
+          ? initialCountResult.value[0].count
+          : 0;
+
+      const result = await db.begin(async (tx) => {
+        // Insert a valid row
+        await tx.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+          'Paul',
+          'paul@example.com',
+          30,
+        ]);
+
+        // Try to insert into non-existent table (should fail)
+        const badResult = await tx.execute('INSERT INTO nonexistent_table VALUES (1)');
+        return badResult;
+      });
+
+      expect(isOk(result)).toBe(false);
+
+      // Verify the first insert was rolled back
+      const countResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      expect(isOk(countResult)).toBe(true);
+      if (isOk(countResult)) {
+        const row = countResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.count).toBe(initialCount);
+        }
+      }
+    });
   });
 
-  test('delete: only deletes specified object', async () => {
-    const testData1 = Buffer.from('data1');
-    const testData2 = Buffer.from('data2');
-    const testData3 = Buffer.from('data3');
+  // CLOSE TESTS
+  describe('close', () => {
+    test('close: closes database connection', async () => {
+      // Create a separate connection for this test
+      const testDb = await createSqlDb({ logger });
 
-    await sql.write({ bucket: testBucket, key: 'key1', data: testData1 });
-    await sql.write({ bucket: testBucket, key: 'key2', data: testData2 });
-    await sql.write({ bucket: testBucket, key: 'key3', data: testData3 });
+      const closeResult = await testDb.close();
+      expect(isOk(closeResult)).toBe(true);
 
-    const deleteResult = await sql.delete({ bucket: testBucket, key: 'key1' });
-    expect(isOk(deleteResult)).toBe(true);
-
-    const exists1 = await sql.exists({ bucket: testBucket, key: 'key1' });
-    const exists2 = await sql.exists({ bucket: testBucket, key: 'key2' });
-    const exists3 = await sql.exists({ bucket: testBucket, key: 'key3' });
-
-    if (isOk(exists1)) expect(exists1.value).toBe(false);
-    if (isOk(exists2)) expect(exists2.value).toBe(true);
-    if (isOk(exists3)) expect(exists3.value).toBe(true);
+      // Verify close() itself succeeded
+      expect(isOk(closeResult)).toBe(true);
+    });
   });
 
-  // INTEGRATION TEST
-  test('integration: handles complete workflow: write, read, exists, delete', async () => {
-    // Write initial object
-    const testData1 = Buffer.from('initial data');
-    const writeResult1 = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData1,
+  // INTEGRATION TESTS
+  describe('integration', () => {
+    test('integration: complete workflow with query, execute, and transaction', async () => {
+      // Insert initial data
+      const insertResult = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['Integration', 'integration@example.com', 40],
+      );
+      expect(isOk(insertResult)).toBe(true);
+
+      // Query the data
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Integration'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+      }
+
+      // Update in a transaction
+      const transactionResult = await db.begin(async (tx) => {
+        const updateResult = await tx.execute(
+          `UPDATE ${testTableName} SET age = $1 WHERE name = $2`,
+          [41, 'Integration'],
+        );
+        if (!isOk(updateResult)) {
+          return updateResult;
+        }
+
+        const verifyResult = await tx.query(
+          `SELECT * FROM ${testTableName} WHERE name = $1`,
+          testUserSchema,
+          ['Integration'],
+        );
+        return verifyResult;
+      });
+
+      expect(isOk(transactionResult)).toBe(true);
+      if (isOk(transactionResult)) {
+        const row = transactionResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.age).toBe(41);
+        }
+      }
+
+      // Verify final state
+      const finalQueryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['Integration'],
+      );
+      expect(isOk(finalQueryResult)).toBe(true);
+      if (isOk(finalQueryResult)) {
+        const row = finalQueryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.age).toBe(41);
+        }
+      }
     });
-    expect(isOk(writeResult1)).toBe(true);
-
-    // Verify it exists
-    const existsResult1 = await sql.exists({ bucket: testBucket, key: 'key1' });
-    expect(isOk(existsResult1)).toBe(true);
-    if (isOk(existsResult1)) {
-      expect(existsResult1.value).toBe(true);
-    }
-
-    // Read it
-    const readResult1 = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult1)).toBe(true);
-    if (isOk(readResult1)) {
-      expect(readResult1.value).toEqual(testData1);
-    }
-
-    // Overwrite it
-    const testData2 = Buffer.from('updated data');
-    const writeResult2 = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData2,
-    });
-    expect(isOk(writeResult2)).toBe(true);
-
-    // Read updated data
-    const readResult2 = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult2)).toBe(true);
-    if (isOk(readResult2)) {
-      expect(readResult2.value).toEqual(testData2);
-    }
-
-    // Delete it
-    const deleteResult = await sql.delete({ bucket: testBucket, key: 'key1' });
-    expect(isOk(deleteResult)).toBe(true);
-
-    // Verify it no longer exists
-    const existsResult2 = await sql.exists({ bucket: testBucket, key: 'key1' });
-    expect(isOk(existsResult2)).toBe(true);
-    if (isOk(existsResult2)) {
-      expect(existsResult2.value).toBe(false);
-    }
-
-    // Verify read fails
-    const readResult3 = await sql.read({ bucket: testBucket, key: 'key1' });
-    expect(isOk(readResult3)).toBe(false);
-  });
-
-  test('getEndpointInfo should return base URL and HTTPS preference', async () => {
-    const result = await sql.getEndpointInfo();
-    expect(isOk(result)).toBe(true);
-    if (isOk(result)) {
-      expect(result.value.baseUrl).toBeDefined();
-      expect(typeof result.value.baseUrl).toBe('string');
-      expect(result.value.baseUrl).toMatch(/^https?:\/\/.+/);
-      expect(typeof result.value.useHTTPS).toBe('boolean');
-    }
-  });
-
-  // PRESIGN TESTS
-  test('presign: generates presigned GET URL', async () => {
-    const testData = Buffer.from('test data');
-    const writeResult = await sql.write({
-      bucket: testBucket,
-      key: 'key1',
-      data: testData,
-    });
-    expect(isOk(writeResult)).toBe(true);
-
-    const presignResult = await sql.presign({
-      bucket: testBucket,
-      key: 'key1',
-      method: 'GET',
-      expiresIn: 3600,
-    });
-    expect(isOk(presignResult)).toBe(true);
-    if (isOk(presignResult)) {
-      expect(presignResult.value).toBeDefined();
-      expect(typeof presignResult.value).toBe('string');
-      expect(presignResult.value).toMatch(/^https?:\/\/.+/);
-    }
-  });
-
-  test('presign: generates presigned PUT URL', async () => {
-    const presignResult = await sql.presign({
-      bucket: testBucket,
-      key: 'key1',
-      method: 'PUT',
-      expiresIn: 3600,
-    });
-    expect(isOk(presignResult)).toBe(true);
-    if (isOk(presignResult)) {
-      expect(presignResult.value).toBeDefined();
-      expect(typeof presignResult.value).toBe('string');
-      expect(presignResult.value).toMatch(/^https?:\/\/.+/);
-    }
-  });
-
-  test('presign: useHTTPS converts http:// to https:// when true', async () => {
-    const presignResult = await sql.presign({
-      bucket: testBucket,
-      key: 'key1',
-      method: 'GET',
-      expiresIn: 3600,
-      useHTTPS: true,
-    });
-    expect(isOk(presignResult)).toBe(true);
-    if (isOk(presignResult)) {
-      expect(presignResult.value).toBeDefined();
-      expect(typeof presignResult.value).toBe('string');
-      // If the URL starts with http://, it should be converted to https://
-      expect(presignResult.value).toMatch(/^https:\/\/.+/);
-    }
-  });
-
-  test('presign: useHTTPS does not affect URL when false or undefined', async () => {
-    const presignResultWithoutFlag = await sql.presign({
-      bucket: testBucket,
-      key: 'key1',
-      method: 'GET',
-      expiresIn: 3600,
-    });
-    expect(isOk(presignResultWithoutFlag)).toBe(true);
-
-    const presignResultWithFalse = await sql.presign({
-      bucket: testBucket,
-      key: 'key1',
-      method: 'GET',
-      expiresIn: 3600,
-      useHTTPS: false,
-    });
-    expect(isOk(presignResultWithFalse)).toBe(true);
-
-    if (isOk(presignResultWithoutFlag) && isOk(presignResultWithFalse)) {
-      // Both should return valid URLs (may be http:// or https:// depending on endpoint)
-      expect(presignResultWithoutFlag.value).toMatch(/^https?:\/\/.+/);
-      expect(presignResultWithFalse.value).toMatch(/^https?:\/\/.+/);
-    }
   });
 });

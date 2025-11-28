@@ -1,26 +1,73 @@
 import type postgres from 'postgres';
 import { z } from 'zod';
+import { handleError } from '../error';
 import type { Logger } from '../logger';
-import { Err, Ok, type Result } from '../result';
+import { Ok, type Result } from '../result';
 import type { SqlDb, SqlTransaction } from './sql-db';
 
 /**
- * Schema for validating that a transaction object has an unsafe method
+ * Type assertion for postgres transaction object
+ * The postgres library guarantees the transaction object has an unsafe method
  */
-const transactionSchema = z.object({
-  unsafe: z.function().args(z.string(), z.array(z.unknown())).returns(z.promise(z.unknown())),
-});
+type PostgresTransaction = {
+  unsafe: (query: string, params: never[]) => Promise<unknown>;
+};
 
 /**
- * Schema for validating execute result which may have count/rowCount or be an array
+ * Helper to extract row count from execute result
+ * For INSERT/UPDATE/DELETE with RETURNING, postgres returns the rows
+ * For INSERT/UPDATE/DELETE without RETURNING, postgres returns empty array
+ * We modify queries to add RETURNING to get the actual row count
  */
-const executeResultSchema = z.union([
-  z.object({
-    count: z.number().optional(),
-    rowCount: z.number().optional(),
-  }),
-  z.array(z.unknown()),
-]);
+function extractRowCount(result: unknown): number {
+  // If result is an array, the length is the row count (from RETURNING clause)
+  if (Array.isArray(result)) {
+    return result.length;
+  }
+  // If result is an object, check for count/rowCount properties
+  if (typeof result === 'object' && result !== null) {
+    const obj = result as Record<string, unknown>;
+    if (typeof obj.count === 'number') {
+      return obj.count;
+    }
+    if (typeof obj.rowCount === 'number') {
+      return obj.rowCount;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Modifies INSERT/UPDATE/DELETE queries to add RETURNING * if not present
+ * This allows us to get the row count. Skips DDL statements.
+ */
+function addReturningIfNeeded(query: string): string {
+  const trimmedQuery = query.trim();
+  const upperQuery = trimmedQuery.toUpperCase();
+
+  // Skip DDL statements (CREATE, DROP, ALTER, etc.)
+  const ddlKeywords = ['CREATE', 'DROP', 'ALTER', 'TRUNCATE', 'GRANT', 'REVOKE'];
+  if (ddlKeywords.some((keyword) => upperQuery.startsWith(keyword))) {
+    return query;
+  }
+
+  const isInsert = upperQuery.startsWith('INSERT');
+  const isUpdate = upperQuery.startsWith('UPDATE');
+  const isDelete = upperQuery.startsWith('DELETE');
+
+  if ((isInsert || isUpdate || isDelete) && !upperQuery.includes('RETURNING')) {
+    // Find the end of the query (before semicolon if present)
+    const semicolonIndex = trimmedQuery.lastIndexOf(';');
+    const queryWithoutSemicolon =
+      semicolonIndex !== -1 ? trimmedQuery.slice(0, semicolonIndex).trim() : trimmedQuery.trim();
+
+    // Add RETURNING * before semicolon or at the end
+    const modifiedQuery = queryWithoutSemicolon + ' RETURNING *';
+    return semicolonIndex !== -1 ? modifiedQuery + ';' : modifiedQuery;
+  }
+
+  return query;
+}
 
 /**
  * Schema for validating params array
@@ -56,11 +103,11 @@ class PostgresSqlTransaction implements SqlTransaction {
   ): Promise<Result<T[], string>> {
     this.logger.debug('Executing query in transaction', { query, paramCount: params?.length ?? 0 });
     try {
-      // Validate transaction object structure
-      const validatedTx = transactionSchema.parse(this.tx);
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await validatedTx.unsafe(query, validatedParams);
+      // The postgres library guarantees the transaction has an unsafe method
+      const tx = this.tx as PostgresTransaction;
+      const result = await tx.unsafe(query, validatedParams as never[]);
       const resultArray = Array.isArray(result) ? result : [];
       this.logger.debug('Query executed successfully', { rowCount: resultArray.length });
 
@@ -70,29 +117,23 @@ class PostgresSqlTransaction implements SqlTransaction {
         try {
           validatedRows.push(schema.parse(row));
         } catch (validationError) {
-          const validationMessage =
-            validationError instanceof z.ZodError
-              ? validationError.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
-              : validationError instanceof Error
-                ? validationError.message
-                : String(validationError);
-          this.logger.error('Row validation failed in transaction', {
-            query,
-            error: validationMessage,
-            row,
+          return handleError(validationError, {
+            logger: this.logger,
+            logMessage: 'Row validation failed in transaction',
+            context: { query, row },
+            errorPrefix: 'Row validation failed',
           });
-          return Err(`Row validation failed: ${validationMessage}`);
         }
       }
 
       return Ok(validatedRows);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute query in transaction', {
-        query,
-        error: errorMessage,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute query in transaction',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute query',
       });
-      return Err(`Failed to execute query: ${errorMessage}`);
     }
   }
 
@@ -102,29 +143,24 @@ class PostgresSqlTransaction implements SqlTransaction {
       paramCount: params?.length ?? 0,
     });
     try {
-      // Validate transaction object structure
-      const validatedTx = transactionSchema.parse(this.tx);
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await validatedTx.unsafe(query, validatedParams);
-      // For INSERT/UPDATE/DELETE with RETURNING, postgres returns rows
-      // For INSERT/UPDATE/DELETE without RETURNING, postgres returns empty array
-      // The result may have a count property for affected rows
-      // If unavailable, we use array length or 0 as fallback
-      const resultWithCount = executeResultSchema.parse(result);
-      const rowCount =
-        (Array.isArray(resultWithCount) ? undefined : resultWithCount.count) ??
-        (Array.isArray(resultWithCount) ? undefined : resultWithCount.rowCount) ??
-        (Array.isArray(resultWithCount) ? resultWithCount.length : 0);
+      // Modify query to add RETURNING if needed to get row count
+      const modifiedQuery = addReturningIfNeeded(query);
+      // The postgres library guarantees the transaction has an unsafe method
+      const tx = this.tx as PostgresTransaction;
+      const result = await tx.unsafe(modifiedQuery, validatedParams as never[]);
+      // Extract row count from result
+      const rowCount = extractRowCount(result);
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute command in transaction', {
-        query,
-        error: errorMessage,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute command in transaction',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute command',
       });
-      return Err(`Failed to execute command: ${errorMessage}`);
     }
   }
 
@@ -138,11 +174,11 @@ class PostgresSqlTransaction implements SqlTransaction {
       paramCount: params?.length ?? 0,
     });
     try {
-      // Validate transaction object structure
-      const validatedTx = transactionSchema.parse(this.tx);
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await validatedTx.unsafe(query, validatedParams);
+      // The postgres library guarantees the transaction has an unsafe method
+      const tx = this.tx as PostgresTransaction;
+      const result = await tx.unsafe(query, validatedParams as never[]);
 
       // If schema provided, validate the result
       if (schema) {
@@ -151,18 +187,12 @@ class PostgresSqlTransaction implements SqlTransaction {
           this.logger.debug('Unsafe query executed and validated successfully');
           return Ok(validated);
         } catch (validationError) {
-          const validationMessage =
-            validationError instanceof z.ZodError
-              ? validationError.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
-              : validationError instanceof Error
-                ? validationError.message
-                : String(validationError);
-          this.logger.error('Result validation failed in transaction', {
-            query,
-            error: validationMessage,
-            result,
+          return handleError(validationError, {
+            logger: this.logger,
+            logMessage: 'Result validation failed in transaction',
+            context: { query, result },
+            errorPrefix: 'Result validation failed',
           });
-          return Err(`Result validation failed: ${validationMessage}`);
         }
       }
 
@@ -175,12 +205,12 @@ class PostgresSqlTransaction implements SqlTransaction {
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute unsafe query in transaction', {
-        query,
-        error: errorMessage,
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute unsafe query in transaction',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute unsafe query',
       });
-      return Err(`Failed to execute unsafe query: ${errorMessage}`);
     }
   }
 }
@@ -221,26 +251,23 @@ export class PostgresSqlDb implements SqlDb {
         try {
           validatedRows.push(schema.parse(row));
         } catch (validationError) {
-          const validationMessage =
-            validationError instanceof z.ZodError
-              ? validationError.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
-              : validationError instanceof Error
-                ? validationError.message
-                : String(validationError);
-          this.logger.error('Row validation failed', {
-            query,
-            error: validationMessage,
-            row,
+          return handleError(validationError, {
+            logger: this.logger,
+            logMessage: 'Row validation failed',
+            context: { query, row },
+            errorPrefix: 'Row validation failed',
           });
-          return Err(`Row validation failed: ${validationMessage}`);
         }
       }
 
       return Ok(validatedRows);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute query', { query, error: errorMessage });
-      return Err(`Failed to execute query: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute query',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute query',
+      });
     }
   }
 
@@ -249,22 +276,20 @@ export class PostgresSqlDb implements SqlDb {
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await this.sql.unsafe(query, toPostgresParams(validatedParams));
-      // For INSERT/UPDATE/DELETE with RETURNING, postgres returns rows
-      // For INSERT/UPDATE/DELETE without RETURNING, postgres returns empty array
-      // The result may have a count property for affected rows
-      // If unavailable, we use array length or 0 as fallback
-      const resultWithCount = executeResultSchema.parse(result);
-      const rowCount =
-        (Array.isArray(resultWithCount) ? undefined : resultWithCount.count) ??
-        (Array.isArray(resultWithCount) ? undefined : resultWithCount.rowCount) ??
-        (Array.isArray(resultWithCount) ? resultWithCount.length : 0);
+      // Modify query to add RETURNING if needed to get row count
+      const modifiedQuery = addReturningIfNeeded(query);
+      const result = await this.sql.unsafe(modifiedQuery, toPostgresParams(validatedParams));
+      // Extract row count from result
+      const rowCount = extractRowCount(result);
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute command', { query, error: errorMessage });
-      return Err(`Failed to execute command: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute command',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute command',
+      });
     }
   }
 
@@ -286,18 +311,12 @@ export class PostgresSqlDb implements SqlDb {
           this.logger.debug('Unsafe query executed and validated successfully');
           return Ok(validated);
         } catch (validationError) {
-          const validationMessage =
-            validationError instanceof z.ZodError
-              ? validationError.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
-              : validationError instanceof Error
-                ? validationError.message
-                : String(validationError);
-          this.logger.error('Result validation failed', {
-            query,
-            error: validationMessage,
-            result,
+          return handleError(validationError, {
+            logger: this.logger,
+            logMessage: 'Result validation failed',
+            context: { query, result },
+            errorPrefix: 'Result validation failed',
           });
-          return Err(`Result validation failed: ${validationMessage}`);
         }
       }
 
@@ -310,9 +329,12 @@ export class PostgresSqlDb implements SqlDb {
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to execute unsafe query', { query, error: errorMessage });
-      return Err(`Failed to execute unsafe query: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to execute unsafe query',
+        context: { query, paramCount: params?.length ?? 0 },
+        errorPrefix: 'Failed to execute unsafe query',
+      });
     }
   }
 
@@ -340,9 +362,11 @@ export class PostgresSqlDb implements SqlDb {
       const validatedResult = z.unknown().parse(result);
       return Ok(validatedResult as T);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Transaction failed, rolled back', { error: errorMessage });
-      return Err(`Transaction failed: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Transaction failed, rolled back',
+        errorPrefix: 'Transaction failed',
+      });
     }
   }
 
@@ -353,9 +377,11 @@ export class PostgresSqlDb implements SqlDb {
       this.logger.info('Database connection closed successfully');
       return Ok(undefined);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to close database connection', { error: errorMessage });
-      return Err(`Failed to close database connection: ${errorMessage}`);
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to close database connection',
+        errorPrefix: 'Failed to close database connection',
+      });
     }
   }
 }
