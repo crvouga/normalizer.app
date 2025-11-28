@@ -1,38 +1,45 @@
-import type postgres from 'postgres';
+import { PGlite } from '@electric-sql/pglite';
 import { z } from 'zod';
 import { handleError } from '../error';
 import type { Logger } from '../logger';
 import { Ok, type Result } from '../result';
 import type { SqlDb, SqlTransaction } from './sql-db';
-import { addReturningIfNeeded, extractRowCount, paramsSchema } from './sql-db-utils';
+import { addReturningIfNeeded, paramsSchema } from './sql-db-utils';
 
 /**
- * Type assertion for postgres transaction object
- * The postgres library guarantees the transaction object has an unsafe method
+ * Helper to extract rows from PGLite result
+ * PGLite query() returns { rows: [], fields: [], affectedRows: number }
+ * PGLite exec() returns an array containing result objects: [{ rows: [], fields: [], affectedRows: number }]
  */
-type PostgresTransaction = {
-  unsafe: (query: string, params: never[]) => Promise<unknown>;
-};
-
-/**
- * Helper function to convert validated params to the type expected by postgres library.
- * We validate with Zod first to ensure type safety at runtime, then convert for the type system.
- * The postgres library's type definitions require never[] but accept unknown[] at runtime.
- */
-function toPostgresParams(params: unknown[]): never[] {
-  // We've already validated with Zod that params is an array
-  // This type assertion is necessary for the postgres library's type system
-  // but is safe because we've validated the structure at runtime
-  return params as never[];
+function extractRows(result: unknown): unknown[] {
+  if (Array.isArray(result)) {
+    // Check if it's an array of result objects (from exec())
+    if (result.length > 0 && typeof result[0] === 'object' && result[0] !== null) {
+      const firstItem = result[0] as { rows?: unknown[] };
+      if (Array.isArray(firstItem.rows)) {
+        return firstItem.rows;
+      }
+    }
+    // Otherwise it's already an array of rows
+    return result;
+  }
+  if (typeof result === 'object' && result !== null) {
+    const obj = result as { rows?: unknown[] };
+    if (Array.isArray(obj.rows)) {
+      return obj.rows;
+    }
+  }
+  return [];
 }
 
 /**
- * Postgres implementation of SqlTransaction using the postgres library.
+ * PGLite implementation of SqlTransaction using the PGLite library.
  * Executes queries within a database transaction.
+ * The transaction is started by the begin() method, so this class just executes queries.
  */
-class PostgresSqlTransaction implements SqlTransaction {
+class PgliteSqlTransaction implements SqlTransaction {
   constructor(
-    private readonly tx: unknown, // postgres transaction type (TransactionSql)
+    private readonly db: PGlite,
     private readonly logger: Logger,
   ) {}
 
@@ -45,10 +52,9 @@ class PostgresSqlTransaction implements SqlTransaction {
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      // The postgres library guarantees the transaction has an unsafe method
-      const tx = this.tx as PostgresTransaction;
-      const result = await tx.unsafe(query, validatedParams as never[]);
-      const resultArray = Array.isArray(result) ? result : [];
+      // PGLite query() returns { rows, fields, affectedRows }
+      const result = await this.db.query(query, validatedParams);
+      const resultArray = extractRows(result);
       this.logger.debug('Query executed successfully', { rowCount: resultArray.length });
 
       // Validate each row against the schema
@@ -87,11 +93,14 @@ class PostgresSqlTransaction implements SqlTransaction {
       const validatedParams = params ? paramsSchema.parse(params) : [];
       // Modify query to add RETURNING if needed to get row count
       const modifiedQuery = addReturningIfNeeded(query);
-      // The postgres library guarantees the transaction has an unsafe method
-      const tx = this.tx as PostgresTransaction;
-      const result = await tx.unsafe(modifiedQuery, validatedParams as never[]);
-      // Extract row count from result
-      const rowCount = extractRowCount(result);
+      // Use query() for parameterized queries, exec() for non-parameterized
+      const result =
+        validatedParams.length > 0
+          ? await this.db.query(modifiedQuery, validatedParams)
+          : await this.db.exec(modifiedQuery);
+      // Extract rows and count them
+      const rows = extractRows(result);
+      const rowCount = rows.length;
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
@@ -116,21 +125,27 @@ class PostgresSqlTransaction implements SqlTransaction {
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      // The postgres library guarantees the transaction has an unsafe method
-      const tx = this.tx as PostgresTransaction;
-      const result = await tx.unsafe(query, validatedParams as never[]);
+      // For SELECT queries, always use query() even without params
+      // For other queries without params, use exec()
+      const isSelect = query.trim().toUpperCase().startsWith('SELECT');
+      const result =
+        validatedParams.length > 0 || isSelect
+          ? await this.db.query(query, validatedParams)
+          : await this.db.exec(query);
+      // Extract rows from result
+      const resultData = extractRows(result);
 
       // If schema provided, validate the result
       if (schema) {
         try {
-          const validated = schema.parse(result);
+          const validated = schema.parse(resultData);
           this.logger.debug('Unsafe query executed and validated successfully');
           return Ok(validated);
         } catch (validationError) {
           return handleError(validationError, {
             logger: this.logger,
             logMessage: 'Result validation failed in transaction',
-            context: { query, result },
+            context: { query, result: resultData },
             errorPrefix: 'Result validation failed',
           });
         }
@@ -140,7 +155,7 @@ class PostgresSqlTransaction implements SqlTransaction {
       // The caller should provide a schema if they need type safety
       this.logger.debug('Unsafe query executed successfully');
       // Validate result is at least unknown (this is a no-op but ensures type safety)
-      const validatedResult = z.unknown().parse(result);
+      const validatedResult = z.unknown().parse(resultData);
       // When T is unknown (the default), this is safe. When T is something else,
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
@@ -156,18 +171,22 @@ class PostgresSqlTransaction implements SqlTransaction {
 }
 
 /**
- * Postgres implementation of SqlDb using the postgres library.
+ * PGLite implementation of SqlDb using the PGLite library.
  * Provides a transaction-first interface for PostgreSQL database operations.
  */
-export class PostgresSqlDb implements SqlDb {
+export class PgliteSqlDb implements SqlDb {
   private readonly logger: Logger;
+  private readonly db: PGlite;
 
-  constructor(
-    private readonly sql: ReturnType<typeof postgres>,
-    logger: Logger,
-  ) {
+  constructor(logger: Logger) {
     this.logger = logger;
-    this.logger.info('Initialized PostgresSqlDb');
+    // Create in-memory PGLite instance
+    this.db = new PGlite();
+    this.logger.info('Initialized PgliteSqlDb');
+  }
+
+  async waitReady(): Promise<void> {
+    await this.db.waitReady;
   }
 
   async query<T>(
@@ -177,10 +196,13 @@ export class PostgresSqlDb implements SqlDb {
   ): Promise<Result<T[], string>> {
     this.logger.debug('Executing query', { query, paramCount: params?.length ?? 0 });
     try {
+      // Ensure database is ready
+      await this.db.waitReady;
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await this.sql.unsafe(query, toPostgresParams(validatedParams));
-      const resultArray = Array.isArray(result) ? result : [];
+      // PGLite query() returns { rows, fields, affectedRows }
+      const result = await this.db.query(query, validatedParams);
+      const resultArray = extractRows(result);
       this.logger.debug('Query executed successfully', {
         rowCount: resultArray.length,
       });
@@ -214,13 +236,20 @@ export class PostgresSqlDb implements SqlDb {
   async execute(query: string, params?: unknown[]): Promise<Result<{ rowCount: number }, string>> {
     this.logger.debug('Executing command', { query, paramCount: params?.length ?? 0 });
     try {
+      // Ensure database is ready
+      await this.db.waitReady;
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
       // Modify query to add RETURNING if needed to get row count
       const modifiedQuery = addReturningIfNeeded(query);
-      const result = await this.sql.unsafe(modifiedQuery, toPostgresParams(validatedParams));
-      // Extract row count from result
-      const rowCount = extractRowCount(result);
+      // Use query() for parameterized queries, exec() for non-parameterized
+      const result =
+        validatedParams.length > 0
+          ? await this.db.query(modifiedQuery, validatedParams)
+          : await this.db.exec(modifiedQuery);
+      // Extract rows and count them
+      const rows = extractRows(result);
+      const rowCount = rows.length;
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
@@ -240,21 +269,29 @@ export class PostgresSqlDb implements SqlDb {
   ): Promise<Result<T, string>> {
     this.logger.debug('Executing unsafe query', { query, paramCount: params?.length ?? 0 });
     try {
+      // Ensure database is ready
+      await this.db.waitReady;
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
-      const result = await this.sql.unsafe(query, toPostgresParams(validatedParams));
+      // Use query() for parameterized queries, exec() for non-parameterized
+      const result =
+        validatedParams.length > 0
+          ? await this.db.query(query, validatedParams)
+          : await this.db.exec(query);
+      // Extract rows from result
+      const resultData = extractRows(result);
 
       // If schema provided, validate the result
       if (schema) {
         try {
-          const validated = schema.parse(result);
+          const validated = schema.parse(resultData);
           this.logger.debug('Unsafe query executed and validated successfully');
           return Ok(validated);
         } catch (validationError) {
           return handleError(validationError, {
             logger: this.logger,
             logMessage: 'Result validation failed',
-            context: { query, result },
+            context: { query, result: resultData },
             errorPrefix: 'Result validation failed',
           });
         }
@@ -264,7 +301,7 @@ export class PostgresSqlDb implements SqlDb {
       // The caller should provide a schema if they need type safety
       this.logger.debug('Unsafe query executed successfully');
       // Validate result is at least unknown (this is a no-op but ensures type safety)
-      const validatedResult = z.unknown().parse(result);
+      const validatedResult = z.unknown().parse(resultData);
       // When T is unknown (the default), this is safe. When T is something else,
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
@@ -283,24 +320,36 @@ export class PostgresSqlDb implements SqlDb {
   ): Promise<Result<T, string>> {
     this.logger.debug('Starting transaction');
     try {
-      const result = await this.sql.begin(async (tx) => {
-        const postgresTx = new PostgresSqlTransaction(tx, this.logger);
-        const callbackResult = await callback(postgresTx);
+      // Ensure database is ready
+      await this.db.waitReady;
+      // Start transaction using SQL BEGIN statement
+      await this.db.exec('BEGIN');
 
-        // If callback returned an error, throw to trigger rollback
+      try {
+        const pgliteTx = new PgliteSqlTransaction(this.db, this.logger);
+        const callbackResult = await callback(pgliteTx);
+
+        // If callback returned an error, rollback and return error
         if (callbackResult.tag === 'err') {
-          throw new Error(callbackResult.error);
+          await this.db.exec('ROLLBACK');
+          return callbackResult;
         }
 
-        // Return the value on success
-        return callbackResult.value;
-      });
+        // Commit transaction on success
+        await this.db.exec('COMMIT');
+        this.logger.debug('Transaction committed successfully');
 
-      this.logger.debug('Transaction committed successfully');
-      // The result comes from the callback which already validated it
-      // We validate it's at least unknown to ensure type safety
-      const validatedResult = z.unknown().parse(result);
-      return Ok(validatedResult as T);
+        // Return the value on success
+        const result = callbackResult.value;
+        // The result comes from the callback which already validated it
+        // We validate it's at least unknown to ensure type safety
+        const validatedResult = z.unknown().parse(result);
+        return Ok(validatedResult as T);
+      } catch (error) {
+        // Rollback on any error
+        await this.db.exec('ROLLBACK');
+        throw error;
+      }
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
@@ -313,7 +362,7 @@ export class PostgresSqlDb implements SqlDb {
   async close(): Promise<Result<void, string>> {
     this.logger.info('Closing database connection');
     try {
-      await this.sql.end();
+      await this.db.close();
       this.logger.info('Database connection closed successfully');
       return Ok(undefined);
     } catch (error) {

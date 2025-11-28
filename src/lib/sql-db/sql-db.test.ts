@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { createSqlDb } from '../../shared/sql-db';
+import { createPgliteSqlDb, createPostgresSqlDb } from '../../shared/sql-db';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
 import type { SqlDb } from './sql-db';
@@ -15,12 +15,18 @@ const testUserSchema = z.object({
 
 const testTableName = 'sql_db_test_users';
 
-describe('SqlDb (Postgres implementation)', () => {
+// Test implementations
+const implementations = [
+  ['Postgres', createPostgresSqlDb] as const,
+  ['PGLite', createPgliteSqlDb] as const,
+];
+
+describe.each(implementations)('SqlDb (%s implementation)', (_implementationName, createDb) => {
   const logger = createLogger({ noop: true });
   let db: SqlDb;
 
   beforeAll(async () => {
-    db = await createSqlDb({ logger });
+    db = await createDb({ logger });
 
     // Create test table
     const createTableResult = await db.execute(`
@@ -637,7 +643,7 @@ describe('SqlDb (Postgres implementation)', () => {
   describe('close', () => {
     test('close: closes database connection', async () => {
       // Create a separate connection for this test
-      const testDb = await createSqlDb({ logger });
+      const testDb = await createDb({ logger });
 
       const closeResult = await testDb.close();
       expect(isOk(closeResult)).toBe(true);

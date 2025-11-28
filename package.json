@@ -40,6 +40,7 @@
     "worker": "bun run --watch src/worker.tsx"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.3.14",
     "@headlessui/react": "^2.2.9",
     "@trpc/client": "^11.0.0",
     "@trpc/server": "^11.0.0",
