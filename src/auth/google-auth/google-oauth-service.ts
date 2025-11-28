@@ -26,8 +26,11 @@ export class GoogleOAuthService {
   private keyPrefix = 'oauth_state:';
 
   constructor(db: Db) {
-    const baseStore = new PostgresKeyValueStore(db);
-    this.stateStore = new TypedKeyValueStore(baseStore, oauthStateSchema);
+    const store = new PostgresKeyValueStore(db);
+    this.stateStore = new TypedKeyValueStore({
+      store,
+      codec: oauthStateSchema,
+    });
   }
 
   /**

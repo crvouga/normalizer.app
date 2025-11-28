@@ -45,12 +45,17 @@ export const createPostgresConnection = async ({
   const sql = postgres(dbUrlObj.toString());
 
   logger.info('Checking database health...');
+  const interval = setInterval(() => {
+    logger.info('Checking database health...');
+  }, 1000);
   try {
     await sql`SELECT 1`;
     logger.info('Database connection successful');
   } catch (error) {
     logger.error('Database connection failed:', error as Record<string, unknown>);
     throw new Error('Failed to connect to database');
+  } finally {
+    clearInterval(interval);
   }
 
   return sql;
