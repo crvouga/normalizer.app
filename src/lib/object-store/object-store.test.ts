@@ -445,4 +445,564 @@ describe('ObjectStore (S3 implementation)', async () => {
       expect(presignResultWithFalse.value).toMatch(/^https?:\/\/.+/);
     }
   });
+
+  // BATCH METHOD TESTS - readMany
+  test('readMany: returns empty array for empty input', async () => {
+    const result = await store.readMany([]);
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toEqual([]);
+    }
+  });
+
+  test('readMany: reads multiple existing objects', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
+    await store.write({ bucket: testBucket, key: 'key3', data: testData3 });
+
+    const result = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0]?.data).toEqual(testData1);
+      expect(result.value[1]?.data).toEqual(testData2);
+      expect(result.value[2]?.data).toEqual(testData3);
+      expect(result.value[0]?.bucket).toBe(testBucket);
+      expect(result.value[0]?.key).toBe('key1');
+      expect(result.value[1]?.bucket).toBe(testBucket);
+      expect(result.value[1]?.key).toBe('key2');
+      expect(result.value[2]?.bucket).toBe(testBucket);
+      expect(result.value[2]?.key).toBe('key3');
+    }
+  });
+
+  test('readMany: returns null data for non-existent objects', async () => {
+    const testData = Buffer.from('data1');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+
+    const result = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'non-existent-key' },
+      { bucket: testBucket, key: 'non-existent' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0]?.data).toEqual(testData);
+      expect(result.value[1]?.data).toBeNull();
+      expect(result.value[2]?.data).toBeNull();
+    }
+  });
+
+  test('readMany: preserves order of input locations', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
+    await store.write({ bucket: testBucket, key: 'key3', data: testData3 });
+
+    // Request in different order
+    const result = await store.readMany([
+      { bucket: testBucket, key: 'key3' },
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      // Results should be in the same order as input
+      expect(result.value[0]?.key).toBe('key3');
+      expect(result.value[0]?.data).toEqual(testData3);
+      expect(result.value[1]?.key).toBe('key1');
+      expect(result.value[1]?.data).toEqual(testData1);
+      expect(result.value[2]?.key).toBe('key2');
+      expect(result.value[2]?.data).toEqual(testData2);
+    }
+  });
+
+  test('readMany: handles binary data correctly', async () => {
+    const testData1 = Buffer.from([0x00, 0x01, 0x02]);
+    const testData2 = Buffer.from([0xff, 0xfe, 0xfd]);
+
+    await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
+
+    const result = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value[0]?.data).toEqual(testData1);
+      expect(result.value[1]?.data).toEqual(testData2);
+      expect(Array.from(result.value[0]!.data!)).toEqual([0x00, 0x01, 0x02]);
+      expect(Array.from(result.value[1]!.data!)).toEqual([0xff, 0xfe, 0xfd]);
+    }
+  });
+
+  // BATCH METHOD TESTS - writeMany
+  test('writeMany: returns empty array for empty input', async () => {
+    const result = await store.writeMany([]);
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toEqual([]);
+    }
+  });
+
+  test('writeMany: writes multiple objects', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    const result = await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: testData1 },
+      { bucket: testBucket, key: 'key2', data: testData2 },
+      { bucket: testBucket, key: 'key3', data: testData3 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0]).toEqual({ bucket: testBucket, key: 'key1' });
+      expect(result.value[1]).toEqual({ bucket: testBucket, key: 'key2' });
+      expect(result.value[2]).toEqual({ bucket: testBucket, key: 'key3' });
+    }
+
+    // Verify all objects were written
+    const readResult = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(readResult)).toBe(true);
+    if (isOk(readResult)) {
+      expect(readResult.value[0]?.data).toEqual(testData1);
+      expect(readResult.value[1]?.data).toEqual(testData2);
+      expect(readResult.value[2]?.data).toEqual(testData3);
+    }
+  });
+
+  test('writeMany: preserves order of input entries', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    const result = await store.writeMany([
+      { bucket: testBucket, key: 'key3', data: testData3 },
+      { bucket: testBucket, key: 'key1', data: testData1 },
+      { bucket: testBucket, key: 'key2', data: testData2 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      // Results should be in the same order as input
+      expect(result.value[0]).toEqual({ bucket: testBucket, key: 'key3' });
+      expect(result.value[1]).toEqual({ bucket: testBucket, key: 'key1' });
+      expect(result.value[2]).toEqual({ bucket: testBucket, key: 'key2' });
+    }
+  });
+
+  test('writeMany: writes with different content types', async () => {
+    const jsonData = Buffer.from('{"key": "value"}');
+    const textData = Buffer.from('plain text');
+    const binaryData = Buffer.from([0x00, 0x01, 0x02]);
+
+    const result = await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: jsonData, contentType: 'application/json' },
+      { bucket: testBucket, key: 'key2', data: textData, contentType: 'text/plain' },
+      {
+        bucket: testBucket,
+        key: 'key3',
+        data: binaryData,
+        contentType: 'application/octet-stream',
+      },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+    }
+
+    // Verify all objects were written correctly
+    const readResult = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(readResult)).toBe(true);
+    if (isOk(readResult)) {
+      expect(readResult.value[0]?.data).toEqual(jsonData);
+      expect(readResult.value[1]?.data).toEqual(textData);
+      expect(readResult.value[2]?.data).toEqual(binaryData);
+    }
+  });
+
+  test('writeMany: overwrites existing objects', async () => {
+    const initialData1 = Buffer.from('initial1');
+    const initialData2 = Buffer.from('initial2');
+
+    await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: initialData1 },
+      { bucket: testBucket, key: 'key2', data: initialData2 },
+    ]);
+
+    const updatedData1 = Buffer.from('updated1');
+    const updatedData2 = Buffer.from('updated2');
+
+    const result = await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: updatedData1 },
+      { bucket: testBucket, key: 'key2', data: updatedData2 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+
+    // Verify objects were overwritten
+    const readResult = await store.readMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(readResult)).toBe(true);
+    if (isOk(readResult)) {
+      expect(readResult.value[0]?.data).toEqual(updatedData1);
+      expect(readResult.value[1]?.data).toEqual(updatedData2);
+    }
+  });
+
+  // BATCH METHOD TESTS - existsMany
+  test('existsMany: returns empty array for empty input', async () => {
+    const result = await store.existsMany([]);
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toEqual([]);
+    }
+  });
+
+  test('existsMany: checks existence of multiple objects', async () => {
+    const testData = Buffer.from('test data');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData });
+
+    const result = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'non-existent-key' },
+      { bucket: testBucket, key: 'non-existent' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(4);
+      expect(result.value[0]?.exists).toBe(true);
+      expect(result.value[1]?.exists).toBe(true);
+      expect(result.value[2]?.exists).toBe(false);
+      expect(result.value[3]?.exists).toBe(false);
+      expect(result.value[0]?.bucket).toBe(testBucket);
+      expect(result.value[0]?.key).toBe('key1');
+      expect(result.value[1]?.bucket).toBe(testBucket);
+      expect(result.value[1]?.key).toBe('key2');
+    }
+  });
+
+  test('existsMany: preserves order of input locations', async () => {
+    const testData = Buffer.from('test data');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData });
+
+    const result = await store.existsMany([
+      { bucket: testBucket, key: 'non-existent' },
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'non-existent-key' },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(4);
+      // Results should be in the same order as input
+      expect(result.value[0]?.key).toBe('non-existent');
+      expect(result.value[0]?.exists).toBe(false);
+      expect(result.value[1]?.key).toBe('key1');
+      expect(result.value[1]?.exists).toBe(true);
+      expect(result.value[2]?.key).toBe('key2');
+      expect(result.value[2]?.exists).toBe(true);
+      expect(result.value[3]?.key).toBe('non-existent-key');
+      expect(result.value[3]?.exists).toBe(false);
+    }
+  });
+
+  test('existsMany: returns false after deletion', async () => {
+    const testData = Buffer.from('test data');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData });
+
+    const existsBefore = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(existsBefore)).toBe(true);
+    if (isOk(existsBefore)) {
+      expect(existsBefore.value[0]?.exists).toBe(true);
+      expect(existsBefore.value[1]?.exists).toBe(true);
+    }
+
+    await store.deleteMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    const existsAfter = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(existsAfter)).toBe(true);
+    if (isOk(existsAfter)) {
+      expect(existsAfter.value[0]?.exists).toBe(false);
+      expect(existsAfter.value[1]?.exists).toBe(false);
+    }
+  });
+
+  // BATCH METHOD TESTS - deleteMany
+  test('deleteMany: succeeds for empty input', async () => {
+    const result = await store.deleteMany([]);
+    expect(isOk(result)).toBe(true);
+  });
+
+  test('deleteMany: deletes multiple existing objects', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: testData1 },
+      { bucket: testBucket, key: 'key2', data: testData2 },
+      { bucket: testBucket, key: 'key3', data: testData3 },
+    ]);
+
+    const deleteResult = await store.deleteMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(deleteResult)).toBe(true);
+
+    // Verify all objects were deleted
+    const existsResult = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(existsResult)).toBe(true);
+    if (isOk(existsResult)) {
+      expect(existsResult.value[0]?.exists).toBe(false);
+      expect(existsResult.value[1]?.exists).toBe(false);
+      expect(existsResult.value[2]?.exists).toBe(false);
+    }
+  });
+
+  test('deleteMany: succeeds when deleting non-existent objects', async () => {
+    const result = await store.deleteMany([
+      { bucket: testBucket, key: 'non-existent-key' },
+      { bucket: testBucket, key: 'non-existent' },
+    ]);
+    expect(isOk(result)).toBe(true);
+  });
+
+  test('deleteMany: handles mix of existing and non-existent objects', async () => {
+    const testData = Buffer.from('test data');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData });
+
+    const deleteResult = await store.deleteMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'non-existent-key' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'non-existent' },
+    ]);
+
+    expect(isOk(deleteResult)).toBe(true);
+
+    // Verify existing objects were deleted
+    const existsResult = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+    ]);
+
+    expect(isOk(existsResult)).toBe(true);
+    if (isOk(existsResult)) {
+      expect(existsResult.value[0]?.exists).toBe(false);
+      expect(existsResult.value[1]?.exists).toBe(false);
+    }
+  });
+
+  test('deleteMany: only deletes specified objects', async () => {
+    const testData1 = Buffer.from('data1');
+    const testData2 = Buffer.from('data2');
+    const testData3 = Buffer.from('data3');
+
+    await store.writeMany([
+      { bucket: testBucket, key: 'key1', data: testData1 },
+      { bucket: testBucket, key: 'key2', data: testData2 },
+      { bucket: testBucket, key: 'key3', data: testData3 },
+    ]);
+
+    const deleteResult = await store.deleteMany([{ bucket: testBucket, key: 'key1' }]);
+
+    expect(isOk(deleteResult)).toBe(true);
+
+    const existsResult = await store.existsMany([
+      { bucket: testBucket, key: 'key1' },
+      { bucket: testBucket, key: 'key2' },
+      { bucket: testBucket, key: 'key3' },
+    ]);
+
+    expect(isOk(existsResult)).toBe(true);
+    if (isOk(existsResult)) {
+      expect(existsResult.value[0]?.exists).toBe(false);
+      expect(existsResult.value[1]?.exists).toBe(true);
+      expect(existsResult.value[2]?.exists).toBe(true);
+    }
+  });
+
+  // BATCH METHOD TESTS - presignMany
+  test('presignMany: returns empty array for empty input', async () => {
+    const result = await store.presignMany([]);
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toEqual([]);
+    }
+  });
+
+  test('presignMany: generates presigned URLs for multiple objects', async () => {
+    const testData = Buffer.from('test data');
+    await store.write({ bucket: testBucket, key: 'key1', data: testData });
+    await store.write({ bucket: testBucket, key: 'key2', data: testData });
+
+    const result = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(2);
+      expect(result.value[0]?.url).toBeDefined();
+      expect(typeof result.value[0]?.url).toBe('string');
+      expect(result.value[0]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[0]?.bucket).toBe(testBucket);
+      expect(result.value[0]?.key).toBe('key1');
+      expect(result.value[1]?.url).toBeDefined();
+      expect(typeof result.value[1]?.url).toBe('string');
+      expect(result.value[1]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[1]?.bucket).toBe(testBucket);
+      expect(result.value[1]?.key).toBe('key2');
+    }
+  });
+
+  test('presignMany: preserves order of input entries', async () => {
+    const result = await store.presignMany([
+      { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      // Results should be in the same order as input
+      expect(result.value[0]?.key).toBe('key3');
+      expect(result.value[1]?.key).toBe('key1');
+      expect(result.value[2]?.key).toBe('key2');
+    }
+  });
+
+  test('presignMany: handles mix of GET and PUT methods', async () => {
+    const result = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key2', method: 'PUT', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 3600 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[1]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[2]?.url).toMatch(/^https?:\/\/.+/);
+    }
+  });
+
+  test('presignMany: useHTTPS converts http:// to https:// when true', async () => {
+    const result = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600, useHTTPS: true },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600, useHTTPS: true },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(2);
+      expect(result.value[0]?.url).toMatch(/^https:\/\/.+/);
+      expect(result.value[1]?.url).toMatch(/^https:\/\/.+/);
+    }
+  });
+
+  test('presignMany: useHTTPS does not affect URL when false or undefined', async () => {
+    const resultWithoutFlag = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+    ]);
+
+    const resultWithFalse = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600, useHTTPS: false },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600, useHTTPS: false },
+    ]);
+
+    expect(isOk(resultWithoutFlag)).toBe(true);
+    expect(isOk(resultWithFalse)).toBe(true);
+
+    if (isOk(resultWithoutFlag) && isOk(resultWithFalse)) {
+      // Both should return valid URLs (may be http:// or https:// depending on endpoint)
+      expect(resultWithoutFlag.value[0]?.url).toMatch(/^https?:\/\/.+/);
+      expect(resultWithoutFlag.value[1]?.url).toMatch(/^https?:\/\/.+/);
+      expect(resultWithFalse.value[0]?.url).toMatch(/^https?:\/\/.+/);
+      expect(resultWithFalse.value[1]?.url).toMatch(/^https?:\/\/.+/);
+    }
+  });
+
+  test('presignMany: handles different expiration times', async () => {
+    const result = await store.presignMany([
+      { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 60 },
+      { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+      { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 86400 },
+    ]);
+
+    expect(isOk(result)).toBe(true);
+    if (isOk(result)) {
+      expect(result.value).toHaveLength(3);
+      expect(result.value[0]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[1]?.url).toMatch(/^https?:\/\/.+/);
+      expect(result.value[2]?.url).toMatch(/^https?:\/\/.+/);
+    }
+  });
 });

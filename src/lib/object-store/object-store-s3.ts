@@ -125,19 +125,18 @@ export class S3ObjectStore implements ObjectStore {
     }
 
     this.logger.debug('Writing multiple objects to S3', { count: entries.length });
-    const results: ObjectLocation[] = [];
 
     try {
-      // Process all writes in parallel
-      await Promise.all(
+      // Process all writes in parallel, preserving order
+      const results = await Promise.all(
         entries.map(async (entry) => {
           const { bucket, key, data, contentType } = entry;
           try {
             await this.s3Client.file(key, { bucket }).write(data, {
               type: contentType ?? '',
             });
-            results.push({ bucket, key });
             this.logger.debug('Successfully wrote object to S3', { bucket, key, contentType });
+            return { bucket, key };
           } catch (error) {
             // If any write fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
