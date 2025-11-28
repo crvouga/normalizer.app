@@ -2,16 +2,16 @@ import { S3Client } from 'bun';
 import { handleError } from '../error';
 import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
-import { Err, Ok, isOk, type Result } from '../result';
+import { Err, Ok, type Result } from '../result';
 import { parseAndValidateURL } from '../url';
 import { ObjectLocation } from './object-location';
-import type { ObjectStore } from './object-store';
+import { ObjectStore } from './object-store';
 
 /**
  * S3 implementation of ObjectStore using Bun's S3Client and MinioClient.
  * Accepts S3 credentials as constructor arguments and initializes clients.
  */
-export class S3ObjectStore implements ObjectStore {
+export class S3ObjectStore extends ObjectStore {
   private readonly s3Client: S3Client;
   private readonly minioClient: MinioClient;
   private readonly s3Endpoint: string;
@@ -28,6 +28,7 @@ export class S3ObjectStore implements ObjectStore {
     s3SecretAccessKey: string;
     logger: Logger;
   }) {
+    super();
     // Use parseAndValidateURL to validate and normalize the s3Endpoint
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
@@ -102,21 +103,6 @@ export class S3ObjectStore implements ObjectStore {
     }
   }
 
-  async read(params: ObjectLocation): Promise<Result<Buffer, string>> {
-    const result = await this.readMany([params]);
-    if (!isOk(result)) {
-      return result;
-    }
-    const item = result.value[0];
-    if (!item) {
-      return Err(`Object not found: ${ObjectLocation.encode(params)}`);
-    }
-    if (item.data === null) {
-      return Err(`Object not found: ${ObjectLocation.encode(params)}`);
-    }
-    return Ok(item.data);
-  }
-
   async writeMany(
     entries: Array<ObjectLocation & { data: Buffer; contentType?: string }>,
   ): Promise<Result<ObjectLocation[], string>> {
@@ -157,20 +143,6 @@ export class S3ObjectStore implements ObjectStore {
         errorPrefix: 'Failed to write objects',
       });
     }
-  }
-
-  async write(
-    params: ObjectLocation & { data: Buffer; contentType?: string },
-  ): Promise<Result<ObjectLocation, string>> {
-    const result = await this.writeMany([params]);
-    if (!isOk(result)) {
-      return result;
-    }
-    const written = result.value[0];
-    if (!written) {
-      return Err('Failed to write object: no result returned');
-    }
-    return Ok(written);
   }
 
   async existsMany(
@@ -217,18 +189,6 @@ export class S3ObjectStore implements ObjectStore {
         errorPrefix: 'Failed to check if objects exist',
       });
     }
-  }
-
-  async exists(params: ObjectLocation): Promise<Result<boolean, string>> {
-    const result = await this.existsMany([params]);
-    if (!isOk(result)) {
-      return result;
-    }
-    const item = result.value[0];
-    if (!item) {
-      return Ok(false);
-    }
-    return Ok(item.exists);
   }
 
   async deleteMany(locations: ObjectLocation[]): Promise<Result<void, string>> {
@@ -314,10 +274,6 @@ export class S3ObjectStore implements ObjectStore {
         errorPrefix: 'Failed to delete objects',
       });
     }
-  }
-
-  async delete(params: ObjectLocation): Promise<Result<void, string>> {
-    return this.deleteMany([params]);
   }
 
   async bucketExists(bucket: string): Promise<Result<boolean, string>> {
@@ -436,20 +392,6 @@ export class S3ObjectStore implements ObjectStore {
         errorPrefix: 'Failed to generate presigned URLs',
       });
     }
-  }
-
-  async presign(
-    params: ObjectLocation & { method: 'GET' | 'PUT'; expiresIn: number; useHTTPS?: boolean },
-  ): Promise<Result<string, string>> {
-    const result = await this.presignMany([params]);
-    if (!isOk(result)) {
-      return result;
-    }
-    const item = result.value[0];
-    if (!item) {
-      return Err(`Failed to generate presigned URL for ${ObjectLocation.encode(params)}`);
-    }
-    return Ok(item.url);
   }
 
   async getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>> {
