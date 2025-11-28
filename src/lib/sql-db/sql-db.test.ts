@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
+import { createSqlDb } from '../../shared/sql-db';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
 import type { SqlDb } from './sql-db';
-import { createSqlDb } from '../../shared/sql-db';
 
 // Test table schema
 const testUserSchema = z.object({
