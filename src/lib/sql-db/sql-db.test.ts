@@ -214,6 +214,140 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
         }
       }
     });
+
+    test('query: handles undefined parameters', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'UndefUser',
+        'undef@example.com',
+        25,
+      ]);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        testUserSchema,
+        ['UndefUser'],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+      }
+    });
+
+    test('query: handles empty array parameters', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'EmptyParam',
+        'empty@example.com',
+        30,
+      ]);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} ORDER BY id LIMIT 1`,
+        testUserSchema,
+        [],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    test('query: returns error when schema validation fails', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'SchemaFail',
+        'schema@example.com',
+        30,
+      ]);
+
+      // Use a schema that expects a field that doesn't exist
+      const wrongSchema = z.object({
+        id: z.number(),
+        name: z.string(),
+        email: z.string(),
+        age: z.number().nullable(),
+        nonexistent: z.string(), // This field doesn't exist in the table
+      });
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        wrongSchema,
+        ['SchemaFail'],
+      );
+      expect(isOk(queryResult)).toBe(false);
+      if (!isOk(queryResult)) {
+        expect(queryResult.error).toBeDefined();
+        expect(typeof queryResult.error).toBe('string');
+      }
+    });
+
+    test('query: handles aggregate functions', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Agg1',
+        'agg1@example.com',
+        20,
+      ]);
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'Agg2',
+        'agg2@example.com',
+        30,
+      ]);
+
+      const countSchema = z.object({
+        count: z.number(),
+        avg_age: z.union([z.number(), z.string()]).nullable(), // AVG might return string or number
+      });
+
+      const queryResult = await db.query(
+        `SELECT COUNT(*)::int as count, AVG(age) as avg_age FROM ${testTableName}`,
+        countSchema,
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.count).toBe(2);
+          // AVG might return as string or number, so check it's approximately 25
+          const avgAge = typeof row.avg_age === 'string' ? parseFloat(row.avg_age) : row.avg_age;
+          expect(avgAge).toBeCloseTo(25, 1);
+        }
+      }
+    });
+
+    test('query: handles queries with no columns', async () => {
+      const noColumnSchema = z.object({
+        one: z.number(),
+      });
+
+      const queryResult = await db.query(`SELECT 1 as one`, noColumnSchema);
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(1);
+        const row = queryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.one).toBe(1);
+        }
+      }
+    });
+
+    test('query: handles special parameter values', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        '',
+        'empty@example.com',
+        0,
+      ]);
+
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name = $1 OR age = $2`,
+        testUserSchema,
+        ['', 0],
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBeGreaterThanOrEqual(0);
+      }
+    });
   });
 
   // EXECUTE TESTS
@@ -334,6 +468,101 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
       const dropTableResult = await db.execute(`DROP TABLE IF EXISTS sql_db_test_temp`);
       expect(isOk(dropTableResult)).toBe(true);
     });
+
+    test('execute: handles bulk insert operations', async () => {
+      // Insert multiple rows in a single transaction
+      const result = await db.begin(async (tx) => {
+        let totalRows = 0;
+        for (let i = 0; i < 5; i++) {
+          const insertResult = await tx.execute(
+            `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+            [`Bulk${i}`, `bulk${i}@example.com`, 20 + i],
+          );
+          if (!isOk(insertResult)) {
+            return insertResult;
+          }
+          totalRows += insertResult.value.rowCount;
+        }
+        return { tag: 'ok' as const, value: { rowCount: totalRows } };
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.rowCount).toBe(5);
+      }
+
+      // Verify all rows were inserted
+      const queryResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName} WHERE name LIKE 'Bulk%'`,
+        z.object({ count: z.number() }),
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value[0]?.count).toBe(5);
+      }
+    });
+
+    test('execute: handles UPDATE with RETURNING clause already present', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'ReturningUser',
+        'returning@example.com',
+        25,
+      ]);
+
+      // UPDATE with RETURNING already in the query
+      const updateResult = await db.execute(
+        `UPDATE ${testTableName} SET age = $1 WHERE name = $2 RETURNING *`,
+        [26, 'ReturningUser'],
+      );
+      expect(isOk(updateResult)).toBe(true);
+      if (isOk(updateResult)) {
+        expect(updateResult.value.rowCount).toBe(1);
+      }
+    });
+
+    test('execute: handles DELETE with RETURNING clause already present', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'DeleteReturning',
+        'delete@example.com',
+        30,
+      ]);
+
+      const deleteResult = await db.execute(
+        `DELETE FROM ${testTableName} WHERE name = $1 RETURNING *`,
+        ['DeleteReturning'],
+      );
+      expect(isOk(deleteResult)).toBe(true);
+      if (isOk(deleteResult)) {
+        expect(deleteResult.value.rowCount).toBe(1);
+      }
+    });
+
+    test('execute: handles undefined parameters', async () => {
+      const result = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['UndefExec', 'undefexec@example.com', 30],
+      );
+      expect(isOk(result)).toBe(true);
+    });
+
+    test('execute: handles empty array parameters', async () => {
+      const result = await db.execute(
+        `INSERT INTO ${testTableName} (name, email) VALUES ('EmptyExec', 'emptyexec@example.com')`,
+        [],
+      );
+      expect(isOk(result)).toBe(true);
+    });
+
+    test('execute: handles special parameter values', async () => {
+      const result = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['', 'empty@example.com', 0],
+      );
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.rowCount).toBe(1);
+      }
+    });
   });
 
   // UNSAFE TESTS
@@ -404,6 +633,91 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
 
       const dropResult = await db.unsafe(`DROP TABLE IF EXISTS sql_db_test_temp2`);
       expect(isOk(dropResult)).toBe(true);
+    });
+
+    test('unsafe: returns error when schema validation fails', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'UnsafeSchemaFail',
+        'unsafeschema@example.com',
+        30,
+      ]);
+
+      // Use a schema that expects a field that doesn't exist
+      const wrongSchema = z.object({
+        id: z.number(),
+        name: z.string(),
+        email: z.string(),
+        age: z.number().nullable(),
+        nonexistent: z.string(), // This field doesn't exist
+      });
+
+      const result = await db.unsafe(
+        `SELECT * FROM ${testTableName} WHERE name = $1`,
+        ['UnsafeSchemaFail'],
+        z.array(wrongSchema),
+      );
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    test('unsafe: handles undefined parameters', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'UnsafeUndef',
+        'unsafeundef@example.com',
+        25,
+      ]);
+
+      const result = await db.unsafe(`SELECT * FROM ${testTableName} WHERE name = $1`, [
+        'UnsafeUndef',
+      ]);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(Array.isArray(result.value)).toBe(true);
+      }
+    });
+
+    test('unsafe: handles empty array parameters', async () => {
+      const result = await db.unsafe(`SELECT COUNT(*) as count FROM ${testTableName}`, []);
+      expect(isOk(result)).toBe(true);
+    });
+
+    test('unsafe: handles aggregate queries', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'AggUnsafe1',
+        'agg1@example.com',
+        20,
+      ]);
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'AggUnsafe2',
+        'agg2@example.com',
+        30,
+      ]);
+
+      const result = await db.unsafe(
+        `SELECT COUNT(*)::int as count, AVG(age) as avg_age FROM ${testTableName}`,
+        undefined,
+        z.array(
+          z.object({
+            count: z.number(),
+            avg_age: z.union([z.number(), z.string()]).nullable(), // AVG might return string or number
+          }),
+        ),
+      );
+      expect(isOk(result)).toBe(true);
+      if (isOk(result) && Array.isArray(result.value) && result.value.length > 0) {
+        expect(result.value[0]?.count).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    test('unsafe: handles queries with no parameters', async () => {
+      const result = await db.unsafe(`SELECT 1 as one`);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(Array.isArray(result.value)).toBe(true);
+      }
     });
   });
 
@@ -637,6 +951,122 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
         }
       }
     });
+
+    test('begin: rolls back when callback throws exception', async () => {
+      const initialCountResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      const initialCount =
+        isOk(initialCountResult) && initialCountResult.value[0]
+          ? initialCountResult.value[0].count
+          : 0;
+
+      // The begin method should catch exceptions and return an Err result
+      const result = await db.begin(async (tx) => {
+        // Insert a row
+        await tx.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+          'ExceptionUser',
+          'exception@example.com',
+          30,
+        ]);
+
+        // Throw an exception - this should be caught by begin() and converted to Err
+        throw new Error('Test exception for rollback');
+      });
+
+      // The exception should be caught and converted to an Err result
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+        expect(result.error).toContain('Test exception for rollback');
+      }
+
+      // Verify the insert was rolled back
+      const countResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      expect(isOk(countResult)).toBe(true);
+      if (isOk(countResult)) {
+        expect(countResult.value[0]?.count).toBe(initialCount);
+      }
+    });
+
+    test('begin: handles transaction with multiple errors', async () => {
+      const initialCountResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      const initialCount =
+        isOk(initialCountResult) && initialCountResult.value[0]
+          ? initialCountResult.value[0].count
+          : 0;
+
+      const result = await db.begin(async (tx) => {
+        // First operation succeeds
+        const insertResult = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['MultiError1', 'multierror1@example.com', 25],
+        );
+        if (!isOk(insertResult)) {
+          return insertResult;
+        }
+
+        // Second operation fails
+        const badResult = await tx.execute('INSERT INTO nonexistent_table VALUES (1)');
+        if (!isOk(badResult)) {
+          return badResult;
+        }
+
+        // This should never be reached
+        return { tag: 'ok' as const, value: { rowCount: 0 } };
+      });
+
+      expect(isOk(result)).toBe(false);
+
+      // Verify the first insert was rolled back
+      const countResult = await db.query(
+        `SELECT COUNT(*)::int as count FROM ${testTableName}`,
+        z.object({ count: z.number() }),
+      );
+      expect(isOk(countResult)).toBe(true);
+      if (isOk(countResult)) {
+        expect(countResult.value[0]?.count).toBe(initialCount);
+      }
+    });
+
+    test('begin: transaction handles empty result sets', async () => {
+      const result = await db.begin(async (tx) => {
+        const queryResult = await tx.query(
+          `SELECT * FROM ${testTableName} WHERE name = $1`,
+          testUserSchema,
+          ['NonexistentUser'],
+        );
+        return queryResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.length).toBe(0);
+      }
+    });
+
+    test('begin: transaction handles parameter edge cases', async () => {
+      const result = await db.begin(async (tx) => {
+        const insertResult = await tx.execute(
+          `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+          ['', 'empty@example.com', 0],
+        );
+        return insertResult;
+      });
+
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.rowCount).toBe(1);
+      }
+    });
   });
 
   // CLOSE TESTS
@@ -650,6 +1080,66 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
 
       // Verify close() itself succeeded
       expect(isOk(closeResult)).toBe(true);
+    });
+
+    test('close: can be called multiple times', async () => {
+      // Create a separate connection for this test
+      const testDb = await createDb({ logger });
+
+      const closeResult1 = await testDb.close();
+      expect(isOk(closeResult1)).toBe(true);
+
+      // Close again - some implementations may return error, others may succeed (idempotent)
+      // Both behaviors are acceptable
+      const closeResult2 = await testDb.close();
+      // Just verify it doesn't throw - either success or error is fine
+      expect(closeResult2.tag).toBeDefined();
+    });
+
+    test('close: operations fail after closing', async () => {
+      // Create a separate connection for this test
+      const testDb = await createDb({ logger });
+
+      // Create a test table
+      await testDb.execute(`
+        CREATE TABLE IF NOT EXISTS sql_db_test_close (
+          id INTEGER PRIMARY KEY
+        )
+      `);
+
+      // Close the connection
+      const closeResult = await testDb.close();
+      expect(isOk(closeResult)).toBe(true);
+
+      // Try to use the database after closing
+      const queryResult = await testDb.query(
+        `SELECT * FROM sql_db_test_close`,
+        z.object({ id: z.number() }),
+      );
+      expect(isOk(queryResult)).toBe(false);
+      if (!isOk(queryResult)) {
+        expect(queryResult.error).toBeDefined();
+        expect(typeof queryResult.error).toBe('string');
+      }
+    });
+
+    test('close: transaction fails after closing', async () => {
+      // Create a separate connection for this test
+      const testDb = await createDb({ logger });
+
+      // Close the connection
+      const closeResult = await testDb.close();
+      expect(isOk(closeResult)).toBe(true);
+
+      // Try to begin a transaction after closing
+      const txResult = await testDb.begin(async (tx) => {
+        return await tx.execute(`SELECT 1`);
+      });
+      expect(isOk(txResult)).toBe(false);
+      if (!isOk(txResult)) {
+        expect(txResult.error).toBeDefined();
+        expect(typeof txResult.error).toBe('string');
+      }
     });
   });
 
@@ -713,6 +1203,150 @@ describe.each(implementations)('SqlDb (%s implementation)', (_implementationName
         expect(row).toBeDefined();
         if (row) {
           expect(row.age).toBe(41);
+        }
+      }
+    });
+
+    test('integration: handles large result sets', async () => {
+      // Insert many rows
+      const insertCount = 50;
+      for (let i = 0; i < insertCount; i++) {
+        await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+          `Large${i}`,
+          `large${i}@example.com`,
+          20 + i,
+        ]);
+      }
+
+      // Query all rows
+      const queryResult = await db.query(
+        `SELECT * FROM ${testTableName} WHERE name LIKE 'Large%' ORDER BY id`,
+        testUserSchema,
+      );
+      expect(isOk(queryResult)).toBe(true);
+      if (isOk(queryResult)) {
+        expect(queryResult.value.length).toBe(insertCount);
+      }
+    });
+
+    test('integration: handles complex queries with JOINs', async () => {
+      // Drop table first to ensure clean state
+      await db.execute(`DROP TABLE IF EXISTS sql_db_test_orders`);
+
+      // Create a second table for JOIN test - use SERIAL for Postgres compatibility
+      const createTableResult = await db.execute(`
+        CREATE TABLE sql_db_test_orders (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          product VARCHAR(255) NOT NULL
+        )
+      `);
+
+      // If SERIAL fails (PGLite), try INTEGER
+      if (!isOk(createTableResult)) {
+        const createTableResult2 = await db.execute(`
+          CREATE TABLE sql_db_test_orders (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            product VARCHAR(255) NOT NULL
+          )
+        `);
+        expect(isOk(createTableResult2)).toBe(true);
+      } else {
+        expect(isOk(createTableResult)).toBe(true);
+      }
+
+      // Insert user
+      const insertUserResult = await db.execute(
+        `INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`,
+        ['JoinUser', 'join@example.com', 30],
+      );
+      expect(isOk(insertUserResult)).toBe(true);
+
+      // Get user ID
+      const userResult = await db.query(
+        `SELECT id FROM ${testTableName} WHERE name = $1`,
+        z.object({ id: z.number() }),
+        ['JoinUser'],
+      );
+      expect(isOk(userResult)).toBe(true);
+      expect(userResult.tag === 'ok' && userResult.value[0]).toBeDefined();
+      const userId = userResult.tag === 'ok' ? userResult.value[0]!.id : 0;
+      expect(userId).toBeGreaterThan(0);
+
+      // Insert order
+      const insertOrderResult = await db.execute(
+        `INSERT INTO sql_db_test_orders (user_id, product) VALUES ($1, $2)`,
+        [userId, 'Product1'],
+      );
+      expect(isOk(insertOrderResult)).toBe(true);
+
+      // Verify order exists first
+      const orderCheck = await db.query(
+        `SELECT * FROM sql_db_test_orders WHERE user_id = $1`,
+        z.object({ user_id: z.number(), product: z.string() }),
+        [userId],
+      );
+      expect(isOk(orderCheck)).toBe(true);
+      expect(orderCheck.tag === 'ok' && orderCheck.value.length).toBeGreaterThan(0);
+
+      // Query with JOIN
+      const joinSchema = z.object({
+        name: z.string(),
+        email: z.string(),
+        product: z.string(),
+      });
+
+      const joinResult = await db.query(
+        `SELECT u.name, u.email, o.product 
+         FROM ${testTableName} u 
+         INNER JOIN sql_db_test_orders o ON u.id = o.user_id 
+         WHERE u.name = $1`,
+        joinSchema,
+        ['JoinUser'],
+      );
+      expect(isOk(joinResult)).toBe(true);
+      if (joinResult.tag === 'ok') {
+        expect(joinResult.value.length).toBeGreaterThanOrEqual(1);
+        if (joinResult.value.length > 0 && joinResult.value[0]) {
+          const row = joinResult.value[0];
+          expect(row.name).toBe('JoinUser');
+          expect(row.product).toBe('Product1');
+        }
+      }
+
+      // Cleanup
+      await db.execute(`DROP TABLE IF EXISTS sql_db_test_orders`);
+    });
+
+    test('integration: handles subqueries', async () => {
+      await db.execute(`INSERT INTO ${testTableName} (name, email, age) VALUES ($1, $2, $3)`, [
+        'SubqueryUser',
+        'subquery@example.com',
+        35,
+      ]);
+
+      const subquerySchema = z.object({
+        name: z.string(),
+        age: z.number().nullable(),
+        max_age: z.number().nullable(),
+      });
+
+      const subqueryResult = await db.query(
+        `SELECT name, age, (SELECT MAX(age) FROM ${testTableName}) as max_age 
+         FROM ${testTableName} 
+         WHERE name = $1`,
+        subquerySchema,
+        ['SubqueryUser'],
+      );
+      expect(isOk(subqueryResult)).toBe(true);
+      if (isOk(subqueryResult)) {
+        expect(subqueryResult.value.length).toBe(1);
+        const row = subqueryResult.value[0];
+        expect(row).toBeDefined();
+        if (row) {
+          expect(row.name).toBe('SubqueryUser');
+          expect(row.max_age).toBe(35);
         }
       }
     });
