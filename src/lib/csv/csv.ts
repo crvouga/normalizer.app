@@ -148,6 +148,7 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
     if (values.some((v) => v.includes('T') || v.includes(' '))) {
       return 'timestamp';
     }
+
     return 'date';
   }
 
