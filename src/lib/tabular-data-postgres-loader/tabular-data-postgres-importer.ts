@@ -89,7 +89,7 @@ export interface BatchImportSummary {
  */
 export interface BatchImportResult {
   /**
-   * 
+   *
    */
   result: Result<{ tableName: string; rowCount: number }[], string>;
   /**
@@ -315,7 +315,10 @@ export class TabularDataPostgresImporter {
   /**
    * Build summary statistics from batch results
    */
-  private buildBatchSummary(results: BatchImportItemResult[], startTime: number): BatchImportSummary {
+  private buildBatchSummary(
+    results: BatchImportItemResult[],
+    startTime: number,
+  ): BatchImportSummary {
     let successful = 0;
     let failed = 0;
     let totalRowsImported = 0;
@@ -448,14 +451,69 @@ export class TabularDataPostgresImporter {
     }
 
     const columnNames = schema.map((col) => col.name);
-    const rows: (string | null)[][] = dataRows.map((row) =>
-      row.map((cell) => (cell === '' ? null : cell)),
+    // Convert string values to appropriate types based on schema
+    const rows: (string | number | boolean | null)[][] = dataRows.map((row) =>
+      row.map((cell, colIndex) => {
+        if (cell === '') {
+          return null;
+        }
+        const colSchema = schema[colIndex];
+        if (!colSchema) {
+          return cell;
+        }
+        return this.convertValue(cell, colSchema.type);
+      }),
     );
 
     return this.postgresClient.insertBatch(tableName, columnNames, rows);
   }
-}
 
+  /**
+   * Convert a string value to the appropriate type based on column schema
+   */
+  private convertValue(
+    value: string,
+    type: CsvColumnSchema['type'],
+  ): string | number | boolean | null {
+    if (value === '' || value === null) {
+      return null;
+    }
+
+    switch (type) {
+      case 'boolean': {
+        const lower = value.toLowerCase().trim();
+        // Handle common boolean representations
+        if (lower === 'true' || lower === 'yes' || lower === '1' || lower === 'y') {
+          return true;
+        }
+        if (lower === 'false' || lower === 'no' || lower === '0' || lower === 'n') {
+          return false;
+        }
+        // If it doesn't match known boolean values, return as-is (will cause validation error)
+        return value;
+      }
+      case 'integer': {
+        const parsed = parseInt(value, 10);
+        if (isNaN(parsed)) {
+          return value; // Return as string if can't parse (will cause validation error)
+        }
+        return parsed;
+      }
+      case 'numeric': {
+        const parsed = parseFloat(value);
+        if (isNaN(parsed)) {
+          return value; // Return as string if can't parse (will cause validation error)
+        }
+        return parsed;
+      }
+      case 'date':
+      case 'timestamp':
+      case 'text':
+      default:
+        return value;
+    }
+  }
+}
 
 export function createTabularDataPostgresImporter(params: {
   sql: SqlDb;

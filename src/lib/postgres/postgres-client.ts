@@ -236,32 +236,26 @@ export class PostgresClient {
   async insertBatch(
     tableName: string,
     columns: string[],
-    rows: (string | null)[][],
+    rows: (string | number | boolean | null)[][],
     schema: string = 'public',
   ): Promise<Result<number, string>> {
-    if (rows.length === 0) {
-      return Ok(0);
-    }
+    if (rows.length === 0) return Ok(0);
 
-    if (columns.length === 0) {
-      return Err('Cannot insert into table with no columns');
-    }
+    if (columns.length === 0) return Err('Cannot insert into table with no columns');
 
     const escapedColumnNames = columns.map((col) => this.escapeIdentifier(col)).join(', ');
-    // Calculate batch size to stay under 10,000 parameters per query
-    // Each row uses columns.length parameters, so max rows = 10000 / columns.length
-    const maxParamsPerQuery = 10000;
+    const maxParamsPerQuery = 10_000;
     const batchSize = Math.max(1, Math.floor(maxParamsPerQuery / columns.length));
 
     const transactionResult = await this.db.begin(async (tx) => {
-      return this.processBatchesInTransaction(
+      return this.processBatchesInTransaction({
         tx,
         tableName,
         escapedColumnNames,
         rows,
         batchSize,
         schema,
-      );
+      });
     });
 
     if (!isOk(transactionResult)) {
@@ -274,25 +268,32 @@ export class PostgresClient {
   /**
    * Process all batches within a transaction
    */
-  private async processBatchesInTransaction(
-    tx: SqlTransaction,
-    tableName: string,
-    escapedColumnNames: string,
-    rows: (string | null)[][],
-    batchSize: number,
-    schema: string,
-  ): Promise<Result<number, string>> {
+  private async processBatchesInTransaction({
+    tx,
+    tableName,
+    escapedColumnNames,
+    rows,
+    batchSize,
+    schema,
+  }: {
+    tx: SqlTransaction;
+    tableName: string;
+    escapedColumnNames: string;
+    rows: (string | number | boolean | null)[][];
+    batchSize: number;
+    schema: string;
+  }): Promise<Result<number, string>> {
     let totalInserted = 0;
 
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
-      const insertResult = await this.insertBatchInTransaction(
+      const insertResult = await this.insertBatchInTransaction({
         tx,
         tableName,
         escapedColumnNames,
         batch,
         schema,
-      );
+      });
 
       if (!isOk(insertResult)) {
         return Err(`Failed to insert batch: ${insertResult.error}`);
@@ -307,14 +308,25 @@ export class PostgresClient {
   /**
    * Insert a single batch of rows within a transaction
    */
-  private async insertBatchInTransaction(
-    tx: SqlTransaction,
-    tableName: string,
-    escapedColumnNames: string,
-    batch: (string | null)[][],
-    schema: string,
-  ): Promise<Result<void, string>> {
-    const { query, values } = this.buildBatchQuery(tableName, escapedColumnNames, batch, schema);
+  private async insertBatchInTransaction({
+    tx,
+    tableName,
+    escapedColumnNames,
+    batch,
+    schema,
+  }: {
+    tx: SqlTransaction;
+    tableName: string;
+    escapedColumnNames: string;
+    batch: (string | number | boolean | null)[][];
+    schema: string;
+  }): Promise<Result<void, string>> {
+    const { query, values } = this.buildBatchQuery({
+      tableName,
+      escapedColumnNames,
+      batch,
+      schema,
+    });
     const insertResult = await tx.unsafe(query, values);
 
     if (!isOk(insertResult)) {
@@ -327,14 +339,19 @@ export class PostgresClient {
   /**
    * Build parameterized query and values array for a batch
    */
-  private buildBatchQuery(
-    tableName: string,
-    escapedColumnNames: string,
-    batch: (string | null)[][],
-    schema: string,
-  ): { query: string; values: (string | null)[] } {
+  private buildBatchQuery({
+    tableName,
+    escapedColumnNames,
+    batch,
+    schema,
+  }: {
+    tableName: string;
+    escapedColumnNames: string;
+    batch: (string | number | boolean | null)[][];
+    schema: string;
+  }): { query: string; values: (string | number | boolean | null)[] } {
     const placeholders: string[] = [];
-    const values: (string | null)[] = [];
+    const values: (string | number | boolean | null)[] = [];
     const escapedTableName = this.escapeIdentifier(tableName);
     const escapedSchema = this.escapeIdentifier(schema);
 
