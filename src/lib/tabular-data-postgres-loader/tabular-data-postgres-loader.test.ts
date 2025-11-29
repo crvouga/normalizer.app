@@ -6,7 +6,7 @@ import { createLogger } from '../logger';
 import { isOk } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import type { ObjectStore } from '../object-store/object-store';
-import { PostgresMetadataClient } from '../postgres/postgres-metadata-client';
+import { PostgresClient } from '../postgres/postgres-client';
 import { TabularDataPostgresLoader } from './tabular-data-postgres-loader';
 import { Csv } from '../csv/csv';
 
@@ -18,7 +18,7 @@ describe('TabularDataPostgresLoader', () => {
   let db: SqlDb;
   let objectStore: ObjectStore;
   let loader: TabularDataPostgresLoader;
-  let metadataClient: PostgresMetadataClient;
+  let metadataClient: PostgresClient;
   const testTables: string[] = [];
 
   beforeAll(async () => {
@@ -33,7 +33,7 @@ describe('TabularDataPostgresLoader', () => {
     loader = new TabularDataPostgresLoader(db, logger, objectStore);
 
     // Initialize metadata client
-    metadataClient = new PostgresMetadataClient(db);
+    metadataClient = new PostgresClient(db);
   });
 
   afterAll(async () => {

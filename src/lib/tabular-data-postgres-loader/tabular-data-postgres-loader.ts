@@ -1,18 +1,10 @@
-import { z } from 'zod';
 import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
+import { PostgresClient, type TableColumn } from '../postgres/postgres-client';
 import { isOk, Ok, Err, type Result } from '../result';
-import type { SqlDb, SqlTransaction } from '../sql-db/sql-db';
+import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
-
-/**
- * Tabular data structure with parsed data and schema
- */
-export interface TabularData {
-  data: Record<string, string | number | boolean | null>[];
-  schema: CsvColumnSchema[];
-}
 
 /**
  * Options for loading tabular data into PostgreSQL
@@ -112,9 +104,10 @@ export interface BatchLoadResult {
  */
 export class TabularDataPostgresLoader {
   private converter: TabularDataConverter;
+  private postgresClient: PostgresClient;
 
   constructor(
-    private readonly sql: SqlDb,
+    sql: SqlDb,
     private readonly logger: Logger,
     private readonly objectStore: ObjectStore,
   ) {
@@ -122,6 +115,7 @@ export class TabularDataPostgresLoader {
       objectStore,
       logger,
     });
+    this.postgresClient = new PostgresClient(sql);
   }
 
   /**
@@ -365,15 +359,6 @@ export class TabularDataPostgresLoader {
   }
 
   /**
-   * Escape PostgreSQL identifier (table/column names)
-   * Wraps in double quotes to handle special characters safely
-   */
-  private escapeIdentifier(identifier: string): string {
-    // Replace any double quotes with escaped version and wrap in quotes
-    return `"${identifier.replace(/"/g, '""')}"`;
-  }
-
-  /**
    * Create PostgreSQL table with the given schema.
    * Returns Result<void, string>
    */
@@ -385,55 +370,45 @@ export class TabularDataPostgresLoader {
     // Drop table if requested
     if (options.dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
-      const dropResult = await this.sql.unsafe(
-        `DROP TABLE IF EXISTS ${this.escapeIdentifier(tableName)}`,
-      );
+      const dropResult = await this.postgresClient.dropTable(tableName);
       if (!isOk(dropResult)) {
         return Err(`Failed to drop table: ${dropResult.error}`);
       }
     }
 
     // Check if table exists
-    const tableExistsQuery = `
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = $1
-      ) as exists
-    `;
-    const tableExistsResult = await this.sql.query(
-      tableExistsQuery,
-      z.object({ exists: z.boolean() }),
-      [tableName],
-    );
+    const tableExistsResult = await this.postgresClient.tableExists(tableName);
     if (!isOk(tableExistsResult)) {
       return Err(`Failed to check if table exists: ${tableExistsResult.error}`);
     }
-    const tableExists = tableExistsResult.value[0]?.exists ?? false;
+    const tableExists = tableExistsResult.value;
 
     if (!tableExists) {
       // Create table with schema
       this.logger.debug('Creating table', { tableName, columnCount: schema.length });
 
-      const columnDefinitions = schema
-        .map((col) => {
-          const typeMap: Record<CsvColumnSchema['type'], string> = {
-            text: 'TEXT',
-            integer: 'INTEGER',
-            numeric: 'NUMERIC',
-            boolean: 'BOOLEAN',
-            date: 'DATE',
-            timestamp: 'TIMESTAMP',
-          };
-          const pgType = typeMap[col.type];
-          const nullable = col.nullable !== false ? '' : 'NOT NULL';
-          return `${this.escapeIdentifier(col.name)} ${pgType} ${nullable}`.trim();
-        })
-        .join(', ');
+      // Convert CsvColumnSchema[] to TableColumn[]
+      const typeMap: Record<CsvColumnSchema['type'], TableColumn['type']> = {
+        text: 'TEXT',
+        integer: 'INTEGER',
+        numeric: 'NUMERIC',
+        boolean: 'BOOLEAN',
+        date: 'DATE',
+        timestamp: 'TIMESTAMP',
+      };
 
-      const createResult = await this.sql.unsafe(
-        `CREATE TABLE ${this.escapeIdentifier(tableName)} (${columnDefinitions})`,
-      );
+      const tableColumns: TableColumn[] = schema.map((col) => {
+        const column: TableColumn = {
+          name: col.name,
+          type: typeMap[col.type],
+        };
+        if (col.nullable !== undefined) {
+          column.nullable = col.nullable;
+        }
+        return column;
+      });
+
+      const createResult = await this.postgresClient.createTable(tableName, tableColumns);
       if (!isOk(createResult)) {
         return Err(`Failed to create table: ${createResult.error}`);
       }
@@ -444,9 +419,7 @@ export class TabularDataPostgresLoader {
     // Truncate if requested
     if (options.truncate) {
       this.logger.debug('Truncating table', { tableName });
-      const truncateResult = await this.sql.unsafe(
-        `TRUNCATE TABLE ${this.escapeIdentifier(tableName)}`,
-      );
+      const truncateResult = await this.postgresClient.truncateTable(tableName);
       if (!isOk(truncateResult)) {
         return Err(`Failed to truncate table: ${truncateResult.error}`);
       }
@@ -468,110 +441,11 @@ export class TabularDataPostgresLoader {
       return Ok(0);
     }
 
-    const escapedColumnNames = schema.map((col) => this.escapeIdentifier(col.name)).join(', ');
-    const batchSize = 5000;
+    const columnNames = schema.map((col) => col.name);
+    const rows: (string | null)[][] = dataRows.map((row) =>
+      row.map((cell) => (cell === '' ? null : cell)),
+    );
 
-    const transactionResult = await this.sql.begin(async (tx) => {
-      return this.processBatchesInTransaction(
-        tx,
-        tableName,
-        escapedColumnNames,
-        dataRows,
-        batchSize,
-      );
-    });
-
-    if (!isOk(transactionResult)) {
-      return Err(`Transaction failed: ${transactionResult.error}`);
-    }
-    return transactionResult;
-  }
-
-  /**
-   * Process all batches within a transaction
-   */
-  private async processBatchesInTransaction(
-    tx: SqlTransaction,
-    tableName: string,
-    escapedColumnNames: string,
-    dataRows: string[][],
-    batchSize: number,
-  ): Promise<Result<number, string>> {
-    let totalInserted = 0;
-
-    for (let i = 0; i < dataRows.length; i += batchSize) {
-      const batch = dataRows.slice(i, i + batchSize);
-      const insertResult = await this.insertBatch(tx, tableName, escapedColumnNames, batch);
-
-      if (!isOk(insertResult)) {
-        return Err(`Failed to insert batch: ${insertResult.error}`);
-      }
-
-      totalInserted += batch.length;
-      this.logBatchProgress(tableName, batch.length, totalInserted, dataRows.length);
-    }
-
-    return Ok(totalInserted);
-  }
-
-  /**
-   * Insert a single batch of rows
-   */
-  private async insertBatch(
-    tx: SqlTransaction,
-    tableName: string,
-    escapedColumnNames: string,
-    batch: string[][],
-  ): Promise<Result<void, string>> {
-    const { query, values } = this.buildBatchQuery(tableName, escapedColumnNames, batch);
-    const insertResult = await tx.unsafe(query, values);
-
-    if (!isOk(insertResult)) {
-      return Err(insertResult.error);
-    }
-
-    return Ok(undefined);
-  }
-
-  /**
-   * Build parameterized query and values array for a batch
-   */
-  private buildBatchQuery(
-    tableName: string,
-    escapedColumnNames: string,
-    batch: string[][],
-  ): { query: string; values: (string | null)[] } {
-    const placeholders: string[] = [];
-    const values: (string | null)[] = [];
-
-    batch.forEach((row) => {
-      const rowPlaceholders: string[] = [];
-      row.forEach((cell) => {
-        const paramIndex = values.length + 1;
-        rowPlaceholders.push(`$${paramIndex}`);
-        values.push(cell === '' ? null : cell);
-      });
-      placeholders.push(`(${rowPlaceholders.join(', ')})`);
-    });
-
-    const query = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
-    return { query, values };
-  }
-
-  /**
-   * Log batch insertion progress
-   */
-  private logBatchProgress(
-    tableName: string,
-    batchSize: number,
-    totalInserted: number,
-    totalRows: number,
-  ): void {
-    this.logger.debug('Inserted batch', {
-      tableName,
-      batchSize,
-      totalInserted,
-      progress: `${Math.round((totalInserted / totalRows) * 100)}%`,
-    });
+    return this.postgresClient.insertBatch(tableName, columnNames, rows);
   }
 }
