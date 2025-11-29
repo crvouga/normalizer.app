@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Tx } from './db';
+import type { Db, Tx } from './db';
 import { enqueueJob as enqueueJobLib, type TaskHandler } from '../lib/graphile-worker-lib';
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { Logger } from '../lib/logger';
@@ -50,7 +50,7 @@ function getJobSchema(jobName: JobName): z.ZodSchema {
  * while providing type safety through validation
  */
 export function createTaskList(
-  ctx: { logger: Logger },
+  ctx: { logger: Logger; db: Db },
   handlers: { normalization: TaskHandler<NormalizationJobPayload> },
 ) {
   return {

@@ -11,7 +11,6 @@ import type { NormalizationJobPayload } from '../../shared/graphile-worker';
 import { createObjectStore } from '../../shared/s3';
 import { getS3Config } from '../../shared/s3-config';
 import type { Db, Tx } from '../../shared/db';
-import { createDb } from '../../shared/db';
 import type { UserId } from '../../users/user-id';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
@@ -28,12 +27,9 @@ import type { Artifact } from '~/src/artifacts/artifact-type';
  */
 export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (payload, ctx) => {
   const { sessionId } = payload;
-  const { logger } = ctx;
+  const { logger, db } = ctx;
 
   logger.info('Starting normalization task', { sessionId });
-
-  // Create database connection
-  const db = await createDb({ logger });
 
   try {
     // Load initial data

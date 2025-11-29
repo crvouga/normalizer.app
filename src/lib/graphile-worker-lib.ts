@@ -9,6 +9,7 @@ export type TaskHandler<TPayload = unknown> = (
   payload: TPayload,
   ctx: {
     logger: Logger;
+    db: Db;
   },
 ) => Promise<void>;
 

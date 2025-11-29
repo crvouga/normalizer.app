@@ -5,6 +5,9 @@ import { normalizationTask } from './normalization-session/normalization-task/no
 import { createDb } from './shared/db';
 import { SecretString } from './lib/secrets/secret-string';
 
+// Singleton database connection for the worker
+let workerDb: Awaited<ReturnType<typeof createDb>> | null = null;
+
 const main = async () => {
   const rootLogger = createLogger();
   const logger = rootLogger.child('Worker');
@@ -12,11 +15,14 @@ const main = async () => {
   const databaseUrl = SecretString.fromEnvVar('DATABASE_URL');
   if (!databaseUrl) throw new Error('DATABASE_URL is not set');
 
-  // Create database connection to check worker setup
-  const db = await createDb({ logger });
+  // Create singleton database connection
+  if (!workerDb) {
+    workerDb = await createDb({ logger });
+    logger.info('Created singleton database connection for worker');
+  }
 
   // Check Graphile Worker setup
-  const graphileWorkerCheck = await checkGraphileWorkerSetup(db, logger);
+  const graphileWorkerCheck = await checkGraphileWorkerSetup(workerDb, logger);
   if (!graphileWorkerCheck.isSetup) {
     logger.warn(
       'Graphile Worker is not set up. The worker will initialize the schema on startup.',
@@ -32,6 +38,7 @@ const main = async () => {
   const taskList = createTaskList(
     {
       logger,
+      db: workerDb,
     },
     {
       normalization: normalizationTask,
