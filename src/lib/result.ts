@@ -129,3 +129,22 @@ export function unwrap<T, E>(result: Result<T, E>): T {
     throw result.error;
   }
 }
+
+/**
+ * Combines an array of Result<T, E> into a single Result<T[], E> until the first Err.
+ * If all results are Ok, returns Ok with an array of values.
+ * If any result is an Err, returns the first Err encountered.
+ *
+ * @param results Array of Result<T, E>.
+ * @returns Result<T[], E>
+ */
+export function combineUntilError<T, E>(results: Result<T, E>[]): Result<T[], E> {
+  const values: T[] = [];
+  for (const result of results) {
+    if (result.tag === 'err') {
+      return result;
+    }
+    values.push(result.value);
+  }
+  return Ok(values);
+}

@@ -7,18 +7,18 @@ import { isOk } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import type { ObjectStore } from '../object-store/object-store';
 import { PostgresClient } from '../postgres/postgres-client';
-import { TabularDataPostgresLoader } from './tabular-data-postgres-loader';
+import { TabularDataPostgresImporter } from './tabular-data-postgres-importer';
 import { Csv } from '../csv/csv';
 
 const TEST_BUCKET = 'test-bucket';
 const MOCK_SERVER_BASE_URL = 'http://localhost:8080';
 
-describe('TabularDataPostgresLoader', () => {
+describe(TabularDataPostgresImporter.name, () => {
   const logger = createLogger({ noop: true });
   let db: SqlDb;
   let objectStore: ObjectStore;
-  let loader: TabularDataPostgresLoader;
-  let metadataClient: PostgresClient;
+  let importer: TabularDataPostgresImporter;
+  let postgresClient: PostgresClient;
   const testTables: string[] = [];
 
   beforeAll(async () => {
@@ -29,11 +29,11 @@ describe('TabularDataPostgresLoader', () => {
     objectStore = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
     await objectStore.ensureBucketExists(TEST_BUCKET);
 
-    // Initialize loader
-    loader = new TabularDataPostgresLoader(db, logger, objectStore);
+    // Initialize importer
+    importer = new TabularDataPostgresImporter(db, logger, objectStore);
 
     // Initialize metadata client
-    metadataClient = new PostgresClient(db);
+    postgresClient = new PostgresClient(db);
   });
 
   afterAll(async () => {
@@ -73,7 +73,7 @@ describe('TabularDataPostgresLoader', () => {
   }
 
   describe('Basic functionality', () => {
-    test('load: successfully loads CSV with simple data', async () => {
+    test('import: successfully imports CSV with simple data', async () => {
       const csvContent = Csv.of([
         { name: 'Alice', age: 30, city: 'New York' },
         { name: 'Bob', age: 25, city: 'San Francisco' },
@@ -86,7 +86,7 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_simple_table';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
@@ -94,21 +94,21 @@ describe('TabularDataPostgresLoader', () => {
         expect(result.value.rowCount).toBe(3);
 
         // Verify table exists
-        const existsResult = await metadataClient.tableExists(tableName);
+        const existsResult = await postgresClient.tableExists(tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
         }
 
         // Verify row count
-        const rowCountResult = await metadataClient.getTableRowCount(tableName);
+        const rowCountResult = await postgresClient.getTableRowCount(tableName);
         expect(isOk(rowCountResult)).toBe(true);
         if (isOk(rowCountResult)) {
           expect(rowCountResult.value).toBe(3);
         }
 
         // Verify schema
-        const schemaResult = await metadataClient.getTableSchema(tableName);
+        const schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -122,7 +122,7 @@ describe('TabularDataPostgresLoader', () => {
         }
 
         // Verify data
-        const rowsResult = await metadataClient.getTableRows(
+        const rowsResult = await postgresClient.getTableRows(
           tableName,
           z.object({
             name: z.string(),
@@ -145,7 +145,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: verifies table creation with correct schema', async () => {
+    test('import: verifies table creation with correct schema', async () => {
       const csvContent = Csv.of([
         { id: 1, name: 'Item A', value: 10.5 },
         { id: 2, name: 'Item B', value: 20.75 },
@@ -157,11 +157,11 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_schema_table';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
-        const schemaResult = await metadataClient.getTableSchema(tableName);
+        const schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -180,7 +180,7 @@ describe('TabularDataPostgresLoader', () => {
   });
 
   describe('Data types', () => {
-    test('load: handles all column types correctly', async () => {
+    test('import: handles all column types correctly', async () => {
       // Note: Excluding boolean type as the implementation doesn't convert string values
       // to boolean types for insertion. Boolean values would need type conversion.
       const csvContent = Csv.of([
@@ -207,13 +207,13 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_all_types';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         expect(result.value.rowCount).toBe(2);
 
-        const schemaResult = await metadataClient.getTableSchema(tableName);
+        const schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -235,7 +235,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: handles nullable columns', async () => {
+    test('import: handles nullable columns', async () => {
       const csvContent = Csv.of([
         { name: 'Alice', age: 30, email: null },
         { name: 'Bob', age: null, email: 'bob@example.com' },
@@ -248,11 +248,11 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_nullable';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
-        const rowsResult = await metadataClient.getTableRows(
+        const rowsResult = await postgresClient.getTableRows(
           tableName,
           z.object({
             name: z.string(),
@@ -275,7 +275,7 @@ describe('TabularDataPostgresLoader', () => {
   });
 
   describe('Table options', () => {
-    test('load: dropIfExists option drops and recreates table', async () => {
+    test('import: dropIfExists option drops and recreates table', async () => {
       const csvContent1 = Csv.of([
         { col1: 'A', col2: 1 },
         { col1: 'B', col2: 2 },
@@ -292,25 +292,25 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_drop_exists';
       testTables.push(tableName);
 
-      // First load
-      const result1 = await loader.load(TEST_BUCKET, testKey, { tableName });
+      // First import
+      const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result1)).toBe(true);
       if (isOk(result1)) {
         expect(result1.value.rowCount).toBe(2);
       }
 
       // Verify initial schema
-      let schemaResult = await metadataClient.getTableSchema(tableName);
+      let schemaResult = await postgresClient.getTableSchema(tableName);
       expect(isOk(schemaResult)).toBe(true);
       if (isOk(schemaResult)) {
         expect(schemaResult.value.length).toBe(2);
       }
 
-      // Update CSV and load with dropIfExists
+      // Update CSV and import with dropIfExists
       // Use a different key to avoid cache issues with TabularDataConverter
       const testKey2 = 'test-drop-2.csv';
       await writeCsvToS3(testKey2, csvContent2);
-      const result2 = await loader.load(TEST_BUCKET, testKey2, {
+      const result2 = await importer.import(TEST_BUCKET, testKey2, {
         tableName,
         dropIfExists: true,
       });
@@ -320,7 +320,7 @@ describe('TabularDataPostgresLoader', () => {
         expect(result2.value.rowCount).toBe(2);
 
         // Verify new schema (should have 3 columns now)
-        schemaResult = await metadataClient.getTableSchema(tableName);
+        schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -334,7 +334,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: truncate option clears table before insert', async () => {
+    test('import: truncate option clears table before insert', async () => {
       const csvContent = Csv.of([
         { name: 'First', value: 1 },
         { name: 'Second', value: 2 },
@@ -346,15 +346,15 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_truncate';
       testTables.push(tableName);
 
-      // First load
-      const result1 = await loader.load(TEST_BUCKET, testKey, { tableName });
+      // First import
+      const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result1)).toBe(true);
       if (isOk(result1)) {
         expect(result1.value.rowCount).toBe(2);
       }
 
       // Load again with truncate
-      const result2 = await loader.load(TEST_BUCKET, testKey, {
+      const result2 = await importer.import(TEST_BUCKET, testKey, {
         tableName,
         truncate: true,
       });
@@ -364,7 +364,7 @@ describe('TabularDataPostgresLoader', () => {
         expect(result2.value.rowCount).toBe(2);
 
         // Verify row count is still 2 (not 4)
-        const rowCountResult = await metadataClient.getTableRowCount(tableName);
+        const rowCountResult = await postgresClient.getTableRowCount(tableName);
         expect(isOk(rowCountResult)).toBe(true);
         if (isOk(rowCountResult)) {
           expect(rowCountResult.value).toBe(2);
@@ -374,7 +374,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: uses existing table when it already exists', async () => {
+    test('import: uses existing table when it already exists', async () => {
       const csvContent = Csv.of([
         { name: 'Alice', age: 30 },
         { name: 'Bob', age: 25 },
@@ -386,18 +386,18 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_existing';
       testTables.push(tableName);
 
-      // First load
-      const result1 = await loader.load(TEST_BUCKET, testKey, { tableName });
+      // First import
+      const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result1)).toBe(true);
 
       // Load again without dropIfExists (should fail if schema doesn't match, or append)
       // Since we're using the same CSV, it should work
-      const result2 = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result2 = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result2)).toBe(true);
 
       if (isOk(result2)) {
         // Should have 4 rows now (2 + 2)
-        const rowCountResult = await metadataClient.getTableRowCount(tableName);
+        const rowCountResult = await postgresClient.getTableRowCount(tableName);
         expect(isOk(rowCountResult)).toBe(true);
         if (isOk(rowCountResult)) {
           expect(rowCountResult.value).toBe(4);
@@ -409,7 +409,7 @@ describe('TabularDataPostgresLoader', () => {
   });
 
   describe('Edge cases', () => {
-    test('load: handles empty CSV file (creates table with schema, 0 rows)', async () => {
+    test('import: handles empty CSV file (creates table with schema, 0 rows)', async () => {
       const csvContent = Csv.of([]).withHeader(['name', 'age', 'city']).toString(); // Empty rows, header only
 
       const testKey = 'test-empty.csv';
@@ -418,20 +418,20 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_empty';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         expect(result.value.rowCount).toBe(0);
 
         // Verify table exists with schema
-        const existsResult = await metadataClient.tableExists(tableName);
+        const existsResult = await postgresClient.tableExists(tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
         }
 
-        const schemaResult = await metadataClient.getTableSchema(tableName);
+        const schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -445,7 +445,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: handles CSV with only headers (no data rows)', async () => {
+    test('import: handles CSV with only headers (no data rows)', async () => {
       const csvContent = Csv.of([]).withHeader(['col1', 'col2', 'col3']).toString();
 
       const testKey = 'test-headers-only.csv';
@@ -454,13 +454,13 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_headers_only';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         expect(result.value.rowCount).toBe(0);
 
-        const schemaResult = await metadataClient.getTableSchema(tableName);
+        const schemaResult = await postgresClient.getTableSchema(tableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           expect(schemaResult.value.length).toBe(3);
@@ -470,7 +470,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: sanitizes table and column names with special characters', async () => {
+    test('import: sanitizes table and column names with special characters', async () => {
       // Use unique column names that won't collide when sanitized
       // col-with-dash -> col_with_dash, col_with_underscore stays the same
       // But to be safe, use completely different base names
@@ -498,7 +498,7 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test-table@with#special$chars!';
       testTables.push('test_table_with_special_chars_'); // Sanitized version
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
@@ -510,14 +510,14 @@ describe('TabularDataPostgresLoader', () => {
         expect(sanitizedTableName).not.toContain('!');
 
         // Verify table exists
-        const existsResult = await metadataClient.tableExists(sanitizedTableName);
+        const existsResult = await postgresClient.tableExists(sanitizedTableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
         }
 
         // Column names should be sanitized
-        const schemaResult = await metadataClient.getTableSchema(sanitizedTableName);
+        const schemaResult = await postgresClient.getTableSchema(sanitizedTableName);
         expect(isOk(schemaResult)).toBe(true);
         if (isOk(schemaResult)) {
           const schema = schemaResult.value;
@@ -537,7 +537,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: handles table names starting with numbers', async () => {
+    test('import: handles table names starting with numbers', async () => {
       const csvContent = Csv.of([{ name: 'Test', value: 100 }]).toString();
 
       const testKey = 'test-number-start.csv';
@@ -546,13 +546,13 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = '123table';
       testTables.push('_123table'); // Sanitized version
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         // Table name should start with underscore
         expect(result.value.tableName).toMatch(/^_/);
-        const existsResult = await metadataClient.tableExists(result.value.tableName);
+        const existsResult = await postgresClient.tableExists(result.value.tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
@@ -562,7 +562,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('load: truncates long table names to 63 characters', async () => {
+    test('import: truncates long table names to 63 characters', async () => {
       const csvContent = Csv.of([{ col1: 'value1', col2: 'value2' }]).toString();
 
       const testKey = 'test-long-name.csv';
@@ -571,12 +571,12 @@ describe('TabularDataPostgresLoader', () => {
       const longTableName = 'a'.repeat(100); // 100 characters
       testTables.push('a'.repeat(63)); // Truncated version
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName: longTableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName: longTableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         expect(result.value.tableName.length).toBeLessThanOrEqual(63);
-        const existsResult = await metadataClient.tableExists(result.value.tableName);
+        const existsResult = await postgresClient.tableExists(result.value.tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
@@ -588,8 +588,8 @@ describe('TabularDataPostgresLoader', () => {
   });
 
   describe('Error cases', () => {
-    test('load: returns error for non-existent file', async () => {
-      const result = await loader.load(TEST_BUCKET, 'non-existent-file.csv', {
+    test('import: returns error for non-existent file', async () => {
+      const result = await importer.import(TEST_BUCKET, 'non-existent-file.csv', {
         tableName: 'test_error',
       });
       expect(isOk(result)).toBe(false);
@@ -597,26 +597,26 @@ describe('TabularDataPostgresLoader', () => {
       if (!isOk(result)) {
         expect(result.error).toBeDefined();
         expect(typeof result.error).toBe('string');
-        expect(result.error).toContain('Failed to load tabular data');
+        expect(result.error).toContain('Failed to import tabular data');
       }
     });
 
-    test('load: returns error for empty CSV content', async () => {
+    test('import: returns error for empty CSV content', async () => {
       // For truly empty content, the converter fails to detect file type first
       const emptyKey = 'test-empty-file.csv';
       await writeCsvToS3(emptyKey, '');
-      const emptyResult = await loader.load(TEST_BUCKET, emptyKey, { tableName: 'test_error' });
+      const emptyResult = await importer.import(TEST_BUCKET, emptyKey, { tableName: 'test_error' });
       expect(isOk(emptyResult)).toBe(false);
       if (!isOk(emptyResult)) {
         expect(emptyResult.error).toBeDefined();
         // The error will be about file type detection, not empty CSV
-        expect(emptyResult.error).toContain('Failed to load tabular data');
+        expect(emptyResult.error).toContain('Failed to import tabular data');
       }
 
       // Test with a CSV that has just a header (this should succeed with 0 rows)
       const headerOnlyKey = 'test-header-only.csv';
       await writeCsvToS3(headerOnlyKey, Csv.of([]).withHeader(['col1', 'col2']).toString());
-      const headerResult = await loader.load(TEST_BUCKET, headerOnlyKey, {
+      const headerResult = await importer.import(TEST_BUCKET, headerOnlyKey, {
         tableName: 'test_header_only',
       });
       expect(isOk(headerResult)).toBe(true);
@@ -628,19 +628,19 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: headerOnlyKey });
     });
 
-    test('load: returns error for CSV with no columns', async () => {
+    test('import: returns error for CSV with no columns', async () => {
       // For a file with no columns, the converter might fail to detect it as CSV
       // So we test with whitespace-only content that can't be detected
       const testKey = 'test-no-columns.csv';
       await writeCsvToS3(testKey, '\n\n');
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName: 'test_error' });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName: 'test_error' });
       expect(isOk(result)).toBe(false);
 
       if (!isOk(result)) {
         expect(result.error).toBeDefined();
         // The error will be about file type detection since it can't detect CSV
-        expect(result.error).toContain('Failed to load tabular data');
+        expect(result.error).toContain('Failed to import tabular data');
       }
 
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
@@ -648,7 +648,7 @@ describe('TabularDataPostgresLoader', () => {
   });
 
   describe('Batching', () => {
-    test('load: handles large dataset with batching (>5000 rows)', async () => {
+    test('import: handles large dataset with batching (>5000 rows)', async () => {
       // Generate CSV with 6000 rows to test batching
       const arr = [];
       for (let i = 1; i <= 6000; i++) {
@@ -662,21 +662,21 @@ describe('TabularDataPostgresLoader', () => {
       const tableName = 'test_large';
       testTables.push(tableName);
 
-      const result = await loader.load(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
       expect(isOk(result)).toBe(true);
 
       if (isOk(result)) {
         expect(result.value.rowCount).toBe(6000);
 
         // Verify all rows were inserted
-        const rowCountResult = await metadataClient.getTableRowCount(tableName);
+        const rowCountResult = await postgresClient.getTableRowCount(tableName);
         expect(isOk(rowCountResult)).toBe(true);
         if (isOk(rowCountResult)) {
           expect(rowCountResult.value).toBe(6000);
         }
 
         // Verify a few specific rows
-        const rowsResult = await metadataClient.getTableRows(
+        const rowsResult = await postgresClient.getTableRows(
           tableName,
           z.object({
             id: z.number(),
@@ -699,8 +699,8 @@ describe('TabularDataPostgresLoader', () => {
     });
   });
 
-  describe('Batch loading', () => {
-    test('loadBatch: successfully loads multiple files in parallel', async () => {
+  describe('Batch importing', () => {
+    test('importBatch: successfully imports multiple files in parallel', async () => {
       const csvContent1 = Csv.of([
         { id: 1, name: 'Item A', value: 10 },
         { id: 2, name: 'Item B', value: 20 },
@@ -727,7 +727,7 @@ describe('TabularDataPostgresLoader', () => {
       const tableName3 = 'test_batch_table_3';
       testTables.push(tableName1, tableName2, tableName3);
 
-      const batchResult = await loader.loadBatch([
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
         { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
         { bucket: TEST_BUCKET, key: testKey3, options: { tableName: tableName3 } },
@@ -736,7 +736,7 @@ describe('TabularDataPostgresLoader', () => {
       expect(batchResult.summary.total).toBe(3);
       expect(batchResult.summary.successful).toBe(3);
       expect(batchResult.summary.failed).toBe(0);
-      expect(batchResult.summary.totalRowsLoaded).toBe(6);
+      expect(batchResult.summary.totalRowsImported).toBe(6);
       expect(batchResult.summary.duration).toBeGreaterThan(0);
       expect(batchResult.results.length).toBe(3);
 
@@ -750,7 +750,7 @@ describe('TabularDataPostgresLoader', () => {
 
       // Verify all tables exist
       for (const tableName of [tableName1, tableName2, tableName3]) {
-        const existsResult = await metadataClient.tableExists(tableName);
+        const existsResult = await postgresClient.tableExists(tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
@@ -763,18 +763,18 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey3 });
     });
 
-    test('loadBatch: handles empty request array', async () => {
-      const batchResult = await loader.loadBatch([]);
+    test('importBatch: handles empty request array', async () => {
+      const batchResult = await importer.importBatch([]);
 
       expect(batchResult.summary.total).toBe(0);
       expect(batchResult.summary.successful).toBe(0);
       expect(batchResult.summary.failed).toBe(0);
-      expect(batchResult.summary.totalRowsLoaded).toBe(0);
+      expect(batchResult.summary.totalRowsImported).toBe(0);
       expect(batchResult.summary.duration).toBe(0);
       expect(batchResult.results.length).toBe(0);
     });
 
-    test('loadBatch: handles mix of successful and failed loads', async () => {
+    test('importBatch: handles mix of successful and failed imports', async () => {
       const csvContent1 = Csv.of([
         { id: 1, name: 'Item A' },
         { id: 2, name: 'Item B' },
@@ -796,7 +796,7 @@ describe('TabularDataPostgresLoader', () => {
       const tableName3 = 'test_batch_mix_3';
       testTables.push(tableName1, tableName2);
 
-      const batchResult = await loader.loadBatch([
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
         { bucket: TEST_BUCKET, key: nonExistentKey, options: { tableName: tableName3 } },
         { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
@@ -805,7 +805,7 @@ describe('TabularDataPostgresLoader', () => {
       expect(batchResult.summary.total).toBe(3);
       expect(batchResult.summary.successful).toBe(2);
       expect(batchResult.summary.failed).toBe(1);
-      expect(batchResult.summary.totalRowsLoaded).toBe(4);
+      expect(batchResult.summary.totalRowsImported).toBe(4);
       expect(batchResult.results.length).toBe(3);
 
       // Verify first result is successful
@@ -818,7 +818,7 @@ describe('TabularDataPostgresLoader', () => {
       expect(isOk(batchResult.results[1]!.result)).toBe(false);
       if (!isOk(batchResult.results[1]!.result)) {
         expect(batchResult.results[1]!.result.error).toBeDefined();
-        expect(batchResult.results[1]!.result.error).toContain('Failed to load tabular data');
+        expect(batchResult.results[1]!.result.error).toContain('Failed to import tabular data');
       }
 
       // Verify third result is successful
@@ -832,7 +832,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
     });
 
-    test('loadBatch: handles batch with different table options', async () => {
+    test('importBatch: handles batch with different table options', async () => {
       const csvContent1 = Csv.of([
         { col1: 'A', col2: 1 },
         { col1: 'B', col2: 2 },
@@ -859,7 +859,7 @@ describe('TabularDataPostgresLoader', () => {
       const tableName3 = 'test_batch_options_3';
       testTables.push(tableName1, tableName2, tableName3);
 
-      const batchResult = await loader.loadBatch([
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
         {
           bucket: TEST_BUCKET,
@@ -877,19 +877,19 @@ describe('TabularDataPostgresLoader', () => {
       expect(batchResult.summary.failed).toBe(0);
 
       // Verify all tables exist and have correct row counts
-      const rowCount1 = await metadataClient.getTableRowCount(tableName1);
+      const rowCount1 = await postgresClient.getTableRowCount(tableName1);
       expect(isOk(rowCount1)).toBe(true);
       if (isOk(rowCount1)) {
         expect(rowCount1.value).toBe(2);
       }
 
-      const rowCount2 = await metadataClient.getTableRowCount(tableName2);
+      const rowCount2 = await postgresClient.getTableRowCount(tableName2);
       expect(isOk(rowCount2)).toBe(true);
       if (isOk(rowCount2)) {
         expect(rowCount2.value).toBe(2);
       }
 
-      const rowCount3 = await metadataClient.getTableRowCount(tableName3);
+      const rowCount3 = await postgresClient.getTableRowCount(tableName3);
       expect(isOk(rowCount3)).toBe(true);
       if (isOk(rowCount3)) {
         expect(rowCount3.value).toBe(2);
@@ -901,7 +901,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey3 });
     });
 
-    test('loadBatch: includes correct request context in results', async () => {
+    test('importBatch: includes correct request context in results', async () => {
       const csvContent = Csv.of([
         { id: 1, name: 'Item A' },
         { id: 2, name: 'Item B' },
@@ -919,7 +919,7 @@ describe('TabularDataPostgresLoader', () => {
         options: { tableName, dropIfExists: true },
       };
 
-      const batchResult = await loader.loadBatch([request]);
+      const batchResult = await importer.importBatch([request]);
 
       expect(batchResult.results.length).toBe(1);
       const itemResult = batchResult.results[0]!;
@@ -937,7 +937,7 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
     });
 
-    test('loadBatch: handles batch with empty CSV files', async () => {
+    test('importBatch: handles batch with empty CSV files', async () => {
       const csvContent1 = Csv.of([]).withHeader(['name', 'age', 'city']).toString();
       const csvContent2 = Csv.of([
         { id: 1, value: 10 },
@@ -954,13 +954,13 @@ describe('TabularDataPostgresLoader', () => {
       const tableName2 = 'test_batch_empty_2';
       testTables.push(tableName1, tableName2);
 
-      const batchResult = await loader.loadBatch([
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
         { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
       ]);
 
       expect(batchResult.summary.successful).toBe(2);
-      expect(batchResult.summary.totalRowsLoaded).toBe(2); // Only rows from second file
+      expect(batchResult.summary.totalRowsImported).toBe(2); // Only rows from second file
 
       // Verify first table has 0 rows but exists
       expect(isOk(batchResult.results[0]!.result)).toBe(true);
@@ -968,7 +968,7 @@ describe('TabularDataPostgresLoader', () => {
         expect(batchResult.results[0]!.result.value.rowCount).toBe(0);
       }
 
-      const rowCount1 = await metadataClient.getTableRowCount(tableName1);
+      const rowCount1 = await postgresClient.getTableRowCount(tableName1);
       expect(isOk(rowCount1)).toBe(true);
       if (isOk(rowCount1)) {
         expect(rowCount1.value).toBe(0);
@@ -985,12 +985,12 @@ describe('TabularDataPostgresLoader', () => {
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
     });
 
-    test('loadBatch: processes large number of files efficiently', async () => {
+    test('importBatch: processes large number of files efficiently', async () => {
       const requests = [];
       const testKeys: string[] = [];
       const tableNames: string[] = [];
 
-      // Create 5 files to load
+      // Create 5 files to import
       for (let i = 0; i < 5; i++) {
         const arr = [
           { id: i * 3 + 1, name: `Item${i * 3 + 1}`, value: (i * 3 + 1) * 10 },
@@ -1014,16 +1014,16 @@ describe('TabularDataPostgresLoader', () => {
         });
       }
 
-      const batchResult = await loader.loadBatch(requests);
+      const batchResult = await importer.importBatch(requests);
 
       expect(batchResult.summary.total).toBe(5);
       expect(batchResult.summary.successful).toBe(5);
       expect(batchResult.summary.failed).toBe(0);
-      expect(batchResult.summary.totalRowsLoaded).toBe(15); // 3 rows per file * 5 files
+      expect(batchResult.summary.totalRowsImported).toBe(15); // 3 rows per file * 5 files
 
       // Verify all tables exist
       for (const tableName of tableNames) {
-        const existsResult = await metadataClient.tableExists(tableName);
+        const existsResult = await postgresClient.tableExists(tableName);
         expect(isOk(existsResult)).toBe(true);
         if (isOk(existsResult)) {
           expect(existsResult.value).toBe(true);
@@ -1036,8 +1036,8 @@ describe('TabularDataPostgresLoader', () => {
       }
     });
 
-    test('loadBatch: all loads fail independently', async () => {
-      const batchResult = await loader.loadBatch([
+    test('importBatch: all imports fail independently', async () => {
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: 'non-existent-1.csv', options: { tableName: 'test_fail_1' } },
         { bucket: TEST_BUCKET, key: 'non-existent-2.csv', options: { tableName: 'test_fail_2' } },
         { bucket: TEST_BUCKET, key: 'non-existent-3.csv', options: { tableName: 'test_fail_3' } },
@@ -1046,7 +1046,7 @@ describe('TabularDataPostgresLoader', () => {
       expect(batchResult.summary.total).toBe(3);
       expect(batchResult.summary.successful).toBe(0);
       expect(batchResult.summary.failed).toBe(3);
-      expect(batchResult.summary.totalRowsLoaded).toBe(0);
+      expect(batchResult.summary.totalRowsImported).toBe(0);
       expect(batchResult.results.length).toBe(3);
 
       // Verify all results are failed
@@ -1054,12 +1054,12 @@ describe('TabularDataPostgresLoader', () => {
         expect(isOk(itemResult.result)).toBe(false);
         if (!isOk(itemResult.result)) {
           expect(itemResult.result.error).toBeDefined();
-          expect(itemResult.result.error).toContain('Failed to load tabular data');
+          expect(itemResult.result.error).toContain('Failed to import tabular data');
         }
       }
     });
 
-    test('loadBatch: summary includes accurate statistics', async () => {
+    test('importBatch: summary includes accurate statistics', async () => {
       const csvContent1 = Csv.of([
         { id: 1, name: 'Item A' },
         { id: 2, name: 'Item B' },
@@ -1081,7 +1081,7 @@ describe('TabularDataPostgresLoader', () => {
       testTables.push(tableName1, tableName2);
 
       const startTime = Date.now();
-      const batchResult = await loader.loadBatch([
+      const batchResult = await importer.importBatch([
         { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
         { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
       ]);
@@ -1091,7 +1091,7 @@ describe('TabularDataPostgresLoader', () => {
       expect(batchResult.summary.total).toBe(2);
       expect(batchResult.summary.successful).toBe(2);
       expect(batchResult.summary.failed).toBe(0);
-      expect(batchResult.summary.totalRowsLoaded).toBe(5); // 3 + 2
+      expect(batchResult.summary.totalRowsImported).toBe(5); // 3 + 2
       expect(batchResult.summary.duration).toBeGreaterThanOrEqual(0);
       expect(batchResult.summary.duration).toBeLessThanOrEqual(endTime - startTime + 100); // Allow small margin
 
@@ -1102,7 +1102,7 @@ describe('TabularDataPostgresLoader', () => {
           totalRowsFromResults += itemResult.result.value.rowCount;
         }
       }
-      expect(totalRowsFromResults).toBe(batchResult.summary.totalRowsLoaded);
+      expect(totalRowsFromResults).toBe(batchResult.summary.totalRowsImported);
 
       // Cleanup
       await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });

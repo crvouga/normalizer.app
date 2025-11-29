@@ -1,8 +1,13 @@
+import { createPgliteSqlDb } from '~/src/shared/sql-db';
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
 import type { ObjectLocation } from '../object-store/object-location';
 import type { ObjectStore } from '../object-store/object-store';
-import { Err, Ok, isOk, type Result } from '../result';
+import { Err, isErr, isOk, Ok, type Result } from '../result';
+import {
+  createTabularDataPostgresImporter,
+  type BatchImportRequest,
+} from '../tabular-data-postgres-loader/tabular-data-postgres-importer';
 
 export class Normalizer {
   constructor(
@@ -22,6 +27,38 @@ export class Normalizer {
     outputObjectKeyPrefix: string;
     outputObjectBucket: string;
   }): Promise<Result<{ outputs: ObjectLocation[] }, string>> {
+    const sqlDb = await createPgliteSqlDb({ logger: this.logger });
+    const tabularDataPostgresImporter = createTabularDataPostgresImporter({
+      sql: sqlDb,
+      logger: this.logger,
+      objectStore: this.objectStore,
+    });
+
+    const batchRequests: BatchImportRequest[] = [
+      ...params.inputs.map((objLoc, idx) => ({
+        bucket: objLoc.bucket,
+        key: objLoc.key,
+        options: {
+          tableName: `input_${idx}`,
+          dropIfExists: true,
+        },
+      })),
+      ...params.targets.map((objLoc, idx) => ({
+        bucket: objLoc.bucket,
+        key: objLoc.key,
+        options: {
+          tableName: `target_${idx}`,
+          dropIfExists: true,
+        },
+      })),
+    ];
+
+    const importedBatch = await tabularDataPostgresImporter.importBatch(batchRequests);
+
+    if (isErr(importedBatch.result)) {
+      return importedBatch.result;
+    }
+
     this.logger.info('Normalizing objects', {
       inputCount: params.inputs.length,
       targetCount: params.targets.length,

@@ -2,14 +2,14 @@ import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { PostgresClient, type TableColumn } from '../postgres/postgres-client';
-import { isOk, Ok, Err, type Result } from '../result';
+import { isOk, Ok, Err, type Result, combineUntilError } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
 /**
- * Options for loading tabular data into PostgreSQL
+ * Options for importing tabular data into PostgreSQL
  */
-export interface LoadOptions {
+export interface ImportOptions {
   /**
    * Table name to create/use (will be sanitized)
    */
@@ -20,16 +20,16 @@ export interface LoadOptions {
    */
   dropIfExists?: boolean;
   /**
-   * Whether to truncate the table before loading
+   * Whether to truncate the table before importing
    * @default false
    */
   truncate?: boolean;
 }
 
 /**
- * Request for a single batch load operation
+ * Request for a single batch import operation
  */
-export interface BatchLoadRequest {
+export interface BatchImportRequest {
   /**
    * Object store bucket name
    */
@@ -39,45 +39,45 @@ export interface BatchLoadRequest {
    */
   key: string;
   /**
-   * Loading options including table name
+   * Importing options including table name
    */
-  options: LoadOptions;
+  options: ImportOptions;
 }
 
 /**
- * Result for a single batch load operation
+ * Result for a single batch import operation
  */
-export interface BatchLoadItemResult {
+export interface BatchImportItemResult {
   /**
    * The original request
    */
-  request: BatchLoadRequest;
+  request: BatchImportRequest;
   /**
-   * Load result - success with table name and row count, or error message
+   * Import result - success with table name and row count, or error message
    */
   result: Result<{ tableName: string; rowCount: number }, string>;
 }
 
 /**
- * Summary of batch load operation
+ * Summary of batch import operation
  */
-export interface BatchLoadSummary {
+export interface BatchImportSummary {
   /**
    * Total number of requests
    */
   total: number;
   /**
-   * Number of successful loads
+   * Number of successful imports
    */
   successful: number;
   /**
-   * Number of failed loads
+   * Number of failed imports
    */
   failed: number;
   /**
-   * Total rows loaded across all successful loads
+   * Total rows imported across all successful imports
    */
-  totalRowsLoaded: number;
+  totalRowsImported: number;
   /**
    * Duration in milliseconds
    */
@@ -85,24 +85,28 @@ export interface BatchLoadSummary {
 }
 
 /**
- * Result of batch load operation
+ * Result of batch import operation
  */
-export interface BatchLoadResult {
+export interface BatchImportResult {
   /**
-   * Results for each individual load request
+   * 
    */
-  results: BatchLoadItemResult[];
+  result: Result<{ tableName: string; rowCount: number }[], string>;
+  /**
+   * Results for each individual import request
+   */
+  results: BatchImportItemResult[];
   /**
    * Summary statistics
    */
-  summary: BatchLoadSummary;
+  summary: BatchImportSummary;
 }
 
 /**
- * High-performance PostgreSQL loader for tabular data from object storage.
- * Converts data to CSV format, creates tables dynamically, and uses COPY for bulk loading.
+ * High-performance PostgreSQL importer for tabular data from object storage.
+ * Converts data to CSV format, creates tables dynamically, and uses COPY for bulk importing.
  */
-export class TabularDataPostgresLoader {
+export class TabularDataPostgresImporter {
   private converter: TabularDataConverter;
   private postgresClient: PostgresClient;
 
@@ -119,7 +123,7 @@ export class TabularDataPostgresLoader {
   }
 
   /**
-   * Load tabular data from object store into PostgreSQL table.
+   * Import tabular data from object store into PostgreSQL table.
    * This method:
    * 1. Converts the file to CSV format using TabularDataConverter
    * 2. Parses CSV to extract schema and data
@@ -128,15 +132,15 @@ export class TabularDataPostgresLoader {
    *
    * @param bucket - Object store bucket name
    * @param key - Object store key (file path)
-   * @param options - Loading options including table name
+   * @param options - Importing options including table name
    */
-  async load(
+  async import(
     bucket: string,
     key: string,
-    options: LoadOptions,
+    options: ImportOptions,
   ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
     const startTime = Date.now();
-    this.logger.info('Starting tabular data load', { bucket, key, tableName: options.tableName });
+    this.logger.info('Starting tabular data import', { bucket, key, tableName: options.tableName });
 
     // Step 1: Convert file to CSV format using TabularDataConverter
     try {
@@ -188,8 +192,8 @@ export class TabularDataPostgresLoader {
         return Err(createResult.error);
       }
 
-      // Step 6: Load data using COPY FROM STDIN (fastest method)
-      this.logger.debug('Loading data using COPY FROM STDIN', {
+      // Step 6: Import data using COPY FROM STDIN (fastest method)
+      this.logger.debug('Importing data using COPY FROM STDIN', {
         tableName: sanitizedTableName,
         rowCount: dataRows.length,
       });
@@ -202,7 +206,7 @@ export class TabularDataPostgresLoader {
 
       const rowCount = copyResult.value;
       const duration = Date.now() - startTime;
-      this.logger.info('Tabular data load completed', {
+      this.logger.info('Tabular data import completed', {
         tableName: sanitizedTableName,
         rowCount,
         duration,
@@ -212,74 +216,76 @@ export class TabularDataPostgresLoader {
       return Ok({ tableName: sanitizedTableName, rowCount });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to load tabular data', {
+      this.logger.error('Failed to import tabular data', {
         bucket,
         key,
         tableName: options.tableName,
         error: errorMessage,
       });
-      return Err(`Failed to load tabular data: ${errorMessage}`);
+      return Err(`Failed to import tabular data: ${errorMessage}`);
     }
   }
 
   /**
-   * Load multiple tabular data files from object store into PostgreSQL tables in parallel.
-   * All loads are processed concurrently, and each load is independent.
-   * Failures in one load do not affect others.
+   * Import multiple tabular data files from object store into PostgreSQL tables in parallel.
+   * All imports are processed concurrently, and each import is independent.
+   * Failures in one import do not affect others.
    *
-   * @param requests - Array of batch load requests, each specifying a file location and table options
-   * @returns BatchLoadResult containing individual results and summary statistics
+   * @param requests - Array of batch import requests, each specifying a file location and table options
+   * @returns BatchImportResult containing individual results and summary statistics
    */
-  async loadBatch(requests: BatchLoadRequest[]): Promise<BatchLoadResult> {
+  async importBatch(requests: BatchImportRequest[]): Promise<BatchImportResult> {
     const startTime = Date.now();
-    this.logger.info('Starting batch load', { requestCount: requests.length });
+    this.logger.info('Starting batch import', { requestCount: requests.length });
 
     if (requests.length === 0) {
       return {
+        result: Ok([]),
         results: [],
         summary: {
           total: 0,
           successful: 0,
           failed: 0,
-          totalRowsLoaded: 0,
+          totalRowsImported: 0,
           duration: 0,
         },
       };
     }
 
-    const loadPromises = requests.map((request) => this.loadSingleWithRequest(request));
-    const settledResults = await Promise.allSettled(loadPromises);
+    const importPromises = requests.map((request) => this.importSingleWithRequest(request));
+    const settledResults = await Promise.allSettled(importPromises);
 
     const results = this.buildBatchResults(requests, settledResults);
     const summary = this.buildBatchSummary(results, startTime);
 
-    this.logger.info('Batch load completed', {
+    this.logger.info('Batch import completed', {
       total: summary.total,
       successful: summary.successful,
       failed: summary.failed,
-      totalRowsLoaded: summary.totalRowsLoaded,
+      totalRowsImported: summary.totalRowsImported,
       duration: summary.duration,
     });
 
-    return { results, summary };
+    const result = combineUntilError(results.map((itemResult) => itemResult.result));
+    return { result, results, summary };
   }
 
   /**
-   * Load a single file with request context for batch operations
+   * Import a single file with request context for batch operations
    */
-  private async loadSingleWithRequest(
-    request: BatchLoadRequest,
+  private async importSingleWithRequest(
+    request: BatchImportRequest,
   ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
-    return this.load(request.bucket, request.key, request.options);
+    return this.import(request.bucket, request.key, request.options);
   }
 
   /**
    * Build batch results from settled promises
    */
   private buildBatchResults(
-    requests: BatchLoadRequest[],
+    requests: BatchImportRequest[],
     settledResults: PromiseSettledResult<Result<{ tableName: string; rowCount: number }, string>>[],
-  ): BatchLoadItemResult[] {
+  ): BatchImportItemResult[] {
     return requests.map((request, index) => {
       const settled = settledResults[index];
 
@@ -309,15 +315,15 @@ export class TabularDataPostgresLoader {
   /**
    * Build summary statistics from batch results
    */
-  private buildBatchSummary(results: BatchLoadItemResult[], startTime: number): BatchLoadSummary {
+  private buildBatchSummary(results: BatchImportItemResult[], startTime: number): BatchImportSummary {
     let successful = 0;
     let failed = 0;
-    let totalRowsLoaded = 0;
+    let totalRowsImported = 0;
 
     results.forEach((item) => {
       if (isOk(item.result)) {
         successful++;
-        totalRowsLoaded += item.result.value.rowCount;
+        totalRowsImported += item.result.value.rowCount;
       } else {
         failed++;
       }
@@ -327,7 +333,7 @@ export class TabularDataPostgresLoader {
       total: results.length,
       successful,
       failed,
-      totalRowsLoaded,
+      totalRowsImported,
       duration: Date.now() - startTime,
     };
   }
@@ -365,7 +371,7 @@ export class TabularDataPostgresLoader {
   private async createTable(
     tableName: string,
     schema: CsvColumnSchema[],
-    options: LoadOptions,
+    options: ImportOptions,
   ): Promise<Result<void, string>> {
     // Drop table if requested
     if (options.dropIfExists) {
@@ -428,7 +434,7 @@ export class TabularDataPostgresLoader {
   }
 
   /**
-   * Load data using high-performance bulk insert with parameterized queries
+   * Import data using high-performance bulk insert with parameterized queries
    * Uses large batches for maximum performance (fewer round trips to database)
    * Returns Result<number, string>
    */
@@ -448,4 +454,13 @@ export class TabularDataPostgresLoader {
 
     return this.postgresClient.insertBatch(tableName, columnNames, rows);
   }
+}
+
+
+export function createTabularDataPostgresImporter(params: {
+  sql: SqlDb;
+  logger: Logger;
+  objectStore: ObjectStore;
+}): TabularDataPostgresImporter {
+  return new TabularDataPostgresImporter(params.sql, params.logger, params.objectStore);
 }
