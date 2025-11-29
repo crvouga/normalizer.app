@@ -190,20 +190,24 @@ class CsvBuilder<T extends Record<string, unknown>> {
    * @returns The CSV string representation
    */
   toString(): string {
-    let headers: string[];
-
-    if (this.headers) {
-      headers = this.headers;
-    } else if (this.data.length === 0) {
-      return '';
-    } else {
-      headers = Object.keys(this.data[0]!);
+    if (this.data.length === 0) {
+      return this.headers ? this.headers.join(',') : '';
     }
+
+    const sourceKeys = Object.keys(this.data[0]!);
+    const headers = this.headers || sourceKeys;
 
     // Build CSV rows
     const rows = [
       headers.join(','),
-      ...this.data.map((row) => headers.map((h) => escapeCsvValue(row[h])).join(',')),
+      ...this.data.map((row) =>
+        headers
+          .map((_, i) => {
+            const key = sourceKeys[i];
+            return escapeCsvValue(key ? row[key] : undefined);
+          })
+          .join(','),
+      ),
     ];
     return rows.join('\n');
   }
