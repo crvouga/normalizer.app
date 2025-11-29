@@ -43,6 +43,13 @@ export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (pa
       sessionId,
     });
 
+    if (!inProgressEntry) {
+      logger.info('No in-progress normalization entry found, skipping task', {
+        sessionId,
+      });
+      return;
+    }
+
     logger.info('Processing normalization entry', {
       sessionId,
       normalizationRunId: inProgressEntry.normalizationRunId,
@@ -93,7 +100,7 @@ async function loadNormalizationData({
 }): Promise<{
   startedByUserId: UserId;
   projection: NormalizationSessionProjection;
-  inProgressEntry: NormalizationSessionProjectionEntry;
+  inProgressEntry: NormalizationSessionProjectionEntry | null;
 }> {
   const projectionDb = new NormalizationSessionProjectionDb(db, logger);
 
@@ -108,17 +115,10 @@ async function loadNormalizationData({
   const projection = await projectionDb.load(sessionId, startedByUserId);
 
   // Find the in-progress normalization entry
-  const inProgressEntry = projection.entries.find(
-    (entry) => entry.type === 'normalization' && entry.status === 'in_progress',
-  );
-
-  if (!inProgressEntry) {
-    logger.warn('No in-progress normalization entry found', {
-      sessionId,
-      entryCount: projection.entries.length,
-    });
-    throw new Error('No in-progress normalization entry found');
-  }
+  const inProgressEntry =
+    projection.entries.find(
+      (entry) => entry.type === 'normalization' && entry.status === 'in_progress',
+    ) ?? null;
 
   return {
     startedByUserId,
