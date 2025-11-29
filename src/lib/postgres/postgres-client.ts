@@ -225,7 +225,8 @@ export class PostgresClient {
 
   /**
    * Insert a batch of rows into a table using parameterized queries
-   * Processes rows in batches of 5000 and handles transaction internally
+   * Processes rows in batches to stay within parameter limits (max 10,000 parameters per query)
+   * and handles transaction internally
    * @param tableName - Name of the table
    * @param columns - Array of column names
    * @param rows - Array of row data (each row is an array of values)
@@ -247,7 +248,10 @@ export class PostgresClient {
     }
 
     const escapedColumnNames = columns.map((col) => this.escapeIdentifier(col)).join(', ');
-    const batchSize = 5000;
+    // Calculate batch size to stay under 10,000 parameters per query
+    // Each row uses columns.length parameters, so max rows = 10000 / columns.length
+    const maxParamsPerQuery = 10000;
+    const batchSize = Math.max(1, Math.floor(maxParamsPerQuery / columns.length));
 
     const transactionResult = await this.db.begin(async (tx) => {
       return this.processBatchesInTransaction(

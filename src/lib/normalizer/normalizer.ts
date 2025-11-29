@@ -7,7 +7,9 @@ import { Err, isErr, isOk, Ok, type Result } from '../result';
 import {
   createTabularDataPostgresImporter,
   type BatchImportRequest,
+  type BatchImportResult,
 } from '../tabular-data-postgres-loader/tabular-data-postgres-importer';
+import type { SqlDb } from '../sql-db/sql-db';
 
 export class Normalizer {
   constructor(
@@ -28,32 +30,7 @@ export class Normalizer {
     outputObjectBucket: string;
   }): Promise<Result<{ outputs: ObjectLocation[] }, string>> {
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
-    const tabularDataPostgresImporter = createTabularDataPostgresImporter({
-      sql: sqlDb,
-      logger: this.logger,
-      objectStore: this.objectStore,
-    });
-
-    const batchRequests: BatchImportRequest[] = [
-      ...params.inputs.map((objLoc, idx) => ({
-        bucket: objLoc.bucket,
-        key: objLoc.key,
-        options: {
-          tableName: `input_${idx}`,
-          dropIfExists: true,
-        },
-      })),
-      ...params.targets.map((objLoc, idx) => ({
-        bucket: objLoc.bucket,
-        key: objLoc.key,
-        options: {
-          tableName: `target_${idx}`,
-          dropIfExists: true,
-        },
-      })),
-    ];
-
-    const importedBatch = await tabularDataPostgresImporter.importBatch(batchRequests);
+    const importedBatch = await this.importTabularData(sqlDb, params.inputs, params.targets);
 
     if (isErr(importedBatch.result)) {
       return importedBatch.result;
@@ -169,6 +146,42 @@ export class Normalizer {
     });
 
     return Ok({ outputs });
+  }
+
+  /**
+   * Imports tabular data from inputs and targets into PostgreSQL tables.
+   */
+  private async importTabularData(
+    sqlDb: SqlDb,
+    inputs: ObjectLocation[],
+    targets: ObjectLocation[],
+  ): Promise<BatchImportResult> {
+    const tabularDataPostgresImporter = createTabularDataPostgresImporter({
+      sql: sqlDb,
+      logger: this.logger,
+      objectStore: this.objectStore,
+    });
+
+    const batchRequests: BatchImportRequest[] = [
+      ...inputs.map((objLoc, idx) => ({
+        bucket: objLoc.bucket,
+        key: objLoc.key,
+        options: {
+          tableName: `input_${idx}`,
+          dropIfExists: true,
+        },
+      })),
+      ...targets.map((objLoc, idx) => ({
+        bucket: objLoc.bucket,
+        key: objLoc.key,
+        options: {
+          tableName: `target_${idx}`,
+          dropIfExists: true,
+        },
+      })),
+    ];
+
+    return await tabularDataPostgresImporter.importBatch(batchRequests);
   }
 
   /**

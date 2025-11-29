@@ -33,6 +33,17 @@ function extractRows(result: unknown): unknown[] {
 }
 
 /**
+ * Helper to truncate query string for logging when it has many parameters
+ * Prevents logging massive queries that can cause performance issues
+ */
+function truncateQueryForLog(query: string, paramCount: number): string {
+  if (paramCount > 1000) {
+    return `${query.substring(0, 200)}... [truncated, ${query.length} chars, ${paramCount} params]`;
+  }
+  return query;
+}
+
+/**
  * PGLite implementation of SqlTransaction using the PGLite library.
  * Executes queries within a database transaction.
  * The transaction is started by the begin() method, so this class just executes queries.
@@ -48,7 +59,9 @@ class PgliteSqlTransaction implements SqlTransaction {
     schema: z.ZodType<T>,
     params?: unknown[],
   ): Promise<Result<T[], string>> {
-    this.logger.debug('Executing query in transaction', { query, paramCount: params?.length ?? 0 });
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
+    this.logger.debug('Executing query in transaction', { query: queryForLog, paramCount });
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
@@ -74,19 +87,23 @@ class PgliteSqlTransaction implements SqlTransaction {
 
       return Ok(validatedRows);
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute query in transaction',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute query',
       });
     }
   }
 
   async execute(query: string, params?: unknown[]): Promise<Result<{ rowCount: number }, string>> {
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
     this.logger.debug('Executing command in transaction', {
-      query,
-      paramCount: params?.length ?? 0,
+      query: queryForLog,
+      paramCount,
     });
     try {
       // Validate params
@@ -104,10 +121,12 @@ class PgliteSqlTransaction implements SqlTransaction {
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute command in transaction',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute command',
       });
     }
@@ -118,9 +137,11 @@ class PgliteSqlTransaction implements SqlTransaction {
     params?: unknown[],
     schema?: z.ZodType<T>,
   ): Promise<Result<T, string>> {
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
     this.logger.debug('Executing unsafe query in transaction', {
-      query,
-      paramCount: params?.length ?? 0,
+      query: queryForLog,
+      paramCount,
     });
     try {
       // Validate params
@@ -160,10 +181,12 @@ class PgliteSqlTransaction implements SqlTransaction {
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute unsafe query in transaction',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute unsafe query',
       });
     }
@@ -194,7 +217,9 @@ export class PgliteSqlDb implements SqlDb {
     schema: z.ZodType<T>,
     params?: unknown[],
   ): Promise<Result<T[], string>> {
-    this.logger.debug('Executing query', { query, paramCount: params?.length ?? 0 });
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
+    this.logger.debug('Executing query', { query: queryForLog, paramCount });
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -224,17 +249,21 @@ export class PgliteSqlDb implements SqlDb {
 
       return Ok(validatedRows);
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute query',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute query',
       });
     }
   }
 
   async execute(query: string, params?: unknown[]): Promise<Result<{ rowCount: number }, string>> {
-    this.logger.debug('Executing command', { query, paramCount: params?.length ?? 0 });
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
+    this.logger.debug('Executing command', { query: queryForLog, paramCount });
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -253,10 +282,12 @@ export class PgliteSqlDb implements SqlDb {
       this.logger.debug('Command executed successfully', { rowCount });
       return Ok({ rowCount });
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute command',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute command',
       });
     }
@@ -267,7 +298,9 @@ export class PgliteSqlDb implements SqlDb {
     params?: unknown[],
     schema?: z.ZodType<T>,
   ): Promise<Result<T, string>> {
-    this.logger.debug('Executing unsafe query', { query, paramCount: params?.length ?? 0 });
+    const paramCount = params?.length ?? 0;
+    const queryForLog = truncateQueryForLog(query, paramCount);
+    this.logger.debug('Executing unsafe query', { query: queryForLog, paramCount });
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -306,10 +339,12 @@ export class PgliteSqlDb implements SqlDb {
       // the caller should provide a schema for proper type safety
       return Ok(validatedResult as T);
     } catch (error) {
+      const paramCount = params?.length ?? 0;
+      const queryForLog = truncateQueryForLog(query, paramCount);
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to execute unsafe query',
-        context: { query, paramCount: params?.length ?? 0 },
+        context: { query: queryForLog, paramCount },
         errorPrefix: 'Failed to execute unsafe query',
       });
     }
