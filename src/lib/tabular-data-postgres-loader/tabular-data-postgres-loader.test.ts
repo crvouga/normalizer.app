@@ -8,6 +8,7 @@ import type { SqlDb } from '../sql-db/sql-db';
 import type { ObjectStore } from '../object-store/object-store';
 import { PostgresMetadataClient } from '../postgres/postgres-metadata-client';
 import { TabularDataPostgresLoader } from './tabular-data-postgres-loader';
+import { Csv } from '../csv/csv';
 
 const TEST_BUCKET = 'test-bucket';
 const MOCK_SERVER_BASE_URL = 'http://localhost:8080';
@@ -73,10 +74,11 @@ describe('TabularDataPostgresLoader', () => {
 
   describe('Basic functionality', () => {
     test('load: successfully loads CSV with simple data', async () => {
-      const csvContent = `name,age,city
-Alice,30,New York
-Bob,25,San Francisco
-Charlie,35,Chicago`;
+      const csvContent = Csv.of([
+        { name: 'Alice', age: 30, city: 'New York' },
+        { name: 'Bob', age: 25, city: 'San Francisco' },
+        { name: 'Charlie', age: 35, city: 'Chicago' },
+      ]).toString();
 
       const testKey = 'test-simple.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -144,9 +146,10 @@ Charlie,35,Chicago`;
     });
 
     test('load: verifies table creation with correct schema', async () => {
-      const csvContent = `id,name,value
-1,Item A,10.5
-2,Item B,20.75`;
+      const csvContent = Csv.of([
+        { id: 1, name: 'Item A', value: 10.5 },
+        { id: 2, name: 'Item B', value: 20.75 },
+      ]).toString();
 
       const testKey = 'test-schema.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -180,9 +183,22 @@ Charlie,35,Chicago`;
     test('load: handles all column types correctly', async () => {
       // Note: Excluding boolean type as the implementation doesn't convert string values
       // to boolean types for insertion. Boolean values would need type conversion.
-      const csvContent = `text_col,integer_col,numeric_col,date_col,timestamp_col
-Hello,42,3.14,2024-01-15,2024-01-15 10:30:00
-World,100,99.99,2024-02-20,2024-02-20 15:45:30`;
+      const csvContent = Csv.of([
+        {
+          text_col: 'Hello',
+          integer_col: 42,
+          numeric_col: 3.14,
+          date_col: '2024-01-15',
+          timestamp_col: '2024-01-15 10:30:00',
+        },
+        {
+          text_col: 'World',
+          integer_col: 100,
+          numeric_col: 99.99,
+          date_col: '2024-02-20',
+          timestamp_col: '2024-02-20 15:45:30',
+        },
+      ]).toString();
 
       // Use unique key with timestamp to avoid cache issues
       const testKey = `test-all-types-${Date.now()}.csv`;
@@ -220,10 +236,11 @@ World,100,99.99,2024-02-20,2024-02-20 15:45:30`;
     });
 
     test('load: handles nullable columns', async () => {
-      const csvContent = `name,age,email
-Alice,30,
-Bob,,bob@example.com
-Charlie,25,charlie@example.com`;
+      const csvContent = Csv.of([
+        { name: 'Alice', age: 30, email: null },
+        { name: 'Bob', age: null, email: 'bob@example.com' },
+        { name: 'Charlie', age: 25, email: 'charlie@example.com' },
+      ]).toString();
 
       const testKey = 'test-nullable.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -259,13 +276,15 @@ Charlie,25,charlie@example.com`;
 
   describe('Table options', () => {
     test('load: dropIfExists option drops and recreates table', async () => {
-      const csvContent1 = `col1,col2
-A,1
-B,2`;
+      const csvContent1 = Csv.of([
+        { col1: 'A', col2: 1 },
+        { col1: 'B', col2: 2 },
+      ]).toString();
 
-      const csvContent2 = `col1,col2,col3
-X,10,100
-Y,20,200`;
+      const csvContent2 = Csv.of([
+        { col1: 'X', col2: 10, col3: 100 },
+        { col1: 'Y', col2: 20, col3: 200 },
+      ]).toString();
 
       const testKey = 'test-drop.csv';
       await writeCsvToS3(testKey, csvContent1);
@@ -316,9 +335,10 @@ Y,20,200`;
     });
 
     test('load: truncate option clears table before insert', async () => {
-      const csvContent = `name,value
-First,1
-Second,2`;
+      const csvContent = Csv.of([
+        { name: 'First', value: 1 },
+        { name: 'Second', value: 2 },
+      ]).toString();
 
       const testKey = 'test-truncate.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -355,9 +375,10 @@ Second,2`;
     });
 
     test('load: uses existing table when it already exists', async () => {
-      const csvContent = `name,age
-Alice,30
-Bob,25`;
+      const csvContent = Csv.of([
+        { name: 'Alice', age: 30 },
+        { name: 'Bob', age: 25 },
+      ]).toString();
 
       const testKey = 'test-existing.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -389,8 +410,7 @@ Bob,25`;
 
   describe('Edge cases', () => {
     test('load: handles empty CSV file (creates table with schema, 0 rows)', async () => {
-      const csvContent = `name,age,city
-`;
+      const csvContent = Csv.of([]).withHeader(['name', 'age', 'city']).toString(); // Empty rows, header only
 
       const testKey = 'test-empty.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -426,7 +446,7 @@ Bob,25`;
     });
 
     test('load: handles CSV with only headers (no data rows)', async () => {
-      const csvContent = `col1,col2,col3`;
+      const csvContent = Csv.of([]).withHeader(['col1', 'col2', 'col3']).toString();
 
       const testKey = 'test-headers-only.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -454,8 +474,22 @@ Bob,25`;
       // Use unique column names that won't collide when sanitized
       // col-with-dash -> col_with_dash, col_with_underscore stays the same
       // But to be safe, use completely different base names
-      const csvContent = `col-dash-1,col_underscore_2,123col,very-long-column-name-that-exceeds-sixty-three-characters-should-be-truncated
-value1,value2,value3,value4`;
+      const header = [
+        'col-dash-1',
+        'col_underscore_2',
+        '123col',
+        'very-long-column-name-that-exceeds-sixty-three-characters-should-be-truncated',
+      ];
+      const csvContent = Csv.of([
+        {
+          'col-dash-1': 'value1',
+          col_underscore_2: 'value2',
+          '123col': 'value3',
+          'very-long-column-name-that-exceeds-sixty-three-characters-should-be-truncated': 'value4',
+        },
+      ])
+        .withHeader(header)
+        .toString();
 
       // Use unique key to avoid cache issues
       const testKey = `test-sanitize-${Date.now()}.csv`;
@@ -504,8 +538,7 @@ value1,value2,value3,value4`;
     });
 
     test('load: handles table names starting with numbers', async () => {
-      const csvContent = `name,value
-Test,100`;
+      const csvContent = Csv.of([{ name: 'Test', value: 100 }]).toString();
 
       const testKey = 'test-number-start.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -530,8 +563,7 @@ Test,100`;
     });
 
     test('load: truncates long table names to 63 characters', async () => {
-      const csvContent = `col1,col2
-value1,value2`;
+      const csvContent = Csv.of([{ col1: 'value1', col2: 'value2' }]).toString();
 
       const testKey = 'test-long-name.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -583,7 +615,7 @@ value1,value2`;
 
       // Test with a CSV that has just a header (this should succeed with 0 rows)
       const headerOnlyKey = 'test-header-only.csv';
-      await writeCsvToS3(headerOnlyKey, 'col1,col2\n');
+      await writeCsvToS3(headerOnlyKey, Csv.of([]).withHeader(['col1', 'col2']).toString());
       const headerResult = await loader.load(TEST_BUCKET, headerOnlyKey, {
         tableName: 'test_header_only',
       });
@@ -618,11 +650,11 @@ value1,value2`;
   describe('Batching', () => {
     test('load: handles large dataset with batching (>5000 rows)', async () => {
       // Generate CSV with 6000 rows to test batching
-      const rows: string[] = ['id,name,value'];
+      const arr = [];
       for (let i = 1; i <= 6000; i++) {
-        rows.push(`${i},Item${i},${i * 10}`);
+        arr.push({ id: i, name: `Item${i}`, value: i * 10 });
       }
-      const csvContent = rows.join('\n');
+      const csvContent = Csv.of(arr).toString();
 
       const testKey = 'test-large.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -669,15 +701,18 @@ value1,value2`;
 
   describe('Batch loading', () => {
     test('loadBatch: successfully loads multiple files in parallel', async () => {
-      const csvContent1 = `id,name,value
-1,Item A,10
-2,Item B,20`;
-      const csvContent2 = `name,age,city
-Alice,30,New York
-Bob,25,San Francisco`;
-      const csvContent3 = `product,price,stock
-Widget,19.99,100
-Gadget,29.99,50`;
+      const csvContent1 = Csv.of([
+        { id: 1, name: 'Item A', value: 10 },
+        { id: 2, name: 'Item B', value: 20 },
+      ]).toString();
+      const csvContent2 = Csv.of([
+        { name: 'Alice', age: 30, city: 'New York' },
+        { name: 'Bob', age: 25, city: 'San Francisco' },
+      ]).toString();
+      const csvContent3 = Csv.of([
+        { product: 'Widget', price: 19.99, stock: 100 },
+        { product: 'Gadget', price: 29.99, stock: 50 },
+      ]).toString();
 
       const testKey1 = 'test-batch-1.csv';
       const testKey2 = 'test-batch-2.csv';
@@ -740,12 +775,14 @@ Gadget,29.99,50`;
     });
 
     test('loadBatch: handles mix of successful and failed loads', async () => {
-      const csvContent1 = `id,name
-1,Item A
-2,Item B`;
-      const csvContent2 = `name,age
-Alice,30
-Bob,25`;
+      const csvContent1 = Csv.of([
+        { id: 1, name: 'Item A' },
+        { id: 2, name: 'Item B' },
+      ]).toString();
+      const csvContent2 = Csv.of([
+        { name: 'Alice', age: 30 },
+        { name: 'Bob', age: 25 },
+      ]).toString();
 
       const testKey1 = 'test-batch-mix-1.csv';
       const testKey2 = 'test-batch-mix-2.csv';
@@ -796,15 +833,18 @@ Bob,25`;
     });
 
     test('loadBatch: handles batch with different table options', async () => {
-      const csvContent1 = `col1,col2
-A,1
-B,2`;
-      const csvContent2 = `col1,col2
-X,10
-Y,20`;
-      const csvContent3 = `name,value
-First,1
-Second,2`;
+      const csvContent1 = Csv.of([
+        { col1: 'A', col2: 1 },
+        { col1: 'B', col2: 2 },
+      ]).toString();
+      const csvContent2 = Csv.of([
+        { col1: 'X', col2: 10 },
+        { col1: 'Y', col2: 20 },
+      ]).toString();
+      const csvContent3 = Csv.of([
+        { name: 'First', value: 1 },
+        { name: 'Second', value: 2 },
+      ]).toString();
 
       const testKey1 = 'test-batch-options-1.csv';
       const testKey2 = 'test-batch-options-2.csv';
@@ -862,9 +902,10 @@ Second,2`;
     });
 
     test('loadBatch: includes correct request context in results', async () => {
-      const csvContent = `id,name
-1,Item A
-2,Item B`;
+      const csvContent = Csv.of([
+        { id: 1, name: 'Item A' },
+        { id: 2, name: 'Item B' },
+      ]).toString();
 
       const testKey = 'test-batch-context.csv';
       await writeCsvToS3(testKey, csvContent);
@@ -897,11 +938,11 @@ Second,2`;
     });
 
     test('loadBatch: handles batch with empty CSV files', async () => {
-      const csvContent1 = `name,age,city
-`;
-      const csvContent2 = `id,value
-1,10
-2,20`;
+      const csvContent1 = Csv.of([]).withHeader(['name', 'age', 'city']).toString();
+      const csvContent2 = Csv.of([
+        { id: 1, value: 10 },
+        { id: 2, value: 20 },
+      ]).toString();
 
       const testKey1 = 'test-batch-empty-1.csv';
       const testKey2 = 'test-batch-empty-2.csv';
@@ -951,10 +992,12 @@ Second,2`;
 
       // Create 5 files to load
       for (let i = 0; i < 5; i++) {
-        const csvContent = `id,name,value
-${i * 3 + 1},Item${i * 3 + 1},${(i * 3 + 1) * 10}
-${i * 3 + 2},Item${i * 3 + 2},${(i * 3 + 2) * 10}
-${i * 3 + 3},Item${i * 3 + 3},${(i * 3 + 3) * 10}`;
+        const arr = [
+          { id: i * 3 + 1, name: `Item${i * 3 + 1}`, value: (i * 3 + 1) * 10 },
+          { id: i * 3 + 2, name: `Item${i * 3 + 2}`, value: (i * 3 + 2) * 10 },
+          { id: i * 3 + 3, name: `Item${i * 3 + 3}`, value: (i * 3 + 3) * 10 },
+        ];
+        const csvContent = Csv.of(arr).toString();
 
         const testKey = `test-batch-large-${i}.csv`;
         await writeCsvToS3(testKey, csvContent);
@@ -1017,13 +1060,15 @@ ${i * 3 + 3},Item${i * 3 + 3},${(i * 3 + 3) * 10}`;
     });
 
     test('loadBatch: summary includes accurate statistics', async () => {
-      const csvContent1 = `id,name
-1,Item A
-2,Item B
-3,Item C`;
-      const csvContent2 = `name,age
-Alice,30
-Bob,25`;
+      const csvContent1 = Csv.of([
+        { id: 1, name: 'Item A' },
+        { id: 2, name: 'Item B' },
+        { id: 3, name: 'Item C' },
+      ]).toString();
+      const csvContent2 = Csv.of([
+        { name: 'Alice', age: 30 },
+        { name: 'Bob', age: 25 },
+      ]).toString();
 
       const testKey1 = 'test-batch-stats-1.csv';
       const testKey2 = 'test-batch-stats-2.csv';

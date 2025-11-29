@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseCsv, type ColumnSchema } from '../csv/csv';
+import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk, Ok, Err, type Result } from '../result';
@@ -11,7 +11,7 @@ import { TabularDataConverter } from '../tabular-data-converter/tabular-data-con
  */
 export interface TabularData {
   data: Record<string, string | number | boolean | null>[];
-  schema: ColumnSchema[];
+  schema: CsvColumnSchema[];
 }
 
 /**
@@ -165,7 +165,7 @@ export class TabularDataPostgresLoader {
 
       // Step 3: Parse CSV to extract schema and data
       this.logger.debug('Parsing CSV data', { csvSize: csvContent.length });
-      const { schema, dataRows } = parseCsv(csvContent, (id) => this.sanitizeIdentifier(id));
+      const { schema, dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
 
       if (schema.length === 0) {
         return Err('No columns found in CSV data');
@@ -379,7 +379,7 @@ export class TabularDataPostgresLoader {
    */
   private async createTable(
     tableName: string,
-    schema: ColumnSchema[],
+    schema: CsvColumnSchema[],
     options: LoadOptions,
   ): Promise<Result<void, string>> {
     // Drop table if requested
@@ -417,7 +417,7 @@ export class TabularDataPostgresLoader {
 
       const columnDefinitions = schema
         .map((col) => {
-          const typeMap: Record<ColumnSchema['type'], string> = {
+          const typeMap: Record<CsvColumnSchema['type'], string> = {
             text: 'TEXT',
             integer: 'INTEGER',
             numeric: 'NUMERIC',
@@ -461,7 +461,7 @@ export class TabularDataPostgresLoader {
    */
   private async copyData(
     tableName: string,
-    schema: ColumnSchema[],
+    schema: CsvColumnSchema[],
     dataRows: string[][],
   ): Promise<Result<number, string>> {
     if (dataRows.length === 0) {

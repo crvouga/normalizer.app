@@ -1,7 +1,7 @@
 /**
  * Schema definition for a column in tabular data
  */
-export interface ColumnSchema {
+export interface CsvColumnSchema {
   name: string;
   type: 'text' | 'integer' | 'numeric' | 'boolean' | 'date' | 'timestamp';
   nullable?: boolean;
@@ -11,7 +11,7 @@ export interface ColumnSchema {
  * Result of parsing CSV content
  */
 export interface ParsedCsv {
-  schema: ColumnSchema[];
+  schema: CsvColumnSchema[];
   dataRows: string[][];
   headers: string[];
 }
@@ -22,10 +22,7 @@ export interface ParsedCsv {
  * @param sanitizeIdentifier - Optional function to sanitize column names (e.g., for SQL identifiers)
  * @returns Parsed CSV with schema, data rows, and headers
  */
-export function parseCsv(
-  csvContent: string,
-  sanitizeIdentifier?: (identifier: string) => string,
-): ParsedCsv {
+function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => string): ParsedCsv {
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], dataRows: [], headers: [] };
@@ -33,7 +30,7 @@ export function parseCsv(
 
   // Parse header row
   const headerLine = lines[0]!;
-  const headers = parseCsvLine(headerLine);
+  const headers = parseLine(headerLine);
   const sanitizedHeaders = sanitizeIdentifier
     ? headers.map((h) => sanitizeIdentifier(h.trim()))
     : headers.map((h) => h.trim());
@@ -42,7 +39,7 @@ export function parseCsv(
   const sampleRows: string[][] = [];
   const maxSampleSize = Math.min(1000, lines.length - 1); // Sample up to 1000 rows
   for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
-    const row = parseCsvLine(lines[i]!);
+    const row = parseLine(lines[i]!);
     // Pad row to match header length
     while (row.length < sanitizedHeaders.length) {
       row.push('');
@@ -51,7 +48,7 @@ export function parseCsv(
   }
 
   // Infer schema from sample data
-  const schema: ColumnSchema[] = sanitizedHeaders.map((name, index) => {
+  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
     const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
     const inferredType = inferColumnType(columnValues);
     return {
@@ -64,7 +61,7 @@ export function parseCsv(
   // Parse all data rows
   const dataRows: string[][] = [];
   for (let i = 1; i < lines.length; i++) {
-    const row = parseCsvLine(lines[i]!);
+    const row = parseLine(lines[i]!);
     // Pad or truncate row to match header length
     while (row.length < sanitizedHeaders.length) {
       row.push('');
@@ -81,7 +78,7 @@ export function parseCsv(
  * @param line - A single line of CSV content
  * @returns Array of field values
  */
-export function parseCsvLine(line: string): string[] {
+function parseLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -119,7 +116,7 @@ export function parseCsvLine(line: string): string[] {
  * @param values - Array of string values from a column
  * @returns Inferred column type
  */
-export function inferColumnType(values: string[]): ColumnSchema['type'] {
+function inferColumnType(values: string[]): CsvColumnSchema['type'] {
   if (values.length === 0) {
     return 'text'; // Default to text if no data
   }
@@ -157,3 +154,77 @@ export function inferColumnType(values: string[]): ColumnSchema['type'] {
   // Default to text
   return 'text';
 }
+
+/**
+ * CSV escape function: escape quotes and wrap with quotes if needed
+ */
+function escapeCsvValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (/[,"\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/**
+ * Builder for creating CSV strings from arrays of objects
+ */
+class CsvBuilder<T extends Record<string, unknown>> {
+  private headers: string[] | null = null;
+
+  constructor(private readonly data: T[]) {}
+
+  /**
+   * Specify headers explicitly (useful when data array is empty)
+   * @param headers - Array of header names
+   * @returns The builder instance for method chaining
+   */
+  withHeader(headers: string[]): this {
+    this.headers = headers;
+    return this;
+  }
+
+  /**
+   * Convert the builder to a CSV string
+   * @returns The CSV string representation
+   */
+  toString(): string {
+    let headers: string[];
+
+    if (this.headers) {
+      headers = this.headers;
+    } else if (this.data.length === 0) {
+      return '';
+    } else {
+      headers = Object.keys(this.data[0]!);
+    }
+
+    // Build CSV rows
+    const rows = [
+      headers.join(','),
+      ...this.data.map((row) => headers.map((h) => escapeCsvValue(row[h])).join(',')),
+    ];
+    return rows.join('\n');
+  }
+}
+
+/**
+ * Converts an array of objects into a CSV builder.
+ * @template T
+ * @param {T[]} data - Array of objects to convert to CSV.
+ * @returns {CsvBuilder<T>} A builder instance with methods to configure and generate CSV.
+ */
+function of<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
+  return new CsvBuilder(data);
+}
+
+/**
+ * CSV parsing utilities
+ */
+export const Csv = {
+  of,
+  parse,
+  parseLine,
+  inferColumnType,
+};
