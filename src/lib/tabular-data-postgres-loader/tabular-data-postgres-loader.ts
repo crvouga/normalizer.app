@@ -3,7 +3,7 @@ import { parseCsv, type ColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk, Ok, Err, type Result } from '../result';
-import type { SqlDb } from '../sql-db/sql-db';
+import type { SqlDb, SqlTransaction } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
 /**
@@ -287,60 +287,109 @@ export class TabularDataPostgresLoader {
     }
 
     const escapedColumnNames = schema.map((col) => this.escapeIdentifier(col.name)).join(', ');
-
-    // Use batched parameterized inserts for maximum performance
-    // Batch size optimized for performance (larger batches = fewer round trips)
     const batchSize = 5000;
-    let totalInserted = 0;
 
-    // Use a transaction for better performance and atomicity
     const transactionResult = await this.sql.begin(async (tx) => {
-      try {
-        for (let i = 0; i < dataRows.length; i += batchSize) {
-          const batch = dataRows.slice(i, i + batchSize);
-
-          // Build parameterized query with VALUES clause
-          // This is more performant than individual INSERTs and safer than string concatenation
-          const placeholders: string[] = [];
-          const values: (string | null)[] = [];
-
-          batch.forEach((row) => {
-            const rowPlaceholders: string[] = [];
-            row.forEach((cell) => {
-              const paramIndex = values.length + 1;
-              rowPlaceholders.push(`$${paramIndex}`);
-              // Convert empty strings to NULL, preserve other values
-              values.push(cell === '' ? null : cell);
-            });
-            placeholders.push(`(${rowPlaceholders.join(', ')})`);
-          });
-
-          // Execute batched insert
-          const insertQuery = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
-          const insertResult = await tx.unsafe(insertQuery, values);
-          if (!isOk(insertResult)) {
-            return Err(`Failed to insert batch: ${insertResult.error}`);
-          }
-
-          totalInserted += batch.length;
-
-          this.logger.debug('Inserted batch', {
-            tableName,
-            batchSize: batch.length,
-            totalInserted,
-            progress: `${Math.round((totalInserted / dataRows.length) * 100)}%`,
-          });
-        }
-        // Return success result with total inserted count
-        return Ok(totalInserted);
-      } catch (e) {
-        return Err(`Bulk insert transaction failed: ${e instanceof Error ? e.message : String(e)}`);
-      }
+      return this.processBatchesInTransaction(
+        tx,
+        tableName,
+        escapedColumnNames,
+        dataRows,
+        batchSize,
+      );
     });
 
     if (!isOk(transactionResult)) {
       return Err(`Transaction failed: ${transactionResult.error}`);
     }
     return transactionResult;
+  }
+
+  /**
+   * Process all batches within a transaction
+   */
+  private async processBatchesInTransaction(
+    tx: SqlTransaction,
+    tableName: string,
+    escapedColumnNames: string,
+    dataRows: string[][],
+    batchSize: number,
+  ): Promise<Result<number, string>> {
+    let totalInserted = 0;
+
+    for (let i = 0; i < dataRows.length; i += batchSize) {
+      const batch = dataRows.slice(i, i + batchSize);
+      const insertResult = await this.insertBatch(tx, tableName, escapedColumnNames, batch);
+
+      if (!isOk(insertResult)) {
+        return Err(`Failed to insert batch: ${insertResult.error}`);
+      }
+
+      totalInserted += batch.length;
+      this.logBatchProgress(tableName, batch.length, totalInserted, dataRows.length);
+    }
+
+    return Ok(totalInserted);
+  }
+
+  /**
+   * Insert a single batch of rows
+   */
+  private async insertBatch(
+    tx: SqlTransaction,
+    tableName: string,
+    escapedColumnNames: string,
+    batch: string[][],
+  ): Promise<Result<void, string>> {
+    const { query, values } = this.buildBatchQuery(tableName, escapedColumnNames, batch);
+    const insertResult = await tx.unsafe(query, values);
+
+    if (!isOk(insertResult)) {
+      return Err(insertResult.error);
+    }
+
+    return Ok(undefined);
+  }
+
+  /**
+   * Build parameterized query and values array for a batch
+   */
+  private buildBatchQuery(
+    tableName: string,
+    escapedColumnNames: string,
+    batch: string[][],
+  ): { query: string; values: (string | null)[] } {
+    const placeholders: string[] = [];
+    const values: (string | null)[] = [];
+
+    batch.forEach((row) => {
+      const rowPlaceholders: string[] = [];
+      row.forEach((cell) => {
+        const paramIndex = values.length + 1;
+        rowPlaceholders.push(`$${paramIndex}`);
+        values.push(cell === '' ? null : cell);
+      });
+      placeholders.push(`(${rowPlaceholders.join(', ')})`);
+    });
+
+    const query = `INSERT INTO ${this.escapeIdentifier(tableName)} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
+    return { query, values };
+  }
+
+  /**
+   * Log batch insertion progress
+   */
+  private logBatchProgress(
+    tableName: string,
+    batchSize: number,
+    totalInserted: number,
+    totalRows: number,
+  ): void {
+    this.logger.debug('Inserted batch', {
+      tableName,
+      batchSize,
+      totalInserted,
+      progress: `${Math.round((totalInserted / totalRows) * 100)}%`,
+    });
   }
 }
