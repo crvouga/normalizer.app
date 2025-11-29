@@ -2,7 +2,7 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@
 import { Fragment } from 'react';
 import { cn } from '~/src/lib/cn';
 import type { I18nText } from '../i18n/types';
-import { IconX } from './icons';
+import { X } from 'lucide-react';
 import { Typography } from './typography';
 import { useI18n } from '../i18n/use-i18n';
 import { ButtonBase } from './button-base';
@@ -97,7 +97,7 @@ export function Modal({
                     className="rounded p-1 text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-slate-700 dark:disabled:hover:bg-transparent"
                     aria-label={t('modal.close')}
                   >
-                    <IconX className="size-5" />
+                    <X className="size-5" />
                   </ButtonBase>
                 </div>
               )}

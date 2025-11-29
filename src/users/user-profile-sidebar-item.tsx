@@ -13,7 +13,7 @@ import { MenuItemsAnimated } from '~/src/ui/menu-items-animated';
 import { Avatar } from '~/src/ui/avatar';
 import { getButtonBaseStyles } from '~/src/ui/button-base';
 import { Divider } from '~/src/ui/divider';
-import { IconLogin, IconLogout, IconSettings, IconUser } from '~/src/ui/icons';
+import { LogIn, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { MenuItemButton } from '~/src/ui/menu-item-button';
 import { Typography } from '~/src/ui/typography';
 import type { User } from './user';
@@ -38,7 +38,7 @@ const UserMenuButton = ({ user, isAnonymous }: { user: User; isAnonymous: boolea
     >
       {isAnonymous ? (
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
-          <IconUser className="size-5 text-slate-600 dark:text-slate-400" />
+          <UserIcon className="size-5 text-slate-600 dark:text-slate-400" />
         </div>
       ) : (
         <Avatar
@@ -131,23 +131,15 @@ export function UserProfileSidebarItem({ user }: UserProfileSidebarItemProps) {
           <Divider />
 
           {authState.type === 'loaded' && isAnonymous && authState.isEnabled && (
-            <MenuItemButton
-              onClick={openSignInDialog}
-              icon={<IconLogin />}
-              label={t('auth.signIn')}
-            />
+            <MenuItemButton onClick={openSignInDialog} icon={<LogIn />} label={t('auth.signIn')} />
           )}
 
-          <MenuItemButton
-            onClick={openSettings}
-            icon={<IconSettings />}
-            label={t('settings.title')}
-          />
+          <MenuItemButton onClick={openSettings} icon={<Settings />} label={t('settings.title')} />
 
           {!isAnonymous && (
             <MenuItemButton
               onClick={openLogoutDialog}
-              icon={<IconLogout />}
+              icon={<LogOut />}
               label={t('auth.signOut')}
             />
           )}

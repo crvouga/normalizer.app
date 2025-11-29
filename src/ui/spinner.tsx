@@ -1,5 +1,5 @@
 import { cn } from '../lib/cn';
-import { IconSpinner } from './icons';
+import { Loader2 } from 'lucide-react';
 
 export type SpinnerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -25,5 +25,5 @@ const colorMap: Record<SpinnerColor, string> = {
 };
 
 export function Spinner({ size = 'md', className, color = 'fuchsia' }: SpinnerProps) {
-  return <IconSpinner className={cn(sizeMap[size], colorMap[color], 'animate-spin', className)} />;
+  return <Loader2 className={cn(sizeMap[size], colorMap[color], 'animate-spin', className)} />;
 }

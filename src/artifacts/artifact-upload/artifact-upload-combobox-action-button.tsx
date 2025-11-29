@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { Result } from '~/src/lib/result';
 import { ComboboxActionButton } from '~/src/ui/combobox/combobox-action-button';
-import { UploadIcon } from '~/src/ui/icons';
+import { Upload } from 'lucide-react';
 import { useI18n } from '../../i18n/use-i18n';
 import type { Artifact } from '../artifact';
 import { ArtifactUploadModal } from './artifact-upload-modal';
@@ -30,7 +30,7 @@ export function ArtifactUploadComboboxActionButton({
         onClick={handleButtonClick}
         disabled={isModalOpen}
         variant={variant}
-        startIcon={<UploadIcon className="size-6 shrink-0" />}
+        startIcon={<Upload className="size-6 shrink-0" />}
         text={t('artifact.uploadButton')}
       />
       <ArtifactUploadModal

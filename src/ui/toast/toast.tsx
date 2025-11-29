@@ -4,7 +4,7 @@ import { useI18n } from '~/src/i18n/use-i18n';
 import type { I18nText } from '../../i18n/types';
 import { cn } from '~/src/lib/cn';
 import { ButtonBase } from '../button-base';
-import { IconAlertCircle, IconCheck, IconX } from '../icons';
+import { AlertCircle, Check, X } from 'lucide-react';
 import type { Toast as ToastType } from './toast-types';
 
 interface ToastProps {
@@ -18,14 +18,14 @@ function ToastIcon({ type }: { type: 'success' | 'error' }) {
   if (type === 'success') {
     return (
       <div className="flex size-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-        <IconCheck className="size-4 text-green-600 dark:text-green-400" />
+        <Check className="size-4 text-green-600 dark:text-green-400" />
       </div>
     );
   }
 
   return (
     <div className="flex size-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-      <IconAlertCircle className="size-4 text-red-600 dark:text-red-400" />
+      <AlertCircle className="size-4 text-red-600 dark:text-red-400" />
     </div>
   );
 }
@@ -105,7 +105,7 @@ export function Toast({ toast, isVisible, onDismiss, onShowError }: ToastProps) 
                 className="shrink-0 rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                 aria-label={t('toast.dismiss')}
               >
-                <IconX className="size-4" />
+                <X className="size-4" />
               </ButtonBase>
             )}
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SettingsModal } from './settings-modal';
-import { IconSettings } from '~/src/ui/icons';
+import { Settings } from 'lucide-react';
 import { ButtonBase } from '~/src/ui/button-base';
 
 export function SettingsButton() {
@@ -14,7 +14,7 @@ export function SettingsButton() {
         aria-label="Settings"
         title="Settings"
       >
-        <IconSettings className="size-5" />
+        <Settings className="size-5" />
       </ButtonBase>
 
       <SettingsModal isOpen={isOpen} onClose={() => setIsOpen(false)} />

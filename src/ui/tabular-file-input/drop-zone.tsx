@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
 import type { I18nText } from '../../i18n/types';
-import { UploadIcon } from '../icons';
+import { Upload } from 'lucide-react';
 import { Typography } from '../typography';
 import { useI18n } from '../../i18n/use-i18n';
 
@@ -53,7 +53,7 @@ export const DropZone = React.forwardRef<HTMLInputElement, DropZoneProps>(
         <input ref={ref} type="file" accept={accept} className="hidden" />
 
         <div className="flex flex-col items-center gap-4">
-          <UploadIcon className="size-8" />
+          <Upload className="size-8" />
 
           <div className="space-y-1">
             <Typography variant="sm" weight="medium" color="primary" text={defaultPlaceholder} />

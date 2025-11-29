@@ -1,5 +1,5 @@
 import type { ArtifactId } from '~/src/artifacts/artifact-id';
-import { IconCheck } from '~/src/ui/icons';
+import { Check } from 'lucide-react';
 import { useI18n } from '~/src/i18n/use-i18n';
 import type { NormalizationSessionProjectionEntry } from '../../normalization-session-projection/normalization-session-projection-entry';
 import { EntryArtifactsSection } from './entry-artifacts-section';
@@ -7,7 +7,7 @@ import { EntryArtifactsSection } from './entry-artifacts-section';
 const StatusIcon = () => {
   return (
     <div className="flex size-6 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800/50">
-      <IconCheck className="size-4 text-slate-400 dark:text-slate-500" />
+      <Check className="size-4 text-slate-400 dark:text-slate-500" />
     </div>
   );
 };
