@@ -35,6 +35,78 @@ export interface LoadOptions {
 }
 
 /**
+ * Request for a single batch load operation
+ */
+export interface BatchLoadRequest {
+  /**
+   * Object store bucket name
+   */
+  bucket: string;
+  /**
+   * Object store key (file path)
+   */
+  key: string;
+  /**
+   * Loading options including table name
+   */
+  options: LoadOptions;
+}
+
+/**
+ * Result for a single batch load operation
+ */
+export interface BatchLoadItemResult {
+  /**
+   * The original request
+   */
+  request: BatchLoadRequest;
+  /**
+   * Load result - success with table name and row count, or error message
+   */
+  result: Result<{ tableName: string; rowCount: number }, string>;
+}
+
+/**
+ * Summary of batch load operation
+ */
+export interface BatchLoadSummary {
+  /**
+   * Total number of requests
+   */
+  total: number;
+  /**
+   * Number of successful loads
+   */
+  successful: number;
+  /**
+   * Number of failed loads
+   */
+  failed: number;
+  /**
+   * Total rows loaded across all successful loads
+   */
+  totalRowsLoaded: number;
+  /**
+   * Duration in milliseconds
+   */
+  duration: number;
+}
+
+/**
+ * Result of batch load operation
+ */
+export interface BatchLoadResult {
+  /**
+   * Results for each individual load request
+   */
+  results: BatchLoadItemResult[];
+  /**
+   * Summary statistics
+   */
+  summary: BatchLoadSummary;
+}
+
+/**
  * High-performance PostgreSQL loader for tabular data from object storage.
  * Converts data to CSV format, creates tables dynamically, and uses COPY for bulk loading.
  */
@@ -154,6 +226,116 @@ export class TabularDataPostgresLoader {
       });
       return Err(`Failed to load tabular data: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Load multiple tabular data files from object store into PostgreSQL tables in parallel.
+   * All loads are processed concurrently, and each load is independent.
+   * Failures in one load do not affect others.
+   *
+   * @param requests - Array of batch load requests, each specifying a file location and table options
+   * @returns BatchLoadResult containing individual results and summary statistics
+   */
+  async loadBatch(requests: BatchLoadRequest[]): Promise<BatchLoadResult> {
+    const startTime = Date.now();
+    this.logger.info('Starting batch load', { requestCount: requests.length });
+
+    if (requests.length === 0) {
+      return {
+        results: [],
+        summary: {
+          total: 0,
+          successful: 0,
+          failed: 0,
+          totalRowsLoaded: 0,
+          duration: 0,
+        },
+      };
+    }
+
+    const loadPromises = requests.map((request) => this.loadSingleWithRequest(request));
+    const settledResults = await Promise.allSettled(loadPromises);
+
+    const results = this.buildBatchResults(requests, settledResults);
+    const summary = this.buildBatchSummary(results, startTime);
+
+    this.logger.info('Batch load completed', {
+      total: summary.total,
+      successful: summary.successful,
+      failed: summary.failed,
+      totalRowsLoaded: summary.totalRowsLoaded,
+      duration: summary.duration,
+    });
+
+    return { results, summary };
+  }
+
+  /**
+   * Load a single file with request context for batch operations
+   */
+  private async loadSingleWithRequest(
+    request: BatchLoadRequest,
+  ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
+    return this.load(request.bucket, request.key, request.options);
+  }
+
+  /**
+   * Build batch results from settled promises
+   */
+  private buildBatchResults(
+    requests: BatchLoadRequest[],
+    settledResults: PromiseSettledResult<Result<{ tableName: string; rowCount: number }, string>>[],
+  ): BatchLoadItemResult[] {
+    return requests.map((request, index) => {
+      const settled = settledResults[index];
+
+      if (!settled) {
+        return {
+          request,
+          result: Err('Promise result not available'),
+        };
+      }
+
+      if (settled.status === 'fulfilled') {
+        return {
+          request,
+          result: settled.value,
+        };
+      }
+
+      const errorMessage =
+        settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
+      return {
+        request,
+        result: Err(`Unexpected error: ${errorMessage}`),
+      };
+    });
+  }
+
+  /**
+   * Build summary statistics from batch results
+   */
+  private buildBatchSummary(results: BatchLoadItemResult[], startTime: number): BatchLoadSummary {
+    let successful = 0;
+    let failed = 0;
+    let totalRowsLoaded = 0;
+
+    results.forEach((item) => {
+      if (isOk(item.result)) {
+        successful++;
+        totalRowsLoaded += item.result.value.rowCount;
+      } else {
+        failed++;
+      }
+    });
+
+    return {
+      total: results.length,
+      successful,
+      failed,
+      totalRowsLoaded,
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
