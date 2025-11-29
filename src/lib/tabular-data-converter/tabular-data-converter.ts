@@ -5,6 +5,7 @@ import type { TabularDataFormatHandler } from './tabular-data-format-handler';
 import { ExcelHandler } from './handlers/excel-handler';
 import { CsvHandler } from './handlers/csv-handler';
 import { ParquetHandler } from './handlers/parquet-handler';
+import { JsonHandler } from './handlers/json-handler';
 import { isOk } from '../result';
 
 export interface ConvertResult {
@@ -54,8 +55,10 @@ export class TabularDataConverter {
     this.registry.register(new ExcelHandler());
     // Parquet handler checks magic bytes, so register it before CSV
     this.registry.register(new ParquetHandler());
-    // CSV handler is more generic (extension-based), register last
+    // CSV handler is more generic (extension-based), register before JSON
     this.registry.register(new CsvHandler());
+    // JSON handler is extension-based like CSV, register after CSV
+    this.registry.register(new JsonHandler());
   }
 
   /**

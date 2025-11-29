@@ -333,4 +333,323 @@ describe('FileConverter', async () => {
     const nonExistentBucket = `NO_BUCKET_${Date.now()}`;
     expect(tabularDataConverter.convert(nonExistentBucket, sourceKey, 'excel')).rejects.toThrow();
   });
+
+  test('should convert JSON to CSV', async () => {
+    // Create a test JSON file (array of objects)
+    const jsonData = [
+      { Name: 'John', Age: 30, City: 'New York' },
+      { Name: 'Jane', Age: 25, City: 'London' },
+    ];
+    const jsonBuffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
+
+    // Upload JSON file to S3
+    const sourceKey = `test-json-${Date.now()}.json`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: jsonBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to CSV
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
+    expect(result.bucket).toBe(testBucket);
+    expect(result.key).toContain('.csv');
+
+    // Verify CSV content
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const csvContent = readResult.value.toString();
+    expect(csvContent).toContain('Age');
+    expect(csvContent).toContain('City');
+    expect(csvContent).toContain('Name');
+    expect(csvContent).toContain('John');
+    expect(csvContent).toContain('Jane');
+    expect(csvContent).toContain('30');
+    expect(csvContent).toContain('25');
+  });
+
+  test('should convert CSV to JSON', async () => {
+    // Create a test CSV file
+    const csvContent = 'Name,Age,City\nJohn,30,New York\nJane,25,London';
+    const csvBuffer = Buffer.from(csvContent, 'utf-8');
+
+    // Upload CSV file to S3
+    const sourceKey = `test-csv-to-json-${Date.now()}.csv`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: csvBuffer,
+      contentType: 'text/csv',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to JSON
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'json');
+    expect(result.bucket).toBe(testBucket);
+    expect(result.key).toContain('.json');
+
+    // Verify JSON content
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const jsonContent = JSON.parse(readResult.value.toString());
+    expect(Array.isArray(jsonContent)).toBe(true);
+    expect(jsonContent.length).toBe(2);
+    expect(jsonContent[0]).toEqual({ Name: 'John', Age: '30', City: 'New York' });
+    expect(jsonContent[1]).toEqual({ Name: 'Jane', Age: '25', City: 'London' });
+  });
+
+  test('should convert JSON to Excel', async () => {
+    // Create a test JSON file
+    const jsonData = [
+      { Name: 'John', Age: 30, City: 'New York' },
+      { Name: 'Jane', Age: 25, City: 'London' },
+    ];
+    const jsonBuffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
+
+    // Upload JSON file to S3
+    const sourceKey = `test-json-to-excel-${Date.now()}.json`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: jsonBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to Excel
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'excel');
+    expect(result.bucket).toBe(testBucket);
+    expect(result.key).toContain('.xlsx');
+
+    // Verify Excel file exists and has correct content
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const excelBuffer = readResult.value;
+    const workbook = XLSX.read(excelBuffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      throw new Error('Excel file has no sheets');
+    }
+    const firstSheet = workbook.Sheets[firstSheetName];
+    if (!firstSheet) {
+      throw new Error(`Sheet "${firstSheetName}" not found`);
+    }
+    const csvOutput = XLSX.utils.sheet_to_csv(firstSheet);
+    expect(csvOutput).toContain('Name');
+    expect(csvOutput).toContain('Age');
+    expect(csvOutput).toContain('City');
+    expect(csvOutput).toContain('John');
+    expect(csvOutput).toContain('Jane');
+  });
+
+  test('should convert Excel to JSON', async () => {
+    // Create a test Excel file
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ['Name', 'Age', 'City'],
+      ['John', 30, 'New York'],
+      ['Jane', 25, 'London'],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    const excelBuffer = Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
+
+    // Upload Excel file to S3
+    const sourceKey = `test-excel-to-json-${Date.now()}.xlsx`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: excelBuffer,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to JSON
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'json');
+    expect(result.bucket).toBe(testBucket);
+    expect(result.key).toContain('.json');
+
+    // Verify JSON content
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const jsonContent = JSON.parse(readResult.value.toString());
+    expect(Array.isArray(jsonContent)).toBe(true);
+    expect(jsonContent.length).toBe(2);
+    expect(jsonContent[0]).toHaveProperty('Name');
+    expect(jsonContent[0]).toHaveProperty('Age');
+    expect(jsonContent[0]).toHaveProperty('City');
+    expect(jsonContent[0].Name).toBe('John');
+    expect(jsonContent[1].Name).toBe('Jane');
+  });
+
+  test('should handle empty JSON array', async () => {
+    // Create an empty JSON array
+    const jsonData: unknown[] = [];
+    const jsonBuffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
+
+    // Upload JSON file to S3
+    const sourceKey = `test-empty-json-${Date.now()}.json`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: jsonBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to CSV (should return empty string)
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const csvContent = readResult.value.toString();
+    expect(csvContent).toBe('');
+  });
+
+  test('should handle JSON objects with varying keys', async () => {
+    // Create JSON with objects that have different keys
+    const jsonData = [
+      { Name: 'John', Age: 30, City: 'New York' },
+      { Name: 'Jane', Age: 25 }, // Missing City
+      { Name: 'Bob', City: 'Paris' }, // Missing Age
+    ];
+    const jsonBuffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
+
+    // Upload JSON file to S3
+    const sourceKey = `test-varying-keys-${Date.now()}.json`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: jsonBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to CSV - should include all keys
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const csvContent = readResult.value.toString();
+    expect(csvContent).toContain('Age');
+    expect(csvContent).toContain('City');
+    expect(csvContent).toContain('Name');
+    expect(csvContent).toContain('John');
+    expect(csvContent).toContain('Jane');
+    expect(csvContent).toContain('Bob');
+
+    // Convert CSV back to JSON and verify structure (round-trip through CSV)
+    const jsonResult = await tabularDataConverter.convert(result.bucket, result.key, 'json');
+    const jsonReadResult = await objectStore.read({
+      bucket: jsonResult.bucket,
+      key: jsonResult.key,
+    });
+    if (!isOk(jsonReadResult)) {
+      throw new Error(`Failed to read: ${jsonReadResult.error}`);
+    }
+    const convertedJson = JSON.parse(jsonReadResult.value.toString());
+    expect(convertedJson.length).toBe(3);
+    // All objects should have all keys (missing ones become empty strings)
+    expect(convertedJson[0]).toHaveProperty('Age');
+    expect(convertedJson[0]).toHaveProperty('City');
+    expect(convertedJson[0]).toHaveProperty('Name');
+    expect(convertedJson[1]).toHaveProperty('City'); // Should exist but be empty
+    expect(convertedJson[1]).toHaveProperty('Age');
+    expect(convertedJson[1]).toHaveProperty('Name');
+    expect(convertedJson[2]).toHaveProperty('Age'); // Should exist but be empty
+    expect(convertedJson[2]).toHaveProperty('City');
+    expect(convertedJson[2]).toHaveProperty('Name');
+  });
+
+  test('should detect JSON files correctly', async () => {
+    // Valid JSON array of objects
+    const validJson = [{ Name: 'John', Age: 30 }];
+    const validBuffer = Buffer.from(JSON.stringify(validJson), 'utf-8');
+    const sourceKey1 = `test-valid-json-${Date.now()}.json`;
+    const writeResult1 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey1,
+      data: validBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult1)) {
+      throw new Error(`Failed to write: ${writeResult1.error}`);
+    }
+
+    // Should detect as JSON and convert successfully
+    const result1 = await tabularDataConverter.convert(testBucket, sourceKey1, 'csv');
+    expect(result1.key).toContain('.csv');
+
+    // Invalid JSON (not an array)
+    const invalidJson = { Name: 'John', Age: 30 };
+    const invalidBuffer = Buffer.from(JSON.stringify(invalidJson), 'utf-8');
+    const sourceKey2 = `test-invalid-json-${Date.now()}.json`;
+    const writeResult2 = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey2,
+      data: invalidBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult2)) {
+      throw new Error(`Failed to write: ${writeResult2.error}`);
+    }
+
+    // Should fail to detect as JSON (or fail conversion)
+    // Since detection happens during conversion, it will try to convert and fail
+    await expect(tabularDataConverter.convert(testBucket, sourceKey2, 'csv')).rejects.toThrow();
+  });
+
+  test('should handle JSON with special characters in values', async () => {
+    // Create JSON with commas, quotes, and newlines in values
+    const jsonData = [
+      { Name: 'John, Jr.', Description: 'He said "Hello"', Notes: 'Line 1\nLine 2' },
+      { Name: 'Jane', Description: 'Normal text', Notes: 'Single line' },
+    ];
+    const jsonBuffer = Buffer.from(JSON.stringify(jsonData), 'utf-8');
+
+    // Upload JSON file to S3
+    const sourceKey = `test-special-chars-${Date.now()}.json`;
+    const writeResult = await objectStore.write({
+      bucket: testBucket,
+      key: sourceKey,
+      data: jsonBuffer,
+      contentType: 'application/json',
+    });
+    if (!isOk(writeResult)) {
+      throw new Error(`Failed to write: ${writeResult.error}`);
+    }
+
+    // Convert to CSV - special characters should be handled
+    const result = await tabularDataConverter.convert(testBucket, sourceKey, 'csv');
+    const readResult = await objectStore.read({ bucket: result.bucket, key: result.key });
+    if (!isOk(readResult)) {
+      throw new Error(`Failed to read: ${readResult.error}`);
+    }
+    const csvContent = readResult.value.toString();
+    expect(csvContent).toContain('John');
+    expect(csvContent).toContain('Jane');
+  });
 });
