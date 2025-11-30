@@ -9,16 +9,18 @@ import { GoogleOAuthStateService } from './google-oauth-state-service';
 /**
  * Google user info response schema
  */
-const googleUserInfoSchema = z.object({
-  id: z.string(),
-  email: z.string(),
-  verified_email: z.boolean(),
-  name: z.string(),
-  given_name: z.string(),
-  family_name: z.string(),
-  picture: z.string(),
-  locale: z.string(),
-});
+const googleUserInfoSchema = z
+  .object({
+    id: z.string().nullish(),
+    email: z.string().nullish(),
+    verified_email: z.boolean().nullish(),
+    name: z.string().nullish(),
+    given_name: z.string().nullish(),
+    family_name: z.string().nullish(),
+    picture: z.string().nullish(),
+    locale: z.string().nullish(),
+  })
+  .passthrough();
 
 /**
  * Google user info response type
@@ -35,7 +37,7 @@ export class GoogleOAuthService {
 
   constructor(config: { db: Db; logger: Logger }) {
     this.stateService = new GoogleOAuthStateService({ db: config.db });
-    this.logger = config.logger;
+    this.logger = config.logger.child(GoogleOAuthService.name);
   }
 
   /**

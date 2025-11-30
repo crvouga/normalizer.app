@@ -12,11 +12,15 @@ export interface SqlTransaction {
    * Use this for SELECT queries that return data.
    *
    * @param query The SQL query string (optionally with placeholders like $1, $2)
-   * @param schema Zod schema to validate each row against
+   * @param schema Optional Zod schema to validate each row against (defaults to unknown)
    * @param params Parameters for the query, if any
    * @returns Result containing array of validated result rows, or an error message
    */
-  query<T>(query: string, schema: z.ZodType<T>, params?: unknown[]): Promise<Result<T[], string>>;
+  query<T = unknown>(
+    query: string,
+    schema?: z.ZodType<T>,
+    params?: unknown[],
+  ): Promise<Result<T[], string>>;
 
   /**
    * Executes a SQL command that modifies data and returns the number of affected rows.
@@ -54,11 +58,15 @@ export interface SqlDb {
    * Use this for SELECT queries that return data.
    *
    * @param query The SQL query string (optionally with placeholders like $1, $2)
-   * @param schema Zod schema to validate each row against
+   * @param schema Optional Zod schema to validate each row against (defaults to unknown)
    * @param params Parameters for the query, if any
    * @returns Result containing array of validated result rows, or an error message
    */
-  query<T>(query: string, schema: z.ZodType<T>, params?: unknown[]): Promise<Result<T[], string>>;
+  query<T = unknown>(
+    query: string,
+    schema?: z.ZodType<T>,
+    params?: unknown[],
+  ): Promise<Result<T[], string>>;
 
   /**
    * Executes a SQL command that modifies data and returns the number of affected rows.

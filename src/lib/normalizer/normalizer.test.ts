@@ -13,7 +13,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const llm = createLLMOpenAI({ logger });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
-  test.todo('normalize: should be implemented', async () => {
+  test('normalize: should be implemented', async () => {
     const targetFile = [
       {
         CourseSubject: 'MATH',

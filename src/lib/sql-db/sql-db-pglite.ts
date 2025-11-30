@@ -54,9 +54,9 @@ class PgliteSqlTransaction implements SqlTransaction {
     private readonly logger: Logger,
   ) {}
 
-  async query<T>(
+  async query<T = unknown>(
     query: string,
-    schema: z.ZodType<T>,
+    schema?: z.ZodType<T>,
     params?: unknown[],
   ): Promise<Result<T[], string>> {
     const paramCount = params?.length ?? 0;
@@ -70,11 +70,14 @@ class PgliteSqlTransaction implements SqlTransaction {
       const resultArray = extractRows(result);
       this.logger.debug('Query executed successfully', { rowCount: resultArray.length });
 
+      // Use provided schema or default to unknown
+      const validationSchema = schema ?? (z.unknown() as z.ZodType<T>);
+
       // Validate each row against the schema
       const validatedRows: T[] = [];
       for (const row of resultArray) {
         try {
-          validatedRows.push(schema.parse(row));
+          validatedRows.push(validationSchema.parse(row));
         } catch (validationError) {
           return handleError(validationError, {
             logger: this.logger,
@@ -212,9 +215,9 @@ export class PgliteSqlDb implements SqlDb {
     await this.db.waitReady;
   }
 
-  async query<T>(
+  async query<T = unknown>(
     query: string,
-    schema: z.ZodType<T>,
+    schema?: z.ZodType<T>,
     params?: unknown[],
   ): Promise<Result<T[], string>> {
     const paramCount = params?.length ?? 0;
@@ -232,11 +235,14 @@ export class PgliteSqlDb implements SqlDb {
         rowCount: resultArray.length,
       });
 
+      // Use provided schema or default to unknown
+      const validationSchema = schema ?? (z.unknown() as z.ZodType<T>);
+
       // Validate each row against the schema
       const validatedRows: T[] = [];
       for (const row of resultArray) {
         try {
-          validatedRows.push(schema.parse(row));
+          validatedRows.push(validationSchema.parse(row));
         } catch (validationError) {
           return handleError(validationError, {
             logger: this.logger,
