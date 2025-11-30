@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Copy } from 'lucide-react';
 import type { I18nText } from '../../i18n/types';
-import { toI18nText } from '../../i18n/types';
+import { useI18n } from '../../i18n/use-i18n';
 import { ButtonBase } from '../button-base';
 import { showSuccessToast } from '../toast';
 
@@ -43,6 +43,7 @@ export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
   disabled = false,
   successMessage,
 }) => {
+  const { t } = useI18n();
   const [isCopying, setIsCopying] = React.useState(false);
 
   const handleCopyToClipboard = React.useCallback(async () => {
@@ -50,17 +51,17 @@ export const CopyToClipboardButton: React.FC<CopyToClipboardButtonProps> = ({
     try {
       const textToCopy = typeof text === 'function' ? await text() : text;
       await navigator.clipboard.writeText(textToCopy);
-      showSuccessToast(successMessage ?? toI18nText('Copied to clipboard'));
+      showSuccessToast(successMessage ?? t('copyToClipboard.success'));
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      showSuccessToast(toI18nText('Failed to copy'));
+      showSuccessToast(t('copyToClipboard.error'));
     } finally {
       setIsCopying(false);
     }
-  }, [text, successMessage]);
+  }, [text, successMessage, t]);
 
-  const defaultAriaLabel = ariaLabel ?? 'Copy to clipboard';
-  const defaultTitle = title ?? 'Copy to clipboard';
+  const defaultAriaLabel = ariaLabel ?? String(t('copyToClipboard.label'));
+  const defaultTitle = title ?? String(t('copyToClipboard.label'));
 
   return (
     <ButtonBase

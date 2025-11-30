@@ -142,5 +142,10 @@
   },
   "users": {
     "failedToLoad": "Failed to load user"
+  },
+  "copyToClipboard": {
+    "label": "Copy to clipboard",
+    "success": "Copied to clipboard",
+    "error": "Failed to copy"
   }
 }
