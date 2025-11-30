@@ -83,7 +83,7 @@ export class GoogleAuthUserService {
     const profilePictureUrl = await storeProfilePictureFromUrl({
       objectStore: this.objectStore,
       userId: existingUser.id as UserId,
-      externalUrl: googleUser.picture,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -135,7 +135,7 @@ export class GoogleAuthUserService {
     const profilePictureUrl = await storeProfilePictureFromUrl({
       objectStore: this.objectStore,
       userId: userId,
-      externalUrl: googleUser.picture,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -184,7 +184,7 @@ export class GoogleAuthUserService {
     const profilePictureUrl = await storeProfilePictureFromUrl({
       objectStore: this.objectStore,
       userId: user.id as UserId,
-      externalUrl: googleUser.picture,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -243,7 +243,7 @@ export class GoogleAuthUserService {
 
     // Find existing user by Google ID
     const existingGoogleUser = await this.db.query.users.findFirst({
-      where: eq(users.google_id, googleUser.id),
+      where: eq(users.google_id, googleUser.id ?? ''),
     });
 
     if (existingGoogleUser) {
@@ -256,7 +256,7 @@ export class GoogleAuthUserService {
 
     // Check if user with same email exists (for account linking)
     const existingEmailUser = await this.db.query.users.findFirst({
-      where: eq(users.email, googleUser.email),
+      where: eq(users.email, googleUser.email ?? ''),
     });
 
     if (existingEmailUser) {

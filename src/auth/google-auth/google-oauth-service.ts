@@ -3,7 +3,11 @@ import { z } from 'zod';
 import type { Logger } from '../../lib/logger';
 import { Ok, Err, isErr, tryCatch, tryCatchAsync, type Result } from '../../lib/result';
 import type { Db } from '../../shared/db';
-import { isGoogleAuthEnabled } from './google-oauth-config';
+import {
+  getGoogleClientId,
+  getGoogleClientSecret,
+  isGoogleAuthEnabled,
+} from './google-oauth-config';
 import { GoogleOAuthStateService } from './google-oauth-state-service';
 
 /**
@@ -58,12 +62,16 @@ export class GoogleOAuthService {
     const requestUrl = new URL(req.url);
     const redirectUri = `${requestUrl.origin}/api/auth/google/callback`;
 
+    const googleClientId = getGoogleClientId();
+    const googleClientSecret = getGoogleClientSecret();
+
+    if (!googleClientId || !googleClientSecret) {
+      this.logger.error('Google OAuth is not configured');
+      return Err('Google OAuth is not configured');
+    }
+
     // Create Google client with dynamic redirect URI
-    const google = new Google(
-      process.env.GOOGLE_CLIENT_ID!,
-      process.env.GOOGLE_CLIENT_SECRET!,
-      redirectUri,
-    );
+    const google = new Google(googleClientId, googleClientSecret, redirectUri);
 
     const state = generateState();
     const codeVerifier = generateCodeVerifier();
