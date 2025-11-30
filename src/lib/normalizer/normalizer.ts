@@ -1,15 +1,15 @@
-import { createPgliteSqlDb } from '~/src/shared/sql-db';
-import type { LLM } from '../llm/llm';
-import type { Logger } from '../logger';
-import type { ObjectLocation } from '../object-store/object-location';
-import type { ObjectStore } from '../object-store/object-store';
-import { Err, isErr, isOk, Ok, type Result } from '../result';
+import type { LLM } from '~/src/lib/llm/llm';
+import type { Logger } from '~/src/lib/logger';
+import type { ObjectLocation } from '~/src/lib/object-store/object-location';
+import type { ObjectStore } from '~/src/lib/object-store/object-store';
+import { Err, isErr, isOk, Ok, type Result } from '~/src/lib/result';
+import type { SqlDb } from '~/src/lib/sql-db/sql-db';
 import {
   createTabularDataPostgresImporter,
   type BatchImportRequest,
   type BatchImportResult,
-} from '../tabular-data-postgres-loader/tabular-data-postgres-importer';
-import type { SqlDb } from '../sql-db/sql-db';
+} from '~/src/lib/tabular-data-postgres-loader/tabular-data-postgres-importer';
+import { createPgliteSqlDb } from '~/src/shared/sql-db';
 
 export class Normalizer {
   constructor(
@@ -29,10 +29,21 @@ export class Normalizer {
     outputObjectKeyPrefix: string;
     outputObjectBucket: string;
   }): Promise<Result<{ outputs: ObjectLocation[] }, string>> {
+    if (params.inputs.length === 0) {
+      this.logger.error('Normalization failed: No inputs provided');
+      return Ok({ outputs: [] });
+    }
+
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
-    const importedBatch = await this.importTabularData(sqlDb, params.inputs, params.targets);
+
+    const importedBatch = await this.importTabularData({
+      sqlDb,
+      inputs: params.inputs,
+      targets: params.targets,
+    });
 
     if (isErr(importedBatch.result)) {
+      this.logger.error('Failed to import tabular data', { error: importedBatch.result.error });
       return importedBatch.result;
     }
 
@@ -42,11 +53,6 @@ export class Normalizer {
       outputObjectKeyPrefix: params.outputObjectKeyPrefix,
       outputObjectBucket: params.outputObjectBucket,
     });
-
-    if (params.inputs.length === 0) {
-      this.logger.error('Normalization failed: No inputs provided');
-      return Err('No inputs provided');
-    }
 
     let messages;
     try {
@@ -151,11 +157,12 @@ export class Normalizer {
   /**
    * Imports tabular data from inputs and targets into PostgreSQL tables.
    */
-  private async importTabularData(
-    sqlDb: SqlDb,
-    inputs: ObjectLocation[],
-    targets: ObjectLocation[],
-  ): Promise<BatchImportResult> {
+  private async importTabularData(params: {
+    sqlDb: SqlDb;
+    inputs: ObjectLocation[];
+    targets: ObjectLocation[];
+  }): Promise<BatchImportResult> {
+    const { sqlDb, inputs, targets } = params;
     const tabularDataPostgresImporter = createTabularDataPostgresImporter({
       sql: sqlDb,
       logger: this.logger,

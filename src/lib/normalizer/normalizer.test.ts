@@ -6,7 +6,7 @@ import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
 
 describe.if(isOpenAIEnabled())('Normalizer', async () => {
-  const logger = createLogger({ noop: true });
+  const logger = createLogger({ noop: false });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
@@ -55,37 +55,29 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
       },
     ];
     logger.debug('expectedOutputFile', { expectedOutputFile: JSON.stringify(expectedOutputFile) });
-    const targetWriteResult = unwrap(
-      await objectStore.write({
-        bucket: testBucket,
-        key: 'files/target.json',
-        data: intoJsonBuffer(targetFile),
-        contentType: 'application/json',
-      }),
-    );
-    const inputWriteResult = unwrap(
-      await objectStore.write({
-        bucket: testBucket,
-        key: 'files/input.json',
-        data: intoJsonBuffer(inputFile),
-        contentType: 'application/json',
-      }),
-    );
-    const normalized = unwrap(
-      await normalizer.normalize({
-        targets: [targetWriteResult],
-        inputs: [inputWriteResult],
-        outputObjectKeyPrefix: 'files/normalized/',
-        outputObjectBucket: testBucket,
-      }),
-    );
-    const outputReadResult = unwrap(
-      await objectStore.read({
-        bucket: testBucket,
-        key: normalized.outputs[0]!.key,
-      }),
-    );
-    const actualOutputFile = fromJsonBuffer(outputReadResult);
+    const targetWriteResult = await objectStore.write({
+      bucket: testBucket,
+      key: 'files/target.json',
+      data: intoJsonBuffer(targetFile),
+      contentType: 'application/json',
+    });
+    const inputWriteResult = await objectStore.write({
+      bucket: testBucket,
+      key: 'files/input.json',
+      data: intoJsonBuffer(inputFile),
+      contentType: 'application/json',
+    });
+    const normalized = await normalizer.normalize({
+      targets: [unwrap(targetWriteResult)],
+      inputs: [unwrap(inputWriteResult)],
+      outputObjectKeyPrefix: 'files/normalized/',
+      outputObjectBucket: testBucket,
+    });
+    const outputReadResult = await objectStore.read({
+      bucket: testBucket,
+      key: unwrap(normalized).outputs[0]!.key,
+    });
+    const actualOutputFile = fromJsonBuffer(unwrap(outputReadResult));
     expect(actualOutputFile).toEqual(expectedOutputFile);
   });
 });
