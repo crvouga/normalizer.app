@@ -16,12 +16,9 @@ const TEST_FILE_PATH = getTestFilePath('boise-state-rules.csv');
 /**
  * Tests for importing the boise-state-rules.csv file.
  *
- * Note: These tests may skip if type inference causes issues.
- * The CSV has a CourseOrder column that contains values "1" and "2".
- * If the type inference sample only sees "1", it may infer boolean type,
- * which then fails when encountering "2". This is a known limitation
- * of the current type inference algorithm that prefers boolean over integer
- * when values match boolean patterns.
+ * The CSV has a CourseOrder column that contains numeric values like "1" and "2".
+ * With the improved type inference, numeric values are now correctly inferred as integer
+ * rather than boolean, preventing false positives.
  */
 describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
   let fixtures: TestFixtures;
@@ -55,17 +52,10 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     testTables.push(tableName);
 
     const result = await importer.import(TEST_BUCKET, testKey, { tableName });
-    if (!isOk(result)) {
-      console.error('Import failed:', result.error);
-      // If it fails due to type inference issues, that's a known limitation
-      // The CSV has CourseOrder with values "1" and "2", but if sample only has "1",
-      // it gets inferred as boolean, causing issues with "2"
-      expect(result.error).toContain('boolean');
-      // For now, we'll skip this test if type inference causes issues
-      // This is a limitation of the current type inference algorithm
-      return;
-    }
     expect(isOk(result)).toBe(true);
+    if (!isOk(result)) {
+      throw new Error(`Import failed: ${result.error}`);
+    }
 
     if (isOk(result)) {
       expect(result.value.tableName).toBe(tableName);
@@ -118,14 +108,15 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
       // Verify sample data matches expected structure
       // Note: getTableRows doesn't support limit, so we'll check all rows
       // but only verify the first few
+      // UniqueIdentifier and CourseOrder are inferred as integers, not strings
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
           RuleIdentifier: z.string(),
           CourseType: z.string(),
           InstitutionName: z.string(),
-          UniqueIdentifier: z.string(),
-          CourseOrder: z.string(),
+          UniqueIdentifier: z.number(), // Inferred as integer
+          CourseOrder: z.number(), // Inferred as integer (not boolean anymore!)
           Subject: z.string(),
           Number: z.string(),
           Operator: z.string().nullable(),
@@ -171,25 +162,22 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     testTables.push(tableName);
 
     const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+    expect(isOk(result)).toBe(true);
     if (!isOk(result)) {
-      // Skip if type inference causes issues (known limitation)
-      if (result.error.includes('boolean')) {
-        return;
-      }
       throw new Error(`Import failed: ${result.error}`);
     }
-    expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
       // Get all rows to verify data integrity
+      // UniqueIdentifier and CourseOrder are inferred as integers
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
           RuleIdentifier: z.string(),
           CourseType: z.string(),
           InstitutionName: z.string(),
-          UniqueIdentifier: z.string(),
-          CourseOrder: z.string(),
+          UniqueIdentifier: z.number(), // Inferred as integer
+          CourseOrder: z.number(), // Inferred as integer (not boolean anymore!)
           Subject: z.string(),
           Number: z.string(),
           Operator: z.string().nullable(),
@@ -211,20 +199,18 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
         const ruleIdentifiers = new Set(rows.map((r) => r.RuleIdentifier));
         expect(ruleIdentifiers.size).toBeGreaterThan(0);
 
-        // Verify that UniqueIdentifier is numeric (can be parsed as number or is '0')
+        // Verify that UniqueIdentifier is numeric (now inferred as integer)
         rows.forEach((row) => {
           expect(row.UniqueIdentifier).toBeDefined();
-          const uniqueId = row.UniqueIdentifier.trim();
-          if (uniqueId !== '0' && uniqueId !== '') {
-            expect(() => parseInt(uniqueId, 10)).not.toThrow();
-          }
+          expect(typeof row.UniqueIdentifier).toBe('number');
+          expect(row.UniqueIdentifier).toBeGreaterThanOrEqual(0);
         });
 
-        // Verify CourseOrder is numeric
+        // Verify CourseOrder is numeric (now inferred as integer, not boolean!)
         rows.forEach((row) => {
           expect(row.CourseOrder).toBeDefined();
-          const courseOrder = parseInt(row.CourseOrder, 10);
-          expect(courseOrder).toBeGreaterThanOrEqual(0);
+          expect(typeof row.CourseOrder).toBe('number');
+          expect(row.CourseOrder).toBeGreaterThanOrEqual(0);
         });
       }
     }
@@ -244,14 +230,10 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
 
     // First import
     const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    expect(isOk(result1)).toBe(true);
     if (!isOk(result1)) {
-      // Skip if type inference causes issues (known limitation)
-      if (result1.error.includes('boolean')) {
-        return;
-      }
       throw new Error(`Import failed: ${result1.error}`);
     }
-    expect(isOk(result1)).toBe(true);
     if (isOk(result1)) {
       expect(result1.value.rowCount).toBeGreaterThan(0);
     }
@@ -288,14 +270,10 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
 
     // First import
     const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    expect(isOk(result1)).toBe(true);
     if (!isOk(result1)) {
-      // Skip if type inference causes issues (known limitation)
-      if (result1.error.includes('boolean')) {
-        return;
-      }
       throw new Error(`Import failed: ${result1.error}`);
     }
-    expect(isOk(result1)).toBe(true);
 
     // Second import with dropIfExists
     const result2 = await importer.import(TEST_BUCKET, testKey, {

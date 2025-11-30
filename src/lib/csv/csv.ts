@@ -121,15 +121,19 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
     return 'text'; // Default to text if no data
   }
 
-  // Check for boolean
-  const booleanValues = new Set(['true', 'false', 'yes', 'no', '1', '0', 'y', 'n']);
-  if (values.every((v) => booleanValues.has(v.toLowerCase()))) {
-    return 'boolean';
-  }
-
-  // Check for integer
+  // Check for integer first (before boolean) to avoid false positives
+  // If all values are numeric integers, prefer integer over boolean
+  // This prevents columns with numeric values like "1", "2", "3" from being inferred as boolean
+  // when the sample only contains "1"
   if (values.every((v) => /^-?\d+$/.test(v))) {
     return 'integer';
+  }
+
+  // Check for boolean (only explicit boolean strings, not numeric "1" and "0")
+  // This ensures we only infer boolean for actual boolean representations
+  const explicitBooleanValues = new Set(['true', 'false', 'yes', 'no', 'y', 'n']);
+  if (values.every((v) => explicitBooleanValues.has(v.toLowerCase()))) {
+    return 'boolean';
   }
 
   // Check for numeric (decimal)

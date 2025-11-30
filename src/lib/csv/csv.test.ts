@@ -59,9 +59,10 @@ describe('CSV.inferType', () => {
   it('infers boolean type', () => {
     expect(Csv.inferColumnType(['true', 'false'])).toBe('boolean');
     expect(Csv.inferColumnType(['yes', 'no'])).toBe('boolean');
-    expect(Csv.inferColumnType(['1', '0'])).toBe('boolean');
     expect(Csv.inferColumnType(['y', 'n'])).toBe('boolean');
     expect(Csv.inferColumnType(['TRUE', 'FALSE'])).toBe('boolean');
+    // Note: '1' and '0' are now inferred as integer, not boolean
+    // This prevents false positives when numeric columns only have "1" in the sample
   });
 
   it('infers integer type', () => {
@@ -99,9 +100,11 @@ describe('CSV.inferType', () => {
     expect(Csv.inferColumnType(['123abc', '456def'])).toBe('text');
   });
 
-  it('prefers boolean over integer when both match', () => {
-    // Since boolean check comes first, '1' and '0' are detected as boolean
-    expect(Csv.inferColumnType(['1', '0'])).toBe('boolean');
+  it('prefers integer over boolean for numeric values', () => {
+    // Numeric values like '1' and '0' are now inferred as integer
+    // This prevents false positives when the sample only contains "1" but the full dataset has "2"
+    expect(Csv.inferColumnType(['1', '0'])).toBe('integer');
+    expect(Csv.inferColumnType(['1', '2', '3'])).toBe('integer');
   });
 });
 
