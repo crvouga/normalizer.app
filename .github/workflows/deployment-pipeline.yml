@@ -73,6 +73,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -138,6 +140,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
