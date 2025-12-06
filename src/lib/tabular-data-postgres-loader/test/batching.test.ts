@@ -50,7 +50,7 @@ describe('TabularDataPostgresImporter - Batching', () => {
         expect(rowCountResult.value).toBe(6000);
       }
 
-      // Verify a few specific rows
+      // Verify a few specific rows exist (ORDER BY sorts strings lexicographically, not numerically)
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
@@ -63,10 +63,17 @@ describe('TabularDataPostgresImporter - Batching', () => {
       if (isOk(rowsResult)) {
         const rows = rowsResult.value;
         expect(rows.length).toBe(6000);
-        expect(rows[0]?.id).toBe('1'); // String now
-        expect(rows[0]?.name).toBe('Item1');
-        expect(rows[5999]?.id).toBe('6000'); // String now
-        expect(rows[5999]?.name).toBe('Item6000');
+        
+        // Verify specific rows exist (not checking order since ORDER BY sorts strings)
+        const row1 = rows.find(r => r.id === '1');
+        expect(row1).toBeDefined();
+        expect(row1?.name).toBe('Item1');
+        expect(row1?.value).toBe('10');
+        
+        const row6000 = rows.find(r => r.id === '6000');
+        expect(row6000).toBeDefined();
+        expect(row6000?.name).toBe('Item6000');
+        expect(row6000?.value).toBe('60000');
       }
     }
 

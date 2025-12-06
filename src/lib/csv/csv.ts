@@ -194,7 +194,7 @@ function escapeCsvValue(value: unknown): string {
 class CsvBuilder<T extends Record<string, unknown>> {
   private headers: string[] | null = null;
 
-  constructor(private readonly data: T[]) {}
+  constructor(private readonly data: T[]) { }
 
   /**
    * Specify headers explicitly (useful when data array is empty)

@@ -25,7 +25,7 @@ export interface TableColumn {
  * Provides methods for inspecting tables, schemas, and data.
  */
 export class PostgresClient {
-  constructor(private readonly db: SqlDb) {}
+  constructor(private readonly db: SqlDb) { }
 
   /**
    * Escape PostgreSQL identifier (table/column names)
