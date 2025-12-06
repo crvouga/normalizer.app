@@ -11,10 +11,12 @@ import {
   type TestFixtures,
 } from './fixtures';
 
-const TEST_FILE_PATH = getTestFilePath('boise-state-rules.csv');
+const BOISE_STATE_RULES_TABLE_NAME = 'boise_state_rules';
+const BOISE_STATE_FILE = 'boise-rules.csv';
+const TEST_FILE_PATH = getTestFilePath(BOISE_STATE_FILE);
 
 /**
- * Tests for importing the boise-state-rules.csv file.
+ * Tests for importing the boise state rules CSV file.
  *
  * The CSV has a CourseOrder column that contains numeric values like "1" and "2".
  * With the improved type inference, numeric values are now correctly inferred as integer
@@ -31,7 +33,7 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     await cleanupFixtures(fixtures);
   });
 
-  test('import: successfully imports boise-state-rules.csv with all rows', async () => {
+  test(`import: successfully imports ${BOISE_STATE_FILE} with all rows`, async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
     // Read the CSV file from test-files directory
@@ -45,10 +47,10 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     // The file has approximately 4999 data rows
     expect(expectedRowCount).toBeGreaterThan(4000);
 
-    const testKey = 'boise-state-rules.csv';
+    const testKey = BOISE_STATE_FILE;
     await writeCsvToS3(objectStore, testKey, csvContent);
 
-    const tableName = 'boise_state_rules';
+    const tableName = BOISE_STATE_RULES_TABLE_NAME;
     testTables.push(tableName);
 
     const result = await importer.import(TEST_BUCKET, testKey, { tableName });
@@ -151,14 +153,14 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
   });
 
-  test('import: verifies data integrity with specific row checks', async () => {
+  test(`import: verifies data integrity with specific row checks for ${BOISE_STATE_FILE}`, async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
     const csvContent = readFileSync(TEST_FILE_PATH, 'utf-8');
     const testKey = 'boise-state-rules-integrity.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
 
-    const tableName = 'boise_state_rules_integrity';
+    const tableName = `${BOISE_STATE_RULES_TABLE_NAME}_integrity`;
     testTables.push(tableName);
 
     const result = await importer.import(TEST_BUCKET, testKey, { tableName });
@@ -225,7 +227,7 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     const testKey = 'boise-state-rules-truncate.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
 
-    const tableName = 'boise_state_rules_truncate';
+    const tableName = `${BOISE_STATE_RULES_TABLE_NAME}_truncate`;
     testTables.push(tableName);
 
     // First import
@@ -265,7 +267,7 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     const testKey = 'boise-state-rules-drop.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
 
-    const tableName = 'boise_state_rules_drop';
+    const tableName = `${BOISE_STATE_RULES_TABLE_NAME}_drop`;
     testTables.push(tableName);
 
     // First import
