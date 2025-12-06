@@ -54,7 +54,7 @@ class PgliteSqlTransaction implements SqlTransaction {
   constructor(
     private readonly db: PGlite,
     private readonly logger: Logger,
-  ) { }
+  ) {}
 
   async query<T = unknown>(
     query: string,

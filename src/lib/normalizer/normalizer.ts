@@ -16,7 +16,7 @@ export class Normalizer {
     private readonly objectStore: ObjectStore,
     private readonly logger: Logger,
     private readonly llm: LLM,
-  ) { }
+  ) {}
 
   /**
    * Normalizes objects by processing inputs against targets and producing outputs.

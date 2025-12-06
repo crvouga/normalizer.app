@@ -109,15 +109,15 @@ export interface BatchImportResult {
 export class TabularDataPostgresImporter {
   private converter: TabularDataConverter;
   private postgresClient: PostgresClient;
+  private logger: Logger;
+  private objectStore: ObjectStore;
 
-  constructor(
-    sql: SqlDb,
-    private readonly logger: Logger,
-    private readonly objectStore: ObjectStore,
-  ) {
+  constructor(sql: SqlDb, logger: Logger, objectStore: ObjectStore) {
+    this.objectStore = objectStore;
+    this.logger = logger.child(TabularDataPostgresImporter.name);
     this.converter = new TabularDataConverter({
-      objectStore,
-      logger,
+      objectStore: this.objectStore,
+      logger: this.logger,
     });
     this.postgresClient = new PostgresClient(sql);
   }

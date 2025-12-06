@@ -21,6 +21,37 @@ export type ErrorDetails = {
 };
 
 /**
+ * Sanitize an error object for JSON stringification by removing or truncating large properties
+ */
+function sanitizeErrorForJson(error: unknown): unknown {
+  if (!error || typeof error !== 'object') {
+    return error;
+  }
+
+  const errorObj = error as Record<string, unknown>;
+  const sanitized: Record<string, unknown> = {};
+  const MAX_PROPERTY_LENGTH = 200;
+
+  // Properties to exclude entirely from serialization
+  const excludeProps = new Set(['query', 'params']);
+
+  for (const key of Object.getOwnPropertyNames(errorObj)) {
+    if (excludeProps.has(key)) {
+      continue; // Skip large properties that bloat logs
+    }
+
+    const value = errorObj[key];
+    if (typeof value === 'string' && value.length > MAX_PROPERTY_LENGTH) {
+      sanitized[key] = `${value.substring(0, MAX_PROPERTY_LENGTH)}... [truncated]`;
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
+/**
  * Extracts comprehensive error details from any error object.
  * Handles Error instances, strings, and unknown error types.
  *
@@ -34,7 +65,10 @@ export function extractErrorDetails(
 ): ErrorDetails {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorString = error ? String(error) : '';
-  const errorJson = error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : 'null';
+
+  // Sanitize the error object before stringifying to avoid massive logs
+  const sanitizedError = sanitizeErrorForJson(error);
+  const errorJson = sanitizedError ? JSON.stringify(sanitizedError) : 'null';
 
   // Use the first non-empty value as the message
   const message = errorMessage || errorString || errorJson || defaultMessage;
@@ -60,6 +94,25 @@ export function extractErrorDetails(
 }
 
 /**
+ * Truncates long strings in context to prevent excessive logging
+ */
+function truncateContext(context: Record<string, unknown>): Record<string, unknown> {
+  const MAX_STRING_LENGTH = 200;
+  const truncated: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(context)) {
+    if (typeof value === 'string' && value.length > MAX_STRING_LENGTH) {
+      truncated[key] =
+        `${value.substring(0, MAX_STRING_LENGTH)}... [truncated, ${value.length} chars]`;
+    } else {
+      truncated[key] = value;
+    }
+  }
+
+  return truncated;
+}
+
+/**
  * Logs an error with comprehensive details.
  *
  * @param logger - Logger instance to use
@@ -74,15 +127,17 @@ export function logError(
   context?: Record<string, unknown>,
 ): void {
   const details = extractErrorDetails(error);
+  const truncatedContext = context ? truncateContext(context) : {};
 
   logger.error(logMessage, {
-    ...context,
+    ...truncatedContext,
     error: details.message,
     errorName: details.name,
     errorStack: details.stack,
     errorType: details.type,
     errorConstructor: details.constructor,
-    errorJson: details.json,
+    errorJson:
+      details.json.length > 500 ? `${details.json.substring(0, 500)}... [truncated]` : details.json,
   });
 }
 
@@ -101,15 +156,17 @@ export function logErrorAsWarn(
   context?: Record<string, unknown>,
 ): void {
   const details = extractErrorDetails(error);
+  const truncatedContext = context ? truncateContext(context) : {};
 
   logger.warn(logMessage, {
-    ...context,
+    ...truncatedContext,
     error: details.message,
     errorName: details.name,
     errorStack: details.stack,
     errorType: details.type,
     errorConstructor: details.constructor,
-    errorJson: details.json,
+    errorJson:
+      details.json.length > 500 ? `${details.json.substring(0, 500)}... [truncated]` : details.json,
   });
 }
 

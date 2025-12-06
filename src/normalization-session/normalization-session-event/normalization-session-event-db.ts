@@ -13,7 +13,7 @@ export class NormalizationSessionEventDb {
   constructor(
     private readonly tx: Tx | Db,
     private readonly logger: Logger,
-  ) { }
+  ) {}
 
   async getBySessionId(
     sessionId: NormalizationSessionId,
@@ -68,6 +68,9 @@ export class NormalizationSessionEventDb {
   }
 }
 
-export function createNormalizationSessionEventDb(params: { tx: Tx | Db; logger: Logger }): NormalizationSessionEventDb {
+export function createNormalizationSessionEventDb(params: {
+  tx: Tx | Db;
+  logger: Logger;
+}): NormalizationSessionEventDb {
   return new NormalizationSessionEventDb(params.tx, params.logger);
 }

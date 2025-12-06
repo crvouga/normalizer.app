@@ -15,7 +15,7 @@ export class ArtifactDb {
   constructor(
     private readonly tx: Tx | Db,
     private readonly logger?: Logger,
-  ) { }
+  ) {}
 
   /**
    * Get a single artifact by ID (excluding deleted artifacts)
@@ -48,7 +48,7 @@ export class ArtifactDb {
    * Get multiple artifacts by IDs (excluding deleted artifacts)
    */
   async getByIds(artifactIdsInput: Iterable<ArtifactId>): Promise<Artifact[]> {
-    const artifactIds = Array.from(artifactIdsInput)
+    const artifactIds = Array.from(artifactIdsInput);
 
     if (artifactIds.length === 0) {
       return [];
@@ -276,10 +276,7 @@ export class ArtifactDb {
    * Refreshes artifact URLs by populating them with fresh presigned URLs if needed,
    * and persists the updated URLs to the database.
    */
-  async refresh(params: {
-    artifacts: Artifact[];
-    objectStore: ObjectStore;
-  }): Promise<Artifact[]> {
+  async refresh(params: { artifacts: Artifact[]; objectStore: ObjectStore }): Promise<Artifact[]> {
     const { artifacts, objectStore } = params;
 
     if (artifacts.length === 0) {
@@ -313,7 +310,10 @@ export class ArtifactDb {
   /**
    * Fetch artifacts by IDs and refresh their URLs.
    */
-  async getRefreshed(artifactIdsInput: Iterable<ArtifactId>, objectStore: ObjectStore): Promise<Artifact[]> {
+  async getRefreshed(
+    artifactIdsInput: Iterable<ArtifactId>,
+    objectStore: ObjectStore,
+  ): Promise<Artifact[]> {
     const artifacts = await this.getByIds(artifactIdsInput);
     if (artifacts.length === 0) {
       return [];

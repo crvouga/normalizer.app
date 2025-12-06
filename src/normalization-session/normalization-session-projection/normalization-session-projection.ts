@@ -168,7 +168,6 @@ const shouldStartNormalizationJob = (
   return !isNormalizing(before) && isNormalizing(after);
 };
 
-
 const toArtifactIds = (projection: NormalizationSessionProjection): Set<ArtifactId> => {
   const artifactIds: ArtifactId[] = [];
   for (const id of projection.targetArtifactIds) {

@@ -52,7 +52,10 @@ export const normalizationSessionEventRouter = router({
         }
       });
       // After commit, load full payload to return
-      const projectionDb = createNormalizationSessionProjectionDb({ tx: ctx.db, logger: ctx.logger });
+      const projectionDb = createNormalizationSessionProjectionDb({
+        tx: ctx.db,
+        logger: ctx.logger,
+      });
       const ownerId = await projectionDb.getOwner(input.sessionId);
       if (!ownerId) {
         throw new Error('Normalization session not found');
@@ -60,9 +63,9 @@ export const normalizationSessionEventRouter = router({
       const eventsDb = createNormalizationSessionEventDb({ tx: ctx.db, logger: ctx.logger });
       const events = await eventsDb.getBySessionId(input.sessionId);
       const projection = await projectionDb.load(input.sessionId, ownerId);
-      const artifactIds = NormalizationSessionProjection.toArtifactIds(projection)
+      const artifactIds = NormalizationSessionProjection.toArtifactIds(projection);
       const artifactDb = createArtifactDb({ tx: ctx.db, logger: ctx.logger });
-      const artifacts = await artifactDb.getRefreshed(artifactIds, ctx.objectStore)
+      const artifacts = await artifactDb.getRefreshed(artifactIds, ctx.objectStore);
 
       const resourceOwnership: ResourceOwnershipEntity[] = [
         {

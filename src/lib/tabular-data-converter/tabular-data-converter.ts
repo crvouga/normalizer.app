@@ -31,7 +31,7 @@ export class TabularDataConverter {
     customHandlers?: TabularDataFormatHandler[];
   }) {
     this.objectStore = objectStore;
-    this.logger = logger;
+    this.logger = logger.child(TabularDataConverter.name);
     this.cacheBucket = cacheBucket || '';
 
     // Initialize registry with default handlers
