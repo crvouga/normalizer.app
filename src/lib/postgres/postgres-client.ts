@@ -368,4 +368,96 @@ export class PostgresClient {
     const query = `INSERT INTO ${escapedSchema}.${escapedTableName} (${escapedColumnNames}) VALUES ${placeholders.join(', ')}`;
     return { query, values };
   }
+
+  /**
+   * Import CSV data directly using PostgreSQL COPY command for maximum performance.
+   * Note: PGlite doesn't support COPY FROM STDIN, so this falls back to batch insert.
+   *
+   * @param tableName - Name of the table to import into
+   * @param columns - Array of column names
+   * @param csvData - CSV data as string (including header row)
+   * @param schema - Schema name (defaults to 'public')
+   * @returns Result containing the number of rows imported, or an error
+   */
+  async copyFromCsv(
+    tableName: string,
+    columns: string[],
+    csvData: string,
+    schema: string = 'public',
+  ): Promise<Result<number, string>> {
+    if (columns.length === 0) {
+      return Err('Cannot copy into table with no columns');
+    }
+
+    try {
+      // Parse CSV data into rows
+      // Split by newline and filter empty lines
+      const lines = csvData
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim().length > 0);
+
+      if (lines.length <= 1) {
+        // Only header or empty
+        return Ok(0);
+      }
+
+      // Skip the header line (first line)
+      const dataLines = lines.slice(1);
+
+      // Parse each line into values
+      const rows: (string | null)[][] = [];
+      for (const line of dataLines) {
+        const values = this.parseCsvLine(line);
+        // Pad or truncate to match column count
+        while (values.length < columns.length) {
+          values.push('');
+        }
+        const row = values.slice(0, columns.length).map((cell) => (cell === '' ? null : cell));
+        rows.push(row);
+      }
+
+      // Use batch insert
+      return this.insertBatch(tableName, columns, rows, schema);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to copy data: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Parse a CSV line handling quoted values
+   */
+  private parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]!;
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // Field separator
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    // Add last field
+    result.push(current);
+
+    return result;
+  }
 }

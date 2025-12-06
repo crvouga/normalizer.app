@@ -161,18 +161,21 @@ export class TabularDataPostgresImporter {
         return Err('CSV file is empty');
       }
 
-      // Step 3: Parse CSV to extract schema and data
-      this.logger.debug('Parsing CSV data', { csvSize: csvContent.length });
-      const { schema, dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
+      // Step 3: Parse CSV header to extract schema (without parsing all data)
+      this.logger.debug('Parsing CSV header', { csvSize: csvContent.length });
+      const { schema } = Csv.parseHeader(csvContent, (id) => this.sanitizeIdentifier(id));
 
       if (schema.length === 0) {
         return Err('No columns found in CSV data');
       }
 
+      // Count data rows efficiently
+      const dataRowCount = Csv.countDataRows(csvContent);
+
       // Step 4: Sanitize table name
       const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
 
-      if (dataRows.length === 0) {
+      if (dataRowCount === 0) {
         this.logger.warn('No data rows found in CSV', { bucket, key });
         // Still create the table with schema
         const createResult = await this.createTable(sanitizedTableName, schema, options);
@@ -192,39 +195,47 @@ export class TabularDataPostgresImporter {
         return Err(createResult.error);
       }
 
-      // Step 6: Import data using COPY FROM STDIN (fastest method)
-      // Only log for small imports to avoid excessive logging
-      if (dataRows.length < 1000) {
-        this.logger.debug('Importing data using COPY FROM STDIN', {
-          tableName: sanitizedTableName,
-          rowCount: dataRows.length,
-        });
-      }
-      const copyResult = await this.copyData(sanitizedTableName, schema, dataRows);
+      // Step 6: Import data using optimized batch insert
+      // Use the CSV parser to get data rows efficiently
+      this.logger.debug('Parsing CSV data for import', {
+        tableName: sanitizedTableName,
+        estimatedRowCount: dataRowCount,
+      });
 
-      if (!isOk(copyResult)) {
-        this.logger.error('Failed to copy data', { error: copyResult.error });
-        return Err(copyResult.error);
+      const columnNames = schema.map((col) => col.name);
+
+      // Parse CSV to get data rows using the existing parser
+      const { dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
+
+      // Convert to the format expected by insertBatch (empty strings to null)
+      const rows: (string | null)[][] = dataRows.map((row) =>
+        row.map((cell) => (cell === '' ? null : cell)),
+      );
+
+      this.logger.debug('Inserting data using batch insert', {
+        tableName: sanitizedTableName,
+        rowCount: rows.length,
+      });
+
+      const insertResult = await this.postgresClient.insertBatch(
+        sanitizedTableName,
+        columnNames,
+        rows,
+      );
+
+      if (!isOk(insertResult)) {
+        this.logger.error('Failed to insert data', { error: insertResult.error });
+        return Err(insertResult.error);
       }
 
-      const rowCount = copyResult.value;
+      const rowCount = insertResult.value;
       const duration = Date.now() - startTime;
-      // Only log summary for large imports
-      if (dataRows.length >= 1000) {
-        this.logger.info('Tabular data import completed', {
-          tableName: sanitizedTableName,
-          rowCount,
-          duration,
-          rowsPerSecond: Math.round((rowCount / duration) * 1000),
-        });
-      } else {
-        this.logger.debug('Tabular data import completed', {
-          tableName: sanitizedTableName,
-          rowCount,
-          duration,
-          rowsPerSecond: Math.round((rowCount / duration) * 1000),
-        });
-      }
+      this.logger.info('Tabular data import completed', {
+        tableName: sanitizedTableName,
+        rowCount,
+        duration,
+        rowsPerSecond: Math.round((rowCount / duration) * 1000),
+      });
 
       return Ok({ tableName: sanitizedTableName, rowCount });
     } catch (error) {
@@ -440,35 +451,6 @@ export class TabularDataPostgresImporter {
       }
     }
     return Ok(undefined);
-  }
-
-  /**
-   * Import data using high-performance bulk insert with parameterized queries
-   * Uses large batches for maximum performance (fewer round trips to database)
-   * All values are kept as strings (TEXT type)
-   * Returns Result<number, string>
-   */
-  private async copyData(
-    tableName: string,
-    schema: CsvColumnSchema[],
-    dataRows: string[][],
-  ): Promise<Result<number, string>> {
-    if (dataRows.length === 0) {
-      return Ok(0);
-    }
-
-    const columnNames = schema.map((col) => col.name);
-    // Keep all values as strings, only convert empty strings to null
-    const rows: (string | null)[][] = dataRows.map((row) =>
-      row.map((cell) => {
-        if (cell === '') {
-          return null;
-        }
-        return cell;
-      }),
-    );
-
-    return this.postgresClient.insertBatch(tableName, columnNames, rows);
   }
 }
 

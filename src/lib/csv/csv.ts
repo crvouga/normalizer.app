@@ -245,6 +245,74 @@ function of<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
 }
 
 /**
+ * Result of streaming CSV header parse
+ */
+export interface CsvStreamHeader {
+  schema: CsvColumnSchema[];
+  headers: string[];
+}
+
+/**
+ * Parse just the header and schema from CSV content without loading all data.
+ * This is memory-efficient for large files.
+ * @param csvContent - The CSV content as a string
+ * @param sanitizeIdentifier - Optional function to sanitize column names
+ * @returns Header information including schema
+ */
+function parseHeader(
+  csvContent: string,
+  sanitizeIdentifier?: (identifier: string) => string,
+): CsvStreamHeader {
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+  if (lines.length === 0) {
+    return { schema: [], headers: [] };
+  }
+
+  // Parse header row
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+  const sanitizedHeaders = sanitizeIdentifier
+    ? headers.map((h) => sanitizeIdentifier(h.trim()))
+    : headers.map((h) => h.trim());
+
+  // Infer column types from first data rows (up to 1000 or all available)
+  const sampleRows: string[][] = [];
+  const maxSampleSize = Math.min(1000, lines.length - 1);
+  for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
+    const row = parseLine(lines[i]!);
+    // Pad row to match header length
+    while (row.length < sanitizedHeaders.length) {
+      row.push('');
+    }
+    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+  }
+
+  // Infer schema from sample data
+  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+    const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
+    const inferredType = inferColumnType(columnValues);
+    return {
+      name,
+      type: inferredType,
+      nullable: true,
+    };
+  });
+
+  return { schema, headers: sanitizedHeaders };
+}
+
+/**
+ * Count the number of data rows in CSV content without parsing all data.
+ * More efficient than loading and parsing the entire file.
+ * @param csvContent - The CSV content as a string
+ * @returns Number of data rows (excluding header)
+ */
+function countDataRows(csvContent: string): number {
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+  return Math.max(0, lines.length - 1); // Subtract header
+}
+
+/**
  * CSV parsing utilities
  */
 export const Csv = {
@@ -252,4 +320,6 @@ export const Csv = {
   parse,
   parseLine,
   inferColumnType,
+  parseHeader,
+  countDataRows,
 };
