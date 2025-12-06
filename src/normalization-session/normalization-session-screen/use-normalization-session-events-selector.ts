@@ -15,7 +15,7 @@ export function useNormalizationSessionEventsSelector(
 ): NormalizationSessionEventEntity[] {
   // Get event IDs from the index with shallow equality check
   const eventIds: NormalizationSessionEventId[] = useEntityStoreSelector(
-    (state) => state.indexes.normalizationSessionEventsBySessionId[sessionId] || [],
+    (state) => state.indexes.indexNormalizationSessionEventsBySessionId[sessionId] || [],
     shallowEqual,
   );
 

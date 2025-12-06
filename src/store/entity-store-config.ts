@@ -26,12 +26,12 @@ export type EntityStore = {
     resourceOwnerships: EntitySlice<ResourceOwnershipEntityId, ResourceOwnershipEntity>;
   };
   indexes: {
-    normalizationSessionEventsBySessionId: Record<
+    indexNormalizationSessionEventsBySessionId: Record<
       NormalizationSessionId,
       NormalizationSessionEventId[]
     >;
-    normalizationSessionProjectionsByUserId: Record<UserId, NormalizationSessionId[]>;
-    resourceOwnershipsByResourceId: Record<string, ResourceOwnershipEntityId[]>;
+    indexNormalizationSessionProjectionsByUserId: Record<UserId, NormalizationSessionId[]>;
+    indexResourceOwnershipsByResourceId: Record<string, ResourceOwnershipEntityId[]>;
   };
 };
 
@@ -60,9 +60,9 @@ export const initialEntityStore: EntityStore = {
     },
   },
   indexes: {
-    normalizationSessionEventsBySessionId: {},
-    normalizationSessionProjectionsByUserId: {},
-    resourceOwnershipsByResourceId: {},
+    indexNormalizationSessionEventsBySessionId: {},
+    indexNormalizationSessionProjectionsByUserId: {},
+    indexResourceOwnershipsByResourceId: {},
   },
 };
 
