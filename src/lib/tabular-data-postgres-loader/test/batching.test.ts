@@ -54,18 +54,18 @@ describe('TabularDataPostgresImporter - Batching', () => {
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
-          id: z.number(),
+          id: z.string(), // TEXT type
           name: z.string(),
-          value: z.number(),
+          value: z.string(), // TEXT type
         }),
       );
       expect(isOk(rowsResult)).toBe(true);
       if (isOk(rowsResult)) {
         const rows = rowsResult.value;
         expect(rows.length).toBe(6000);
-        expect(rows[0]?.id).toBe(1);
+        expect(rows[0]?.id).toBe('1'); // String now
         expect(rows[0]?.name).toBe('Item1');
-        expect(rows[5999]?.id).toBe(6000);
+        expect(rows[5999]?.id).toBe('6000'); // String now
         expect(rows[5999]?.name).toBe('Item6000');
       }
     }

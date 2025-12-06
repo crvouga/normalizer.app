@@ -66,7 +66,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
         expect(schema[0]!.column_name).toBe('name');
         expect(schema[0]!.data_type).toBe('text');
         expect(schema[1]!.column_name).toBe('age');
-        expect(schema[1]!.data_type).toBe('integer');
+        expect(schema[1]!.data_type).toBe('text'); // All columns are TEXT
         expect(schema[2]!.column_name).toBe('city');
         expect(schema[2]!.data_type).toBe('text');
       }
@@ -76,7 +76,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
         tableName,
         z.object({
           name: z.string(),
-          age: z.number(),
+          age: z.string(), // TEXT type
           city: z.string(),
         }),
       );
@@ -85,9 +85,9 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
         const rows = rowsResult.value;
         expect(rows.length).toBe(3);
         expect(rows[0]?.name).toBe('Alice');
-        expect(rows[0]?.age).toBe(30);
+        expect(rows[0]?.age).toBe('30'); // String now
         expect(rows[1]?.name).toBe('Bob');
-        expect(rows[1]?.age).toBe(25);
+        expect(rows[1]?.age).toBe('25'); // String now
       }
     }
 
@@ -119,11 +119,11 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
         const schema = schemaResult.value;
         expect(schema.length).toBe(3);
         expect(schema[0]!.column_name).toBe('id');
-        expect(schema[0]!.data_type).toBe('integer');
+        expect(schema[0]!.data_type).toBe('text'); // All columns are TEXT
         expect(schema[1]!.column_name).toBe('name');
         expect(schema[1]!.data_type).toBe('text');
         expect(schema[2]!.column_name).toBe('value');
-        expect(schema[2]!.data_type).toBe('numeric');
+        expect(schema[2]!.data_type).toBe('text'); // All columns are TEXT
       }
     }
 

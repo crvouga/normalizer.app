@@ -113,6 +113,13 @@ function parseLine(line: string): string[] {
 
 /**
  * Infer PostgreSQL column type from sample values
+ * 
+ * IMPORTANT: This function takes a conservative approach to type inference.
+ * Since we only sample the first 1000 rows of a CSV file, we cannot be certain
+ * that all rows will match the inferred type. To prevent import failures when
+ * non-conforming values appear later in the file, we require a minimum sample
+ * size before inferring strict numeric types.
+ * 
  * @param values - Array of string values from a column
  * @returns Inferred column type
  */
@@ -121,11 +128,16 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
     return 'text'; // Default to text if no data
   }
 
+  // Minimum sample size for confident numeric type inference
+  // If we have fewer samples, default to text to be safe
+  const MIN_SAMPLE_SIZE_FOR_NUMERIC = 10;
+
   // Check for integer first (before boolean) to avoid false positives
   // If all values are numeric integers, prefer integer over boolean
   // This prevents columns with numeric values like "1", "2", "3" from being inferred as boolean
   // when the sample only contains "1"
-  if (values.every((v) => /^-?\d+$/.test(v))) {
+  // CONSERVATIVE: Only infer integer if we have enough samples to be confident
+  if (values.length >= MIN_SAMPLE_SIZE_FOR_NUMERIC && values.every((v) => /^-?\d+$/.test(v))) {
     return 'integer';
   }
 
@@ -137,7 +149,8 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
   }
 
   // Check for numeric (decimal)
-  if (values.every((v) => /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(v))) {
+  // CONSERVATIVE: Only infer numeric if we have enough samples to be confident
+  if (values.length >= MIN_SAMPLE_SIZE_FOR_NUMERIC && values.every((v) => /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(v))) {
     return 'numeric';
   }
 
@@ -178,7 +191,7 @@ function escapeCsvValue(value: unknown): string {
 class CsvBuilder<T extends Record<string, unknown>> {
   private headers: string[] | null = null;
 
-  constructor(private readonly data: T[]) {}
+  constructor(private readonly data: T[]) { }
 
   /**
    * Specify headers explicitly (useful when data array is empty)

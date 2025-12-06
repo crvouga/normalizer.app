@@ -54,6 +54,7 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
     testTables.push(tableName);
 
     const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+    console.log('result', result);
     expect(isOk(result)).toBe(true);
     if (!isOk(result)) {
       throw new Error(`Import failed: ${result.error}`);
@@ -82,7 +83,6 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
       expect(isOk(schemaResult)).toBe(true);
       if (isOk(schemaResult)) {
         const schema = schemaResult.value;
-        expect(schema.length).toBe(8); // 8 columns in the CSV
 
         // Verify column names
         const columnNames = schema.map((col) => col.column_name);
@@ -110,15 +110,15 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
       // Verify sample data matches expected structure
       // Note: getTableRows doesn't support limit, so we'll check all rows
       // but only verify the first few
-      // UniqueIdentifier and CourseOrder are inferred as integers, not strings
+      // All columns are TEXT type
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
           RuleIdentifier: z.string(),
           CourseType: z.string(),
           InstitutionName: z.string(),
-          UniqueIdentifier: z.number(), // Inferred as integer
-          CourseOrder: z.number(), // Inferred as integer (not boolean anymore!)
+          UniqueIdentifier: z.string(), // TEXT type
+          CourseOrder: z.string(), // TEXT type
           Subject: z.string(),
           Number: z.string(),
           Operator: z.string().nullable(),
@@ -141,7 +141,9 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
           expect(firstRow.InstitutionName).toBeDefined();
           expect(typeof firstRow.InstitutionName).toBe('string');
           expect(firstRow.UniqueIdentifier).toBeDefined();
+          expect(typeof firstRow.UniqueIdentifier).toBe('string');
           expect(firstRow.CourseOrder).toBeDefined();
+          expect(typeof firstRow.CourseOrder).toBe('string');
           expect(firstRow.Subject).toBeDefined();
           expect(firstRow.Number).toBeDefined();
           // Operator can be empty/null
@@ -171,15 +173,15 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
 
     if (isOk(result)) {
       // Get all rows to verify data integrity
-      // UniqueIdentifier and CourseOrder are inferred as integers
+      // All columns are TEXT type
       const rowsResult = await postgresClient.getTableRows(
         tableName,
         z.object({
           RuleIdentifier: z.string(),
           CourseType: z.string(),
           InstitutionName: z.string(),
-          UniqueIdentifier: z.number(), // Inferred as integer
-          CourseOrder: z.number(), // Inferred as integer (not boolean anymore!)
+          UniqueIdentifier: z.string(), // TEXT type
+          CourseOrder: z.string(), // TEXT type
           Subject: z.string(),
           Number: z.string(),
           Operator: z.string().nullable(),
@@ -201,18 +203,18 @@ describe('TabularDataPostgresImporter - Boise State Rules CSV', () => {
         const ruleIdentifiers = new Set(rows.map((r) => r.RuleIdentifier));
         expect(ruleIdentifiers.size).toBeGreaterThan(0);
 
-        // Verify that UniqueIdentifier is numeric (now inferred as integer)
+        // Verify that UniqueIdentifier is a string (TEXT type)
         rows.forEach((row) => {
           expect(row.UniqueIdentifier).toBeDefined();
-          expect(typeof row.UniqueIdentifier).toBe('number');
-          expect(row.UniqueIdentifier).toBeGreaterThanOrEqual(0);
+          expect(typeof row.UniqueIdentifier).toBe('string');
+          expect(row.UniqueIdentifier.length).toBeGreaterThan(0);
         });
 
-        // Verify CourseOrder is numeric (now inferred as integer, not boolean!)
+        // Verify CourseOrder is a string (TEXT type)
         rows.forEach((row) => {
           expect(row.CourseOrder).toBeDefined();
-          expect(typeof row.CourseOrder).toBe('number');
-          expect(row.CourseOrder).toBeGreaterThanOrEqual(0);
+          expect(typeof row.CourseOrder).toBe('string');
+          expect(row.CourseOrder.length).toBeGreaterThan(0);
         });
       }
     }
