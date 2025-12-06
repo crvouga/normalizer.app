@@ -193,10 +193,13 @@ export class TabularDataPostgresImporter {
       }
 
       // Step 6: Import data using COPY FROM STDIN (fastest method)
-      this.logger.debug('Importing data using COPY FROM STDIN', {
-        tableName: sanitizedTableName,
-        rowCount: dataRows.length,
-      });
+      // Only log for small imports to avoid excessive logging
+      if (dataRows.length < 1000) {
+        this.logger.debug('Importing data using COPY FROM STDIN', {
+          tableName: sanitizedTableName,
+          rowCount: dataRows.length,
+        });
+      }
       const copyResult = await this.copyData(sanitizedTableName, schema, dataRows);
 
       if (!isOk(copyResult)) {
@@ -206,12 +209,22 @@ export class TabularDataPostgresImporter {
 
       const rowCount = copyResult.value;
       const duration = Date.now() - startTime;
-      this.logger.info('Tabular data import completed', {
-        tableName: sanitizedTableName,
-        rowCount,
-        duration,
-        rowsPerSecond: Math.round((rowCount / duration) * 1000),
-      });
+      // Only log summary for large imports
+      if (dataRows.length >= 1000) {
+        this.logger.info('Tabular data import completed', {
+          tableName: sanitizedTableName,
+          rowCount,
+          duration,
+          rowsPerSecond: Math.round((rowCount / duration) * 1000),
+        });
+      } else {
+        this.logger.debug('Tabular data import completed', {
+          tableName: sanitizedTableName,
+          rowCount,
+          duration,
+          rowsPerSecond: Math.round((rowCount / duration) * 1000),
+        });
+      }
 
       return Ok({ tableName: sanitizedTableName, rowCount });
     } catch (error) {

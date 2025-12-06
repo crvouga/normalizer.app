@@ -238,7 +238,7 @@ async function performNormalization({
     });
   }
 
-  logger.info('Created normalized artifacts', {
+  logger.debug('Created normalized artifacts', {
     sessionId,
     normalizationRunId,
     inputCount: inputArtifacts.length,

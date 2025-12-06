@@ -37,8 +37,10 @@ function extractRows(result: unknown): unknown[] {
  * Prevents logging massive queries that can cause performance issues
  */
 function truncateQueryForLog(query: string, paramCount: number): string {
-  if (paramCount > 1000) {
-    return `${query.substring(0, 200)}... [truncated, ${query.length} chars, ${paramCount} params]`;
+  // Truncate queries with many parameters or very long queries
+  if (paramCount > 100 || query.length > 500) {
+    const preview = query.substring(0, 100);
+    return `${preview}... [truncated, ${query.length} chars, ${paramCount} params]`;
   }
   return query;
 }
@@ -52,7 +54,7 @@ class PgliteSqlTransaction implements SqlTransaction {
   constructor(
     private readonly db: PGlite,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
   async query<T = unknown>(
     query: string,
@@ -61,14 +63,19 @@ class PgliteSqlTransaction implements SqlTransaction {
   ): Promise<Result<T[], string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing query in transaction', { query: queryForLog, paramCount });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing query in transaction', { query: queryForLog, paramCount });
+    }
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
       // PGLite query() returns { rows, fields, affectedRows }
       const result = await this.db.query(query, validatedParams);
       const resultArray = extractRows(result);
-      this.logger.debug('Query executed successfully', { rowCount: resultArray.length });
+      if (paramCount < 100) {
+        this.logger.debug('Query executed successfully', { rowCount: resultArray.length });
+      }
 
       // Use provided schema or default to unknown
       const validationSchema = schema ?? (z.unknown() as z.ZodType<T>);
@@ -104,10 +111,13 @@ class PgliteSqlTransaction implements SqlTransaction {
   async execute(query: string, params?: unknown[]): Promise<Result<{ rowCount: number }, string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing command in transaction', {
-      query: queryForLog,
-      paramCount,
-    });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing command in transaction', {
+        query: queryForLog,
+        paramCount,
+      });
+    }
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
@@ -121,7 +131,9 @@ class PgliteSqlTransaction implements SqlTransaction {
       // Extract rows and count them
       const rows = extractRows(result);
       const rowCount = rows.length;
-      this.logger.debug('Command executed successfully', { rowCount });
+      if (paramCount < 100) {
+        this.logger.debug('Command executed successfully', { rowCount });
+      }
       return Ok({ rowCount });
     } catch (error) {
       const paramCount = params?.length ?? 0;
@@ -142,10 +154,13 @@ class PgliteSqlTransaction implements SqlTransaction {
   ): Promise<Result<T, string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing unsafe query in transaction', {
-      query: queryForLog,
-      paramCount,
-    });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing unsafe query in transaction', {
+        query: queryForLog,
+        paramCount,
+      });
+    }
     try {
       // Validate params
       const validatedParams = params ? paramsSchema.parse(params) : [];
@@ -163,7 +178,9 @@ class PgliteSqlTransaction implements SqlTransaction {
       if (schema) {
         try {
           const validated = schema.parse(resultData);
-          this.logger.debug('Unsafe query executed and validated successfully');
+          if (paramCount < 100) {
+            this.logger.debug('Unsafe query executed and validated successfully');
+          }
           return Ok(validated);
         } catch (validationError) {
           return handleError(validationError, {
@@ -177,7 +194,9 @@ class PgliteSqlTransaction implements SqlTransaction {
 
       // Without schema, validate as unknown and return
       // The caller should provide a schema if they need type safety
-      this.logger.debug('Unsafe query executed successfully');
+      if (paramCount < 100) {
+        this.logger.debug('Unsafe query executed successfully');
+      }
       // Validate result is at least unknown (this is a no-op but ensures type safety)
       const validatedResult = z.unknown().parse(resultData);
       // When T is unknown (the default), this is safe. When T is something else,
@@ -222,7 +241,10 @@ export class PgliteSqlDb implements SqlDb {
   ): Promise<Result<T[], string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing query', { query: queryForLog, paramCount });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing query', { query: queryForLog, paramCount });
+    }
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -231,9 +253,11 @@ export class PgliteSqlDb implements SqlDb {
       // PGLite query() returns { rows, fields, affectedRows }
       const result = await this.db.query(query, validatedParams);
       const resultArray = extractRows(result);
-      this.logger.debug('Query executed successfully', {
-        rowCount: resultArray.length,
-      });
+      if (paramCount < 100) {
+        this.logger.debug('Query executed successfully', {
+          rowCount: resultArray.length,
+        });
+      }
 
       // Use provided schema or default to unknown
       const validationSchema = schema ?? (z.unknown() as z.ZodType<T>);
@@ -269,7 +293,10 @@ export class PgliteSqlDb implements SqlDb {
   async execute(query: string, params?: unknown[]): Promise<Result<{ rowCount: number }, string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing command', { query: queryForLog, paramCount });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing command', { query: queryForLog, paramCount });
+    }
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -285,7 +312,9 @@ export class PgliteSqlDb implements SqlDb {
       // Extract rows and count them
       const rows = extractRows(result);
       const rowCount = rows.length;
-      this.logger.debug('Command executed successfully', { rowCount });
+      if (paramCount < 100) {
+        this.logger.debug('Command executed successfully', { rowCount });
+      }
       return Ok({ rowCount });
     } catch (error) {
       const paramCount = params?.length ?? 0;
@@ -306,7 +335,10 @@ export class PgliteSqlDb implements SqlDb {
   ): Promise<Result<T, string>> {
     const paramCount = params?.length ?? 0;
     const queryForLog = truncateQueryForLog(query, paramCount);
-    this.logger.debug('Executing unsafe query', { query: queryForLog, paramCount });
+    // Only log for small queries to avoid excessive logging
+    if (paramCount < 100) {
+      this.logger.debug('Executing unsafe query', { query: queryForLog, paramCount });
+    }
     try {
       // Ensure database is ready
       await this.db.waitReady;
@@ -324,7 +356,9 @@ export class PgliteSqlDb implements SqlDb {
       if (schema) {
         try {
           const validated = schema.parse(resultData);
-          this.logger.debug('Unsafe query executed and validated successfully');
+          if (paramCount < 100) {
+            this.logger.debug('Unsafe query executed and validated successfully');
+          }
           return Ok(validated);
         } catch (validationError) {
           return handleError(validationError, {
@@ -338,7 +372,9 @@ export class PgliteSqlDb implements SqlDb {
 
       // Without schema, validate as unknown and return
       // The caller should provide a schema if they need type safety
-      this.logger.debug('Unsafe query executed successfully');
+      if (paramCount < 100) {
+        this.logger.debug('Unsafe query executed successfully');
+      }
       // Validate result is at least unknown (this is a no-op but ensures type safety)
       const validatedResult = z.unknown().parse(resultData);
       // When T is unknown (the default), this is safe. When T is something else,
