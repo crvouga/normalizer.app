@@ -15,7 +15,7 @@ export class NormalizationSessionProjectionDb {
   constructor(
     private readonly tx: Tx | Db,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
   /**
    * Loads the projection for a normalization session by:
@@ -150,4 +150,8 @@ export class NormalizationSessionProjectionDb {
     const parsed = NormalizationSessionProjection.schema.parse(firstProjection.projection);
     return parsed.startedByUserId;
   }
+}
+
+export function createNormalizationSessionProjectionDb(params: { tx: Tx | Db; logger: Logger }): NormalizationSessionProjectionDb {
+  return new NormalizationSessionProjectionDb(params.tx, params.logger);
 }

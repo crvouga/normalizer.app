@@ -168,6 +168,23 @@ const shouldStartNormalizationJob = (
   return !isNormalizing(before) && isNormalizing(after);
 };
 
+
+const toArtifactIds = (projection: NormalizationSessionProjection): Set<ArtifactId> => {
+  const artifactIds: ArtifactId[] = [];
+  for (const id of projection.targetArtifactIds) {
+    artifactIds.push(id);
+  }
+  for (const entry of projection.entries) {
+    for (const id of entry.inputArtifactIds) {
+      artifactIds.push(id);
+    }
+    for (const id of entry.outputArtifactIds) {
+      artifactIds.push(id);
+    }
+  }
+  return new Set(artifactIds);
+};
+
 export const NormalizationSessionProjection = {
   schema,
   reducer,
@@ -175,4 +192,5 @@ export const NormalizationSessionProjection = {
   reduce,
   isNormalizing,
   shouldStartNormalizationJob,
+  toArtifactIds,
 };
