@@ -10,7 +10,7 @@ import { artifactToTabularFile } from './artifact-to-tabular-file';
 import { EditArtifactModal } from '../edit-artifact/edit-artifact-modal';
 import type { Artifact } from '../artifact';
 import { useI18n } from '../../i18n/use-i18n';
-import { IconPencil } from '~/src/ui/icons';
+import { Pencil } from 'lucide-react';
 
 export interface SelectedArtifactsListProps {
   artifactIds: ArtifactId[];
@@ -157,7 +157,7 @@ export function SelectedArtifactsList({
       {
         label: t('artifact.edit'),
         onClick: handleEditFromList,
-        icon: IconPencil,
+        icon: Pencil,
       },
     ],
     [t, handleEditFromList],

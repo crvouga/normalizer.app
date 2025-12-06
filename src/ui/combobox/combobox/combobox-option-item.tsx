@@ -1,7 +1,7 @@
 import { ComboboxOption as HeadlessComboboxOption } from '@headlessui/react';
 import * as React from 'react';
 import { cn } from '~/src/lib/cn';
-import { IconCheck } from '../../icons';
+import { Check } from 'lucide-react';
 import type { ComboboxOption } from '../combobox-types';
 
 export interface ComboboxOptionItemProps<T> {
@@ -33,7 +33,7 @@ export function ComboboxOptionItem<T extends string | number>({
         >
           {option.label}
         </span>
-        {selected && <IconCheck className="size-5 text-fuchsia-600 dark:text-fuchsia-400" />}
+        {selected && <Check className="size-5 text-fuchsia-600 dark:text-fuchsia-400" />}
       </div>
     );
   };

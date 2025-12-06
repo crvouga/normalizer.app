@@ -1,110 +1,50 @@
 import type { Logger } from '../lib/logger';
-import { S3Client } from 'bun';
-import { createMinioClient, type MinioClient } from '../lib/minio/minio-client';
+import type { ObjectStore } from '../lib/object-store/object-store';
+import { S3ObjectStore } from '../lib/object-store/object-store-s3';
 import { getS3Config } from './s3-config';
 
-export const createS3 = async ({
+export async function createObjectStore({
   logger,
+  serverBaseUrl,
 }: {
   logger: Logger;
-}): Promise<{ s3Client: S3Client; minioClient: MinioClient }> => {
+  serverBaseUrl?: string;
+}): Promise<ObjectStore> {
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } = getS3Config();
 
-  const s3Client = createS3Client({ s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket });
-
-  logMinioInit(logger, s3Endpoint, s3Bucket);
+  logger.info('Initializing S3 object store...', { endpoint: s3Endpoint, bucket: s3Bucket });
 
   try {
-    const minioClient = await initializeMinioClient({
+    const objectStore = new S3ObjectStore({
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
-      s3Bucket,
+      serverBaseUrl: serverBaseUrl ?? '',
       logger,
     });
-    logMinioInitSuccess(logger, s3Endpoint, s3Bucket);
-    return { s3Client, minioClient };
+    logger.debug('S3 Endpoint validated', { endpoint: s3Endpoint });
+    logger.debug('Ensuring bucket exists', { bucket: s3Bucket });
+    const bucketResult = await objectStore.ensureBucketExists(s3Bucket);
+    if (bucketResult.tag === 'err') {
+      logger.warn('Failed to ensure bucket exists - continuing anyway', {
+        error: bucketResult.error,
+        endpoint: s3Endpoint,
+        bucket: s3Bucket,
+      });
+      logger.warn('Some S3 features may not work until the bucket is available');
+    } else {
+      logger.info('Successfully initialized S3 object store', {
+        endpoint: s3Endpoint,
+        bucket: s3Bucket,
+      });
+    }
+    return objectStore;
   } catch (error) {
-    logMinioInitError(logger, error, s3Endpoint, s3Bucket);
-    throw new Error('Failed to initialize MinIO client');
-  }
-};
-
-const createS3Client = ({
-  s3Endpoint,
-  s3AccessKeyId,
-  s3SecretAccessKey,
-  s3Bucket,
-}: {
-  s3Endpoint: string;
-  s3AccessKeyId: string;
-  s3SecretAccessKey: string;
-  s3Bucket: string;
-}): S3Client =>
-  new S3Client({
-    endpoint: s3Endpoint,
-    accessKeyId: s3AccessKeyId,
-    secretAccessKey: s3SecretAccessKey,
-    bucket: s3Bucket,
-  });
-
-const logMinioInit = (logger: Logger, s3Endpoint: string, s3Bucket: string) => {
-  logger.info('Initializing MinIO client...', { endpoint: s3Endpoint, bucket: s3Bucket });
-};
-
-const logMinioInitSuccess = (logger: Logger, s3Endpoint: string, s3Bucket: string) => {
-  logger.info('Successfully initialized MinIO client', { endpoint: s3Endpoint, bucket: s3Bucket });
-};
-
-const logMinioInitError = (
-  logger: Logger,
-  error: unknown,
-  s3Endpoint: string,
-  s3Bucket: string,
-) => {
-  logger.error('Failed to initialize MinIO client:', {
-    error,
-    endpoint: s3Endpoint,
-    bucket: s3Bucket,
-  });
-};
-
-const ensureMinioBucket = async (
-  minioClient: any,
-  s3Bucket: string,
-  logger: Logger,
-  s3Endpoint: string,
-) => {
-  try {
-    await minioClient.ensureBucketExists(s3Bucket);
-  } catch (error) {
-    logger.warn('Failed to ensure bucket exists, but continuing with MinIO client', {
-      error: error instanceof Error ? error.message : String(error),
+    logger.error('Failed to initialize S3 object store', {
+      error,
       endpoint: s3Endpoint,
       bucket: s3Bucket,
     });
+    throw error instanceof Error ? error : new Error('Failed to initialize S3 object store');
   }
-};
-
-const initializeMinioClient = async ({
-  s3Endpoint,
-  s3AccessKeyId,
-  s3SecretAccessKey,
-  s3Bucket,
-  logger,
-}: {
-  s3Endpoint: string;
-  s3AccessKeyId: string;
-  s3SecretAccessKey: string;
-  s3Bucket: string;
-  logger: Logger;
-}): Promise<MinioClient> => {
-  const minioClient = createMinioClient({
-    minioEndpoint: s3Endpoint,
-    accessKey: s3AccessKeyId,
-    secretKey: s3SecretAccessKey,
-    logger,
-  });
-  await ensureMinioBucket(minioClient, s3Bucket, logger, s3Endpoint);
-  return minioClient;
-};
+}

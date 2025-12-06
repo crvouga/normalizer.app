@@ -1,4 +1,4 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../lib/object-store/object-store';
 import type { Logger } from '../lib/logger';
 import { UserId } from './user-id';
 import { getProfilePictureFromS3 } from './user-profile-picture';
@@ -6,8 +6,11 @@ import { getProfilePictureFromS3 } from './user-profile-picture';
 /**
  * Create user profile picture HTTP endpoints
  */
-export function createUserProfilePictureEndpoints(config: { s3: S3Client; logger: Logger }) {
-  const { s3, logger } = config;
+export function createUserProfilePictureEndpoints(config: {
+  objectStore: ObjectStore;
+  logger: Logger;
+}) {
+  const { objectStore, logger } = config;
 
   return {
     '/api/users/:userId/profile-picture': {
@@ -27,7 +30,7 @@ export function createUserProfilePictureEndpoints(config: { s3: S3Client; logger
           const userId = parseResult.data;
 
           // Get profile picture from S3
-          const result = await getProfilePictureFromS3(s3, userId, logger);
+          const result = await getProfilePictureFromS3(objectStore, userId, logger);
 
           if (!result) {
             return new Response('Profile picture not found', { status: 404 });

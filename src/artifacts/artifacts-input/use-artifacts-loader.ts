@@ -40,7 +40,7 @@ export function useArtifactsLoader() {
         throw abortError;
       }
 
-      const rawArtifacts = await trpcClient.artifact.list.mutate();
+      const rawArtifacts = await trpcClient.artifact.listByUser.mutate();
 
       if (signal?.aborted) {
         const abortError = new Error('Request aborted');

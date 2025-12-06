@@ -1,7 +1,7 @@
 import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
 import { AppNotification } from '~/src/shared/app-notification';
-import type { Db, Tx } from '~/src/shared/sql';
+import type { Db, Tx } from '~/src/shared/db';
 import type { UserId } from '~/src/users/user-id';
 import * as schema from '../../db/schema';
 import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';

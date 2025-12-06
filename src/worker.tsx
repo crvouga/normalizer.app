@@ -2,23 +2,27 @@ import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
 import { checkGraphileWorkerSetup, createTaskList } from './shared/graphile-worker';
 import { normalizationTask } from './normalization-session/normalization-task/normalization-task';
-import { createDb } from './shared/sql';
+import { createDb } from './shared/db';
+import { SecretString } from './lib/secrets/secret-string';
+
+// Singleton database connection for the worker
+let workerDb: Awaited<ReturnType<typeof createDb>> | null = null;
 
 const main = async () => {
-  const logger = createLogger();
+  const rootLogger = createLogger();
+  const logger = rootLogger.child('Worker');
 
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = SecretString.fromEnvVar('DATABASE_URL');
+  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
 
-  if (!databaseUrl) {
-    logger.error('DATABASE_URL environment variable is not set');
-    throw new Error('DATABASE_URL environment variable is not set');
+  // Create singleton database connection
+  if (!workerDb) {
+    workerDb = await createDb({ logger });
+    logger.info('Created singleton database connection for worker');
   }
 
-  // Create database connection to check worker setup
-  const db = await createDb({ logger });
-
   // Check Graphile Worker setup
-  const graphileWorkerCheck = await checkGraphileWorkerSetup(db, logger);
+  const graphileWorkerCheck = await checkGraphileWorkerSetup(workerDb, logger);
   if (!graphileWorkerCheck.isSetup) {
     logger.warn(
       'Graphile Worker is not set up. The worker will initialize the schema on startup.',
@@ -31,13 +35,19 @@ const main = async () => {
   logger.info('Starting Graphile Worker...');
 
   // Define task list with typesafe handlers
-  const taskList = createTaskList({
-    normalization: normalizationTask,
-  });
+  const taskList = createTaskList(
+    {
+      logger,
+      db: workerDb,
+    },
+    {
+      normalization: normalizationTask,
+    },
+  );
 
   // Run the worker
   const runner = await run({
-    connectionString: databaseUrl,
+    connectionString: databaseUrl.DANGEROUSLY_readValue(),
     concurrency: 5,
     taskList,
   });

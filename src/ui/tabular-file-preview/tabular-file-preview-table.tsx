@@ -3,6 +3,8 @@ import { cn } from '~/src/lib/cn';
 import { toI18nText } from '../../i18n/types';
 import { useI18n } from '../../i18n/use-i18n';
 import { Typography } from '../typography';
+import { CopyToClipboardButton } from '../copy-to-clipboard';
+import { convertTableToCSV } from './convert-table-to-csv';
 
 interface TabularFilePreviewTableProps {
   data: Record<string, string | number | boolean | null | undefined>[] | null;
@@ -117,7 +119,7 @@ const TableStructure: React.FC<TableStructureProps> = ({
         </table>
       </div>
       {showFooter && (
-        <div className="flex h-10 items-center justify-center border-t border-slate-200 bg-slate-100 text-center dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex h-10 items-center justify-between border-t border-slate-200 bg-slate-100 px-4 dark:border-slate-700 dark:bg-slate-800">
           {footerContent}
         </div>
       )}
@@ -183,20 +185,32 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
     <TableStructure
       headers={headers}
       rows={truncatedData}
-      showFooter={data.length > maxRows}
+      showFooter={true}
       footerContent={
-        <Typography
-          variant="xs"
-          color="muted"
-          text={
-            data.length > maxRows
-              ? t('tabularFilePreview.showingRows', {
-                  showing: maxRows.toLocaleString(),
-                  total: data.length.toLocaleString(),
-                })
-              : t('tabularFilePreview.noData')
-          }
-        />
+        <>
+          <Typography
+            variant="xs"
+            color="muted"
+            text={
+              data.length > maxRows
+                ? t('tabularFilePreview.showingRows', {
+                    showing: maxRows.toLocaleString(),
+                    total: data.length.toLocaleString(),
+                  })
+                : toI18nText(
+                    `${data.length.toLocaleString()} ${data.length === 1 ? 'row' : 'rows'}`,
+                  )
+            }
+          />
+          <CopyToClipboardButton
+            text={() => convertTableToCSV(data)}
+            disabled={!data || data.length === 0}
+            successMessage={t('tabularFilePreview.copyToClipboard')}
+            ariaLabel={String(t('tabularFilePreview.copyToClipboard'))}
+            title={String(t('tabularFilePreview.copyToClipboard'))}
+            className="ml-auto flex items-center gap-1.5 rounded p-1.5 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          />
+        </>
       }
       className={className}
     />

@@ -4,21 +4,23 @@ import { appRouter } from './app-trpc-server';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
 import { createLogger } from './lib/logger';
-import { createS3 } from './shared/s3';
-import { getS3Config } from './shared/s3-config';
+import { getOrGenerateTraceId, setTraceIdHeader } from './lib/trace-id';
+import { cleanupDb, createDb } from './shared/db';
+import { createObjectStore } from './shared/s3';
 import { SessionId } from './shared/session-id';
 import { getSessionId, setSessionCookie } from './shared/session-id-cookie';
-import { cleanupDb, createDb } from './shared/sql';
 import { createContext } from './shared/trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
+import { createObjectStoreEndpoints } from './lib/object-store/object-store-http-endpoints';
 
-const main = async () => {
-  const logger = createLogger();
+async function main() {
+  const rootLogger = createLogger();
+
+  const logger = rootLogger.child('Server');
 
   generateSparklesSvg(logger);
 
-  // Setup graceful shutdown handlers
   const setupGracefulShutdown = () => {
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down gracefully...`);
@@ -33,14 +35,20 @@ const main = async () => {
 
   const db = await createDb({ logger });
 
-  const { s3Endpoint } = getS3Config();
-  const { s3Client, minioClient } = await createS3({ logger });
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+
+  // Determine server base URL from environment variable or construct from port
+  const serverBaseUrl = process.env.SERVER_BASE_URL || `http://localhost:${port}`;
+
+  logger.info('Initializing object store...', { serverBaseUrl });
+  const objectStore = await createObjectStore({ logger, serverBaseUrl });
 
   logger.info('Starting server...');
 
-  // DRY up tRPC handler
   const trpcHandler = (method: 'GET' | 'POST') => async (req: Request) => {
-    logger.info(`[HTTP Req] ${method} ${req.url}`);
+    const traceId = getOrGenerateTraceId(req);
+    const requestLogger = logger.child(traceId);
+    requestLogger.info(`Received ${method} request`, { url: req.url });
     const res = await fetchRequestHandler({
       endpoint: '/api/trpc',
       req,
@@ -48,44 +56,40 @@ const main = async () => {
       createContext: async () => {
         const context = await createContext({
           db,
-          s3: s3Client,
-          s3Endpoint,
-          minioClient,
-          logger,
+          objectStore,
+          logger: requestLogger,
           req,
         });
         return context;
       },
     });
-
-    // Set session cookie if not already set
     const existingSessionId = getSessionId(req);
     const sessionId = existingSessionId ?? SessionId.generate();
-    const finalRes = setSessionCookie(req, res, sessionId);
-    logger.info(`[HTTP Res] ${finalRes.status} ${finalRes.statusText}`);
+    const finalRes = setTraceIdHeader(setSessionCookie(req, res, sessionId), traceId);
+    requestLogger.info(`Sent response`, {
+      status: finalRes.status,
+      statusText: finalRes.statusText,
+    });
     return finalRes;
   };
 
-  // Google OAuth endpoints
-  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, s3: s3Client, s3Endpoint, logger });
+  const googleAuthEndpoints = createGoogleAuthEndpoints({ db, objectStore, logger });
 
-  // User profile picture endpoints
-  const profilePictureEndpoints = createUserProfilePictureEndpoints({ s3: s3Client, logger });
+  const profilePictureEndpoints = createUserProfilePictureEndpoints({ objectStore, logger });
 
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
+  const objectStoreEndpoints = createObjectStoreEndpoints({ objectStore, logger });
 
   try {
     const server = serve({
       port,
 
       routes: {
-        // Google OAuth endpoints
         ...googleAuthEndpoints,
 
-        // User profile picture endpoints
         ...profilePictureEndpoints,
 
-        // tRPC endpoint
+        ...objectStoreEndpoints,
+
         '/api/trpc/*': {
           GET: trpcHandler('GET'),
           POST: trpcHandler('POST'),
@@ -99,7 +103,6 @@ const main = async () => {
       },
 
       development: process.env.NODE_ENV !== 'production',
-      // Allow long-lived connections for SSE subscriptions (max 255 seconds = ~4.25 minutes)
       idleTimeout: 255,
     });
 
@@ -117,7 +120,7 @@ const main = async () => {
     }
     throw error;
   }
-};
+}
 
 main().catch((error) => {
   console.error('Failed to start server:', error);

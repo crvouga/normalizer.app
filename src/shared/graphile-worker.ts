@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import type { Tx } from './sql';
+import type { Db, Tx } from './db';
 import { enqueueJob as enqueueJobLib, type TaskHandler } from '../lib/graphile-worker-lib';
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
+import type { Logger } from '../lib/logger';
 
 // Application-specific job payload schemas
 export const normalizationJobPayloadSchema = z.object({
@@ -48,11 +49,14 @@ function getJobSchema(jobName: JobName): z.ZodSchema {
  * Returns a task list compatible with Graphile Worker's TaskList interface
  * while providing type safety through validation
  */
-export function createTaskList(handlers: { normalization: TaskHandler<NormalizationJobPayload> }) {
+export function createTaskList(
+  ctx: { logger: Logger; db: Db },
+  handlers: { normalization: TaskHandler<NormalizationJobPayload> },
+) {
   return {
-    normalization: async (payload: unknown, helpers: Parameters<TaskHandler>[1]) => {
+    normalization: async (payload: unknown, _helpers: unknown) => {
       const validatedPayload = normalizationJobPayloadSchema.parse(payload);
-      await handlers.normalization(validatedPayload, helpers);
+      await handlers.normalization(validatedPayload, ctx);
     },
   };
 }

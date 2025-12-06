@@ -1,11 +1,11 @@
-import { IconAlertCircle } from '~/src/ui/icons';
+import { AlertCircle } from 'lucide-react';
 import { useI18n } from '~/src/i18n/use-i18n';
 import type { NormalizationSessionProjectionEntry } from '../../normalization-session-projection/normalization-session-projection-entry';
 
 const StatusIcon = () => {
   return (
     <div className="flex size-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-      <IconAlertCircle className="size-4 text-red-600 dark:text-red-400" />
+      <AlertCircle className="size-4 text-red-600 dark:text-red-400" />
     </div>
   );
 };

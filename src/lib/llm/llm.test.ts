@@ -2,26 +2,13 @@ import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
-import { createLLMOpenAI } from './llm-open-ai';
+import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
 
-function isOpenAIEnabled(): boolean {
-  return process.env.OPENAI_API_KEY !== undefined;
-}
-
-function createTestLLMOpenAI(): LLM {
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
-
-  const logger = createLogger({ noop: true });
-
-  const llm = createLLMOpenAI({ apiKey, model: 'gpt-3.5-turbo', logger });
-
-  return llm;
-}
-
-describe.skipIf(!isOpenAIEnabled())('@llm.ts (OpenAI Implementation)', () => {
-  const llm: LLM = createTestLLMOpenAI();
+describe.if(isOpenAIEnabled())('LLM (OpenAI)', () => {
+  const llm: LLM = createLLMOpenAI({
+    logger: createLogger({ noop: true }),
+    model: CHEAPEST_MODEL,
+  });
 
   test('completions: returns a text completion from a simple prompt', async () => {
     const messages: Message[] = [{ role: 'user', content: 'What is 2+2?' }];

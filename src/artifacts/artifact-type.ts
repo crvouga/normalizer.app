@@ -11,12 +11,13 @@ export const artifactSchema = z.object({
   size: z.number().int(),
   file_type: z.string(),
   status: z.enum(['pending', 'uploaded']),
-  s3_bucket: z.string(),
-  s3_key: z.string(),
+  object_bucket: z.string(),
+  object_key: z.string(),
 
   created_at: z.coerce.date().nullable().optional(),
   updated_at: z.coerce.date().nullable().optional(),
 
+  uploaded_by: z.enum(['system', 'user']),
   uploaded_by_user_id: z.string().nullable().optional(),
   upload_ip: z.string().nullable().optional(),
 

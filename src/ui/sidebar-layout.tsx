@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { useKeyDown } from '../lib/use-key-down';
-import { IconBars2 } from './icons';
+import { Menu } from 'lucide-react';
 import { ButtonBase } from './button-base';
 
 // Collapsible sidebar wrapper with row layout for desktop, column for mobile
@@ -33,7 +33,7 @@ const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
       className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-slate-100 p-2 text-slate-900 lg:hidden dark:bg-slate-800 dark:text-white"
       aria-label="Open sidebar"
     >
-      <IconBars2 className="size-6" />
+      <Menu className="size-6" />
     </ButtonBase>
   </div>
 );

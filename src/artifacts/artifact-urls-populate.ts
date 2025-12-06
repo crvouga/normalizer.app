@@ -1,4 +1,5 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../lib/object-store/object-store';
+import { isOk } from '../lib/result';
 import type { Artifact } from './artifact-type';
 
 /**
@@ -6,108 +7,159 @@ import type { Artifact } from './artifact-type';
  * and sets their expiration timestamps, but only if missing, expired, or if the base URL doesn't match the s3 endpoint.
  *
  * @param artifacts - Array of Artifact objects.
- * @param s3 - S3 client for presigning URLs.
- * @param s3Endpoint - S3 endpoint URL (required, used to determine if HTTPS should be enforced and to validate base URLs).
+ * @param objectStore - Object store for presigning URLs.
  * @returns Object containing artifacts with updated URLs and a Set of IDs that were modified.
  */
 export async function populateArtifactUrls(params: {
   artifacts: Artifact[];
-  s3: S3Client;
-  s3Endpoint: string;
+  objectStore: ObjectStore;
 }): Promise<{ artifacts: Artifact[]; updated: Set<string> }> {
-  const { artifacts, s3, s3Endpoint } = params;
+  const { artifacts, objectStore } = params;
 
-  const expiresIn = 60 * 60 * 24 * 7; // 7 days
-  const now = Date.now();
-  const expiresAt = new Date(now + expiresIn * 1000);
+  const now = new Date();
+
   const updated = new Set<string>();
 
-  // Determine if we should use HTTPS based on the endpoint
-  const useHTTPS = s3Endpoint.startsWith('https://');
+  const endpointInfoResult = await objectStore.getEndpointInfo();
 
-  /**
-   * Extracts the base URL (protocol + host + port) from a URL string.
-   */
-  function getBaseUrl(urlString: string): string | null {
-    try {
-      const url = new URL(urlString);
-      return `${url.protocol}//${url.host}`;
-    } catch {
-      return null;
-    }
+  if (!isOk(endpointInfoResult)) {
+    return { artifacts, updated };
   }
 
-  // Get the expected base URL from the s3 endpoint
-  const expectedBaseUrl = getBaseUrl(s3Endpoint);
-
-  /**
-   * Checks if the URL's base URL matches the expected s3 endpoint base URL.
-   */
-  function hasMatchingBaseUrl(url: string | null | undefined): boolean {
-    if (!url || !expectedBaseUrl) return false;
-    const urlBase = getBaseUrl(url);
-    return urlBase === expectedBaseUrl;
-  }
-
-  function isMissingOrExpired(url: string | null | undefined, expiresAt: Date | null | undefined) {
-    if (!url || !expiresAt) return true;
-    return new Date(expiresAt).getTime() < now;
-  }
-
-  /**
-   * Ensures the URL uses HTTPS when the S3 endpoint is configured with HTTPS.
-   * This fixes mixed content errors when the page is served over HTTPS.
-   */
-  function ensureHTTPS(url: string | undefined): string | undefined {
-    if (!url || !useHTTPS) return url;
-    if (url.startsWith('http://')) {
-      return url.replace('http://', 'https://');
-    }
-    return url;
-  }
+  const { baseUrl, useHTTPS } = endpointInfoResult.value;
 
   const updatedArtifacts = await Promise.all(
-    artifacts.map(async (artifact) => {
-      let upload_url = artifact.upload_url ?? null;
-      let download_url = artifact.download_url ?? null;
-      let upload_url_expires_at = artifact.upload_url_expires_at ?? null;
-      let download_url_expires_at = artifact.download_url_expires_at ?? null;
-
-      const key = artifact.s3_key;
-
-      // Check if URLs need to be regenerated due to expiration, missing, or base URL mismatch
-      const shouldUpdateUpload =
-        isMissingOrExpired(upload_url, upload_url_expires_at) || !hasMatchingBaseUrl(upload_url);
-      const shouldUpdateDownload =
-        isMissingOrExpired(download_url, download_url_expires_at) ||
-        !hasMatchingBaseUrl(download_url);
-
-      let newUploadUrl: string | undefined;
-      let newDownloadUrl: string | undefined;
-
-      if (shouldUpdateUpload) {
-        newUploadUrl = ensureHTTPS(s3.presign(key, { method: 'PUT', expiresIn }));
-        upload_url_expires_at = expiresAt;
-      }
-      if (shouldUpdateDownload) {
-        newDownloadUrl = ensureHTTPS(s3.presign(key, { method: 'GET', expiresIn }));
-        download_url_expires_at = expiresAt;
-      }
-
-      // Track if this artifact was modified
-      if (shouldUpdateUpload || shouldUpdateDownload) {
-        updated.add(String(artifact.id));
-      }
-
-      return {
-        ...artifact,
-        upload_url: shouldUpdateUpload ? newUploadUrl : upload_url,
-        upload_url_expires_at,
-        download_url: shouldUpdateDownload ? newDownloadUrl : download_url,
-        download_url_expires_at,
-      };
-    }),
+    artifacts.map((artifact) =>
+      updateArtifactUrls({ artifact, objectStore, baseUrl, useHTTPS, now, updated }),
+    ),
   );
 
   return { artifacts: updatedArtifacts, updated };
+}
+
+const URL_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+/**
+ * Calculates the expiration date from a timestamp and expiration duration.
+ */
+function getExpiresAt(now: Date): Date {
+  return new Date(now.getTime() + URL_EXPIRES_IN_SECONDS * 1000);
+}
+
+/**
+ * Updates URLs for a single artifact if needed.
+ */
+async function updateArtifactUrls(params: {
+  artifact: Artifact;
+  objectStore: ObjectStore;
+  baseUrl: string;
+  useHTTPS: boolean;
+  now: Date;
+  updated: Set<string>;
+}): Promise<Artifact> {
+  const { artifact, objectStore, baseUrl, now, useHTTPS, updated } = params;
+  const expiresAt = getExpiresAt(now);
+
+  const upload_url = artifact.upload_url ?? null;
+  const download_url = artifact.download_url ?? null;
+  const upload_url_expires_at = artifact.upload_url_expires_at ?? null;
+  const download_url_expires_at = artifact.download_url_expires_at ?? null;
+
+  const uploadNeedsUpdate = urlNeedsUpdate({
+    url: upload_url,
+    expiresAt: upload_url_expires_at,
+    baseUrl,
+    now,
+  });
+
+  const downloadNeedsUpdate = urlNeedsUpdate({
+    url: download_url,
+    expiresAt: download_url_expires_at,
+    baseUrl,
+    now,
+  });
+
+  const newUploadUrl = uploadNeedsUpdate
+    ? await presignUrl({
+        objectStore,
+        bucket: artifact.object_bucket,
+        key: artifact.object_key,
+        method: 'PUT',
+        expiresIn: URL_EXPIRES_IN_SECONDS,
+        useHTTPS,
+      })
+    : upload_url;
+
+  const newDownloadUrl = downloadNeedsUpdate
+    ? await presignUrl({
+        objectStore,
+        bucket: artifact.object_bucket,
+        key: artifact.object_key,
+        method: 'GET',
+        expiresIn: URL_EXPIRES_IN_SECONDS,
+        useHTTPS,
+      })
+    : download_url;
+
+  if (uploadNeedsUpdate || downloadNeedsUpdate) {
+    updated.add(String(artifact.id));
+  }
+
+  return {
+    ...artifact,
+    upload_url: newUploadUrl,
+    upload_url_expires_at: uploadNeedsUpdate ? expiresAt : upload_url_expires_at,
+    download_url: newDownloadUrl,
+    download_url_expires_at: downloadNeedsUpdate ? expiresAt : download_url_expires_at,
+  };
+}
+
+/**
+ * Extracts the base URL (protocol + host) from a URL string.
+ */
+function extractUrlBase(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Checks if a URL needs to be refreshed based on expiration and base URL match.
+ */
+function urlNeedsUpdate(params: {
+  url: string | null;
+  expiresAt: Date | null;
+  baseUrl: string;
+  now: Date;
+}): boolean {
+  const { url, expiresAt, baseUrl, now } = params;
+  if (!url) return true;
+  if (!expiresAt) return true;
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  if (expiresAt.getTime() - now.getTime() < FIVE_MINUTES_MS) return true;
+  if (extractUrlBase(url) !== baseUrl) return true;
+  return false;
+}
+
+/**
+ * Presigns a URL and returns the updated URL with HTTPS if needed.
+ */
+async function presignUrl(params: {
+  objectStore: ObjectStore;
+  bucket: string;
+  key: string;
+  method: 'GET' | 'PUT';
+  expiresIn: number;
+  useHTTPS: boolean;
+}): Promise<string | undefined> {
+  const { objectStore, bucket, key, method, expiresIn, useHTTPS } = params;
+  const res = await objectStore.presign({ bucket, key, method, expiresIn, useHTTPS });
+  if (isOk(res)) {
+    return res.value;
+  }
+  return undefined;
 }

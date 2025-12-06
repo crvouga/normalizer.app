@@ -1,7 +1,7 @@
 import { RadioGroup, type RadioOption } from '~/src/ui/radio-group';
 import { useTheme, type Theme } from '~/src/ui/theme/use-theme';
 import { useI18n } from '~/src/i18n/use-i18n';
-import { IconComputerDesktop, IconSun, IconMoon } from '~/src/ui/icons';
+import { Monitor, Sun, Moon } from 'lucide-react';
 
 interface ThemeRadioGroupProps {}
 
@@ -14,19 +14,19 @@ export function ThemeRadioGroup({}: ThemeRadioGroupProps) {
       value: 'system',
       label: t('theme.system'),
       description: t('theme.systemDescription'),
-      icon: IconComputerDesktop,
+      icon: Monitor,
     },
     {
       value: 'light',
       label: t('theme.light'),
       description: t('theme.lightDescription'),
-      icon: IconSun,
+      icon: Sun,
     },
     {
       value: 'dark',
       label: t('theme.dark'),
       description: t('theme.darkDescription'),
-      icon: IconMoon,
+      icon: Moon,
     },
   ];
 

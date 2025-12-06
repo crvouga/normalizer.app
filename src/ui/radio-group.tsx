@@ -1,7 +1,8 @@
 import { Description, RadioGroup as HeadlessRadioGroup, Label, Radio } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
 import type { I18nText } from '../i18n/types';
-import { IconCheck, type Icon } from './icons';
+import { Check } from 'lucide-react';
+import { type Icon } from './icons';
 import { Typography } from './typography';
 
 export interface RadioOption<T extends string = string> {
@@ -103,7 +104,7 @@ export function RadioGroup<T extends string = string>({
                   </div>
                   {checked && (
                     <div className="shrink-0">
-                      <IconCheck className="size-5 text-fuchsia-600 dark:text-fuchsia-400" />
+                      <Check className="size-5 text-fuchsia-600 dark:text-fuchsia-400" />
                     </div>
                   )}
                 </div>

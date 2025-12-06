@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { KeyValueStore } from './key-value-store';
+import type { KeyValueStore } from './key-value-store/key-value-store';
 import type { Result } from './result';
 
 /**
@@ -8,28 +8,26 @@ import type { Result } from './result';
  *
  * @example
  * ```ts
- * const userStore = new TypedKeyValueStore(store, z.object({
- *   name: z.string(),
- *   age: z.number(),
- * }));
- *
- * // No need to pass codec each time
- * await userStore.set({ user1: { name: 'Alice', age: 30 } });
- * const result = await userStore.get(['user1']);
- * ```
+ * const userStore = new TypedKeyValueStore({
+ *   store,
+ *   codec: z.object({
+ *     name: z.string(),
+ *     age: z.number(),
+ *   }),
+ * });
  */
 export class TypedKeyValueStore<T> {
-  private store: KeyValueStore;
-  private codec: z.ZodType<T>;
+  private readonly store: KeyValueStore;
+  private readonly codec: z.ZodType<T>;
 
   /**
    * Creates a new TypedKeyValueStore instance.
    * @param store The underlying KeyValueStore implementation
    * @param codec The zod schema to use for all operations on this store
    */
-  constructor(store: KeyValueStore, codec: z.ZodType<T>) {
-    this.store = store;
-    this.codec = codec;
+  constructor(config: { store: KeyValueStore; codec: z.ZodType<T> }) {
+    this.store = config.store;
+    this.codec = config.codec;
   }
 
   /**
@@ -60,6 +58,6 @@ export class TypedKeyValueStore<T> {
    * @returns Result indicating success or failure
    */
   delete(keys: string[]): Promise<Result<void, string>> {
-    return this.store.delete(keys);
+    return this.store.zap(keys);
   }
 }

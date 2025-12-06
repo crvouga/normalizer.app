@@ -1,14 +1,14 @@
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { z } from 'zod';
-import { createDb, cleanupDb } from '../shared/sql';
+import { createDb, cleanupDb } from '../shared/db';
 import { createLogger } from './logger';
 import { isOk } from './result';
-import { PostgresKeyValueStore } from './key-value-store-postgres';
+import { PostgresKeyValueStore } from './key-value-store/key-value-store-postgres';
 import { TypedKeyValueStore } from './typed-key-value-store';
-import type { Db } from '../shared/sql';
+import type { Db } from '../shared/db';
 
 describe('TypedKeyValueStore', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let baseStore: PostgresKeyValueStore;
   const stringCodec = z.string();
@@ -28,14 +28,14 @@ describe('TypedKeyValueStore', () => {
   });
 
   beforeEach(async () => {
-    baseStore = new PostgresKeyValueStore(db);
+    baseStore = new PostgresKeyValueStore({ db });
     // Clean up test data
     const testKeys = ['key1', 'key2', 'user1', 'user2', 'num1', 'num2'];
-    await baseStore.delete(testKeys);
+    await baseStore.zap(testKeys);
   });
 
   test('get: returns typed values without passing codec', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, stringCodec);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: stringCodec });
 
     // Set values using the typed store
     const setResult = await typedStore.set({ key1: 'value1', key2: 'value2' });
@@ -53,7 +53,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('set: validates values using bound codec', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, numberCodec);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: numberCodec });
 
     // Valid number values
     const setResult = await typedStore.set({ num1: 42, num2: 100 });
@@ -69,7 +69,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('set: returns error when validation fails', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, numberCodec);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: numberCodec });
 
     // Try to set invalid value (string instead of number)
     const setResult = await typedStore.set({ num1: 'not a number' as unknown as number });
@@ -80,7 +80,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('works with complex object schemas', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, userSchema);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: userSchema });
 
     const users = {
       user1: { name: 'Alice', age: 30, email: 'alice@example.com' },
@@ -104,7 +104,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('set: returns error when object schema validation fails', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, userSchema);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: userSchema });
 
     // Invalid email
     const setResult = await typedStore.set({
@@ -117,7 +117,7 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('delete: works without codec parameter', async () => {
-    const typedStore = new TypedKeyValueStore(baseStore, stringCodec);
+    const typedStore = new TypedKeyValueStore({ store: baseStore, codec: stringCodec });
 
     await typedStore.set({ key1: 'value1', key2: 'value2' });
 
@@ -133,8 +133,8 @@ describe('TypedKeyValueStore', () => {
   });
 
   test('multiple typed stores can use different schemas', async () => {
-    const stringStore = new TypedKeyValueStore(baseStore, stringCodec);
-    const numberStore = new TypedKeyValueStore(baseStore, numberCodec);
+    const stringStore = new TypedKeyValueStore({ store: baseStore, codec: stringCodec });
+    const numberStore = new TypedKeyValueStore({ store: baseStore, codec: numberCodec });
 
     await stringStore.set({ key1: 'hello' });
     await numberStore.set({ num1: 42 });
@@ -153,12 +153,12 @@ describe('TypedKeyValueStore', () => {
 
   test('get: returns error when stored value fails parsing with bound codec', async () => {
     // Store a number using number codec
-    const numberStore = new TypedKeyValueStore(baseStore, numberCodec);
+    const numberStore = new TypedKeyValueStore({ store: baseStore, codec: numberCodec });
     const setResult = await numberStore.set({ testKey: 42 });
     expect(isOk(setResult)).toBe(true);
 
     // Try to get it with string codec - should fail
-    const stringStore = new TypedKeyValueStore(baseStore, stringCodec);
+    const stringStore = new TypedKeyValueStore({ store: baseStore, codec: stringCodec });
     const getResult = await stringStore.get(['testKey']);
     expect(isOk(getResult)).toBe(false);
     if (!isOk(getResult)) {
@@ -166,6 +166,6 @@ describe('TypedKeyValueStore', () => {
     }
 
     // Clean up
-    await baseStore.delete(['testKey']);
+    await baseStore.zap(['testKey']);
   });
 });

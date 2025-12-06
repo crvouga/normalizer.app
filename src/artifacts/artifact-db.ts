@@ -1,7 +1,7 @@
-import type { S3Client } from 'bun';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Logger } from '../lib/logger';
-import type { Db, Tx } from '../shared/sql';
+import type { ObjectStore } from '../lib/object-store/object-store';
+import type { Db, Tx } from '../shared/db';
 import { UserId } from '../users/user-id';
 import * as schema from '../db/schema';
 import { Artifact } from './artifact';
@@ -109,8 +109,9 @@ export class ArtifactDb {
     size: number;
     file_type: string;
     status: 'pending' | 'uploaded';
-    s3_bucket: string;
-    s3_key: string;
+    uploaded_by: 'system' | 'user';
+    object_bucket: string;
+    object_key: string;
     name?: string | null;
     uploaded_by_user_id: UserId;
     created_at?: Date;
@@ -123,9 +124,10 @@ export class ArtifactDb {
       size: artifactData.size,
       file_type: artifactData.file_type,
       status: artifactData.status,
-      s3_bucket: artifactData.s3_bucket,
-      s3_key: artifactData.s3_key,
+      object_bucket: artifactData.object_bucket,
+      object_key: artifactData.object_key,
       name: artifactData.name ?? null,
+      uploaded_by: artifactData.uploaded_by,
       uploaded_by_user_id: artifactData.uploaded_by_user_id,
       created_at: artifactData.created_at ?? new Date(),
       updated_at: artifactData.updated_at ?? new Date(),
@@ -179,6 +181,8 @@ export class ArtifactDb {
       tags?: string[] | null;
       sha256?: string | null;
       upload_ip?: string | null;
+      s3_key?: string | null;
+      s3_bucket?: string | null;
     },
   ): Promise<Artifact> {
     const updateData: Partial<{
@@ -188,6 +192,8 @@ export class ArtifactDb {
       tags: string[] | null;
       sha256: string | null;
       upload_ip: string | null;
+      s3_key: string;
+      s3_bucket: string;
       updated_at: Date;
     }> = {
       updated_at: new Date(),
@@ -211,6 +217,12 @@ export class ArtifactDb {
     }
     if (updates.upload_ip !== undefined) {
       updateData.upload_ip = updates.upload_ip;
+    }
+    if (updates.s3_key !== undefined && updates.s3_key !== null) {
+      updateData.s3_key = updates.s3_key;
+    }
+    if (updates.s3_bucket !== undefined && updates.s3_bucket !== null) {
+      updateData.s3_bucket = updates.s3_bucket;
     }
 
     await this.tx
@@ -239,9 +251,10 @@ export class ArtifactDb {
       size: artifact.size,
       file_type: artifact.file_type,
       status: artifact.status,
-      s3_bucket: artifact.s3_bucket,
-      s3_key: artifact.s3_key,
+      object_bucket: artifact.object_bucket,
+      object_key: artifact.object_key,
       name: artifact.name ?? null,
+      uploaded_by: artifact.uploaded_by ?? 'user',
       uploaded_by_user_id: artifact.uploaded_by_user_id ?? null,
       upload_ip: artifact.upload_ip ?? null,
       sha256: artifact.sha256 ?? null,
@@ -263,10 +276,9 @@ export class ArtifactDb {
    */
   async refreshUrls(params: {
     artifacts: Artifact[];
-    s3: S3Client;
-    s3Endpoint: string;
+    objectStore: ObjectStore;
   }): Promise<Artifact[]> {
-    const { artifacts, s3, s3Endpoint } = params;
+    const { artifacts, objectStore } = params;
 
     if (artifacts.length === 0) {
       return artifacts;
@@ -275,8 +287,7 @@ export class ArtifactDb {
     // Populate URLs and get update metadata
     const { artifacts: artifactsWithUrls, updated } = await populateArtifactUrls({
       artifacts: artifacts,
-      s3,
-      s3Endpoint,
+      objectStore,
     });
 
     // Update database for artifacts with refreshed URLs

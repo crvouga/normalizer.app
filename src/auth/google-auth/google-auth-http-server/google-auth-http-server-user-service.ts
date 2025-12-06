@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '../../../lib/object-store/object-store';
 import type { Logger } from '../../../lib/logger';
-import type { Db } from '../../../shared/sql';
+import type { Db } from '../../../shared/db';
 import type { GoogleUserInfo } from '../google-oauth-service';
 import { users, userSessions, type IUser } from '../../../db/schema';
 import { UserId } from '../../../users/user-id';
@@ -9,24 +9,15 @@ import { UserSessionId } from '../../../users/user-session-id';
 import type { SessionId } from '../../../shared/session-id';
 import { storeProfilePictureFromUrl } from '../../../users/user-profile-picture';
 
-export type GoogleAuthUserServiceDeps = {
-  db: Db;
-  s3: S3Client;
-  s3Endpoint: string;
-  logger: Logger;
-};
-
 export class GoogleAuthUserService {
   private db: Db;
-  private s3: S3Client;
-  private s3Endpoint: string;
+  private objectStore: ObjectStore;
   private logger: Logger;
 
-  constructor({ db, s3, s3Endpoint, logger }: GoogleAuthUserServiceDeps) {
-    this.db = db;
-    this.s3 = s3;
-    this.s3Endpoint = s3Endpoint;
-    this.logger = logger;
+  constructor(config: { db: Db; objectStore: ObjectStore; logger: Logger }) {
+    this.db = config.db;
+    this.objectStore = config.objectStore;
+    this.logger = config.logger;
   }
 
   /**
@@ -90,10 +81,9 @@ export class GoogleAuthUserService {
     const { existingUser, googleUser, sessionId } = params;
     // Store profile picture in S3
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: existingUser.id as UserId,
-      externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -143,10 +133,9 @@ export class GoogleAuthUserService {
 
     // Store profile picture in S3
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: userId,
-      externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -193,10 +182,9 @@ export class GoogleAuthUserService {
     const { user, googleUser, sessionId } = params;
     // Update profile picture from Google (in case it changed)
     const profilePictureUrl = await storeProfilePictureFromUrl({
-      s3: this.s3,
+      objectStore: this.objectStore,
       userId: user.id as UserId,
-      externalUrl: googleUser.picture,
-      s3Endpoint: this.s3Endpoint,
+      externalUrl: googleUser.picture ?? '',
       logger: this.logger,
     });
 
@@ -255,7 +243,7 @@ export class GoogleAuthUserService {
 
     // Find existing user by Google ID
     const existingGoogleUser = await this.db.query.users.findFirst({
-      where: eq(users.google_id, googleUser.id),
+      where: eq(users.google_id, googleUser.id ?? ''),
     });
 
     if (existingGoogleUser) {
@@ -268,7 +256,7 @@ export class GoogleAuthUserService {
 
     // Check if user with same email exists (for account linking)
     const existingEmailUser = await this.db.query.users.findFirst({
-      where: eq(users.email, googleUser.email),
+      where: eq(users.email, googleUser.email ?? ''),
     });
 
     if (existingEmailUser) {

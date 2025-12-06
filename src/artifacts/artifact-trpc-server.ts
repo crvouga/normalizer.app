@@ -38,14 +38,13 @@ export const artifactRouter = router({
 
       const artifactsWithUrls = await artifactDb.refreshUrls({
         artifacts: [artifact],
-        s3: ctx.s3,
-        s3Endpoint: ctx.s3Endpoint,
+        objectStore: ctx.objectStore,
       });
 
       return artifactsWithUrls[0] ?? null;
     }),
 
-  list: procedure
+  listByUser: procedure
     .output(z.array(Artifact.schema))
     .mutation(async ({ ctx }): Promise<Artifact[]> => {
       ctx.logger.info('Artifact list', {
@@ -59,9 +58,8 @@ export const artifactRouter = router({
       ctx.logger.info('Artifact list result', { count: artifacts.length });
 
       const artifactsWithUrls = await artifactDb.refreshUrls({
-        s3Endpoint: ctx.s3Endpoint,
         artifacts,
-        s3: ctx.s3,
+        objectStore: ctx.objectStore,
       });
 
       return artifactsWithUrls;

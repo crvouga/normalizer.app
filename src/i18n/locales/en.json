@@ -117,7 +117,8 @@
     "noData": "No data to preview",
     "showingRows": "Showing {{showing}} of {{total}} rows",
     "unsupportedFileType": "Unsupported file type",
-    "failedToParse": "Failed to parse file"
+    "failedToParse": "Failed to parse file",
+    "copyToClipboard": "Copy to clipboard"
   },
   "tabularFileInput": {
     "preview": "Preview",
@@ -141,5 +142,10 @@
   },
   "users": {
     "failedToLoad": "Failed to load user"
+  },
+  "copyToClipboard": {
+    "label": "Copy to clipboard",
+    "success": "Copied to clipboard",
+    "error": "Failed to copy"
   }
 }

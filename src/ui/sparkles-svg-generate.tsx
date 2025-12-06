@@ -20,13 +20,13 @@ export function generateSparklesSvg(logger: Logger, options?: { outputDir?: stri
   // Generate the SVG content
   const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <defs>
-        <radialGradient id="fuchsia-radial-gradient" cx="50%" cy="50%" r="80%">
+        <radialGradient id="sparkles-svg-linear-gradient" cx="50%" cy="50%" r="80%">
             <stop offset="0%" style="stop-color:${fuchsia400};stop-opacity:1" />
             <stop offset="60%" style="stop-color:${fuchsia500};stop-opacity:1" />
             <stop offset="100%" style="stop-color:${fuchsia600};stop-opacity:1" />
         </radialGradient>
     </defs>
-    <path fill="url(#fuchsia-radial-gradient)" fill-rule="evenodd" d="${sparklesPathData}" clip-rule="evenodd" />
+    <path fill="url(#sparkles-svg-linear-gradient)" fill-rule="evenodd" d="${sparklesPathData}" clip-rule="evenodd" />
 </svg>
 `;
 

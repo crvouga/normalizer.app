@@ -1,4 +1,4 @@
-import type { S3Client } from 'bun';
+import type { ObjectStore } from '~/src/lib/object-store/object-store';
 import { z } from 'zod';
 import { Artifact } from '~/src/artifacts/artifact';
 import { ArtifactDb } from '~/src/artifacts/artifact-db';
@@ -8,7 +8,7 @@ import { zAsyncIterable } from '~/src/lib/zod-async-iterable';
 import { ResourceOwnershipEntity } from '~/src/permissions/resource-ownership-entity';
 import { ResourceOwnershipEntityId } from '~/src/permissions/resource-ownership-entity-id';
 import { AppNotification } from '~/src/shared/app-notification';
-import type { Db, Tx } from '~/src/shared/sql';
+import type { Db, Tx } from '~/src/shared/db';
 import { procedure, router } from '~/src/shared/trpc-server';
 import type { UserId } from '~/src/users/user-id';
 import { NormalizationSessionEventDb } from '../normalization-session-event/normalization-session-event-db';
@@ -43,8 +43,7 @@ export const normalizationSessionProjectionRouter = router({
         logger: ctx.logger,
         sessionId,
         ownerId: resourceOwnerId,
-        s3: ctx.s3,
-        s3Endpoint: ctx.s3Endpoint,
+        objectStore: ctx.objectStore,
       });
 
       if (!data) throw new Error('Failed to load projection');
@@ -81,8 +80,7 @@ export const normalizationSessionProjectionRouter = router({
         logger: ctx.logger,
         sessionId,
         ownerId: resourceOwnerId,
-        s3: ctx.s3,
-        s3Endpoint: ctx.s3Endpoint,
+        objectStore: ctx.objectStore,
       });
       if (!data) throw new Error('Failed to load initial projection');
 
@@ -101,8 +99,7 @@ export const normalizationSessionProjectionRouter = router({
             logger: ctx.logger,
             sessionId,
             ownerId: resourceOwnerId,
-            s3: ctx.s3,
-            s3Endpoint: ctx.s3Endpoint,
+            objectStore: ctx.objectStore,
           });
 
           if (!data) continue;
@@ -123,10 +120,9 @@ const load = async (input: {
   logger: Logger;
   sessionId: NormalizationSessionId;
   ownerId: UserId;
-  s3: S3Client;
-  s3Endpoint: string;
+  objectStore: ObjectStore;
 }): Promise<NormalizationSessionPayload | null> => {
-  const { db, logger, sessionId, ownerId, s3, s3Endpoint } = input;
+  const { db, logger, sessionId, ownerId, objectStore } = input;
   try {
     const sessionProjectionDb = new NormalizationSessionProjectionDb(db, logger);
     const normalizationSessionEventDb = new NormalizationSessionEventDb(db, logger);
@@ -155,8 +151,7 @@ const load = async (input: {
 
       artifacts = await artifactDb.refreshUrls({
         artifacts,
-        s3,
-        s3Endpoint,
+        objectStore,
       });
     }
 

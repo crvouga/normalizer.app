@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
-import type { Db, Tx } from '~/src/shared/sql';
+import type { Db, Tx } from '~/src/shared/db';
 import * as schema from '../../db/schema';
 import { NormalizationSessionEventEntity } from './normalization-session-event-entity';
 import { NormalizationSessionEventId } from './normalization-session-event-id';

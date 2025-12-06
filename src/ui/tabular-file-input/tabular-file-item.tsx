@@ -3,7 +3,8 @@ import { useFileLoader } from '../../shared/use-file-loader';
 import type { I18nText } from '../../i18n/types';
 import { toI18nText } from '../../i18n/types';
 import { ButtonBase } from '../button-base';
-import { FileIcon, IconEye, IconEyeSlash, IconTrash, ImageIcon, type Icon } from '../icons';
+import { File, Eye, EyeOff, Trash2, Image } from 'lucide-react';
+import { type Icon } from '../icons';
 import { TabularFilePreview } from '../tabular-file-preview/tabular-file-preview';
 import { TabularFilePreviewTable } from '../tabular-file-preview/tabular-file-preview-table';
 import { Typography } from '../typography';
@@ -79,7 +80,7 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   if (showPreview) {
     actions.push({
       label: t('tabularFileInput.preview'),
-      icon: isPreviewVisible ? IconEyeSlash : IconEye,
+      icon: isPreviewVisible ? EyeOff : Eye,
       onClick: () => onTogglePreview(index),
     });
   }
@@ -89,12 +90,12 @@ export const TabularFileItemHeader: React.FC<TabularFileItemHeaderProps> = ({
   if (!readOnly) {
     actions.push({
       label: t('tabularFileInput.remove'),
-      icon: IconTrash,
+      icon: Trash2,
       onClick: () => onRemove(index),
     });
   }
 
-  const icon = isImage ? <ImageIcon className="size-6" /> : <FileIcon className="size-6" />;
+  const icon = isImage ? <Image className="size-6" /> : <File className="size-6" />;
 
   const content = (
     <>
@@ -225,7 +226,7 @@ export const TabularFileItemSkeleton: React.FC = () => {
   return (
     <TabularFileItemContainer>
       <TabularFileItemHeaderStructure
-        icon={<FileIcon className="size-6 text-slate-300 dark:text-slate-600" />}
+        icon={<File className="size-6 text-slate-300 dark:text-slate-600" />}
         content={
           <div className="space-y-1">
             <div className="h-4 w-32 animate-pulse rounded bg-slate-300 dark:bg-slate-600" />

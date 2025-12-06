@@ -1,6 +1,7 @@
 import { createLogger } from '../lib/logger';
-import { createMinioClient } from '../lib/minio/minio-client';
 import { getS3Config } from '../shared/s3-config';
+import { createObjectStore } from '../shared/s3';
+import { isOk } from '../lib/result';
 
 /**
  * Ensures the S3 bucket specified in S3_BUCKET environment variable exists.
@@ -12,23 +13,18 @@ export const runS3Migrations = async (): Promise<void> => {
   logger.info('Starting S3 bucket migration...');
 
   try {
-    const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } = getS3Config();
-
+    const { s3Endpoint, s3Bucket } = getS3Config();
     logger.info('S3 configuration loaded', {
       endpoint: s3Endpoint,
       bucket: s3Bucket,
     });
-
-    logger.info('Creating MinIO client...');
-    const minioClient = createMinioClient({
-      minioEndpoint: s3Endpoint,
-      accessKey: s3AccessKeyId,
-      secretKey: s3SecretAccessKey,
-      logger,
-    });
-
+    logger.info('Creating object store...');
+    const objectStore = await createObjectStore({ logger });
     logger.info('Ensuring bucket exists...', { bucket: s3Bucket });
-    await minioClient.ensureBucketExists(s3Bucket);
+    const result = await objectStore.ensureBucketExists(s3Bucket);
+    if (!isOk(result)) {
+      throw new Error(`Failed to ensure bucket exists: ${result.error}`);
+    }
 
     logger.info('S3 bucket migration completed successfully', {
       endpoint: s3Endpoint,

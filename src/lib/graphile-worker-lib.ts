@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { Db, Tx } from '../shared/sql';
+import type { Db, Tx } from '../shared/db';
 import type { Logger } from './logger';
 
 /**
@@ -7,13 +7,9 @@ import type { Logger } from './logger';
  */
 export type TaskHandler<TPayload = unknown> = (
   payload: TPayload,
-  helpers: {
-    logger: {
-      info: (msg: string, meta?: Record<string, unknown>) => void;
-      error: (msg: string, meta?: Record<string, unknown>) => void;
-      warn: (msg: string, meta?: Record<string, unknown>) => void;
-      debug: (msg: string, meta?: Record<string, unknown>) => void;
-    };
+  ctx: {
+    logger: Logger;
+    db: Db;
   },
 ) => Promise<void>;
 

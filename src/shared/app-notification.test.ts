@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import type { Db } from './sql';
-import { cleanupDb, createDb, getPostgresConnection } from './sql';
+import type { Db } from './db';
+import { cleanupDb, createDb, getPostgresConnection } from './db';
 import { createLogger } from '../lib/logger';
 import { PostgresNotification } from '../lib/postgres-notification';
 import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import { AppNotification } from './app-notification';
 
 describe('AppNotification', () => {
-  const logger = createLogger();
+  const logger = createLogger({ noop: true });
   let db: Db;
   let sqlConnection: ReturnType<typeof getPostgresConnection>;
 

@@ -1,7 +1,7 @@
 import { ComboboxButton, ComboboxInput } from '@headlessui/react';
 import { cn } from '~/src/lib/cn';
 import type { I18nText } from '../../../i18n/types';
-import { IconChevronDown } from '../../icons';
+import { ChevronDown } from 'lucide-react';
 import { Spinner } from '../../spinner';
 import { getButtonBaseStyles } from '../../button-base';
 
@@ -58,7 +58,7 @@ export function ComboboxInputField<T extends string | number>({
         {isLoading ? (
           <Spinner size="sm" />
         ) : (
-          <IconChevronDown className="origin-center text-slate-400 transition-transform duration-200 data-open:rotate-180 dark:text-slate-500" />
+          <ChevronDown className="origin-center text-slate-400 transition-transform duration-200 data-open:rotate-180 dark:text-slate-500" />
         )}
       </ComboboxButton>
     </div>

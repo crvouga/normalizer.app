@@ -1,4 +1,4 @@
-import { IconAlertCircle } from '../../icons';
+import { AlertCircle } from 'lucide-react';
 import { Typography } from '../../typography';
 import { toI18nText } from '../../../i18n/types';
 
@@ -16,7 +16,7 @@ export function ComboboxErrorState({ error }: ComboboxErrorStateProps) {
 
   return (
     <div className="flex items-center gap-2 px-4 py-8">
-      <IconAlertCircle />
+      <AlertCircle />
       <Typography variant="sm" color="error" text={toI18nText(errorMessage)} />
     </div>
   );

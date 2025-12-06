@@ -1,32 +1,17 @@
-import type { S3Client } from 'bun';
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { createLogger } from '../lib/logger';
-import { createMinioClient, type MinioClient } from '../lib/minio/minio-client';
-import { createS3 } from '../shared/s3';
-import { getS3Config } from '../shared/s3-config';
-import { Artifact as ArtifactModule } from './artifact';
+import type { ObjectStore } from '../lib/object-store/object-store';
+import { isOk } from '../lib/result';
+import { createObjectStore } from '../shared/s3';
+import { Artifact, Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { populateArtifactUrls } from './artifact-urls-populate';
 
-describe('Artifact.populateUrls', () => {
-  const logger = createLogger();
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
+describe('Artifact.populateUrls', async () => {
+  const logger = createLogger({ noop: true });
   const testBucket = 'test';
-  let s3Client: S3Client;
-  let minioClient: MinioClient;
-
-  beforeAll(async () => {
-    minioClient = createMinioClient({
-      minioEndpoint: s3Endpoint,
-      accessKey: s3AccessKeyId,
-      secretKey: s3SecretAccessKey,
-      logger,
-    });
-    await minioClient.ensureBucketExists(testBucket);
-
-    const res = await createS3({ logger });
-    s3Client = res.s3Client;
-  });
+  const objectStore: ObjectStore = await createObjectStore({ logger });
+  await objectStore.ensureBucketExists(testBucket);
 
   test('should generate valid presigned upload and download URLs', async () => {
     const artifactId = ArtifactId.generate();
@@ -36,12 +21,13 @@ describe('Artifact.populateUrls', () => {
       id: artifactId,
       filename,
       content_type: 'text/plain',
+      uploaded_by: 'user',
     });
     // Override S3 bucket and key for the test
-    const artifactForTest = {
+    const artifactForTest: Artifact = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
 
     // Ensure upload and download URLs are initially missing
@@ -50,8 +36,7 @@ describe('Artifact.populateUrls', () => {
 
     const { artifacts: populated, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
-      s3Endpoint,
+      objectStore,
     });
 
     expect(updated.has(artifactId.toString())).toBe(true);
@@ -79,6 +64,7 @@ describe('Artifact.populateUrls', () => {
     const s3_key = `populate-valid/test-file-${Math.random()}`;
     const filename = 'valid.txt';
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename,
       content_type: 'text/plain',
@@ -87,13 +73,12 @@ describe('Artifact.populateUrls', () => {
     // First run to get fresh URLs and expiration
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
     const firstPop = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
-      s3Endpoint,
+      objectStore,
     });
     const populated = firstPop.artifacts[0];
     expect(populated).toBeDefined();
@@ -105,8 +90,7 @@ describe('Artifact.populateUrls', () => {
     // The second run should preserve the URLs (not update them, so the set will be empty)
     const secondPop = await populateArtifactUrls({
       artifacts: [populated],
-      s3: s3Client,
-      s3Endpoint,
+      objectStore,
     });
     const again = secondPop.artifacts[0];
     expect(again).toBeDefined();
@@ -125,6 +109,7 @@ describe('Artifact.populateUrls', () => {
     const s3_key = `expire-test/test-file-${Math.random()}`;
     const filename = 'expire-me.txt';
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename,
       content_type: 'text/plain',
@@ -134,8 +119,8 @@ describe('Artifact.populateUrls', () => {
 
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
       upload_url: 'http://should-be-replaced',
       download_url: 'http://should-be-replaced',
       upload_url_expires_at: pastDate,
@@ -144,8 +129,7 @@ describe('Artifact.populateUrls', () => {
 
     const { artifacts: result, updated } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
-      s3Endpoint,
+      objectStore,
     });
 
     expect(updated.has(artifactId.toString())).toBe(true);
@@ -163,13 +147,17 @@ describe('Artifact.populateUrls', () => {
   });
 
   test('should enforce HTTPS on URLs if the S3 endpoint uses HTTPS', async () => {
-    if (!s3Endpoint.startsWith('https://')) {
+    // Check if endpoint uses HTTPS
+    const endpointInfoResult = await objectStore.getEndpointInfo();
+    if (!isOk(endpointInfoResult) || !endpointInfoResult.value.useHTTPS) {
       // Cannot test HTTPS rewriting if not using an HTTPS endpoint
       return;
     }
+
     const artifactId = ArtifactId.generate();
     const s3_key = `https-enforce/test-file-${Math.random()}`;
     const artifact = ArtifactModule.create({
+      uploaded_by: 'user',
       id: artifactId,
       filename: 'https-enforce.txt',
       content_type: 'text/plain',
@@ -177,14 +165,13 @@ describe('Artifact.populateUrls', () => {
 
     const artifactForTest = {
       ...artifact,
-      s3_bucket: testBucket,
-      s3_key,
+      object_bucket: testBucket,
+      object_key: s3_key,
     };
 
     const { artifacts: result } = await populateArtifactUrls({
       artifacts: [artifactForTest],
-      s3: s3Client,
-      s3Endpoint,
+      objectStore,
     });
     const updatedArtifact = result[0];
     expect(updatedArtifact).toBeDefined();
