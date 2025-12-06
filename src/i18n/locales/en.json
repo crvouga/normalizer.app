@@ -147,5 +147,9 @@
     "label": "Copy to clipboard",
     "success": "Copied to clipboard",
     "error": "Failed to copy"
+  },
+  "errorSection": {
+    "seeError": "See error",
+    "errorDetails": "Error Details"
   }
 }

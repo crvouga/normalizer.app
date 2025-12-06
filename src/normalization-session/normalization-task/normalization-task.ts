@@ -1,16 +1,17 @@
+import type { Artifact } from '~/src/artifacts/artifact-type';
 import { enumerate } from '~/src/lib/array/enumerate';
 import { createLLMOpenAI } from '~/src/lib/llm/llm-open-ai';
-import { isOk } from '~/src/lib/result';
+import { isErr } from '~/src/lib/result';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import * as schema from '../../db/schema';
 import type { TaskHandler } from '../../lib/graphile-worker-lib';
 import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
+import type { Db, Tx } from '../../shared/db';
 import type { NormalizationJobPayload } from '../../shared/graphile-worker';
 import { createObjectStore } from '../../shared/s3';
 import { getS3Config } from '../../shared/s3-config';
-import type { Db, Tx } from '../../shared/db';
 import type { UserId } from '../../users/user-id';
 import { NormalizationSessionEventEntity } from '../normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '../normalization-session-event/normalization-session-event-id';
@@ -19,7 +20,6 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
-import type { Artifact } from '~/src/artifacts/artifact-type';
 
 /**
  * Normalization task handler
@@ -193,7 +193,7 @@ async function performNormalization({
     outputObjectKeyPrefix: `normalizer-output/${normalizationRunId}/`,
   });
 
-  if (!isOk(normalizeResult)) {
+  if (isErr(normalizeResult)) {
     logger.error('Normalization failed', {
       sessionId,
       normalizationRunId,
