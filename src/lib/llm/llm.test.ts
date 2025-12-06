@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
@@ -21,11 +21,7 @@ function createTestLLMOpenAI(): LLM {
 }
 
 describe.skipIf(!isOpenAIEnabled())('@llm.ts (OpenAI Implementation)', () => {
-  let llm: LLM;
-
-  beforeEach(() => {
-    llm = createTestLLMOpenAI();
-  });
+  const llm: LLM = createTestLLMOpenAI();
 
   test('completions: returns a text completion from a simple prompt', async () => {
     const messages: Message[] = [{ role: 'user', content: 'What is 2+2?' }];
