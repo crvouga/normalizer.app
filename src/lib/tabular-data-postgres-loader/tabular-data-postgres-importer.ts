@@ -470,7 +470,6 @@ export class TabularDataPostgresImporter {
 
     return this.postgresClient.insertBatch(tableName, columnNames, rows);
   }
-
 }
 
 export function createTabularDataPostgresImporter(params: {
