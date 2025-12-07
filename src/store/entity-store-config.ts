@@ -1,14 +1,14 @@
 import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
-import type { User } from '../users/user';
-import type { UserId } from '../users/user-id';
+import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
 import type { NormalizationSessionEventEntity } from '../normalization-session/normalization-session-event/normalization-session-event-entity';
 import type { NormalizationSessionEventId } from '../normalization-session/normalization-session-event/normalization-session-event-id';
 import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
 import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
-import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
-import type { ResourceOwnershipEntityId } from '../permissions/resource-ownership-entity-id';
 import type { ResourceOwnershipEntity } from '../permissions/resource-ownership-entity';
+import type { ResourceOwnershipEntityId } from '../permissions/resource-ownership-entity-id';
+import type { User } from '../users/user';
+import type { UserId } from '../users/user-id';
 
 // Define entity types
 export type EntityStore = {
@@ -70,7 +70,7 @@ export const initialEntityStore: EntityStore = {
 type IndexDefinitionsConfig = {
   [K in keyof EntityStore['indexes']]: {
     entityType: keyof EntityStore['entities'];
-    definition: IndexDefinition<any>;
+    definition: IndexDefinition;
   };
 };
 
@@ -79,7 +79,7 @@ export const indexDefinitions: IndexDefinitionsConfig = {
   indexNormalizationSessionEventsBySessionId: {
     entityType: 'normalizationSessionEvents',
     definition: {
-      getIndexKey: (entity: unknown) => {
+      getIndexKey(entity) {
         if (
           entity &&
           typeof entity === 'object' &&
@@ -90,18 +90,23 @@ export const indexDefinitions: IndexDefinitionsConfig = {
         }
         return undefined;
       },
-      getEntityId: (entity: unknown) => {
-        if (entity && typeof entity === 'object' && 'id' in entity) {
-          return entity.id as string;
+      getEntityId(entity) {
+        if (
+          entity &&
+          typeof entity === 'object' &&
+          'id' in entity &&
+          typeof entity.id === 'string'
+        ) {
+          return entity.id;
         }
         return '';
       },
-    } as IndexDefinition<NormalizationSessionEventEntity>,
+    },
   },
   indexNormalizationSessionProjectionsByUserId: {
     entityType: 'normalizationSessionProjections',
     definition: {
-      getIndexKey: (entity: unknown) => {
+      getIndexKey(entity) {
         if (
           entity &&
           typeof entity === 'object' &&
@@ -112,18 +117,23 @@ export const indexDefinitions: IndexDefinitionsConfig = {
         }
         return undefined;
       },
-      getEntityId: (entity: unknown) => {
-        if (entity && typeof entity === 'object' && 'id' in entity) {
-          return entity.id as string;
+      getEntityId(entity) {
+        if (
+          entity &&
+          typeof entity === 'object' &&
+          'id' in entity &&
+          typeof entity.id === 'string'
+        ) {
+          return entity.id;
         }
         return '';
       },
-    } as IndexDefinition<NormalizationSessionProjection>,
+    },
   },
   indexResourceOwnershipsByResourceId: {
     entityType: 'resourceOwnerships',
     definition: {
-      getIndexKey: (entity: unknown) => {
+      getIndexKey(entity) {
         if (
           entity &&
           typeof entity === 'object' &&
@@ -134,21 +144,20 @@ export const indexDefinitions: IndexDefinitionsConfig = {
         }
         return undefined;
       },
-      getEntityId: (entity: unknown) => {
-        if (entity && typeof entity === 'object' && 'id' in entity) {
-          return entity.id as string;
+      getEntityId(entity) {
+        if (
+          entity &&
+          typeof entity === 'object' &&
+          'id' in entity &&
+          typeof entity.id === 'string'
+        ) {
+          return entity.id;
         }
         return '';
       },
-    } as IndexDefinition<ResourceOwnershipEntity>,
+    },
   },
 } satisfies IndexDefinitionsConfig;
 
 // Type helpers for better DX
 export type EntityType = keyof EntityStore['entities'];
-
-// Entity accessors
-export type ArtifactEntity = Artifact;
-export type UserEntity = User;
-export type NormalizationSessionEvent = NormalizationSessionEventEntity;
-export type NormalizationSessionProjectionEntity = NormalizationSessionProjection;

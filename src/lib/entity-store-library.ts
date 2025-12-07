@@ -9,11 +9,11 @@ export type EntitySlice<TId extends string = string, TEntity = unknown> = {
 
 export type EntityWithId<TId extends string = string> = { id: TId };
 
-export type IndexDefinition<TEntity = unknown> = {
+export type IndexDefinition = {
   // Extract the index key from an entity (e.g., sessionId from an event)
-  getIndexKey: (entity: TEntity) => string | undefined;
+  getIndexKey: (entity: unknown) => string | undefined;
   // Get the entity id to store in the index
-  getEntityId: (entity: TEntity) => string;
+  getEntityId: (entity: unknown) => string;
 };
 
 export type StoreConfig<TEntities extends Record<string, EntitySlice>> = {
