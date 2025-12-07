@@ -23,7 +23,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
   test('import: handles empty CSV file (creates table with schema, 0 rows)', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([]).withHeader(['name', 'age', 'city']).toString(); // Empty rows, header only
+    const csvContent = Csv.builder([]).withHeader(['name', 'age', 'city']).toString(); // Empty rows, header only
 
     const testKey = 'test-empty.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
@@ -61,7 +61,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
   test('import: handles CSV with only headers (no data rows)', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([]).withHeader(['col1', 'col2', 'col3']).toString();
+    const csvContent = Csv.builder([]).withHeader(['col1', 'col2', 'col3']).toString();
 
     const testKey = 'test-headers-only.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
@@ -97,7 +97,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       '123col',
       'very-long-column-name-that-exceeds-sixty-three-characters-should-be-truncated',
     ];
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       {
         'col-dash-1': 'value1',
         col_underscore_2: 'value2',
@@ -157,7 +157,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
   test('import: handles table names starting with numbers', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([{ name: 'Test', value: 100 }]).toString();
+    const csvContent = Csv.builder([{ name: 'Test', value: 100 }]).toString();
 
     const testKey = 'test-number-start.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
@@ -184,7 +184,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
   test('import: truncates long table names to 63 characters', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([{ col1: 'value1', col2: 'value2' }]).toString();
+    const csvContent = Csv.builder([{ col1: 'value1', col2: 'value2' }]).toString();
 
     const testKey = 'test-long-name.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);

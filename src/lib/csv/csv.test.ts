@@ -318,19 +318,19 @@ describe('Csv.of', () => {
       { name: 'John', age: 30, city: 'New York' },
       { name: 'Jane', age: 25, city: 'London' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,age,city\nJohn,30,New York\nJane,25,London');
   });
 
   it('returns empty string for empty array', () => {
-    const result = Csv.of([]).toString();
+    const result = Csv.builder([]).toString();
     expect(result).toBe('');
   });
 
   it('handles single object', () => {
     const data = [{ name: 'John', age: 30 }];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,age\nJohn,30');
   });
@@ -340,7 +340,7 @@ describe('Csv.of', () => {
       { name: 'John', age: null, city: undefined },
       { name: 'Jane', age: 25, city: 'London' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,age,city\nJohn,,\nJane,25,London');
   });
@@ -350,7 +350,7 @@ describe('Csv.of', () => {
       { name: 'John', address: '123 Main St, New York' },
       { name: 'Jane', address: '456 Oak Ave, London' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,address\nJohn,"123 Main St, New York"\nJane,"456 Oak Ave, London"');
   });
@@ -360,7 +360,7 @@ describe('Csv.of', () => {
       { name: 'John', quote: 'He said "Hello"' },
       { name: 'Jane', quote: 'She said "Hi"' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,quote\nJohn,"He said ""Hello"""\nJane,"She said ""Hi"""');
   });
@@ -370,14 +370,14 @@ describe('Csv.of', () => {
       { name: 'John', description: 'Line 1\nLine 2' },
       { name: 'Jane', description: 'Single line' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,description\nJohn,"Line 1\nLine 2"\nJane,Single line');
   });
 
   it('handles values with multiple special characters', () => {
     const data = [{ name: 'John', text: 'Value with, "quotes" and\nnewlines' }];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,text\nJohn,"Value with, ""quotes"" and\nnewlines"');
   });
@@ -387,7 +387,7 @@ describe('Csv.of', () => {
       { name: 'John', age: 30, price: 19.99 },
       { name: 'Jane', age: 25, price: 29.99 },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,age,price\nJohn,30,19.99\nJane,25,29.99');
   });
@@ -397,7 +397,7 @@ describe('Csv.of', () => {
       { name: 'John', active: true },
       { name: 'Jane', active: false },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,active\nJohn,true\nJane,false');
   });
@@ -407,7 +407,7 @@ describe('Csv.of', () => {
       { name: 'John', age: 30 },
       { name: 'Jane', age: 25, extra: 'ignored' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,age\nJohn,30\nJane,25');
   });
@@ -417,13 +417,13 @@ describe('Csv.of', () => {
       { name: 'John', description: '' },
       { name: 'Jane', description: 'Has description' },
     ];
-    const result = Csv.of(data).toString();
+    const result = Csv.builder(data).toString();
 
     expect(result).toBe('name,description\nJohn,\nJane,Has description');
   });
 
   it('withHeader: allows specifying headers for empty array', () => {
-    const result = Csv.of([]).withHeader(['name', 'age', 'city']).toString();
+    const result = Csv.builder([]).withHeader(['name', 'age', 'city']).toString();
     expect(result).toBe('name,age,city');
   });
 
@@ -432,19 +432,19 @@ describe('Csv.of', () => {
       { name: 'John', age: 30 },
       { name: 'Jane', age: 25 },
     ];
-    const result = Csv.of(data).withHeader(['first_name', 'years']).toString();
+    const result = Csv.builder(data).withHeader(['first_name', 'years']).toString();
     expect(result).toBe('first_name,years\nJohn,30\nJane,25');
   });
 
   it('withHeader: handles headers with more columns than data', () => {
     const data = [{ name: 'John', age: 30 }];
-    const result = Csv.of(data).withHeader(['name', 'age', 'city', 'country']).toString();
+    const result = Csv.builder(data).withHeader(['name', 'age', 'city', 'country']).toString();
     expect(result).toBe('name,age,city,country\nJohn,30,,');
   });
 
   it('withHeader: handles headers with fewer columns than data', () => {
     const data = [{ name: 'John', age: 30, city: 'New York', country: 'USA' }];
-    const result = Csv.of(data).withHeader(['name', 'age']).toString();
+    const result = Csv.builder(data).withHeader(['name', 'age']).toString();
     expect(result).toBe('name,age\nJohn,30');
   });
 });

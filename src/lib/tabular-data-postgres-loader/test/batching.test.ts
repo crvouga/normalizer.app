@@ -29,7 +29,7 @@ describe('TabularDataPostgresImporter - Batching', () => {
     for (let i = 1; i <= 6000; i++) {
       arr.push({ id: i, name: `Item${i}`, value: i * 10 });
     }
-    const csvContent = Csv.of(arr).toString();
+    const csvContent = Csv.builder(arr).toString();
 
     const testKey = 'test-large.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);

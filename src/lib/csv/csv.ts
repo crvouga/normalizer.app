@@ -22,14 +22,17 @@ export interface ParsedCsv {
  * @returns Parsed CSV with schema, data rows, and headers
  */
 function parse(csvContent: string): ParsedCsv {
+  // Split on \n only (preserves \r in values for CRLF handling)
+  // Filter out empty lines after trimming
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], dataRows: [], headers: [] };
   }
 
-  // Parse header row
+  // Parse header row and trim whitespace from headers
+  // Note: \r characters remain in header values (from CRLF), which is expected behavior
   const headerLine = lines[0]!;
-  const headers = parseLine(headerLine);
+  const headers = parseLine(headerLine).map((h) => h.trim());
 
   // Infer column types from first data rows
   const sampleRows: string[][] = [];
@@ -236,7 +239,7 @@ class CsvBuilder<T extends Record<string, unknown>> {
  * @param {T[]} data - Array of objects to convert to CSV.
  * @returns {CsvBuilder<T>} A builder instance with methods to configure and generate CSV.
  */
-function of<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
+function builder<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
   return new CsvBuilder(data);
 }
 
@@ -429,14 +432,42 @@ async function parseStreaming(stream: ReadableStream<Buffer>): Promise<Streaming
 
   buffer = firstChunk.value.toString('utf-8');
   const newlineIndex = buffer.indexOf('\n');
-  if (newlineIndex === -1) {
-    reader.releaseLock();
-    return { headers: [], rowStream: (async function* () {})() };
-  }
 
-  const headerLine = buffer.substring(0, newlineIndex).replace(/\r$/, '');
-  buffer = buffer.substring(newlineIndex + 1);
-  const resolvedHeaders = parseLine(headerLine);
+  let resolvedHeaders: string[];
+  if (newlineIndex === -1) {
+    // No newline found in first chunk
+    // Check if there's more data coming by reading another chunk
+    const secondChunk = await reader.read();
+    if (secondChunk.done) {
+      // Stream is done, entire buffer is the header (CSV with only headers, no data)
+      const headerLine = buffer.replace(/\r$/, '');
+      resolvedHeaders = parseLine(headerLine);
+      buffer = ''; // Clear buffer since we consumed it as header
+      reader.releaseLock();
+      return {
+        headers: resolvedHeaders,
+        rowStream: (async function* () {})(), // Empty stream - no data rows
+      };
+    } else {
+      // More data coming, append to buffer and look for newline again
+      buffer += secondChunk.value.toString('utf-8');
+      const newlineIndex2 = buffer.indexOf('\n');
+      if (newlineIndex2 === -1) {
+        // Still no newline - this is unusual but treat entire buffer as header
+        const headerLine = buffer.replace(/\r$/, '');
+        resolvedHeaders = parseLine(headerLine);
+        buffer = '';
+      } else {
+        const headerLine = buffer.substring(0, newlineIndex2).replace(/\r$/, '');
+        buffer = buffer.substring(newlineIndex2 + 1);
+        resolvedHeaders = parseLine(headerLine);
+      }
+    }
+  } else {
+    const headerLine = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+    buffer = buffer.substring(newlineIndex + 1);
+    resolvedHeaders = parseLine(headerLine);
+  }
 
   // Create generator for data rows
   async function* fullRowGenerator(): AsyncGenerator<string[], void, unknown> {
@@ -459,10 +490,11 @@ async function parseStreaming(stream: ReadableStream<Buffer>): Promise<Streaming
       }
 
       // Continue reading from stream
+      // Note: If buffer was consumed as header (no newline case), it's empty here
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          // Process any remaining buffer
+          // Process any remaining buffer (could be leftover data after last newline)
           if (buffer.trim()) {
             const row = parseLine(buffer.replace(/\r$/, ''));
             while (row.length < resolvedHeaders.length) {
@@ -505,7 +537,7 @@ async function parseStreaming(stream: ReadableStream<Buffer>): Promise<Streaming
  * CSV parsing utilities
  */
 export const Csv = {
-  of,
+  builder,
   parse,
   parseLine,
   inferColumnType,

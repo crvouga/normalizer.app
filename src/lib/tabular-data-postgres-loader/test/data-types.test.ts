@@ -24,7 +24,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
   test('import: handles all column types as TEXT', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       {
         text_col: 'Hello',
         integer_col: 42,
@@ -79,7 +79,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
   test('import: handles nullable columns', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { name: 'Alice', age: 30, email: null },
       { name: 'Bob', age: null, email: 'bob@example.com' },
       { name: 'Charlie', age: 25, email: 'charlie@example.com' },
