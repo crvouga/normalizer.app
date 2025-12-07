@@ -66,10 +66,18 @@ export const initialEntityStore: EntityStore = {
   },
 };
 
-// Define indexes declaratively
-export const indexDefinitions = {
-  normalizationSessionEventsBySessionId: {
-    entityType: 'normalizationSessionEvents' as const,
+// Type to enforce that index definitions match index names in EntityStore
+type IndexDefinitionsConfig = {
+  [K in keyof EntityStore['indexes']]: {
+    entityType: keyof EntityStore['entities'];
+    definition: IndexDefinition<any>;
+  };
+};
+
+// Define indexes declaratively with type safety
+export const indexDefinitions: IndexDefinitionsConfig = {
+  indexNormalizationSessionEventsBySessionId: {
+    entityType: 'normalizationSessionEvents',
     definition: {
       getIndexKey: (entity: unknown) => {
         if (
@@ -90,8 +98,8 @@ export const indexDefinitions = {
       },
     } as IndexDefinition<NormalizationSessionEventEntity>,
   },
-  normalizationSessionProjectionsByUserId: {
-    entityType: 'normalizationSessionProjections' as const,
+  indexNormalizationSessionProjectionsByUserId: {
+    entityType: 'normalizationSessionProjections',
     definition: {
       getIndexKey: (entity: unknown) => {
         if (
@@ -112,8 +120,8 @@ export const indexDefinitions = {
       },
     } as IndexDefinition<NormalizationSessionProjection>,
   },
-  resourceOwnershipsByResourceId: {
-    entityType: 'resourceOwnerships' as const,
+  indexResourceOwnershipsByResourceId: {
+    entityType: 'resourceOwnerships',
     definition: {
       getIndexKey: (entity: unknown) => {
         if (
@@ -134,7 +142,7 @@ export const indexDefinitions = {
       },
     } as IndexDefinition<ResourceOwnershipEntity>,
   },
-};
+} satisfies IndexDefinitionsConfig;
 
 // Type helpers for better DX
 export type EntityType = keyof EntityStore['entities'];
