@@ -130,7 +130,7 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
 
   // Minimum sample size for confident numeric type inference
   // If we have fewer samples, default to text to be safe
-  const MIN_SAMPLE_SIZE_FOR_NUMERIC = 10;
+  const MIN_SAMPLE_SIZE_FOR_NUMERIC = Math.min(10, values.length);
 
   // Check for integer first (before boolean) to avoid false positives
   // If all values are numeric integers, prefer integer over boolean
@@ -194,7 +194,7 @@ function escapeCsvValue(value: unknown): string {
 class CsvBuilder<T extends Record<string, unknown>> {
   private headers: string[] | null = null;
 
-  constructor(private readonly data: T[]) { }
+  constructor(private readonly data: T[]) {}
 
   /**
    * Specify headers explicitly (useful when data array is empty)
