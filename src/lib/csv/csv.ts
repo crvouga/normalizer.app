@@ -113,6 +113,13 @@ function parseLine(line: string): string[] {
 
 /**
  * Infer PostgreSQL column type from sample values
+ *
+ * IMPORTANT: This function takes a conservative approach to type inference.
+ * Since we only sample the first 1000 rows of a CSV file, we cannot be certain
+ * that all rows will match the inferred type. To prevent import failures when
+ * non-conforming values appear later in the file, we require a minimum sample
+ * size before inferring strict numeric types.
+ *
  * @param values - Array of string values from a column
  * @returns Inferred column type
  */
@@ -121,11 +128,16 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
     return 'text'; // Default to text if no data
   }
 
+  // Minimum sample size for confident numeric type inference
+  // If we have fewer samples, default to text to be safe
+  const MIN_SAMPLE_SIZE_FOR_NUMERIC = 10;
+
   // Check for integer first (before boolean) to avoid false positives
   // If all values are numeric integers, prefer integer over boolean
   // This prevents columns with numeric values like "1", "2", "3" from being inferred as boolean
   // when the sample only contains "1"
-  if (values.every((v) => /^-?\d+$/.test(v))) {
+  // CONSERVATIVE: Only infer integer if we have enough samples to be confident
+  if (values.length >= MIN_SAMPLE_SIZE_FOR_NUMERIC && values.every((v) => /^-?\d+$/.test(v))) {
     return 'integer';
   }
 
@@ -137,7 +149,11 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
   }
 
   // Check for numeric (decimal)
-  if (values.every((v) => /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(v))) {
+  // CONSERVATIVE: Only infer numeric if we have enough samples to be confident
+  if (
+    values.length >= MIN_SAMPLE_SIZE_FOR_NUMERIC &&
+    values.every((v) => /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(v))
+  ) {
     return 'numeric';
   }
 
@@ -178,7 +194,7 @@ function escapeCsvValue(value: unknown): string {
 class CsvBuilder<T extends Record<string, unknown>> {
   private headers: string[] | null = null;
 
-  constructor(private readonly data: T[]) {}
+  constructor(private readonly data: T[]) { }
 
   /**
    * Specify headers explicitly (useful when data array is empty)
@@ -229,6 +245,74 @@ function of<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
 }
 
 /**
+ * Result of streaming CSV header parse
+ */
+export interface CsvStreamHeader {
+  schema: CsvColumnSchema[];
+  headers: string[];
+}
+
+/**
+ * Parse just the header and schema from CSV content without loading all data.
+ * This is memory-efficient for large files.
+ * @param csvContent - The CSV content as a string
+ * @param sanitizeIdentifier - Optional function to sanitize column names
+ * @returns Header information including schema
+ */
+function parseHeader(
+  csvContent: string,
+  sanitizeIdentifier?: (identifier: string) => string,
+): CsvStreamHeader {
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+  if (lines.length === 0) {
+    return { schema: [], headers: [] };
+  }
+
+  // Parse header row
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+  const sanitizedHeaders = sanitizeIdentifier
+    ? headers.map((h) => sanitizeIdentifier(h.trim()))
+    : headers.map((h) => h.trim());
+
+  // Infer column types from first data rows (up to 1000 or all available)
+  const sampleRows: string[][] = [];
+  const maxSampleSize = Math.min(1000, lines.length - 1);
+  for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
+    const row = parseLine(lines[i]!);
+    // Pad row to match header length
+    while (row.length < sanitizedHeaders.length) {
+      row.push('');
+    }
+    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+  }
+
+  // Infer schema from sample data
+  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+    const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
+    const inferredType = inferColumnType(columnValues);
+    return {
+      name,
+      type: inferredType,
+      nullable: true,
+    };
+  });
+
+  return { schema, headers: sanitizedHeaders };
+}
+
+/**
+ * Count the number of data rows in CSV content without parsing all data.
+ * More efficient than loading and parsing the entire file.
+ * @param csvContent - The CSV content as a string
+ * @returns Number of data rows (excluding header)
+ */
+function countDataRows(csvContent: string): number {
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+  return Math.max(0, lines.length - 1); // Subtract header
+}
+
+/**
  * CSV parsing utilities
  */
 export const Csv = {
@@ -236,4 +320,6 @@ export const Csv = {
   parse,
   parseLine,
   inferColumnType,
+  parseHeader,
+  countDataRows,
 };

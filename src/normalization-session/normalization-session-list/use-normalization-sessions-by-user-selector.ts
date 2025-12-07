@@ -14,7 +14,7 @@ export function useNormalizationSessionsByUserSelector(
 ): NormalizationSessionProjection[] {
   // Get session IDs from the index with shallow equality check
   const sessionIds = useEntityStoreSelector(
-    (state) => state.indexes.normalizationSessionProjectionsByUserId[userId] || [],
+    (state) => state.indexes.indexNormalizationSessionProjectionsByUserId[userId] || [],
   );
 
   // Get the projections byId object with shallow equality check

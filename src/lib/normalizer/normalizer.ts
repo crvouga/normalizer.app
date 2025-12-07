@@ -47,7 +47,7 @@ export class Normalizer {
       return importedBatch.result;
     }
 
-    this.logger.info('Normalizing objects', {
+    this.logger.debug('Normalizing objects', {
       inputCount: params.inputs.length,
       targetCount: params.targets.length,
       outputObjectKeyPrefix: params.outputObjectKeyPrefix,
@@ -68,7 +68,7 @@ export class Normalizer {
       return Err(`Failed to get LLM completions: ${errorMessage}`);
     }
 
-    this.logger.info('LLM messages', { messages });
+    this.logger.debug('LLM messages', { messages });
 
     // Read all inputs using batch operation
     const inputsReadResult = await this.objectStore.readMany(params.inputs);
@@ -141,11 +141,11 @@ export class Normalizer {
 
     const outputs = writeResult.value;
 
-    this.logger.info('Successfully created all outputs', {
+    this.logger.debug('Successfully created all outputs', {
       outputCount: outputs.length,
     });
 
-    this.logger.info('Normalization completed', {
+    this.logger.debug('Normalization completed', {
       inputCount: params.inputs.length,
       targetCount: params.targets.length,
       outputCount: outputs.length,

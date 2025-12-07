@@ -149,7 +149,7 @@ const load = async (input: {
       const artifactDb = new ArtifactDb(db, logger);
       artifacts = await artifactDb.getByIds(Array.from(artifactIds) as ArtifactId[]);
 
-      artifacts = await artifactDb.refreshUrls({
+      artifacts = await artifactDb.refresh({
         artifacts,
         objectStore,
       });

@@ -109,15 +109,15 @@ export interface BatchImportResult {
 export class TabularDataPostgresImporter {
   private converter: TabularDataConverter;
   private postgresClient: PostgresClient;
+  private logger: Logger;
+  private objectStore: ObjectStore;
 
-  constructor(
-    sql: SqlDb,
-    private readonly logger: Logger,
-    private readonly objectStore: ObjectStore,
-  ) {
+  constructor(sql: SqlDb, logger: Logger, objectStore: ObjectStore) {
+    this.objectStore = objectStore;
+    this.logger = logger.child(TabularDataPostgresImporter.name);
     this.converter = new TabularDataConverter({
-      objectStore,
-      logger,
+      objectStore: this.objectStore,
+      logger: this.logger,
     });
     this.postgresClient = new PostgresClient(sql);
   }
@@ -161,18 +161,21 @@ export class TabularDataPostgresImporter {
         return Err('CSV file is empty');
       }
 
-      // Step 3: Parse CSV to extract schema and data
-      this.logger.debug('Parsing CSV data', { csvSize: csvContent.length });
-      const { schema, dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
+      // Step 3: Parse CSV header to extract schema (without parsing all data)
+      this.logger.debug('Parsing CSV header', { csvSize: csvContent.length });
+      const { schema } = Csv.parseHeader(csvContent, (id) => this.sanitizeIdentifier(id));
 
       if (schema.length === 0) {
         return Err('No columns found in CSV data');
       }
 
+      // Count data rows efficiently
+      const dataRowCount = Csv.countDataRows(csvContent);
+
       // Step 4: Sanitize table name
       const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
 
-      if (dataRows.length === 0) {
+      if (dataRowCount === 0) {
         this.logger.warn('No data rows found in CSV', { bucket, key });
         // Still create the table with schema
         const createResult = await this.createTable(sanitizedTableName, schema, options);
@@ -192,19 +195,40 @@ export class TabularDataPostgresImporter {
         return Err(createResult.error);
       }
 
-      // Step 6: Import data using COPY FROM STDIN (fastest method)
-      this.logger.debug('Importing data using COPY FROM STDIN', {
+      // Step 6: Import data using optimized batch insert
+      // Use the CSV parser to get data rows efficiently
+      this.logger.debug('Parsing CSV data for import', {
         tableName: sanitizedTableName,
-        rowCount: dataRows.length,
+        estimatedRowCount: dataRowCount,
       });
-      const copyResult = await this.copyData(sanitizedTableName, schema, dataRows);
 
-      if (!isOk(copyResult)) {
-        this.logger.error('Failed to copy data', { error: copyResult.error });
-        return Err(copyResult.error);
+      const columnNames = schema.map((col) => col.name);
+
+      // Parse CSV to get data rows using the existing parser
+      const { dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
+
+      // Convert to the format expected by insertBatch (empty strings to null)
+      const rows: (string | null)[][] = dataRows.map((row) =>
+        row.map((cell) => (cell === '' ? null : cell)),
+      );
+
+      this.logger.debug('Inserting data using batch insert', {
+        tableName: sanitizedTableName,
+        rowCount: rows.length,
+      });
+
+      const insertResult = await this.postgresClient.insertBatch(
+        sanitizedTableName,
+        columnNames,
+        rows,
+      );
+
+      if (!isOk(insertResult)) {
+        this.logger.error('Failed to insert data', { error: insertResult.error });
+        return Err(insertResult.error);
       }
 
-      const rowCount = copyResult.value;
+      const rowCount = insertResult.value;
       const duration = Date.now() - startTime;
       this.logger.info('Tabular data import completed', {
         tableName: sanitizedTableName,
@@ -369,6 +393,7 @@ export class TabularDataPostgresImporter {
 
   /**
    * Create PostgreSQL table with the given schema.
+   * All columns are created as TEXT type for simplicity.
    * Returns Result<void, string>
    */
   private async createTable(
@@ -397,19 +422,11 @@ export class TabularDataPostgresImporter {
       this.logger.debug('Creating table', { tableName, columnCount: schema.length });
 
       // Convert CsvColumnSchema[] to TableColumn[]
-      const typeMap: Record<CsvColumnSchema['type'], TableColumn['type']> = {
-        text: 'TEXT',
-        integer: 'INTEGER',
-        numeric: 'NUMERIC',
-        boolean: 'BOOLEAN',
-        date: 'DATE',
-        timestamp: 'TIMESTAMP',
-      };
-
+      // All columns are TEXT type
       const tableColumns: TableColumn[] = schema.map((col) => {
         const column: TableColumn = {
           name: col.name,
-          type: typeMap[col.type],
+          type: 'TEXT',
         };
         if (col.nullable !== undefined) {
           column.nullable = col.nullable;
@@ -434,84 +451,6 @@ export class TabularDataPostgresImporter {
       }
     }
     return Ok(undefined);
-  }
-
-  /**
-   * Import data using high-performance bulk insert with parameterized queries
-   * Uses large batches for maximum performance (fewer round trips to database)
-   * Returns Result<number, string>
-   */
-  private async copyData(
-    tableName: string,
-    schema: CsvColumnSchema[],
-    dataRows: string[][],
-  ): Promise<Result<number, string>> {
-    if (dataRows.length === 0) {
-      return Ok(0);
-    }
-
-    const columnNames = schema.map((col) => col.name);
-    // Convert string values to appropriate types based on schema
-    const rows: (string | number | boolean | null)[][] = dataRows.map((row) =>
-      row.map((cell, colIndex) => {
-        if (cell === '') {
-          return null;
-        }
-        const colSchema = schema[colIndex];
-        if (!colSchema) {
-          return cell;
-        }
-        return this.convertValue(cell, colSchema.type);
-      }),
-    );
-
-    return this.postgresClient.insertBatch(tableName, columnNames, rows);
-  }
-
-  /**
-   * Convert a string value to the appropriate type based on column schema
-   */
-  private convertValue(
-    value: string,
-    type: CsvColumnSchema['type'],
-  ): string | number | boolean | null {
-    if (value === '' || value === null) {
-      return null;
-    }
-
-    switch (type) {
-      case 'boolean': {
-        const lower = value.toLowerCase().trim();
-        // Handle common boolean representations
-        if (lower === 'true' || lower === 'yes' || lower === '1' || lower === 'y') {
-          return true;
-        }
-        if (lower === 'false' || lower === 'no' || lower === '0' || lower === 'n') {
-          return false;
-        }
-        // If it doesn't match known boolean values, return as-is (will cause validation error)
-        return value;
-      }
-      case 'integer': {
-        const parsed = parseInt(value, 10);
-        if (isNaN(parsed)) {
-          return value; // Return as string if can't parse (will cause validation error)
-        }
-        return parsed;
-      }
-      case 'numeric': {
-        const parsed = parseFloat(value);
-        if (isNaN(parsed)) {
-          return value; // Return as string if can't parse (will cause validation error)
-        }
-        return parsed;
-      }
-      case 'date':
-      case 'timestamp':
-      case 'text':
-      default:
-        return value;
-    }
   }
 }
 

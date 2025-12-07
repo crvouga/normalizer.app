@@ -42,7 +42,7 @@ export const normalizationSessionListRouter = router({
       if (artifactIds.length > 0) {
         const artifactDb = new ArtifactDb(ctx.db, ctx.logger);
         artifacts = await artifactDb.getByIds(artifactIds);
-        artifacts = await artifactDb.refreshUrls({
+        artifacts = await artifactDb.refresh({
           artifacts,
           objectStore: ctx.objectStore,
         });

@@ -36,7 +36,7 @@ export const artifactRouter = router({
         uploadedByUserId: artifact.uploaded_by_user_id,
       });
 
-      const artifactsWithUrls = await artifactDb.refreshUrls({
+      const artifactsWithUrls = await artifactDb.refresh({
         artifacts: [artifact],
         objectStore: ctx.objectStore,
       });
@@ -57,7 +57,7 @@ export const artifactRouter = router({
 
       ctx.logger.info('Artifact list result', { count: artifacts.length });
 
-      const artifactsWithUrls = await artifactDb.refreshUrls({
+      const artifactsWithUrls = await artifactDb.refresh({
         artifacts,
         objectStore: ctx.objectStore,
       });

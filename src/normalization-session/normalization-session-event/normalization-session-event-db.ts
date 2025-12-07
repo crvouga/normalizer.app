@@ -67,3 +67,10 @@ export class NormalizationSessionEventDb {
     return eventToInsert;
   }
 }
+
+export function createNormalizationSessionEventDb(params: {
+  tx: Tx | Db;
+  logger: Logger;
+}): NormalizationSessionEventDb {
+  return new NormalizationSessionEventDb(params.tx, params.logger);
+}

@@ -21,7 +21,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
     await cleanupFixtures(fixtures);
   });
 
-  test('import: handles all column types correctly', async () => {
+  test('import: handles all column types as TEXT', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
     const csvContent = Csv.of([
@@ -59,17 +59,17 @@ describe('TabularDataPostgresImporter - Data types', () => {
       if (isOk(schemaResult)) {
         const schema = schemaResult.value;
         expect(schema.length).toBe(5);
+        // All columns should be TEXT type
         const textCol = schema.find((c) => c.column_name === 'text_col');
         expect(textCol?.data_type).toBe('text');
         const integerCol = schema.find((c) => c.column_name === 'integer_col');
-        expect(integerCol?.data_type).toBe('integer');
+        expect(integerCol?.data_type).toBe('text');
         const numericCol = schema.find((c) => c.column_name === 'numeric_col');
-        expect(numericCol?.data_type).toBe('numeric');
+        expect(numericCol?.data_type).toBe('text');
         const dateCol = schema.find((c) => c.column_name === 'date_col');
-        expect(dateCol?.data_type).toBe('date');
+        expect(dateCol?.data_type).toBe('text');
         const timestampCol = schema.find((c) => c.column_name === 'timestamp_col');
-        // PostgreSQL returns "timestamp without time zone" for timestamp type
-        expect(timestampCol?.data_type).toMatch(/^timestamp/);
+        expect(timestampCol?.data_type).toBe('text');
       }
     }
 
@@ -99,7 +99,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
         tableName,
         z.object({
           name: z.string(),
-          age: z.number().nullable(),
+          age: z.string().nullable(), // TEXT type
           email: z.string().nullable(),
         }),
       );
@@ -109,7 +109,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
         expect(rows.length).toBe(3);
         expect(rows[0]?.email).toBeNull();
         expect(rows[1]?.age).toBeNull();
-        expect(rows[2]?.age).toBe(25);
+        expect(rows[2]?.age).toBe('25'); // String now
       }
     }
 

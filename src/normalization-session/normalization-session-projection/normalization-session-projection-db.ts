@@ -151,3 +151,10 @@ export class NormalizationSessionProjectionDb {
     return parsed.startedByUserId;
   }
 }
+
+export function createNormalizationSessionProjectionDb(params: {
+  tx: Tx | Db;
+  logger: Logger;
+}): NormalizationSessionProjectionDb {
+  return new NormalizationSessionProjectionDb(params.tx, params.logger);
+}
