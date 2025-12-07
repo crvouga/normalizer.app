@@ -1,9 +1,17 @@
 import { createHmac } from 'crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import {
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import { join, resolve } from 'path';
 import { handleError } from '../error';
 import type { Logger } from '../logger';
-import { Ok, type Result } from '../result';
+import { Err, Ok, type Result } from '../result';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
 
@@ -449,6 +457,64 @@ export class FilesystemObjectStore extends ObjectStore {
         logMessage: 'Failed to get endpoint info',
         context: { serverBaseUrl: this.serverBaseUrl },
         errorPrefix: 'Failed to get endpoint info',
+      });
+    }
+  }
+
+  async readStream(params: ObjectLocation): Promise<Result<ReadableStream<Buffer>, string>> {
+    this.logger.debug('Reading object stream from filesystem', {
+      bucket: params.bucket,
+      key: params.key,
+    });
+
+    try {
+      const filePath = this.getObjectPath(params.bucket, params.key);
+
+      if (!existsSync(filePath)) {
+        this.logger.debug('Object not found on filesystem', {
+          bucket: params.bucket,
+          key: params.key,
+          filePath,
+        });
+        return Err(`Object not found: ${ObjectLocation.encode(params)}`);
+      }
+
+      // Create a Node.js ReadStream and convert it to Web ReadableStream
+      const nodeStream = createReadStream(filePath);
+
+      const webStream = new ReadableStream<Buffer>({
+        start(controller) {
+          nodeStream.on('data', (chunk: Buffer | string) => {
+            // Ensure chunk is a Buffer
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            controller.enqueue(buffer);
+          });
+
+          nodeStream.on('end', () => {
+            controller.close();
+          });
+
+          nodeStream.on('error', (error) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            controller.error(new Error(`Failed to read stream: ${errorMessage}`));
+          });
+        },
+        cancel() {
+          nodeStream.destroy();
+        },
+      });
+
+      this.logger.debug('Successfully created stream for object from filesystem', {
+        bucket: params.bucket,
+        key: params.key,
+      });
+      return Ok(webStream);
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to read object stream from filesystem',
+        context: { bucket: params.bucket, key: params.key },
+        errorPrefix: 'Failed to read object stream',
       });
     }
   }

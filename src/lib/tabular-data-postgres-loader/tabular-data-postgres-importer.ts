@@ -124,11 +124,11 @@ export class TabularDataPostgresImporter {
 
   /**
    * Import tabular data from object store into PostgreSQL table.
-   * This method:
+   * This method uses streaming for maximum performance and memory efficiency:
    * 1. Converts the file to CSV format using TabularDataConverter
-   * 2. Parses CSV to extract schema and data
+   * 2. Streams CSV data and parses headers
    * 3. Creates the table dynamically
-   * 4. Uses COPY FROM STDIN for maximum performance
+   * 4. Uses COPY FROM STDIN (or optimized batch insert) for maximum performance
    *
    * @param bucket - Object store bucket name
    * @param key - Object store key (file path)
@@ -147,24 +147,25 @@ export class TabularDataPostgresImporter {
       this.logger.debug('Converting file to CSV format', { bucket, key });
       const convertResult = await this.converter.convert(bucket, key, 'csv');
 
-      // Step 2: Read the converted CSV file
-      const csvResult = await this.objectStore.read({
+      // Step 2: Read the converted CSV file as a stream
+      this.logger.debug('Reading CSV file as stream', {
         bucket: convertResult.bucket,
         key: convertResult.key,
       });
-      if (isErr(csvResult)) {
-        return Err(`Failed to read converted CSV: ${csvResult.error}`);
+      const csvStreamResult = await this.objectStore.readStream({
+        bucket: convertResult.bucket,
+        key: convertResult.key,
+      });
+      if (isErr(csvStreamResult)) {
+        return Err(`Failed to read converted CSV stream: ${csvStreamResult.error}`);
       }
 
-      const csvContent = csvResult.value.toString('utf-8');
-      if (!csvContent || csvContent.trim().length === 0) {
-        return Err('CSV file is empty');
-      }
-
-      // Step 3: Parse CSV headers and lines in a single pass (no schema inference needed)
-      // All columns will be TEXT type, so we only need the header names
-      this.logger.debug('Parsing CSV headers', { csvSize: csvContent.length });
-      const { headers, lines, dataRowCount } = Csv.parseHeaders(csvContent);
+      // Step 3: Parse CSV headers and create streaming row generator
+      this.logger.debug('Parsing CSV stream', {
+        bucket: convertResult.bucket,
+        key: convertResult.key,
+      });
+      const { headers, rowStream } = await Csv.parseStreaming(csvStreamResult.value);
 
       if (headers.length === 0) {
         return Err('No columns found in CSV data');
@@ -189,17 +190,25 @@ export class TabularDataPostgresImporter {
         return Err(createResult.error);
       }
 
-      if (dataRowCount === 0) {
-        this.logger.warn('No data rows found in CSV', { bucket, key });
-        return Ok({ tableName: sanitizedTableName, rowCount: 0 });
+      // Step 6: Convert row stream to format expected by copyFromStream
+      // The rowStream yields string arrays, we need to convert empty strings to null
+      async function* convertRowStream(
+        source: AsyncGenerator<string[], void, unknown>,
+      ): AsyncGenerator<(string | null)[], void, unknown> {
+        for await (const row of source) {
+          yield row.map((cell) => (cell === '' ? null : cell));
+        }
       }
 
-      // Step 6: Import data using optimized batch streaming
-      const insertResult = await this.insertCsvDataInBatches(
+      // Step 7: Import data using COPY FROM STDIN (or optimized batch insert)
+      this.logger.debug('Importing data using streaming COPY', {
+        tableName: sanitizedTableName,
+        columnCount: sanitizedHeaders.length,
+      });
+      const insertResult = await this.postgresClient.copyFromStream(
         sanitizedTableName,
         sanitizedHeaders,
-        lines,
-        dataRowCount,
+        convertRowStream(rowStream),
       );
 
       if (isErr(insertResult)) {
@@ -212,7 +221,7 @@ export class TabularDataPostgresImporter {
         tableName: sanitizedTableName,
         rowCount,
         duration,
-        rowsPerSecond: Math.round((rowCount / duration) * 1000),
+        rowsPerSecond: rowCount > 0 ? Math.round((rowCount / duration) * 1000) : 0,
       });
 
       return Ok({ tableName: sanitizedTableName, rowCount });
@@ -403,65 +412,6 @@ export class TabularDataPostgresImporter {
       }
     }
     return Ok(undefined);
-  }
-
-  /**
-   * Import CSV data using optimized batch streaming.
-   * Processes data in batches to avoid loading all rows into memory.
-   * @param tableName - Sanitized table name
-   * @param headers - Array of column names
-   * @param lines - Array of CSV lines (header at index 0, data rows start at index 1)
-   * @param estimatedRowCount - Estimated number of data rows (for logging)
-   * @returns Result containing the total number of rows inserted, or an error
-   */
-  private async insertCsvDataInBatches(
-    tableName: string,
-    columnNames: string[],
-    lines: string[],
-    estimatedRowCount: number,
-  ): Promise<Result<number, string>> {
-    this.logger.debug('Importing CSV data in batches', {
-      tableName,
-      estimatedRowCount,
-    });
-
-    const BATCH_SIZE = 5000;
-    let totalInserted = 0;
-
-    // Process data rows in batches (skip header at index 0)
-    for (let i = 1; i < lines.length; i += BATCH_SIZE) {
-      const batchEnd = Math.min(i + BATCH_SIZE, lines.length);
-      const batchLines = lines.slice(i, batchEnd);
-
-      // Parse only the current batch
-      const rows: (string | null)[][] = [];
-      for (const line of batchLines) {
-        const values = Csv.parseLine(line);
-        // Pad or truncate row to match header length
-        while (values.length < columnNames.length) {
-          values.push('');
-        }
-        // Convert empty strings to null during parsing (not after)
-        const row = values.slice(0, columnNames.length).map((cell) => (cell === '' ? null : cell));
-        rows.push(row);
-      }
-
-      // Insert current batch
-      const insertResult = await this.postgresClient.insertBatch(tableName, columnNames, rows);
-
-      if (isErr(insertResult)) {
-        this.logger.error('Failed to insert data batch', {
-          error: insertResult.error,
-          batchStart: i,
-          batchEnd,
-        });
-        return Err(insertResult.error);
-      }
-
-      totalInserted += insertResult.value;
-    }
-
-    return Ok(totalInserted);
   }
 }
 

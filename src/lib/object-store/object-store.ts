@@ -173,4 +173,12 @@ export abstract class ObjectStore {
    * @returns Result containing base URL (protocol + host) and whether HTTPS should be used
    */
   abstract getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>>;
+
+  /**
+   * Read an object from storage as a stream.
+   * This is more memory-efficient for large files as it doesn't load the entire file into memory.
+   * @param params Object containing bucket and key
+   * @returns Result containing a ReadableStream of Buffer chunks, or an error message
+   */
+  abstract readStream(params: ObjectLocation): Promise<Result<ReadableStream<Buffer>, string>>;
 }

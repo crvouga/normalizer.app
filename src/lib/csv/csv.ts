@@ -402,6 +402,106 @@ function parseMetadata(csvContent: string): ParsedCsvMetadata {
 }
 
 /**
+ * Result of streaming CSV parse
+ */
+export interface StreamingCsvResult {
+  headers: string[];
+  rowStream: AsyncGenerator<string[], void, unknown>;
+}
+
+/**
+ * Parse CSV from a stream, yielding rows as they're parsed.
+ * This is memory-efficient for large files as it doesn't load the entire file into memory.
+ *
+ * @param stream - ReadableStream of Buffer chunks containing CSV data
+ * @returns Promise resolving to headers and an async generator of data rows
+ */
+async function parseStreaming(stream: ReadableStream<Buffer>): Promise<StreamingCsvResult> {
+  const reader = stream.getReader();
+  let buffer = '';
+
+  // Read first chunk to get headers
+  const firstChunk = await reader.read();
+  if (firstChunk.done) {
+    reader.releaseLock();
+    return { headers: [], rowStream: (async function* () {})() };
+  }
+
+  buffer = firstChunk.value.toString('utf-8');
+  const newlineIndex = buffer.indexOf('\n');
+  if (newlineIndex === -1) {
+    reader.releaseLock();
+    return { headers: [], rowStream: (async function* () {})() };
+  }
+
+  const headerLine = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+  buffer = buffer.substring(newlineIndex + 1);
+  const resolvedHeaders = parseLine(headerLine);
+
+  // Create generator for data rows
+  async function* fullRowGenerator(): AsyncGenerator<string[], void, unknown> {
+    try {
+      // Process remaining buffer from header read
+      while (true) {
+        const newlineIndex = buffer.indexOf('\n');
+        if (newlineIndex === -1) {
+          break;
+        }
+        const line = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+        buffer = buffer.substring(newlineIndex + 1);
+        if (line.trim()) {
+          const row = parseLine(line);
+          while (row.length < resolvedHeaders.length) {
+            row.push('');
+          }
+          yield row.slice(0, resolvedHeaders.length);
+        }
+      }
+
+      // Continue reading from stream
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Process any remaining buffer
+          if (buffer.trim()) {
+            const row = parseLine(buffer.replace(/\r$/, ''));
+            while (row.length < resolvedHeaders.length) {
+              row.push('');
+            }
+            yield row.slice(0, resolvedHeaders.length);
+          }
+          break;
+        }
+
+        buffer += value.toString('utf-8');
+        while (true) {
+          const newlineIndex = buffer.indexOf('\n');
+          if (newlineIndex === -1) {
+            break;
+          }
+          const line = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+          buffer = buffer.substring(newlineIndex + 1);
+          if (line.trim()) {
+            const row = parseLine(line);
+            while (row.length < resolvedHeaders.length) {
+              row.push('');
+            }
+            yield row.slice(0, resolvedHeaders.length);
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  return {
+    headers: resolvedHeaders,
+    rowStream: fullRowGenerator(),
+  };
+}
+
+/**
  * CSV parsing utilities
  */
 export const Csv = {
@@ -413,4 +513,5 @@ export const Csv = {
   countDataRows,
   parseMetadata,
   parseHeaders,
+  parseStreaming,
 };
