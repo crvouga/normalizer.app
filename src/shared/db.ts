@@ -4,7 +4,7 @@ import { drizzle, type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres';
 import * as schema from '../db/schema';
 import type { Logger } from '../lib/logger';
-import { createPostgresConnection } from './postgres';
+import { createPostgresConnection } from './postgres-connection';
 
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
 

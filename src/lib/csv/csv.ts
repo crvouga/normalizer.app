@@ -19,10 +19,9 @@ export interface ParsedCsv {
 /**
  * Parse CSV content into schema and data rows
  * @param csvContent - The CSV content as a string
- * @param sanitizeIdentifier - Optional function to sanitize column names (e.g., for SQL identifiers)
  * @returns Parsed CSV with schema, data rows, and headers
  */
-function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => string): ParsedCsv {
+function parse(csvContent: string): ParsedCsv {
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], dataRows: [], headers: [] };
@@ -31,9 +30,6 @@ function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => 
   // Parse header row
   const headerLine = lines[0]!;
   const headers = parseLine(headerLine);
-  const sanitizedHeaders = sanitizeIdentifier
-    ? headers.map((h) => sanitizeIdentifier(h.trim()))
-    : headers.map((h) => h.trim());
 
   // Infer column types from first data rows
   const sampleRows: string[][] = [];
@@ -41,14 +37,14 @@ function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => 
   for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+    sampleRows.push(row.slice(0, headers.length));
   }
 
   // Infer schema from sample data
-  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
     const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
     const inferredType = inferColumnType(columnValues);
     return {
@@ -63,13 +59,13 @@ function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => 
   for (let i = 1; i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad or truncate row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    dataRows.push(row.slice(0, sanitizedHeaders.length));
+    dataRows.push(row.slice(0, headers.length));
   }
 
-  return { schema, dataRows, headers: sanitizedHeaders };
+  return { schema, dataRows, headers };
 }
 
 /**
@@ -256,13 +252,9 @@ export interface CsvStreamHeader {
  * Parse just the header and schema from CSV content without loading all data.
  * This is memory-efficient for large files.
  * @param csvContent - The CSV content as a string
- * @param sanitizeIdentifier - Optional function to sanitize column names
  * @returns Header information including schema
  */
-function parseHeader(
-  csvContent: string,
-  sanitizeIdentifier?: (identifier: string) => string,
-): CsvStreamHeader {
+function parseHeader(csvContent: string): CsvStreamHeader {
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], headers: [] };
@@ -271,9 +263,6 @@ function parseHeader(
   // Parse header row
   const headerLine = lines[0]!;
   const headers = parseLine(headerLine);
-  const sanitizedHeaders = sanitizeIdentifier
-    ? headers.map((h) => sanitizeIdentifier(h.trim()))
-    : headers.map((h) => h.trim());
 
   // Infer column types from first data rows (up to 1000 or all available)
   const sampleRows: string[][] = [];
@@ -281,14 +270,14 @@ function parseHeader(
   for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+    sampleRows.push(row.slice(0, headers.length));
   }
 
   // Infer schema from sample data
-  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
     const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
     const inferredType = inferColumnType(columnValues);
     return {
@@ -298,7 +287,7 @@ function parseHeader(
     };
   });
 
-  return { schema, headers: sanitizedHeaders };
+  return { schema, headers };
 }
 
 /**
@@ -313,6 +302,106 @@ function countDataRows(csvContent: string): number {
 }
 
 /**
+ * Result of parsing CSV metadata for batch processing
+ */
+export interface ParsedCsvMetadata {
+  schema: CsvColumnSchema[];
+  headers: string[];
+  lines: string[]; // Raw lines for batch processing (includes header at index 0)
+  dataRowCount: number;
+}
+
+/**
+ * Simplified result for batch processing without schema inference
+ */
+export interface ParsedCsvHeaders {
+  headers: string[];
+  lines: string[]; // Raw lines for batch processing (includes header at index 0)
+  dataRowCount: number;
+}
+
+/**
+ * Parse CSV headers and lines in a single pass without schema inference.
+ * This is optimized for cases where all columns will be TEXT type.
+ *
+ * @param csvContent - The CSV content as a string
+ * @returns Parsed CSV headers, lines array, and row count
+ */
+function parseHeaders(csvContent: string): ParsedCsvHeaders {
+  // Split CSV only once - this is the expensive operation
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { headers: [], lines: [], dataRowCount: 0 };
+  }
+
+  // Parse header row only
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+
+  const dataRowCount = Math.max(0, lines.length - 1); // Subtract header
+
+  return {
+    headers,
+    lines, // Return all lines for batch processing
+    dataRowCount,
+  };
+}
+
+/**
+ * Parse CSV metadata (header, schema, and lines) in a single pass.
+ * This is optimized for batch processing where you want to process data
+ * in chunks without loading all rows into memory at once.
+ *
+ * @param csvContent - The CSV content as a string
+ * @returns Parsed CSV metadata with schema, headers, lines array, and row count
+ */
+function parseMetadata(csvContent: string): ParsedCsvMetadata {
+  // Split CSV only once - this is the expensive operation
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { schema: [], headers: [], lines: [], dataRowCount: 0 };
+  }
+
+  // Parse header row
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+
+  // Infer column types from first data rows (up to 1000 or all available)
+  const sampleRows: string[][] = [];
+  const maxSampleSize = Math.min(1000, lines.length - 1);
+  for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
+    const row = parseLine(lines[i]!);
+    // Pad row to match header length
+    while (row.length < headers.length) {
+      row.push('');
+    }
+    sampleRows.push(row.slice(0, headers.length));
+  }
+
+  // Infer schema from sample data
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
+    const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
+    const inferredType = inferColumnType(columnValues);
+    return {
+      name,
+      type: inferredType,
+      nullable: true,
+    };
+  });
+
+  const dataRowCount = Math.max(0, lines.length - 1); // Subtract header
+
+  return {
+    schema,
+    headers,
+    lines, // Return all lines for batch processing
+    dataRowCount,
+  };
+}
+
+/**
  * CSV parsing utilities
  */
 export const Csv = {
@@ -322,4 +411,6 @@ export const Csv = {
   inferColumnType,
   parseHeader,
   countDataRows,
+  parseMetadata,
+  parseHeaders,
 };

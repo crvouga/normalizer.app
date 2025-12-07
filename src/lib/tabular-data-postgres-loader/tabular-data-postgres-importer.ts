@@ -2,7 +2,7 @@ import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { PostgresClient, type TableColumn } from '../postgres/postgres-client';
-import { isOk, Ok, Err, type Result, combineUntilError } from '../result';
+import { combineUntilError, Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
@@ -152,7 +152,7 @@ export class TabularDataPostgresImporter {
         bucket: convertResult.bucket,
         key: convertResult.key,
       });
-      if (!isOk(csvResult)) {
+      if (isErr(csvResult)) {
         return Err(`Failed to read converted CSV: ${csvResult.error}`);
       }
 
@@ -161,70 +161,48 @@ export class TabularDataPostgresImporter {
         return Err('CSV file is empty');
       }
 
-      // Step 3: Parse CSV header to extract schema (without parsing all data)
-      this.logger.debug('Parsing CSV header', { csvSize: csvContent.length });
-      const { schema } = Csv.parseHeader(csvContent, (id) => this.sanitizeIdentifier(id));
+      // Step 3: Parse CSV headers and lines in a single pass (no schema inference needed)
+      // All columns will be TEXT type, so we only need the header names
+      this.logger.debug('Parsing CSV headers', { csvSize: csvContent.length });
+      const { headers, lines, dataRowCount } = Csv.parseHeaders(csvContent);
 
-      if (schema.length === 0) {
+      if (headers.length === 0) {
         return Err('No columns found in CSV data');
       }
 
-      // Count data rows efficiently
-      const dataRowCount = Csv.countDataRows(csvContent);
+      const sanitizedHeaders = headers.map((name) => PostgresClient.sanitizeIdentifier(name));
 
       // Step 4: Sanitize table name
-      const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
+      const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.tableName);
 
-      if (dataRowCount === 0) {
-        this.logger.warn('No data rows found in CSV', { bucket, key });
-        // Still create the table with schema
-        const createResult = await this.createTable(sanitizedTableName, schema, options);
-        if (!isOk(createResult)) {
-          this.logger.error('Failed to create table for empty dataset', {
-            error: createResult.error,
-          });
-          return Err(createResult.error);
-        }
-        return Ok({ tableName: sanitizedTableName, rowCount: 0 });
-      }
+      // Generate schema with all TEXT columns (no type inference needed)
+      const schema: CsvColumnSchema[] = sanitizedHeaders.map((name) => ({
+        name,
+        type: 'text',
+        nullable: true,
+      }));
 
       // Step 5: Create table
       const createResult = await this.createTable(sanitizedTableName, schema, options);
-      if (!isOk(createResult)) {
+      if (isErr(createResult)) {
         this.logger.error('Failed to create table', { error: createResult.error });
         return Err(createResult.error);
       }
 
-      // Step 6: Import data using optimized batch insert
-      // Use the CSV parser to get data rows efficiently
-      this.logger.debug('Parsing CSV data for import', {
-        tableName: sanitizedTableName,
-        estimatedRowCount: dataRowCount,
-      });
+      if (dataRowCount === 0) {
+        this.logger.warn('No data rows found in CSV', { bucket, key });
+        return Ok({ tableName: sanitizedTableName, rowCount: 0 });
+      }
 
-      const columnNames = schema.map((col) => col.name);
-
-      // Parse CSV to get data rows using the existing parser
-      const { dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
-
-      // Convert to the format expected by insertBatch (empty strings to null)
-      const rows: (string | null)[][] = dataRows.map((row) =>
-        row.map((cell) => (cell === '' ? null : cell)),
-      );
-
-      this.logger.debug('Inserting data using batch insert', {
-        tableName: sanitizedTableName,
-        rowCount: rows.length,
-      });
-
-      const insertResult = await this.postgresClient.insertBatch(
+      // Step 6: Import data using optimized batch streaming
+      const insertResult = await this.insertCsvDataInBatches(
         sanitizedTableName,
-        columnNames,
-        rows,
+        sanitizedHeaders,
+        lines,
+        dataRowCount,
       );
 
-      if (!isOk(insertResult)) {
-        this.logger.error('Failed to insert data', { error: insertResult.error });
+      if (isErr(insertResult)) {
         return Err(insertResult.error);
       }
 
@@ -366,32 +344,6 @@ export class TabularDataPostgresImporter {
   }
 
   /**
-   * Sanitize identifier for SQL safety (table/column names)
-   * Only allows alphanumeric characters and underscores, must start with letter or underscore
-   */
-  private sanitizeIdentifier(identifier: string): string {
-    // Remove any characters that aren't alphanumeric or underscore
-    let sanitized = identifier.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    // Ensure it starts with a letter or underscore (not a number)
-    if (/^\d/.test(sanitized)) {
-      sanitized = `_${sanitized}`;
-    }
-
-    // Ensure it's not empty
-    if (sanitized.length === 0) {
-      sanitized = '_unnamed';
-    }
-
-    // PostgreSQL identifier limit is 63 characters
-    if (sanitized.length > 63) {
-      sanitized = sanitized.substring(0, 63);
-    }
-
-    return sanitized;
-  }
-
-  /**
    * Create PostgreSQL table with the given schema.
    * All columns are created as TEXT type for simplicity.
    * Returns Result<void, string>
@@ -405,14 +357,14 @@ export class TabularDataPostgresImporter {
     if (options.dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
       const dropResult = await this.postgresClient.dropTable(tableName);
-      if (!isOk(dropResult)) {
+      if (isErr(dropResult)) {
         return Err(`Failed to drop table: ${dropResult.error}`);
       }
     }
 
     // Check if table exists
     const tableExistsResult = await this.postgresClient.tableExists(tableName);
-    if (!isOk(tableExistsResult)) {
+    if (isErr(tableExistsResult)) {
       return Err(`Failed to check if table exists: ${tableExistsResult.error}`);
     }
     const tableExists = tableExistsResult.value;
@@ -435,7 +387,7 @@ export class TabularDataPostgresImporter {
       });
 
       const createResult = await this.postgresClient.createTable(tableName, tableColumns);
-      if (!isOk(createResult)) {
+      if (isErr(createResult)) {
         return Err(`Failed to create table: ${createResult.error}`);
       }
     } else {
@@ -446,11 +398,70 @@ export class TabularDataPostgresImporter {
     if (options.truncate) {
       this.logger.debug('Truncating table', { tableName });
       const truncateResult = await this.postgresClient.truncateTable(tableName);
-      if (!isOk(truncateResult)) {
+      if (isErr(truncateResult)) {
         return Err(`Failed to truncate table: ${truncateResult.error}`);
       }
     }
     return Ok(undefined);
+  }
+
+  /**
+   * Import CSV data using optimized batch streaming.
+   * Processes data in batches to avoid loading all rows into memory.
+   * @param tableName - Sanitized table name
+   * @param headers - Array of column names
+   * @param lines - Array of CSV lines (header at index 0, data rows start at index 1)
+   * @param estimatedRowCount - Estimated number of data rows (for logging)
+   * @returns Result containing the total number of rows inserted, or an error
+   */
+  private async insertCsvDataInBatches(
+    tableName: string,
+    columnNames: string[],
+    lines: string[],
+    estimatedRowCount: number,
+  ): Promise<Result<number, string>> {
+    this.logger.debug('Importing CSV data in batches', {
+      tableName,
+      estimatedRowCount,
+    });
+
+    const BATCH_SIZE = 5000;
+    let totalInserted = 0;
+
+    // Process data rows in batches (skip header at index 0)
+    for (let i = 1; i < lines.length; i += BATCH_SIZE) {
+      const batchEnd = Math.min(i + BATCH_SIZE, lines.length);
+      const batchLines = lines.slice(i, batchEnd);
+
+      // Parse only the current batch
+      const rows: (string | null)[][] = [];
+      for (const line of batchLines) {
+        const values = Csv.parseLine(line);
+        // Pad or truncate row to match header length
+        while (values.length < columnNames.length) {
+          values.push('');
+        }
+        // Convert empty strings to null during parsing (not after)
+        const row = values.slice(0, columnNames.length).map((cell) => (cell === '' ? null : cell));
+        rows.push(row);
+      }
+
+      // Insert current batch
+      const insertResult = await this.postgresClient.insertBatch(tableName, columnNames, rows);
+
+      if (isErr(insertResult)) {
+        this.logger.error('Failed to insert data batch', {
+          error: insertResult.error,
+          batchStart: i,
+          batchEnd,
+        });
+        return Err(insertResult.error);
+      }
+
+      totalInserted += insertResult.value;
+    }
+
+    return Ok(totalInserted);
   }
 }
 

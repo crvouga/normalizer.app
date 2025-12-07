@@ -460,4 +460,30 @@ export class PostgresClient {
 
     return result;
   }
+
+  /**
+   * Sanitize identifier for SQL safety (table/column names)
+   * Only allows alphanumeric characters and underscores, must start with letter or underscore
+   */
+  public static sanitizeIdentifier(identifier: string): string {
+    // Remove any characters that aren't alphanumeric or underscore
+    let sanitized = identifier.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    // Ensure it starts with a letter or underscore (not a number)
+    if (/^\d/.test(sanitized)) {
+      sanitized = `_${sanitized}`;
+    }
+
+    // Ensure it's not empty
+    if (sanitized.length === 0) {
+      sanitized = '_unnamed';
+    }
+
+    // PostgreSQL identifier limit is 63 characters
+    if (sanitized.length > 63) {
+      sanitized = sanitized.substring(0, 63);
+    }
+
+    return sanitized;
+  }
 }

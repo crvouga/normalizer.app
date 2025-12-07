@@ -2,7 +2,7 @@ import type { Logger } from '../lib/logger';
 import type { SqlDb } from '../lib/sql-db/sql-db';
 import { PgliteSqlDb } from '../lib/sql-db/sql-db-pglite';
 import { PostgresSqlDb } from '../lib/sql-db/sql-db-postgres';
-import { createPostgresConnection } from './postgres';
+import { createPostgresConnection } from './postgres-connection';
 
 /**
  * Creates a PostgresSqlDb instance using the postgres library.

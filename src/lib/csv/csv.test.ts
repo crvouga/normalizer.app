@@ -248,22 +248,6 @@ describe('CSV.parse', () => {
     expect(result.headers).toEqual(['name', 'age', 'city']);
   });
 
-  it('uses sanitizeIdentifier when provided', () => {
-    const csv = 'my-name,my age,my_city\nJohn,30,New York';
-    const sanitize = (id: string) => id.replace(/[^a-zA-Z0-9_]/g, '_');
-    const result = Csv.parse(csv, sanitize);
-
-    expect(result.headers).toEqual(['my_name', 'my_age', 'my_city']);
-    expect(result.schema[0]).toBeDefined();
-    expect(result.schema[1]).toBeDefined();
-    expect(result.schema[2]).toBeDefined();
-    if (result.schema[0] && result.schema[1] && result.schema[2]) {
-      expect(result.schema[0].name).toBe('my_name');
-      expect(result.schema[1].name).toBe('my_age');
-      expect(result.schema[2].name).toBe('my_city');
-    }
-  });
-
   it('samples up to 1000 rows for type inference', () => {
     // Create CSV with 1500 rows
     const header = 'value';
