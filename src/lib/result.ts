@@ -123,10 +123,11 @@ export async function tryCatchAsync<T, E = unknown>(fn: () => Promise<T>): Promi
  * @throws The error inside Err if result is an Err.
  */
 export function unwrap<T, E>(result: Result<T, E>): T {
-  if (result.tag === 'ok') {
-    return result.value;
-  } else {
-    throw result.error;
+  switch (result.tag) {
+    case 'ok':
+      return result.value;
+    case 'err':
+      throw result.error;
   }
 }
 

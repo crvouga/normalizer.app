@@ -19,8 +19,10 @@ export type AsyncComboboxOption<T> = ComboboxOption<T>;
 // Re-export types for consumers
 export type { AsyncComboboxFetchIdsResult, AsyncComboboxFetchOptions };
 
-export interface AsyncComboboxProps<T>
-  extends Omit<ComboboxProps<T>, 'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'> {
+export interface AsyncComboboxProps<T> extends Omit<
+  ComboboxProps<T>,
+  'options' | 'query' | 'onQueryChange' | 'isLoading' | 'error'
+> {
   // Data fetching and hydration
   fetchIds: (options: AsyncComboboxFetchOptions) => Promise<AsyncComboboxFetchIdsResult<T>>;
   getOptions: (ids: T[]) => ComboboxOption<T>[];
