@@ -422,4 +422,61 @@ export class S3ObjectStore extends ObjectStore {
       });
     }
   }
+
+  async readStream(params: ObjectLocation): Promise<Result<ReadableStream<Buffer>, string>> {
+    this.logger.debug('Reading object stream from S3', {
+      bucket: params.bucket,
+      key: params.key,
+    });
+
+    try {
+      const file = this.s3Client.file(params.key, { bucket: params.bucket });
+      const doesExist = await file.exists();
+      if (!doesExist) {
+        this.logger.debug('Object not found in S3', {
+          bucket: params.bucket,
+          key: params.key,
+        });
+        return Err(`Object not found: ${ObjectLocation.encode(params)}`);
+      }
+
+      // Bun's S3Client file.stream() returns a ReadableStream
+      const stream = file.stream();
+
+      // Convert the stream to Buffer chunks
+      const bufferStream = new ReadableStream<Buffer>({
+        async start(controller) {
+          try {
+            const reader = stream.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                controller.close();
+                break;
+              }
+              // Convert Uint8Array to Buffer
+              const buffer = Buffer.from(value);
+              controller.enqueue(buffer);
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            controller.error(new Error(`Failed to read stream: ${errorMessage}`));
+          }
+        },
+      });
+
+      this.logger.debug('Successfully created stream for object from S3', {
+        bucket: params.bucket,
+        key: params.key,
+      });
+      return Ok(bufferStream);
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to read object stream from S3',
+        context: { bucket: params.bucket, key: params.key },
+        errorPrefix: 'Failed to read object stream',
+      });
+    }
+  }
 }

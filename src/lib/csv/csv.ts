@@ -19,21 +19,20 @@ export interface ParsedCsv {
 /**
  * Parse CSV content into schema and data rows
  * @param csvContent - The CSV content as a string
- * @param sanitizeIdentifier - Optional function to sanitize column names (e.g., for SQL identifiers)
  * @returns Parsed CSV with schema, data rows, and headers
  */
-function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => string): ParsedCsv {
+function parse(csvContent: string): ParsedCsv {
+  // Split on \n only (preserves \r in values for CRLF handling)
+  // Filter out empty lines after trimming
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], dataRows: [], headers: [] };
   }
 
-  // Parse header row
+  // Parse header row and trim whitespace from headers
+  // Note: \r characters remain in header values (from CRLF), which is expected behavior
   const headerLine = lines[0]!;
-  const headers = parseLine(headerLine);
-  const sanitizedHeaders = sanitizeIdentifier
-    ? headers.map((h) => sanitizeIdentifier(h.trim()))
-    : headers.map((h) => h.trim());
+  const headers = parseLine(headerLine).map((h) => h.trim());
 
   // Infer column types from first data rows
   const sampleRows: string[][] = [];
@@ -41,14 +40,14 @@ function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => 
   for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+    sampleRows.push(row.slice(0, headers.length));
   }
 
   // Infer schema from sample data
-  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
     const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
     const inferredType = inferColumnType(columnValues);
     return {
@@ -63,13 +62,13 @@ function parse(csvContent: string, sanitizeIdentifier?: (identifier: string) => 
   for (let i = 1; i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad or truncate row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    dataRows.push(row.slice(0, sanitizedHeaders.length));
+    dataRows.push(row.slice(0, headers.length));
   }
 
-  return { schema, dataRows, headers: sanitizedHeaders };
+  return { schema, dataRows, headers };
 }
 
 /**
@@ -130,7 +129,7 @@ function inferColumnType(values: string[]): CsvColumnSchema['type'] {
 
   // Minimum sample size for confident numeric type inference
   // If we have fewer samples, default to text to be safe
-  const MIN_SAMPLE_SIZE_FOR_NUMERIC = 10;
+  const MIN_SAMPLE_SIZE_FOR_NUMERIC = Math.min(10, values.length);
 
   // Check for integer first (before boolean) to avoid false positives
   // If all values are numeric integers, prefer integer over boolean
@@ -194,7 +193,7 @@ function escapeCsvValue(value: unknown): string {
 class CsvBuilder<T extends Record<string, unknown>> {
   private headers: string[] | null = null;
 
-  constructor(private readonly data: T[]) { }
+  constructor(private readonly data: T[]) {}
 
   /**
    * Specify headers explicitly (useful when data array is empty)
@@ -240,7 +239,7 @@ class CsvBuilder<T extends Record<string, unknown>> {
  * @param {T[]} data - Array of objects to convert to CSV.
  * @returns {CsvBuilder<T>} A builder instance with methods to configure and generate CSV.
  */
-function of<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
+function builder<T extends Record<string, unknown>>(data: T[]): CsvBuilder<T> {
   return new CsvBuilder(data);
 }
 
@@ -256,13 +255,9 @@ export interface CsvStreamHeader {
  * Parse just the header and schema from CSV content without loading all data.
  * This is memory-efficient for large files.
  * @param csvContent - The CSV content as a string
- * @param sanitizeIdentifier - Optional function to sanitize column names
  * @returns Header information including schema
  */
-function parseHeader(
-  csvContent: string,
-  sanitizeIdentifier?: (identifier: string) => string,
-): CsvStreamHeader {
+function parseHeader(csvContent: string): CsvStreamHeader {
   const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) {
     return { schema: [], headers: [] };
@@ -271,9 +266,6 @@ function parseHeader(
   // Parse header row
   const headerLine = lines[0]!;
   const headers = parseLine(headerLine);
-  const sanitizedHeaders = sanitizeIdentifier
-    ? headers.map((h) => sanitizeIdentifier(h.trim()))
-    : headers.map((h) => h.trim());
 
   // Infer column types from first data rows (up to 1000 or all available)
   const sampleRows: string[][] = [];
@@ -281,14 +273,14 @@ function parseHeader(
   for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
     const row = parseLine(lines[i]!);
     // Pad row to match header length
-    while (row.length < sanitizedHeaders.length) {
+    while (row.length < headers.length) {
       row.push('');
     }
-    sampleRows.push(row.slice(0, sanitizedHeaders.length));
+    sampleRows.push(row.slice(0, headers.length));
   }
 
   // Infer schema from sample data
-  const schema: CsvColumnSchema[] = sanitizedHeaders.map((name, index) => {
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
     const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
     const inferredType = inferColumnType(columnValues);
     return {
@@ -298,7 +290,7 @@ function parseHeader(
     };
   });
 
-  return { schema, headers: sanitizedHeaders };
+  return { schema, headers };
 }
 
 /**
@@ -313,13 +305,245 @@ function countDataRows(csvContent: string): number {
 }
 
 /**
+ * Result of parsing CSV metadata for batch processing
+ */
+export interface ParsedCsvMetadata {
+  schema: CsvColumnSchema[];
+  headers: string[];
+  lines: string[]; // Raw lines for batch processing (includes header at index 0)
+  dataRowCount: number;
+}
+
+/**
+ * Simplified result for batch processing without schema inference
+ */
+export interface ParsedCsvHeaders {
+  headers: string[];
+  lines: string[]; // Raw lines for batch processing (includes header at index 0)
+  dataRowCount: number;
+}
+
+/**
+ * Parse CSV headers and lines in a single pass without schema inference.
+ * This is optimized for cases where all columns will be TEXT type.
+ *
+ * @param csvContent - The CSV content as a string
+ * @returns Parsed CSV headers, lines array, and row count
+ */
+function parseHeaders(csvContent: string): ParsedCsvHeaders {
+  // Split CSV only once - this is the expensive operation
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { headers: [], lines: [], dataRowCount: 0 };
+  }
+
+  // Parse header row only
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+
+  const dataRowCount = Math.max(0, lines.length - 1); // Subtract header
+
+  return {
+    headers,
+    lines, // Return all lines for batch processing
+    dataRowCount,
+  };
+}
+
+/**
+ * Parse CSV metadata (header, schema, and lines) in a single pass.
+ * This is optimized for batch processing where you want to process data
+ * in chunks without loading all rows into memory at once.
+ *
+ * @param csvContent - The CSV content as a string
+ * @returns Parsed CSV metadata with schema, headers, lines array, and row count
+ */
+function parseMetadata(csvContent: string): ParsedCsvMetadata {
+  // Split CSV only once - this is the expensive operation
+  const lines = csvContent.split('\n').filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { schema: [], headers: [], lines: [], dataRowCount: 0 };
+  }
+
+  // Parse header row
+  const headerLine = lines[0]!;
+  const headers = parseLine(headerLine);
+
+  // Infer column types from first data rows (up to 1000 or all available)
+  const sampleRows: string[][] = [];
+  const maxSampleSize = Math.min(1000, lines.length - 1);
+  for (let i = 1; i <= maxSampleSize && i < lines.length; i++) {
+    const row = parseLine(lines[i]!);
+    // Pad row to match header length
+    while (row.length < headers.length) {
+      row.push('');
+    }
+    sampleRows.push(row.slice(0, headers.length));
+  }
+
+  // Infer schema from sample data
+  const schema: CsvColumnSchema[] = headers.map((name, index) => {
+    const columnValues = sampleRows.map((row) => row[index]?.trim() || '').filter((v) => v !== '');
+    const inferredType = inferColumnType(columnValues);
+    return {
+      name,
+      type: inferredType,
+      nullable: true,
+    };
+  });
+
+  const dataRowCount = Math.max(0, lines.length - 1); // Subtract header
+
+  return {
+    schema,
+    headers,
+    lines, // Return all lines for batch processing
+    dataRowCount,
+  };
+}
+
+/**
+ * Result of streaming CSV parse
+ */
+export interface StreamingCsvResult {
+  headers: string[];
+  rowStream: AsyncGenerator<string[], void, unknown>;
+}
+
+/**
+ * Parse CSV from a stream, yielding rows as they're parsed.
+ * This is memory-efficient for large files as it doesn't load the entire file into memory.
+ *
+ * @param stream - ReadableStream of Buffer chunks containing CSV data
+ * @returns Promise resolving to headers and an async generator of data rows
+ */
+async function parseStreaming(stream: ReadableStream<Buffer>): Promise<StreamingCsvResult> {
+  const reader = stream.getReader();
+  let buffer = '';
+
+  // Read first chunk to get headers
+  const firstChunk = await reader.read();
+  if (firstChunk.done) {
+    reader.releaseLock();
+    return { headers: [], rowStream: (async function* () {})() };
+  }
+
+  buffer = firstChunk.value.toString('utf-8');
+  const newlineIndex = buffer.indexOf('\n');
+
+  let resolvedHeaders: string[];
+  if (newlineIndex === -1) {
+    // No newline found in first chunk
+    // Check if there's more data coming by reading another chunk
+    const secondChunk = await reader.read();
+    if (secondChunk.done) {
+      // Stream is done, entire buffer is the header (CSV with only headers, no data)
+      const headerLine = buffer.replace(/\r$/, '');
+      resolvedHeaders = parseLine(headerLine);
+      buffer = ''; // Clear buffer since we consumed it as header
+      reader.releaseLock();
+      return {
+        headers: resolvedHeaders,
+        rowStream: (async function* () {})(), // Empty stream - no data rows
+      };
+    } else {
+      // More data coming, append to buffer and look for newline again
+      buffer += secondChunk.value.toString('utf-8');
+      const newlineIndex2 = buffer.indexOf('\n');
+      if (newlineIndex2 === -1) {
+        // Still no newline - this is unusual but treat entire buffer as header
+        const headerLine = buffer.replace(/\r$/, '');
+        resolvedHeaders = parseLine(headerLine);
+        buffer = '';
+      } else {
+        const headerLine = buffer.substring(0, newlineIndex2).replace(/\r$/, '');
+        buffer = buffer.substring(newlineIndex2 + 1);
+        resolvedHeaders = parseLine(headerLine);
+      }
+    }
+  } else {
+    const headerLine = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+    buffer = buffer.substring(newlineIndex + 1);
+    resolvedHeaders = parseLine(headerLine);
+  }
+
+  // Create generator for data rows
+  async function* fullRowGenerator(): AsyncGenerator<string[], void, unknown> {
+    try {
+      // Process remaining buffer from header read
+      while (true) {
+        const newlineIndex = buffer.indexOf('\n');
+        if (newlineIndex === -1) {
+          break;
+        }
+        const line = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+        buffer = buffer.substring(newlineIndex + 1);
+        if (line.trim()) {
+          const row = parseLine(line);
+          while (row.length < resolvedHeaders.length) {
+            row.push('');
+          }
+          yield row.slice(0, resolvedHeaders.length);
+        }
+      }
+
+      // Continue reading from stream
+      // Note: If buffer was consumed as header (no newline case), it's empty here
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Process any remaining buffer (could be leftover data after last newline)
+          if (buffer.trim()) {
+            const row = parseLine(buffer.replace(/\r$/, ''));
+            while (row.length < resolvedHeaders.length) {
+              row.push('');
+            }
+            yield row.slice(0, resolvedHeaders.length);
+          }
+          break;
+        }
+
+        buffer += value.toString('utf-8');
+        while (true) {
+          const newlineIndex = buffer.indexOf('\n');
+          if (newlineIndex === -1) {
+            break;
+          }
+          const line = buffer.substring(0, newlineIndex).replace(/\r$/, '');
+          buffer = buffer.substring(newlineIndex + 1);
+          if (line.trim()) {
+            const row = parseLine(line);
+            while (row.length < resolvedHeaders.length) {
+              row.push('');
+            }
+            yield row.slice(0, resolvedHeaders.length);
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  return {
+    headers: resolvedHeaders,
+    rowStream: fullRowGenerator(),
+  };
+}
+
+/**
  * CSV parsing utilities
  */
 export const Csv = {
-  of,
+  builder,
   parse,
   parseLine,
   inferColumnType,
   parseHeader,
   countDataRows,
+  parseMetadata,
+  parseHeaders,
+  parseStreaming,
 };

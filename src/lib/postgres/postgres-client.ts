@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { SqlDb, SqlTransaction } from '../sql-db/sql-db';
-import { Err, Ok, isOk, type Result } from '../result';
+import { Err, Ok, isErr, isOk, type Result } from '../result';
 
 /**
  * Metadata for a PostgreSQL table column
@@ -25,7 +25,7 @@ export interface TableColumn {
  * Provides methods for inspecting tables, schemas, and data.
  */
 export class PostgresClient {
-  constructor(private readonly db: SqlDb) { }
+  constructor(private readonly db: SqlDb) {}
 
   /**
    * Escape PostgreSQL identifier (table/column names)
@@ -245,7 +245,10 @@ export class PostgresClient {
 
     const escapedColumnNames = columns.map((col) => this.escapeIdentifier(col)).join(', ');
     const maxParamsPerQuery = 10_000;
-    const batchSize = Math.max(1, Math.floor(maxParamsPerQuery / columns.length));
+    // Calculate optimal batch size based on column count
+    // Ensure minimum batch size of 100 for better performance, but cap at 5000 for memory efficiency
+    const calculatedBatchSize = Math.floor(maxParamsPerQuery / columns.length);
+    const batchSize = Math.max(100, Math.min(calculatedBatchSize, 5000));
 
     const transactionResult = await this.db.begin(async (tx) => {
       return this.processBatchesInTransaction({
@@ -459,5 +462,101 @@ export class PostgresClient {
     result.push(current);
 
     return result;
+  }
+
+  /**
+   * Import CSV data from a stream using optimized batch inserts.
+   * Uses streaming for memory efficiency and optimized batch sizes for performance.
+   *
+   * @param tableName - Name of the table to import into
+   * @param columns - Array of column names
+   * @param rowStream - Async generator yielding data rows (arrays of values)
+   * @param schema - Schema name (defaults to 'public')
+   * @returns Result containing the number of rows imported, or an error
+   */
+  async copyFromStream(
+    tableName: string,
+    columns: string[],
+    rowStream: AsyncGenerator<(string | null)[], void, unknown>,
+    schema: string = 'public',
+  ): Promise<Result<number, string>> {
+    if (columns.length === 0) {
+      return Err('Cannot copy into table with no columns');
+    }
+
+    return this.insertFromStream(tableName, columns, rowStream, schema);
+  }
+
+  /**
+   * Import data from a stream using optimized batch inserts.
+   */
+  private async insertFromStream(
+    tableName: string,
+    columns: string[],
+    rowStream: AsyncGenerator<(string | null)[], void, unknown>,
+    schema: string,
+  ): Promise<Result<number, string>> {
+    try {
+      // Calculate optimal batch size based on column count
+      const maxParamsPerQuery = 10_000;
+      const optimalBatchSize = Math.max(1, Math.floor(maxParamsPerQuery / columns.length));
+      // Cap at reasonable size for memory efficiency
+      const batchSize = Math.min(optimalBatchSize, 5000);
+
+      let totalInserted = 0;
+      let batch: (string | null)[][] = [];
+
+      const flushBatch = async () => {
+        if (batch.length === 0) return;
+        const insertResult = await this.insertBatch(tableName, columns, batch, schema);
+        if (isErr(insertResult)) {
+          throw new Error(insertResult.error);
+        }
+        totalInserted += insertResult.value;
+        batch = [];
+      };
+
+      // Process rows in batches
+      for await (const row of rowStream) {
+        batch.push(row);
+        if (batch.length >= batchSize) {
+          await flushBatch();
+        }
+      }
+
+      // Flush remaining rows
+      await flushBatch();
+
+      return Ok(totalInserted);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return Err(`Failed to insert from stream: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Sanitize identifier for SQL safety (table/column names)
+   * Only allows alphanumeric characters and underscores, must start with letter or underscore
+   */
+  public static sanitizeIdentifier(identifier: string): string {
+    // Remove any characters that aren't alphanumeric or underscore
+    let sanitized = identifier.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    // Ensure it starts with a letter or underscore (not a number)
+    if (/^\d/.test(sanitized)) {
+      sanitized = `_${sanitized}`;
+    }
+
+    // Ensure it's not empty
+    if (sanitized.length === 0) {
+      sanitized = '_unnamed';
+    }
+
+    // PostgreSQL identifier limit is 63 characters
+    if (sanitized.length > 63) {
+      sanitized = sanitized.substring(0, 63);
+    }
+
+    return sanitized;
   }
 }

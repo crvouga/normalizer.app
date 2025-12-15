@@ -54,7 +54,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     await writeCsvToS3(
       objectStore,
       headerOnlyKey,
-      Csv.of([]).withHeader(['col1', 'col2']).toString(),
+      Csv.builder([]).withHeader(['col1', 'col2']).toString(),
     );
     const headerResult = await importer.import(TEST_BUCKET, headerOnlyKey, {
       tableName: 'test_header_only',

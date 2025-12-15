@@ -29,7 +29,7 @@ describe('TabularDataPostgresImporter - Batching', () => {
     for (let i = 1; i <= 6000; i++) {
       arr.push({ id: i, name: `Item${i}`, value: i * 10 });
     }
-    const csvContent = Csv.of(arr).toString();
+    const csvContent = Csv.builder(arr).toString();
 
     const testKey = 'test-large.csv';
     await writeCsvToS3(objectStore, testKey, csvContent);
@@ -63,14 +63,14 @@ describe('TabularDataPostgresImporter - Batching', () => {
       if (isOk(rowsResult)) {
         const rows = rowsResult.value;
         expect(rows.length).toBe(6000);
-        
+
         // Verify specific rows exist (not checking order since ORDER BY sorts strings)
-        const row1 = rows.find(r => r.id === '1');
+        const row1 = rows.find((r) => r.id === '1');
         expect(row1).toBeDefined();
         expect(row1?.name).toBe('Item1');
         expect(row1?.value).toBe('10');
-        
-        const row6000 = rows.find(r => r.id === '6000');
+
+        const row6000 = rows.find((r) => r.id === '6000');
         expect(row6000).toBeDefined();
         expect(row6000?.name).toBe('Item6000');
         expect(row6000?.value).toBe('60000');

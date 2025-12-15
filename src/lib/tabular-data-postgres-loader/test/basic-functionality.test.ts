@@ -24,7 +24,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
   test('import: successfully imports CSV with simple data', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { name: 'Alice', age: 30, city: 'New York' },
       { name: 'Bob', age: 25, city: 'San Francisco' },
       { name: 'Charlie', age: 35, city: 'Chicago' },
@@ -98,7 +98,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
   test('import: verifies table creation with correct schema', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { id: 1, name: 'Item A', value: 10.5 },
       { id: 2, name: 'Item B', value: 20.75 },
     ]).toString();

@@ -23,12 +23,12 @@ describe('TabularDataPostgresImporter - Table options', () => {
   test('import: dropIfExists option drops and recreates table', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([
+    const csvContent1 = Csv.builder([
       { col1: 'A', col2: 1 },
       { col1: 'B', col2: 2 },
     ]).toString();
 
-    const csvContent2 = Csv.of([
+    const csvContent2 = Csv.builder([
       { col1: 'X', col2: 10, col3: 100 },
       { col1: 'Y', col2: 20, col3: 200 },
     ]).toString();
@@ -83,7 +83,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
   test('import: truncate option clears table before insert', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { name: 'First', value: 1 },
       { name: 'Second', value: 2 },
     ]).toString();
@@ -125,7 +125,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
   test('import: uses existing table when it already exists', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { name: 'Alice', age: 30 },
       { name: 'Bob', age: 25 },
     ]).toString();

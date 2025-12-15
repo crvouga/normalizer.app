@@ -4,8 +4,10 @@ import type { I18nText } from '../../i18n/types';
 import { TextFieldInput } from './text-field-input';
 import { TextFieldLabel } from './text-field-label';
 
-export interface TextFieldProps
-  extends Omit<React.ComponentProps<'input'>, 'className' | 'placeholder'> {
+export interface TextFieldProps extends Omit<
+  React.ComponentProps<'input'>,
+  'className' | 'placeholder'
+> {
   // Label
   label?: I18nText;
   placeholder?: I18nText;

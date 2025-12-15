@@ -23,15 +23,15 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: successfully imports multiple files in parallel', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([
+    const csvContent1 = Csv.builder([
       { id: 1, name: 'Item A', value: 10 },
       { id: 2, name: 'Item B', value: 20 },
     ]).toString();
-    const csvContent2 = Csv.of([
+    const csvContent2 = Csv.builder([
       { name: 'Alice', age: 30, city: 'New York' },
       { name: 'Bob', age: 25, city: 'San Francisco' },
     ]).toString();
-    const csvContent3 = Csv.of([
+    const csvContent3 = Csv.builder([
       { product: 'Widget', price: 19.99, stock: 100 },
       { product: 'Gadget', price: 29.99, stock: 50 },
     ]).toString();
@@ -101,11 +101,11 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: handles mix of successful and failed imports', async () => {
     const { importer, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([
+    const csvContent1 = Csv.builder([
       { id: 1, name: 'Item A' },
       { id: 2, name: 'Item B' },
     ]).toString();
-    const csvContent2 = Csv.of([
+    const csvContent2 = Csv.builder([
       { name: 'Alice', age: 30 },
       { name: 'Bob', age: 25 },
     ]).toString();
@@ -161,15 +161,15 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: handles batch with different table options', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([
+    const csvContent1 = Csv.builder([
       { col1: 'A', col2: 1 },
       { col1: 'B', col2: 2 },
     ]).toString();
-    const csvContent2 = Csv.of([
+    const csvContent2 = Csv.builder([
       { col1: 'X', col2: 10 },
       { col1: 'Y', col2: 20 },
     ]).toString();
-    const csvContent3 = Csv.of([
+    const csvContent3 = Csv.builder([
       { name: 'First', value: 1 },
       { name: 'Second', value: 2 },
     ]).toString();
@@ -232,7 +232,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: includes correct request context in results', async () => {
     const { importer, objectStore, testTables } = fixtures;
 
-    const csvContent = Csv.of([
+    const csvContent = Csv.builder([
       { id: 1, name: 'Item A' },
       { id: 2, name: 'Item B' },
     ]).toString();
@@ -270,8 +270,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: handles batch with empty CSV files', async () => {
     const { importer, postgresClient, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([]).withHeader(['name', 'age', 'city']).toString();
-    const csvContent2 = Csv.of([
+    const csvContent1 = Csv.builder([]).withHeader(['name', 'age', 'city']).toString();
+    const csvContent2 = Csv.builder([
       { id: 1, value: 10 },
       { id: 2, value: 20 },
     ]).toString();
@@ -331,7 +331,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
         { id: i * 3 + 2, name: `Item${i * 3 + 2}`, value: (i * 3 + 2) * 10 },
         { id: i * 3 + 3, name: `Item${i * 3 + 3}`, value: (i * 3 + 3) * 10 },
       ];
-      const csvContent = Csv.of(arr).toString();
+      const csvContent = Csv.builder(arr).toString();
 
       const testKey = `test-batch-large-${i}.csv`;
       await writeCsvToS3(objectStore, testKey, csvContent);
@@ -398,12 +398,12 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
   test('importBatch: summary includes accurate statistics', async () => {
     const { importer, objectStore, testTables } = fixtures;
 
-    const csvContent1 = Csv.of([
+    const csvContent1 = Csv.builder([
       { id: 1, name: 'Item A' },
       { id: 2, name: 'Item B' },
       { id: 3, name: 'Item C' },
     ]).toString();
-    const csvContent2 = Csv.of([
+    const csvContent2 = Csv.builder([
       { name: 'Alice', age: 30 },
       { name: 'Bob', age: 25 },
     ]).toString();

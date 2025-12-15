@@ -7,8 +7,10 @@ import { Typography } from '../typography';
 import { useI18n } from '../../i18n/use-i18n';
 import type { TabularFile } from './tabular-file';
 
-export interface TabularFileInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange' | 'placeholder'> {
+export interface TabularFileInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'onChange' | 'placeholder'
+> {
   onFilesChange?: (files: FileList | null) => void;
   accept?: string;
   multiple?: boolean;

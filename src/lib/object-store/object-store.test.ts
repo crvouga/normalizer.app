@@ -165,6 +165,184 @@ describe.each(implementations)(
       }
     });
 
+    // READSTREAM TESTS
+    test('readStream: returns error for non-existent object', async () => {
+      const result = await store.readStream({ bucket: testBucket, key: 'non-existent-key' });
+      expect(isOk(result)).toBe(false);
+      if (!isOk(result)) {
+        expect(result.error).toBeDefined();
+        expect(typeof result.error).toBe('string');
+      }
+    });
+
+    test('readStream: reads existing object as stream', async () => {
+      const testData = Buffer.from('Hello, World!');
+      const writeResult = await store.write({
+        bucket: testBucket,
+        key: 'key1',
+        data: testData,
+      });
+      expect(isOk(writeResult)).toBe(true);
+
+      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      expect(isOk(streamResult)).toBe(true);
+      if (isOk(streamResult)) {
+        const stream = streamResult.value;
+        const reader = stream.getReader();
+        const chunks: Buffer[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const combined = Buffer.concat(chunks);
+        expect(combined).toEqual(testData);
+        expect(combined.toString()).toBe('Hello, World!');
+      }
+    });
+
+    test('readStream: reads binary data correctly', async () => {
+      const testData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
+      const writeResult = await store.write({
+        bucket: testBucket,
+        key: 'key1',
+        data: testData,
+      });
+      expect(isOk(writeResult)).toBe(true);
+
+      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      expect(isOk(streamResult)).toBe(true);
+      if (isOk(streamResult)) {
+        const stream = streamResult.value;
+        const reader = stream.getReader();
+        const chunks: Buffer[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const combined = Buffer.concat(chunks);
+        expect(combined).toEqual(testData);
+        expect(Array.from(combined)).toEqual([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
+      }
+    });
+
+    test('readStream: reads empty buffer', async () => {
+      const testData = Buffer.alloc(0);
+      const writeResult = await store.write({
+        bucket: testBucket,
+        key: 'emptyKey',
+        data: testData,
+      });
+      expect(isOk(writeResult)).toBe(true);
+
+      const streamResult = await store.readStream({ bucket: testBucket, key: 'emptyKey' });
+      expect(isOk(streamResult)).toBe(true);
+      if (isOk(streamResult)) {
+        const stream = streamResult.value;
+        const reader = stream.getReader();
+        const chunks: Buffer[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const combined = Buffer.concat(chunks);
+        expect(combined.length).toBe(0);
+        expect(combined).toEqual(testData);
+      }
+    });
+
+    test('readStream: reads large data correctly', async () => {
+      const testData = Buffer.alloc(1024 * 1024, 0x42); // 1MB of 0x42
+      const writeResult = await store.write({
+        bucket: testBucket,
+        key: 'key1',
+        data: testData,
+      });
+      expect(isOk(writeResult)).toBe(true);
+
+      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      expect(isOk(streamResult)).toBe(true);
+      if (isOk(streamResult)) {
+        const stream = streamResult.value;
+        const reader = stream.getReader();
+        const chunks: Buffer[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const combined = Buffer.concat(chunks);
+        expect(combined.length).toBe(1024 * 1024);
+        expect(combined[0]).toBe(0x42);
+        expect(combined[combined.length - 1]).toBe(0x42);
+        expect(combined).toEqual(testData);
+      }
+    });
+
+    test('readStream: produces same data as read method', async () => {
+      const testData = Buffer.from('test data for comparison');
+      const writeResult = await store.write({
+        bucket: testBucket,
+        key: 'key1',
+        data: testData,
+      });
+      expect(isOk(writeResult)).toBe(true);
+
+      // Read using read method
+      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      expect(isOk(readResult)).toBe(true);
+
+      // Read using readStream method
+      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      expect(isOk(streamResult)).toBe(true);
+
+      if (isOk(readResult) && isOk(streamResult)) {
+        const stream = streamResult.value;
+        const reader = stream.getReader();
+        const chunks: Buffer[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const streamedData = Buffer.concat(chunks);
+        expect(streamedData.toString()).toEqual(readResult.value.toString());
+        expect(streamedData).toEqual(testData);
+      }
+    });
+
     // WRITE TESTS
     test('write: writes single object', async () => {
       const testData = Buffer.from('test data');

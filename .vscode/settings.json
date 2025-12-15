@@ -29,5 +29,5 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "cSpell.words": ["Graphile", "stringifying"]
+  "cSpell.words": ["cloc", "Graphile", "parquetjs", "pglite", "presign", "stringifying"]
 }

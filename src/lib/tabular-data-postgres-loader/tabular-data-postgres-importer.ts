@@ -2,7 +2,7 @@ import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { PostgresClient, type TableColumn } from '../postgres/postgres-client';
-import { isOk, Ok, Err, type Result, combineUntilError } from '../result';
+import { combineUntilError, Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
@@ -124,11 +124,11 @@ export class TabularDataPostgresImporter {
 
   /**
    * Import tabular data from object store into PostgreSQL table.
-   * This method:
+   * This method uses streaming for maximum performance and memory efficiency:
    * 1. Converts the file to CSV format using TabularDataConverter
-   * 2. Parses CSV to extract schema and data
+   * 2. Streams CSV data and parses headers
    * 3. Creates the table dynamically
-   * 4. Uses COPY FROM STDIN for maximum performance
+   * 4. Uses COPY FROM STDIN (or optimized batch insert) for maximum performance
    *
    * @param bucket - Object store bucket name
    * @param key - Object store key (file path)
@@ -147,84 +147,71 @@ export class TabularDataPostgresImporter {
       this.logger.debug('Converting file to CSV format', { bucket, key });
       const convertResult = await this.converter.convert(bucket, key, 'csv');
 
-      // Step 2: Read the converted CSV file
-      const csvResult = await this.objectStore.read({
+      // Step 2: Read the converted CSV file as a stream
+      this.logger.debug('Reading CSV file as stream', {
         bucket: convertResult.bucket,
         key: convertResult.key,
       });
-      if (!isOk(csvResult)) {
-        return Err(`Failed to read converted CSV: ${csvResult.error}`);
+      const csvStreamResult = await this.objectStore.readStream({
+        bucket: convertResult.bucket,
+        key: convertResult.key,
+      });
+      if (isErr(csvStreamResult)) {
+        return Err(`Failed to read converted CSV stream: ${csvStreamResult.error}`);
       }
 
-      const csvContent = csvResult.value.toString('utf-8');
-      if (!csvContent || csvContent.trim().length === 0) {
-        return Err('CSV file is empty');
-      }
+      // Step 3: Parse CSV headers and create streaming row generator
+      this.logger.debug('Parsing CSV stream', {
+        bucket: convertResult.bucket,
+        key: convertResult.key,
+      });
+      const { headers, rowStream } = await Csv.parseStreaming(csvStreamResult.value);
 
-      // Step 3: Parse CSV header to extract schema (without parsing all data)
-      this.logger.debug('Parsing CSV header', { csvSize: csvContent.length });
-      const { schema } = Csv.parseHeader(csvContent, (id) => this.sanitizeIdentifier(id));
-
-      if (schema.length === 0) {
+      if (headers.length === 0) {
         return Err('No columns found in CSV data');
       }
 
-      // Count data rows efficiently
-      const dataRowCount = Csv.countDataRows(csvContent);
+      const sanitizedHeaders = headers.map((name) => PostgresClient.sanitizeIdentifier(name));
 
       // Step 4: Sanitize table name
-      const sanitizedTableName = this.sanitizeIdentifier(options.tableName);
+      const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.tableName);
 
-      if (dataRowCount === 0) {
-        this.logger.warn('No data rows found in CSV', { bucket, key });
-        // Still create the table with schema
-        const createResult = await this.createTable(sanitizedTableName, schema, options);
-        if (!isOk(createResult)) {
-          this.logger.error('Failed to create table for empty dataset', {
-            error: createResult.error,
-          });
-          return Err(createResult.error);
-        }
-        return Ok({ tableName: sanitizedTableName, rowCount: 0 });
-      }
+      // Generate schema with all TEXT columns (no type inference needed)
+      const schema: CsvColumnSchema[] = sanitizedHeaders.map((name) => ({
+        name,
+        type: 'text',
+        nullable: true,
+      }));
 
       // Step 5: Create table
       const createResult = await this.createTable(sanitizedTableName, schema, options);
-      if (!isOk(createResult)) {
+      if (isErr(createResult)) {
         this.logger.error('Failed to create table', { error: createResult.error });
         return Err(createResult.error);
       }
 
-      // Step 6: Import data using optimized batch insert
-      // Use the CSV parser to get data rows efficiently
-      this.logger.debug('Parsing CSV data for import', {
+      // Step 6: Convert row stream to format expected by copyFromStream
+      // The rowStream yields string arrays, we need to convert empty strings to null
+      async function* convertRowStream(
+        source: AsyncGenerator<string[], void, unknown>,
+      ): AsyncGenerator<(string | null)[], void, unknown> {
+        for await (const row of source) {
+          yield row.map((cell) => (cell === '' ? null : cell));
+        }
+      }
+
+      // Step 7: Import data using COPY FROM STDIN (or optimized batch insert)
+      this.logger.debug('Importing data using streaming COPY', {
         tableName: sanitizedTableName,
-        estimatedRowCount: dataRowCount,
+        columnCount: sanitizedHeaders.length,
       });
-
-      const columnNames = schema.map((col) => col.name);
-
-      // Parse CSV to get data rows using the existing parser
-      const { dataRows } = Csv.parse(csvContent, (id) => this.sanitizeIdentifier(id));
-
-      // Convert to the format expected by insertBatch (empty strings to null)
-      const rows: (string | null)[][] = dataRows.map((row) =>
-        row.map((cell) => (cell === '' ? null : cell)),
-      );
-
-      this.logger.debug('Inserting data using batch insert', {
-        tableName: sanitizedTableName,
-        rowCount: rows.length,
-      });
-
-      const insertResult = await this.postgresClient.insertBatch(
+      const insertResult = await this.postgresClient.copyFromStream(
         sanitizedTableName,
-        columnNames,
-        rows,
+        sanitizedHeaders,
+        convertRowStream(rowStream),
       );
 
-      if (!isOk(insertResult)) {
-        this.logger.error('Failed to insert data', { error: insertResult.error });
+      if (isErr(insertResult)) {
         return Err(insertResult.error);
       }
 
@@ -234,7 +221,7 @@ export class TabularDataPostgresImporter {
         tableName: sanitizedTableName,
         rowCount,
         duration,
-        rowsPerSecond: Math.round((rowCount / duration) * 1000),
+        rowsPerSecond: rowCount > 0 ? Math.round((rowCount / duration) * 1000) : 0,
       });
 
       return Ok({ tableName: sanitizedTableName, rowCount });
@@ -366,32 +353,6 @@ export class TabularDataPostgresImporter {
   }
 
   /**
-   * Sanitize identifier for SQL safety (table/column names)
-   * Only allows alphanumeric characters and underscores, must start with letter or underscore
-   */
-  private sanitizeIdentifier(identifier: string): string {
-    // Remove any characters that aren't alphanumeric or underscore
-    let sanitized = identifier.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    // Ensure it starts with a letter or underscore (not a number)
-    if (/^\d/.test(sanitized)) {
-      sanitized = `_${sanitized}`;
-    }
-
-    // Ensure it's not empty
-    if (sanitized.length === 0) {
-      sanitized = '_unnamed';
-    }
-
-    // PostgreSQL identifier limit is 63 characters
-    if (sanitized.length > 63) {
-      sanitized = sanitized.substring(0, 63);
-    }
-
-    return sanitized;
-  }
-
-  /**
    * Create PostgreSQL table with the given schema.
    * All columns are created as TEXT type for simplicity.
    * Returns Result<void, string>
@@ -405,14 +366,14 @@ export class TabularDataPostgresImporter {
     if (options.dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
       const dropResult = await this.postgresClient.dropTable(tableName);
-      if (!isOk(dropResult)) {
+      if (isErr(dropResult)) {
         return Err(`Failed to drop table: ${dropResult.error}`);
       }
     }
 
     // Check if table exists
     const tableExistsResult = await this.postgresClient.tableExists(tableName);
-    if (!isOk(tableExistsResult)) {
+    if (isErr(tableExistsResult)) {
       return Err(`Failed to check if table exists: ${tableExistsResult.error}`);
     }
     const tableExists = tableExistsResult.value;
@@ -435,7 +396,7 @@ export class TabularDataPostgresImporter {
       });
 
       const createResult = await this.postgresClient.createTable(tableName, tableColumns);
-      if (!isOk(createResult)) {
+      if (isErr(createResult)) {
         return Err(`Failed to create table: ${createResult.error}`);
       }
     } else {
@@ -446,7 +407,7 @@ export class TabularDataPostgresImporter {
     if (options.truncate) {
       this.logger.debug('Truncating table', { tableName });
       const truncateResult = await this.postgresClient.truncateTable(tableName);
-      if (!isOk(truncateResult)) {
+      if (isErr(truncateResult)) {
         return Err(`Failed to truncate table: ${truncateResult.error}`);
       }
     }
