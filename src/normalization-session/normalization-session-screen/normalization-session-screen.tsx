@@ -40,7 +40,7 @@ export const NormalizationSessionScreen = (props: {
         />
 
         <ChatScrollBox
-          className="px-4 py-8 md:px-8"
+          className="px-4 py-8 md:px-6"
           contentClassName="gap-6 max-w-4xl"
           bottomPadding="pb-56 md:pb-64"
           scrollKey={normalizationSessionProjection?.entries.map((entry) => entry.id).join(',')}

@@ -27,7 +27,7 @@ export const SidebarLayout: React.FC<{ sidebar: React.ReactNode; main: React.Rea
 
 // Sidebar open button (mobile only)
 const SidebarOpenButton: React.FC<{ onOpen: () => void }> = ({ onOpen }) => (
-  <div className="flex w-full items-center justify-start p-4 px-8 lg:hidden">
+  <div className="flex w-full items-center justify-start p-4 px-6 lg:hidden">
     <ButtonBase
       onClick={onOpen}
       className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded bg-slate-100 p-2 text-slate-900 lg:hidden dark:bg-slate-800 dark:text-white"
