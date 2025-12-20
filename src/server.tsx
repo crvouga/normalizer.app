@@ -13,6 +13,7 @@ import { createContext } from './shared/trpc-server';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
 import { createObjectStoreEndpoints } from './lib/object-store/object-store-http-endpoints';
+import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
 
 async function main() {
   const rootLogger = createLogger();
@@ -34,6 +35,10 @@ async function main() {
   setupGracefulShutdown();
 
   const db = await createDb({ logger });
+
+  // Ensure Graphile Worker is set up before starting the server
+  logger.info('Ensuring Graphile Worker is set up...');
+  await ensureGraphileWorkerSetup(db, logger);
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 

@@ -171,7 +171,9 @@ export class TabularDataPostgresImporter {
         return Err('No columns found in CSV data');
       }
 
-      const sanitizedHeaders = headers.map((name) => PostgresClient.sanitizeIdentifier(name));
+      const sanitizedHeaders = this.makeHeadersUnique(
+        headers.map((name) => PostgresClient.sanitizeIdentifier(name)),
+      );
 
       // Step 4: Sanitize table name
       const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.tableName);
@@ -350,6 +352,31 @@ export class TabularDataPostgresImporter {
       totalRowsImported,
       duration: Date.now() - startTime,
     };
+  }
+
+  /**
+   * Make headers unique by appending numeric suffixes to duplicates.
+   * For example: ['_unnamed', '_unnamed', 'col1'] becomes ['_unnamed', '_unnamed_2', 'col1']
+   */
+  private makeHeadersUnique(headers: string[]): string[] {
+    const seen = new Map<string, number>();
+    const result: string[] = [];
+
+    for (const header of headers) {
+      if (!seen.has(header)) {
+        // First occurrence - use as-is
+        seen.set(header, 1);
+        result.push(header);
+      } else {
+        // Duplicate - append suffix
+        const count = seen.get(header)! + 1;
+        seen.set(header, count);
+        const uniqueName = `${header}_${count}`;
+        result.push(uniqueName);
+      }
+    }
+
+    return result;
   }
 
   /**

@@ -1,6 +1,9 @@
 import { sql } from 'drizzle-orm';
+import { runMigrations } from 'graphile-worker';
+import { Pool } from 'pg';
 import type { Db, Tx } from '../shared/db';
 import type { Logger } from './logger';
+import { SecretString } from './secrets/secret-string';
 
 /**
  * Task handler type for Graphile Worker
@@ -65,6 +68,56 @@ export async function checkGraphileWorkerSetup(
       functionExists: false,
       error: errorMessage,
     };
+  }
+}
+
+/**
+ * Ensure Graphile Worker is set up in the database
+ * Initializes the schema if it doesn't exist
+ */
+export async function ensureGraphileWorkerSetup(
+  db: Db,
+  logger: Logger,
+): Promise<{
+  wasAlreadySetup: boolean;
+  isSetup: boolean;
+}> {
+  // Check if already set up
+  const checkResult = await checkGraphileWorkerSetup(db, logger);
+
+  if (checkResult.isSetup) {
+    logger.info('Graphile Worker is already set up');
+    return { wasAlreadySetup: true, isSetup: true };
+  }
+
+  // Initialize the schema
+  logger.info('Initializing Graphile Worker schema...');
+
+  const databaseUrl = SecretString.fromEnvVar('DATABASE_URL');
+  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
+
+  const pool = new Pool({ connectionString: databaseUrl.DANGEROUSLY_readValue() });
+
+  try {
+    await runMigrations({ pgPool: pool });
+
+    logger.info('Graphile Worker schema initialized successfully');
+
+    // Verify setup
+    const verifyResult = await checkGraphileWorkerSetup(db, logger);
+
+    if (!verifyResult.isSetup) {
+      logger.error('Graphile Worker setup verification failed', verifyResult);
+      return { wasAlreadySetup: false, isSetup: false };
+    }
+
+    return { wasAlreadySetup: false, isSetup: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to initialize Graphile Worker schema', { error: errorMessage });
+    throw new Error(`Failed to initialize Graphile Worker: ${errorMessage}`);
+  } finally {
+    await pool.end();
   }
 }
 

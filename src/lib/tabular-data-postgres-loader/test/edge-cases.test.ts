@@ -206,4 +206,47 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
   });
+
+  test('import: handles CSV with multiple unnamed columns', async () => {
+    const { importer, postgresClient, objectStore, testTables } = fixtures;
+
+    // Create CSV with multiple empty/unnamed columns
+    // Empty strings in header will be sanitized to _unnamed
+    // Manually create CSV string with empty headers
+    const csvContent = 'name,,,age\nAlice,value1,value2,30\nBob,value3,value4,25';
+
+    const testKey = 'test-multiple-unnamed.csv';
+    await writeCsvToS3(objectStore, testKey, csvContent);
+
+    const tableName = 'test_multiple_unnamed';
+    testTables.push(tableName);
+
+    const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+    expect(isOk(result)).toBe(true);
+
+    if (isOk(result)) {
+      expect(result.value.rowCount).toBe(2);
+
+      // Verify table exists with unique column names
+      const schemaResult = await postgresClient.getTableSchema(tableName);
+      expect(isOk(schemaResult)).toBe(true);
+      if (isOk(schemaResult)) {
+        const schema = schemaResult.value;
+        expect(schema.length).toBe(4);
+
+        // Check that we have unique column names
+        const columnNames = schema.map((col) => col.column_name);
+        const uniqueColumnNames = new Set(columnNames);
+        expect(uniqueColumnNames.size).toBe(4); // All columns should be unique
+
+        // Verify specific column names
+        expect(columnNames).toContain('name');
+        expect(columnNames).toContain('age');
+        expect(columnNames).toContain('_unnamed');
+        expect(columnNames).toContain('_unnamed_2');
+      }
+    }
+
+    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+  });
 });

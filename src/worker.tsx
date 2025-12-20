@@ -34,7 +34,7 @@ const main = async () => {
 
   logger.info('Starting Graphile Worker...');
 
-  // Define task list with typesafe handlers
+  // Define task list with type-safe handlers
   const taskList = createTaskList(
     {
       logger,

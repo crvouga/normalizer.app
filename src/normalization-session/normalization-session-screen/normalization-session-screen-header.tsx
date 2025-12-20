@@ -8,7 +8,7 @@ export const NormalizationSessionHeader = (props: { targetArtifactIds: ArtifactI
   return (
     <div className="shrink-0 border-b border-slate-200 dark:border-slate-700">
       <div className="flex w-full flex-col items-center justify-center px-8 py-4">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-4xl">
           <ArtifactsField
             label={t('normalizationSession.targetArtifactsLabel')}
             value={props.targetArtifactIds}
