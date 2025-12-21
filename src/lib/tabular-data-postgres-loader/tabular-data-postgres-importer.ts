@@ -7,9 +7,17 @@ import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
 
 /**
- * Options for importing tabular data into PostgreSQL
+ * Request for a single batch import operation
  */
-export interface ImportOptions {
+export interface BatchImportRequest {
+  /**
+   * Object store bucket name
+   */
+  bucket: string;
+  /**
+   * Object store key (file path)
+   */
+  key: string;
   /**
    * View name to create/use (will be sanitized)
    */
@@ -24,24 +32,6 @@ export interface ImportOptions {
    * @default false
    */
   truncate?: boolean;
-}
-
-/**
- * Request for a single batch import operation
- */
-export interface BatchImportRequest {
-  /**
-   * Object store bucket name
-   */
-  bucket: string;
-  /**
-   * Object store key (file path)
-   */
-  key: string;
-  /**
-   * Importing options including table name
-   */
-  options: ImportOptions;
 }
 
 /**
@@ -134,13 +124,21 @@ export class TabularDataPostgresImporter {
    * @param key - Object store key (file path)
    * @param options - Importing options including table name
    */
-  async import(
-    bucket: string,
-    key: string,
-    options: ImportOptions,
-  ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
+  async import({
+    bucket,
+    key,
+    viewName,
+    dropIfExists,
+    truncate,
+  }: {
+    viewName: string;
+    dropIfExists?: boolean;
+    truncate?: boolean;
+    bucket: string;
+    key: string;
+  }): Promise<Result<{ tableName: string; rowCount: number }, string>> {
     const startTime = Date.now();
-    this.logger.info('Starting tabular data import', { bucket, key, tableName: options.viewName });
+    this.logger.info('Starting tabular data import', { bucket, key, tableName: viewName });
 
     // Step 1: Convert file to CSV format using TabularDataConverter
     try {
@@ -176,7 +174,7 @@ export class TabularDataPostgresImporter {
       );
 
       // Step 4: Sanitize table name
-      const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.viewName);
+      const sanitizedTableName = PostgresClient.sanitizeIdentifier(viewName);
 
       // Generate schema with all TEXT columns (no type inference needed)
       const schema: CsvColumnSchema[] = sanitizedHeaders.map((name) => ({
@@ -186,7 +184,12 @@ export class TabularDataPostgresImporter {
       }));
 
       // Step 5: Create table
-      const createResult = await this.createTable(sanitizedTableName, schema, options);
+      const createResult = await this.createTable({
+        tableName: sanitizedTableName,
+        schema,
+        dropIfExists: dropIfExists ?? false,
+        truncate: truncate ?? false,
+      });
       if (isErr(createResult)) {
         this.logger.error('Failed to create table', { error: createResult.error });
         return Err(createResult.error);
@@ -232,7 +235,7 @@ export class TabularDataPostgresImporter {
       this.logger.error('Failed to import tabular data', {
         bucket,
         key,
-        tableName: options.viewName,
+        tableName: viewName,
         error: errorMessage,
       });
       return Err(`Failed to import tabular data: ${errorMessage}`);
@@ -289,7 +292,22 @@ export class TabularDataPostgresImporter {
   private async importSingleWithRequest(
     request: BatchImportRequest,
   ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
-    return this.import(request.bucket, request.key, request.options);
+    const options: { viewName: string; dropIfExists?: boolean; truncate?: boolean } = {
+      viewName: request.viewName,
+    };
+    if (request.dropIfExists !== undefined) {
+      options.dropIfExists = request.dropIfExists;
+    }
+    if (request.truncate !== undefined) {
+      options.truncate = request.truncate;
+    }
+    return this.import({
+      bucket: request.bucket,
+      key: request.key,
+      viewName: request.viewName,
+      dropIfExists: request.dropIfExists ?? false,
+      truncate: request.truncate ?? false,
+    });
   }
 
   /**
@@ -384,13 +402,19 @@ export class TabularDataPostgresImporter {
    * All columns are created as TEXT type for simplicity.
    * Returns Result<void, string>
    */
-  private async createTable(
-    tableName: string,
-    schema: CsvColumnSchema[],
-    options: ImportOptions,
-  ): Promise<Result<void, string>> {
+  private async createTable({
+    dropIfExists,
+    truncate,
+    tableName,
+    schema,
+  }: {
+    dropIfExists?: boolean;
+    truncate?: boolean;
+    tableName: string;
+    schema: CsvColumnSchema[];
+  }): Promise<Result<void, string>> {
     // Drop table if requested
-    if (options.dropIfExists) {
+    if (dropIfExists) {
       this.logger.debug('Dropping table if exists', { tableName });
       const dropResult = await this.postgresClient.dropTable(tableName);
       if (isErr(dropResult)) {
@@ -431,7 +455,7 @@ export class TabularDataPostgresImporter {
     }
 
     // Truncate if requested
-    if (options.truncate) {
+    if (truncate) {
       this.logger.debug('Truncating table', { tableName });
       const truncateResult = await this.postgresClient.truncateTable(tableName);
       if (isErr(truncateResult)) {

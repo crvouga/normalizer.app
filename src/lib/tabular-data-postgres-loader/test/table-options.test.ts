@@ -40,7 +40,11 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result1 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result1)).toBe(true);
     if (isOk(result1)) {
       expect(result1.value.rowCount).toBe(2);
@@ -57,7 +61,9 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // Use a different key to avoid cache issues with TabularDataConverter
     const testKey2 = 'test-drop-2.csv';
     await writeCsvToS3(objectStore, testKey2, csvContent2);
-    const result2 = await importer.import(TEST_BUCKET, testKey2, {
+    const result2 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey2,
       viewName: tableName,
       dropIfExists: true,
     });
@@ -95,14 +101,20 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result1 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result1)).toBe(true);
     if (isOk(result1)) {
       expect(result1.value.rowCount).toBe(2);
     }
 
     // Load again with truncate
-    const result2 = await importer.import(TEST_BUCKET, testKey, {
+    const result2 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
       viewName: tableName,
       truncate: true,
     });
@@ -137,12 +149,20 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result1 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result1)).toBe(true);
 
     // Load again without dropIfExists (should fail if schema doesn't match, or append)
     // Since we're using the same CSV, it should work
-    const result2 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result2 = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result2)).toBe(true);
 
     if (isOk(result2)) {

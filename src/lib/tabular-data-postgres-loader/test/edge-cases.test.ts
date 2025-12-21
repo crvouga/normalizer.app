@@ -31,7 +31,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const tableName = 'test_empty';
     testTables.push(tableName);
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -69,7 +73,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const tableName = 'test_headers_only';
     testTables.push(tableName);
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -115,7 +123,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const tableName = 'test-table@with#special$chars!';
     testTables.push('test_table_with_special_chars_'); // Sanitized version
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -165,7 +177,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const tableName = '123table';
     testTables.push('_123table'); // Sanitized version
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -192,7 +208,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const longTableName = 'a'.repeat(100); // 100 characters
     testTables.push('a'.repeat(63)); // Truncated version
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: longTableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: longTableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -221,7 +241,11 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     const tableName = 'test_multiple_unnamed';
     testTables.push(tableName);
 
-    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
+    const result = await importer.import({
+      bucket: TEST_BUCKET,
+      key: testKey,
+      viewName: tableName,
+    });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {

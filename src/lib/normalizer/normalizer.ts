@@ -182,18 +182,14 @@ export class Normalizer {
       ...inputs.map((objLoc) => ({
         bucket: objLoc.bucket,
         key: objLoc.key,
-        options: {
-          viewName: objLoc.viewName,
-          dropIfExists: true,
-        },
+        viewName: objLoc.viewName,
+        dropIfExists: true,
       })),
       ...targets.map((objLoc) => ({
         bucket: objLoc.bucket,
         key: objLoc.key,
-        options: {
-          viewName: objLoc.viewName,
-          dropIfExists: true,
-        },
+        viewName: objLoc.viewName,
+        dropIfExists: true,
       })),
     ];
 
