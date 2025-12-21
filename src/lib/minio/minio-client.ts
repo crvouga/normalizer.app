@@ -23,7 +23,7 @@ export class MinioClient {
     const endPoint = url.hostname;
     const port = url.port ? parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
     this.useSSL = url.protocol === 'https:';
-    this.logger = logger;
+    this.logger = logger.child(MinioClient.name);
     this.minioClient = new Minio.Client({
       endPoint,
       port,

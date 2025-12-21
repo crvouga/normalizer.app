@@ -166,8 +166,8 @@ export class PostgresSqlDb implements SqlDb {
     private readonly sql: ReturnType<typeof postgres>,
     logger: Logger,
   ) {
-    this.logger = logger;
-    this.logger.info('Initialized PostgresSqlDb');
+    this.logger = logger.child(PostgresSqlDb.name);
+    this.logger.info('Initialized');
   }
 
   async query<T>(

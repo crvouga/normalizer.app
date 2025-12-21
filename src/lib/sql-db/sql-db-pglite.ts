@@ -224,10 +224,10 @@ export class PgliteSqlDb implements SqlDb {
   private readonly db: PGlite;
 
   constructor(logger: Logger) {
-    this.logger = logger;
+    this.logger = logger.child(PgliteSqlDb.name);
     // Create in-memory PGLite instance
     this.db = new PGlite();
-    this.logger.info('Initialized PgliteSqlDb');
+    this.logger.info('Initialized');
   }
 
   async waitReady(): Promise<void> {
