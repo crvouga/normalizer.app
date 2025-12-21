@@ -1,5 +1,4 @@
 import { run } from 'graphile-worker';
-import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
 import { createLogger } from './lib/logger';
 import { onShutdown } from './lib/process/on-shutdown';
 import { SecretString } from './lib/secrets/secret-string';
@@ -15,8 +14,6 @@ const main = async () => {
   const databaseUrl = SecretString.assertEnvVar('DATABASE_URL');
 
   const db = await createDb({ logger });
-
-  await ensureGraphileWorkerSetup({ db, logger });
 
   const taskList = createTaskList(
     { logger, db },
@@ -34,6 +31,8 @@ const main = async () => {
   logger.info('Graphile Worker started');
 
   onShutdown(logger, async () => {
+    logger.info('Shutting down worker, resetting ongoing jobs to pending...');
+
     await runner.stop();
   });
 

@@ -88,6 +88,8 @@ export class Normalizer {
       postgresScript: generated.postgresScript,
     });
 
+    console.log(generated.postgresScript);
+
     if (!generated.postgresScript) {
       this.logger.error('No Postgres script generated');
       return Err('No Postgres script generated');
