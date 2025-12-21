@@ -75,13 +75,17 @@ export async function checkGraphileWorkerSetup(
  * Ensure Graphile Worker is set up in the database
  * Initializes the schema if it doesn't exist
  */
-export async function ensureGraphileWorkerSetup(
-  db: Db,
-  logger: Logger,
-): Promise<{
+export async function ensureGraphileWorkerSetup({
+  db,
+  logger,
+}: {
+  db: Db;
+  logger: Logger;
+}): Promise<{
   wasAlreadySetup: boolean;
   isSetup: boolean;
 }> {
+  logger.info('Ensuring Graphile Worker is set up...');
   // Check if already set up
   const checkResult = await checkGraphileWorkerSetup(db, logger);
 

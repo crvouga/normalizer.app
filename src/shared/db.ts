@@ -4,6 +4,7 @@ import { drizzle, type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres';
 import * as schema from '../db/schema';
 import type { Logger } from '../lib/logger';
+import { onShutdown } from '../lib/process/on-shutdown';
 import { createPostgresConnection } from './postgres-connection';
 
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
@@ -40,6 +41,10 @@ export const createDb = async ({ logger }: { logger: Logger }): Promise<Db> => {
 
   // Create Drizzle instance
   const db = drizzle(postgres, { schema });
+
+  onShutdown(logger, async () => {
+    await cleanupDb(logger);
+  });
 
   // Only apply schema if not already initialized
   if (!isInitialized) {

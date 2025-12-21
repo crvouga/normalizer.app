@@ -26,7 +26,16 @@ const fromEnvVar = (name: string): SecretString | null => {
   return init(name, value);
 };
 
+const assertEnvVar = (name: string): SecretString => {
+  const value = fromEnvVar(name);
+  if (!value) {
+    throw new Error(`Environment variable ${name} is not set`);
+  }
+  return value;
+};
+
 export const SecretString = {
   init,
   fromEnvVar,
+  assertEnvVar,
 };
