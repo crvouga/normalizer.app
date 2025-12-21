@@ -138,7 +138,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
         tableName,
         bucket: TEST_BUCKET,
         key: exportKey,
-        format: 'xlsx',
+        format: 'excel',
       });
 
       expect(isOk(result)).toBe(true);
@@ -183,7 +183,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
         tableName,
         bucket: TEST_BUCKET,
         key: exportKey,
-        format: 'xlsx',
+        format: 'excel',
       });
 
       expect(isOk(exportResult)).toBe(true);

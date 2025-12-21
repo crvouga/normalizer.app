@@ -9,12 +9,6 @@ import { type TabularFormat, getContentType, normalizeFormat } from '../tabular-
 import { z } from 'zod';
 
 /**
- * Supported export formats
- * @deprecated Use TabularFormat from '../tabular-data-format' instead
- */
-export type ExportFormat = 'csv' | 'xlsx' | 'parquet' | 'json';
-
-/**
  * Request for a single export operation
  */
 export interface ExportRequest {
@@ -31,7 +25,7 @@ export interface ExportRequest {
    * Target format for export
    * @default 'csv'
    */
-  format?: TabularFormat | ExportFormat;
+  format?: TabularFormat;
   /**
    * Object store bucket name
    */

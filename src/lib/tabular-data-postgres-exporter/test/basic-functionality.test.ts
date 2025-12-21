@@ -100,7 +100,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
       tableName,
       bucket: TEST_BUCKET,
       key: exportKey,
-      format: 'xlsx',
+      format: 'excel',
     });
 
     expect(isOk(result)).toBe(true);

@@ -252,7 +252,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
         tableName: tableName2,
         bucket: TEST_BUCKET,
         key: 'test-batch-format-2.xlsx',
-        format: 'xlsx',
+        format: 'excel',
       },
       {
         tableName: tableName3,
