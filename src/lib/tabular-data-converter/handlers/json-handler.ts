@@ -1,4 +1,4 @@
-import { getContentType } from '../../tabular-data-format';
+import { getContentType, getExtension, getName } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -6,11 +6,11 @@ import { TabularDataFormatHandler } from '../tabular-data-format-handler';
  */
 export class JsonHandler extends TabularDataFormatHandler {
   getFormatName(): string {
-    return 'json';
+    return getName('json');
   }
 
   getExtension(): string {
-    return 'json';
+    return getExtension('json');
   }
 
   getContentType(): string {

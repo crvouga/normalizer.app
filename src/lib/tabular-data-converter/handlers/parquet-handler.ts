@@ -1,6 +1,6 @@
 // @ts-expect-error - parquetjs doesn't have types
 import * as parquet from 'parquetjs';
-import { getContentType } from '../../tabular-data-format';
+import { getContentType, getExtension, getName } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -8,11 +8,11 @@ import { TabularDataFormatHandler } from '../tabular-data-format-handler';
  */
 export class ParquetHandler extends TabularDataFormatHandler {
   getFormatName(): string {
-    return 'parquet';
+    return getName('parquet');
   }
 
   getExtension(): string {
-    return 'parquet';
+    return getExtension('parquet');
   }
 
   getContentType(): string {

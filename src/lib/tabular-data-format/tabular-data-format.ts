@@ -86,7 +86,9 @@ for (const [format, metadata] of Object.entries(FORMAT_REGISTRY)) {
  * @param format Format name or alias
  * @returns Format metadata or undefined if format is not recognized
  */
-export function getFormatMetadata(format: string): FormatMetadata | undefined {
+export function getFormatMetadata(
+  format: TabularFormat | (string & {}),
+): FormatMetadata | undefined {
   const normalized = normalizeFormat(format);
   return normalized ? FORMAT_REGISTRY[normalized] : undefined;
 }
@@ -98,7 +100,7 @@ export function getFormatMetadata(format: string): FormatMetadata | undefined {
  * @param format Format name or alias
  * @returns Canonical format name or undefined if format is not recognized
  */
-export function normalizeFormat(format: string): TabularFormat | undefined {
+export function normalizeFormat(format: TabularFormat | (string & {})): TabularFormat | undefined {
   const normalized = format.toLowerCase();
   return ALIAS_MAP[normalized] as TabularFormat | undefined;
 }
@@ -109,7 +111,7 @@ export function normalizeFormat(format: string): TabularFormat | undefined {
  * @param format Format name or alias
  * @returns Content type string, or 'application/octet-stream' if format is not recognized
  */
-export function getContentType(format: string): string {
+export function getContentType(format: TabularFormat | (string & {})): string {
   const metadata = getFormatMetadata(format);
   return metadata?.contentType ?? 'application/octet-stream';
 }
@@ -120,7 +122,7 @@ export function getContentType(format: string): string {
  * @param format Format name or alias
  * @returns File extension (without leading dot), or empty string if format is not recognized
  */
-export function getExtension(format: string): string {
+export function getExtension(format: TabularFormat | (string & {})): string {
   const metadata = getFormatMetadata(format);
   return metadata?.extension ?? '';
 }
@@ -131,9 +133,20 @@ export function getExtension(format: string): string {
  * @param format Format name or alias
  * @returns Display name, or the original format string if not recognized
  */
-export function getDisplayName(format: string): string {
+export function getDisplayName(format: TabularFormat | (string & {})): string {
   const metadata = getFormatMetadata(format);
   return metadata?.displayName ?? format;
+}
+
+/**
+ * Get the canonical format name for a given format string or alias.
+ *
+ * @param format Format name or alias
+ * @returns Canonical format name, or undefined if not recognized
+ */
+export function getName(format: TabularFormat | (string & {})): string {
+  const metadata = getFormatMetadata(format);
+  return metadata?.name ?? format;
 }
 
 /**
@@ -142,7 +155,7 @@ export function getDisplayName(format: string): string {
  * @param format Format name or alias to check
  * @returns true if format is recognized, false otherwise
  */
-export function isValidFormat(format: string): boolean {
+export function isValidFormat(format: TabularFormat | (string & {})): boolean {
   return normalizeFormat(format) !== undefined;
 }
 

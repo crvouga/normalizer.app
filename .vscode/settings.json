@@ -37,9 +37,12 @@
     "healthcheck",
     "IPEDSID",
     "isready",
+    "officedocument",
+    "openxmlformats",
     "parquetjs",
     "pglite",
     "presign",
+    "spreadsheetml",
     "sslmode",
     "stringifying"
   ]

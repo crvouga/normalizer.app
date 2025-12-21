@@ -5,14 +5,15 @@
  */
 
 export {
-  TABULAR_FORMATS,
-  type TabularFormat,
-  type FormatMetadata,
-  getFormatMetadata,
-  normalizeFormat,
-  getContentType,
-  getExtension,
-  getDisplayName,
-  isValidFormat,
   getAllFormats,
+  getContentType,
+  getDisplayName,
+  getExtension,
+  getFormatMetadata,
+  getName,
+  isValidFormat,
+  normalizeFormat,
+  TABULAR_FORMATS,
+  type FormatMetadata,
+  type TabularFormat,
 } from './tabular-data-format';

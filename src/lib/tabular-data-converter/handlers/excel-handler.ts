@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getContentType } from '../../tabular-data-format';
+import { getContentType, getExtension, getName } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -7,11 +7,11 @@ import { TabularDataFormatHandler } from '../tabular-data-format-handler';
  */
 export class ExcelHandler extends TabularDataFormatHandler {
   getFormatName(): string {
-    return 'excel';
+    return getName('excel');
   }
 
   getExtension(): string {
-    return 'xlsx';
+    return getExtension('excel');
   }
 
   getContentType(): string {

@@ -1,4 +1,4 @@
-import { getContentType } from '../../tabular-data-format';
+import { getContentType, getExtension, getName } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -6,11 +6,11 @@ import { TabularDataFormatHandler } from '../tabular-data-format-handler';
  */
 export class CsvHandler extends TabularDataFormatHandler {
   getFormatName(): string {
-    return 'csv';
+    return getName('csv');
   }
 
   getExtension(): string {
-    return 'csv';
+    return getExtension('csv');
   }
 
   getContentType(): string {
