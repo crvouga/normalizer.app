@@ -11,11 +11,11 @@ import { TabularDataConverter } from '../tabular-data-converter/tabular-data-con
  */
 export interface ImportOptions {
   /**
-   * Table name to create/use (will be sanitized)
+   * View name to create/use (will be sanitized)
    */
-  tableName: string;
+  viewName: string;
   /**
-   * Whether to drop the table if it already exists
+   * Whether to drop the view if it already exists
    * @default false
    */
   dropIfExists?: boolean;
@@ -140,7 +140,7 @@ export class TabularDataPostgresImporter {
     options: ImportOptions,
   ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
     const startTime = Date.now();
-    this.logger.info('Starting tabular data import', { bucket, key, tableName: options.tableName });
+    this.logger.info('Starting tabular data import', { bucket, key, tableName: options.viewName });
 
     // Step 1: Convert file to CSV format using TabularDataConverter
     try {
@@ -176,7 +176,7 @@ export class TabularDataPostgresImporter {
       );
 
       // Step 4: Sanitize table name
-      const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.tableName);
+      const sanitizedTableName = PostgresClient.sanitizeIdentifier(options.viewName);
 
       // Generate schema with all TEXT columns (no type inference needed)
       const schema: CsvColumnSchema[] = sanitizedHeaders.map((name) => ({
@@ -232,7 +232,7 @@ export class TabularDataPostgresImporter {
       this.logger.error('Failed to import tabular data', {
         bucket,
         key,
-        tableName: options.tableName,
+        tableName: options.viewName,
         error: errorMessage,
       });
       return Err(`Failed to import tabular data: ${errorMessage}`);

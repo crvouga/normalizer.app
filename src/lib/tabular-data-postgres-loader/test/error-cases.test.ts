@@ -24,7 +24,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     const { importer } = fixtures;
 
     const result = await importer.import(TEST_BUCKET, 'non-existent-file.csv', {
-      tableName: 'test_error',
+      viewName: 'test_error',
     });
     expect(isOk(result)).toBe(false);
 
@@ -41,7 +41,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     // For truly empty content, the converter fails to detect file type first
     const emptyKey = 'test-empty-file.csv';
     await writeCsvToS3(objectStore, emptyKey, '');
-    const emptyResult = await importer.import(TEST_BUCKET, emptyKey, { tableName: 'test_error' });
+    const emptyResult = await importer.import(TEST_BUCKET, emptyKey, { viewName: 'test_error' });
     expect(isOk(emptyResult)).toBe(false);
     if (!isOk(emptyResult)) {
       expect(emptyResult.error).toBeDefined();
@@ -57,7 +57,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
       Csv.builder([]).withHeader(['col1', 'col2']).toString(),
     );
     const headerResult = await importer.import(TEST_BUCKET, headerOnlyKey, {
-      tableName: 'test_header_only',
+      viewName: 'test_header_only',
     });
     expect(isOk(headerResult)).toBe(true);
     if (isOk(headerResult)) {
@@ -76,7 +76,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     const testKey = 'test-no-columns.csv';
     await writeCsvToS3(objectStore, testKey, '\n\n');
 
-    const result = await importer.import(TEST_BUCKET, testKey, { tableName: 'test_error' });
+    const result = await importer.import(TEST_BUCKET, testKey, { viewName: 'test_error' });
     expect(isOk(result)).toBe(false);
 
     if (!isOk(result)) {

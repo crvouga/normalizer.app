@@ -40,7 +40,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result1)).toBe(true);
     if (isOk(result1)) {
       expect(result1.value.rowCount).toBe(2);
@@ -58,7 +58,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     const testKey2 = 'test-drop-2.csv';
     await writeCsvToS3(objectStore, testKey2, csvContent2);
     const result2 = await importer.import(TEST_BUCKET, testKey2, {
-      tableName,
+      viewName: tableName,
       dropIfExists: true,
     });
     expect(isOk(result2)).toBe(true);
@@ -95,7 +95,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result1)).toBe(true);
     if (isOk(result1)) {
       expect(result1.value.rowCount).toBe(2);
@@ -103,7 +103,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
 
     // Load again with truncate
     const result2 = await importer.import(TEST_BUCKET, testKey, {
-      tableName,
+      viewName: tableName,
       truncate: true,
     });
     expect(isOk(result2)).toBe(true);
@@ -137,12 +137,12 @@ describe('TabularDataPostgresImporter - Table options', () => {
     testTables.push(tableName);
 
     // First import
-    const result1 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result1 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result1)).toBe(true);
 
     // Load again without dropIfExists (should fail if schema doesn't match, or append)
     // Since we're using the same CSV, it should work
-    const result2 = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result2 = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result2)).toBe(true);
 
     if (isOk(result2)) {

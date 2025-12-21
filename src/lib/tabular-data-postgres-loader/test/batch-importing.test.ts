@@ -50,9 +50,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2, tableName3);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
-      { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
-      { bucket: TEST_BUCKET, key: testKey3, options: { tableName: tableName3 } },
+      { bucket: TEST_BUCKET, key: testKey1, options: { viewName: tableName1 } },
+      { bucket: TEST_BUCKET, key: testKey2, options: { viewName: tableName2 } },
+      { bucket: TEST_BUCKET, key: testKey3, options: { viewName: tableName3 } },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -123,9 +123,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
-      { bucket: TEST_BUCKET, key: nonExistentKey, options: { tableName: tableName3 } },
-      { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
+      { bucket: TEST_BUCKET, key: testKey1, options: { viewName: tableName1 } },
+      { bucket: TEST_BUCKET, key: nonExistentKey, options: { viewName: tableName3 } },
+      { bucket: TEST_BUCKET, key: testKey2, options: { viewName: tableName2 } },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -188,16 +188,16 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2, tableName3);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
+      { bucket: TEST_BUCKET, key: testKey1, options: { viewName: tableName1 } },
       {
         bucket: TEST_BUCKET,
         key: testKey2,
-        options: { tableName: tableName2, dropIfExists: true },
+        options: { viewName: tableName2, dropIfExists: true },
       },
       {
         bucket: TEST_BUCKET,
         key: testKey3,
-        options: { tableName: tableName3, truncate: true },
+        options: { viewName: tableName3, truncate: true },
       },
     ]);
 
@@ -246,7 +246,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     const request = {
       bucket: TEST_BUCKET,
       key: testKey,
-      options: { tableName, dropIfExists: true },
+      options: { viewName: tableName, dropIfExists: true },
     };
 
     const batchResult = await importer.importBatch([request]);
@@ -257,7 +257,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     // Verify request context is preserved
     expect(itemResult.request.bucket).toBe(request.bucket);
     expect(itemResult.request.key).toBe(request.key);
-    expect(itemResult.request.options.tableName).toBe(request.options.tableName);
+    expect(itemResult.request.options.viewName).toBe(request.options.viewName);
     expect(itemResult.request.options.dropIfExists).toBe(request.options.dropIfExists);
 
     // Verify result is successful
@@ -287,8 +287,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
-      { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
+      { bucket: TEST_BUCKET, key: testKey1, options: { viewName: tableName1 } },
+      { bucket: TEST_BUCKET, key: testKey2, options: { viewName: tableName2 } },
     ]);
 
     expect(batchResult.summary.successful).toBe(2);
@@ -344,7 +344,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
       requests.push({
         bucket: TEST_BUCKET,
         key: testKey,
-        options: { tableName },
+        options: { viewName: tableName },
       });
     }
 
@@ -374,9 +374,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     const { importer } = fixtures;
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: 'non-existent-1.csv', options: { tableName: 'test_fail_1' } },
-      { bucket: TEST_BUCKET, key: 'non-existent-2.csv', options: { tableName: 'test_fail_2' } },
-      { bucket: TEST_BUCKET, key: 'non-existent-3.csv', options: { tableName: 'test_fail_3' } },
+      { bucket: TEST_BUCKET, key: 'non-existent-1.csv', options: { viewName: 'test_fail_1' } },
+      { bucket: TEST_BUCKET, key: 'non-existent-2.csv', options: { viewName: 'test_fail_2' } },
+      { bucket: TEST_BUCKET, key: 'non-existent-3.csv', options: { viewName: 'test_fail_3' } },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -420,8 +420,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     const startTime = Date.now();
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, options: { tableName: tableName1 } },
-      { bucket: TEST_BUCKET, key: testKey2, options: { tableName: tableName2 } },
+      { bucket: TEST_BUCKET, key: testKey1, options: { viewName: tableName1 } },
+      { bucket: TEST_BUCKET, key: testKey2, options: { viewName: tableName2 } },
     ]);
     const endTime = Date.now();
 

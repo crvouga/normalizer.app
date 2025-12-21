@@ -10,6 +10,7 @@ import {
   type BatchImportResult,
 } from '~/src/lib/tabular-data-postgres-loader/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
+import { generatePostgresScript } from './generate-postgres-script';
 
 export class Normalizer {
   constructor(
@@ -36,10 +37,20 @@ export class Normalizer {
 
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
 
+    const inputs = params.inputs.map((objLoc) => ({ ...objLoc, viewName: `input_${objLoc.key}` }));
+    const targets = params.targets.map((objLoc) => ({
+      ...objLoc,
+      viewName: `target_${objLoc.key}`,
+    }));
+    const outputs = params.targets.map((objLoc) => ({
+      ...objLoc,
+      viewName: `output_${objLoc.key}`,
+    }));
+
     const importedBatch = await this.importTabularData({
       sqlDb,
-      inputs: params.inputs,
-      targets: params.targets,
+      inputs,
+      targets,
     });
 
     if (isErr(importedBatch.result)) {
@@ -54,21 +65,14 @@ export class Normalizer {
       outputObjectBucket: params.outputObjectBucket,
     });
 
-    let messages;
-    try {
-      messages = await this.llm.completions([
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that normalizes objects.',
-        },
-      ]);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to get LLM completions', { error: errorMessage });
-      return Err(`Failed to get LLM completions: ${errorMessage}`);
-    }
+    const postgresScript = await generatePostgresScript({
+      inputs,
+      targets,
+      outputs,
+      llm: this.llm,
+    });
 
-    this.logger.debug('LLM messages', { messages });
+    this.logger.debug('Generated Postgres script', { postgresScript });
 
     // Read all inputs using batch operation
     const inputsReadResult = await this.objectStore.readMany(params.inputs);
@@ -139,10 +143,10 @@ export class Normalizer {
       return Err(`Failed to write output objects: ${writeResult.error}`);
     }
 
-    const outputs = writeResult.value;
+    const outputLocations = writeResult.value;
 
     this.logger.debug('Successfully created all outputs', {
-      outputCount: outputs.length,
+      outputCount: outputLocations.length,
     });
 
     this.logger.debug('Normalization completed', {
@@ -159,8 +163,8 @@ export class Normalizer {
    */
   private async importTabularData(params: {
     sqlDb: SqlDb;
-    inputs: ObjectLocation[];
-    targets: ObjectLocation[];
+    inputs: (ObjectLocation & { viewName: string })[];
+    targets: (ObjectLocation & { viewName: string })[];
   }): Promise<BatchImportResult> {
     const { sqlDb, inputs, targets } = params;
     const tabularDataPostgresImporter = createTabularDataPostgresImporter({
@@ -170,19 +174,19 @@ export class Normalizer {
     });
 
     const batchRequests: BatchImportRequest[] = [
-      ...inputs.map((objLoc, idx) => ({
+      ...inputs.map((objLoc) => ({
         bucket: objLoc.bucket,
         key: objLoc.key,
         options: {
-          tableName: `input_${idx}`,
+          viewName: objLoc.viewName,
           dropIfExists: true,
         },
       })),
-      ...targets.map((objLoc, idx) => ({
+      ...targets.map((objLoc) => ({
         bucket: objLoc.bucket,
         key: objLoc.key,
         options: {
-          tableName: `target_${idx}`,
+          viewName: objLoc.viewName,
           dropIfExists: true,
         },
       })),

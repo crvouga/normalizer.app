@@ -54,7 +54,7 @@ describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
       testTables.push(tableName);
 
       // Import using optimized streaming path
-      const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+      const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
       expect(isOk(result)).toBe(true);
       if (!isOk(result)) {
         throw new Error(`Import failed: ${result.error}`);

@@ -36,7 +36,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
     const tableName = 'test_simple_table';
     testTables.push(tableName);
 
-    const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
@@ -109,7 +109,7 @@ describe('TabularDataPostgresImporter - Basic functionality', () => {
     const tableName = 'test_schema_table';
     testTables.push(tableName);
 
-    const result = await importer.import(TEST_BUCKET, testKey, { tableName });
+    const result = await importer.import(TEST_BUCKET, testKey, { viewName: tableName });
     expect(isOk(result)).toBe(true);
 
     if (isOk(result)) {
