@@ -1,10 +1,7 @@
 # Git LFS tracking for large files
-# CSV files (test data files can be large)
-*.csv filter=lfs diff=lfs merge=lfs -text
-# Large data files
+# Note: CSV files are NOT tracked by LFS to avoid bandwidth limits
+# Large data files (keep only truly large binary formats)
 *.parquet filter=lfs diff=lfs merge=lfs -text
-*.xlsx filter=lfs diff=lfs merge=lfs -text
-*.xls filter=lfs diff=lfs merge=lfs -text
 # Binary files
 *.pdf filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text
