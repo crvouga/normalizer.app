@@ -89,15 +89,15 @@ export class LLMOpenAI extends LLM {
     messages: Message[],
     options?: StreamOptions | (StreamOptions & { schema: T }),
   ): AsyncIterable<StreamChunk | StreamChunkWithSchema<z.infer<T>>> {
+    const openAIMessages = messages.map(this.convertMessageToOpenAI);
+
+    this.logger.debug('OpenAI API request (streaming)', {
+      model: this.model,
+      messageCount: openAIMessages.length,
+      hasSchema: options?.schema !== undefined,
+    });
+
     try {
-      const openAIMessages = messages.map(this.convertMessageToOpenAI);
-
-      this.logger.debug('OpenAI API request (streaming)', {
-        model: this.model,
-        messageCount: openAIMessages.length,
-        hasSchema: options?.schema !== undefined,
-      });
-
       const requestParams = this.buildRequestParams(openAIMessages, options);
       const stream = await this.client.chat.completions.create(requestParams);
 
@@ -116,14 +116,117 @@ export class LLMOpenAI extends LLM {
 
       yield this.createDoneChunk(state, parsedData, options);
     } catch (error) {
-      const errorMessage =
-        error instanceof OpenAI.APIError
-          ? error.message
-          : error instanceof Error
+      // Check if error is about structured outputs not being supported
+      const isStructuredOutputsError =
+        error instanceof OpenAI.APIError &&
+        error.message.includes("'response_format' of type 'json_schema' is not supported");
+
+      if (isStructuredOutputsError && options?.schema) {
+        // Fallback: retry without structured outputs, but request JSON format
+        this.logger.warn(
+          'Model does not support structured outputs, falling back to JSON format with manual validation',
+          { model: this.model },
+        );
+
+        // Add instruction to return JSON in the last user message
+        const fallbackMessages: OpenAIMessage[] = [...openAIMessages];
+        const lastMessage = fallbackMessages[fallbackMessages.length - 1];
+        if (
+          lastMessage &&
+          'role' in lastMessage &&
+          lastMessage.role === 'user' &&
+          typeof lastMessage.content === 'string'
+        ) {
+          fallbackMessages[fallbackMessages.length - 1] = {
+            ...lastMessage,
+            content:
+              lastMessage.content +
+              '\n\nIMPORTANT: Respond with valid JSON only, no markdown code blocks, no explanatory text.',
+          };
+        } else {
+          fallbackMessages.push({
+            role: 'user',
+            content:
+              'IMPORTANT: Respond with valid JSON only, no markdown code blocks, no explanatory text.',
+          });
+        }
+
+        // Create options without schema to avoid structured outputs
+        const { schema: _, ...fallbackOptions } = options;
+        const fallbackParams = this.buildRequestParams(fallbackMessages, fallbackOptions);
+        // Use JSON format instead of structured outputs
+        fallbackParams.response_format = { type: 'json_object' };
+
+        try {
+          const stream = await this.client.chat.completions.create(fallbackParams);
+
+          const state: StreamState = {
+            accumulatedContent: '',
+            toolCalls: [],
+            toolCallBuffers: new Map<number, { id: string; name: string; arguments: string }>(),
+            usage: undefined,
+          };
+
+          yield* this.processStreamChunks(stream, state);
+
+          yield* this.processRemainingToolCalls(state);
+
+          // Parse and validate manually
+          const parsedData = this.parseAndValidateResponse(state.accumulatedContent, options);
+
+          yield this.createDoneChunk(state, parsedData, options);
+        } catch (fallbackError) {
+          // Check if json_object format is also not supported
+          const isJsonObjectError =
+            fallbackError instanceof OpenAI.APIError &&
+            fallbackError.message.includes(
+              "'response_format' of type 'json_object' is not supported",
+            );
+
+          if (isJsonObjectError) {
+            // Final fallback: plain text with JSON instructions, no response_format
+            this.logger.warn(
+              'Model does not support json_object format, falling back to plain text with JSON prompt instructions',
+              { model: this.model },
+            );
+
+            // Remove response_format and rely on prompt instructions
+            const plainTextParams = this.buildRequestParams(fallbackMessages, fallbackOptions);
+            // Don't set response_format at all
+
+            const stream = await this.client.chat.completions.create(plainTextParams);
+
+            const state: StreamState = {
+              accumulatedContent: '',
+              toolCalls: [],
+              toolCallBuffers: new Map<number, { id: string; name: string; arguments: string }>(),
+              usage: undefined,
+            };
+
+            yield* this.processStreamChunks(stream, state);
+
+            yield* this.processRemainingToolCalls(state);
+
+            // Parse and validate manually (will handle markdown code blocks if present)
+            const parsedData = this.parseAndValidateResponse(state.accumulatedContent, options);
+
+            yield this.createDoneChunk(state, parsedData, options);
+          } else {
+            // Re-throw other errors from fallback
+            throw fallbackError;
+          }
+        }
+      } else {
+        // Re-throw other errors
+        const errorMessage =
+          error instanceof OpenAI.APIError
             ? error.message
-            : String(error);
-      this.logger.error('OpenAI stream error', { error: errorMessage });
-      throw new Error(errorMessage);
+            : error instanceof Error
+              ? error.message
+              : String(error);
+        this.logger.error('OpenAI stream error', { error: errorMessage });
+        throw new Error(errorMessage);
+      }
     }
   }
 
@@ -140,7 +243,8 @@ export class LLMOpenAI extends LLM {
       requestParams.temperature = options.temperature;
     }
     if (options?.maxTokens !== undefined) {
-      requestParams.max_tokens = options.maxTokens;
+      // max_tokens is still valid in OpenAI API despite TypeScript deprecation warning
+      (requestParams as { max_tokens?: number }).max_tokens = options.maxTokens;
     }
     if (options?.topP !== undefined) {
       requestParams.top_p = options.topP;
@@ -316,9 +420,16 @@ export class LLMOpenAI extends LLM {
       return undefined;
     }
 
+    // Extract JSON from markdown code blocks if present
+    let jsonContent = accumulatedContent.trim();
+    const codeBlockMatch = jsonContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch && codeBlockMatch[1]) {
+      jsonContent = codeBlockMatch[1].trim();
+    }
+
     let parsedData: unknown;
     try {
-      parsedData = JSON.parse(accumulatedContent);
+      parsedData = JSON.parse(jsonContent);
     } catch (parseError) {
       throw new Error(
         `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,

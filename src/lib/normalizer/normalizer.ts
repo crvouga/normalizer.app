@@ -8,7 +8,7 @@ import {
   createTabularDataPostgresImporter,
   type BatchImportRequest,
   type BatchImportResult,
-} from '~/src/lib/tabular-data-postgres-loader/tabular-data-postgres-importer';
+} from '~/src/lib/tabular-data-postgres-importer/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
 import { generatePostgresScript } from './generate-postgres-script';
 
@@ -68,7 +68,7 @@ export class Normalizer {
       outputObjectBucket: params.outputObjectBucket,
     });
 
-    const postgresScript = await generatePostgresScript({
+    const generated = await generatePostgresScript({
       inputs,
       targets,
       outputs,
@@ -77,7 +77,21 @@ export class Normalizer {
       logger: this.logger,
     });
 
-    this.logger.debug('Generated Postgres script', { postgresScript });
+    this.logger.debug('Generated Postgres script', {
+      explanation: generated.explanation,
+      postgresScript: generated.postgresScript,
+    });
+
+    if (!generated.postgresScript) {
+      this.logger.error('No Postgres script generated');
+      return Err('No Postgres script generated');
+    }
+
+    const result = await sqlDb.unsafe(generated.postgresScript);
+    if (isErr(result)) {
+      this.logger.error('Failed to execute Postgres script', { error: result.error });
+      return Err(`Failed to execute Postgres script: ${result.error}`);
+    }
 
     // Read all inputs using batch operation
     const inputsReadResult = await this.objectStore.readMany(params.inputs);
@@ -195,6 +209,31 @@ export class Normalizer {
 
     return await tabularDataPostgresImporter.importBatch(batchRequests);
   }
+
+  // /**
+  //  * Exports tabular data from PostgreSQL tables to output object locations.
+  //  */
+  // private async exportTabularData(params: {
+  //   sqlDb: SqlDb;
+  //   outputs: (ObjectLocation & { viewName: string })[];
+  // }): Promise<BatchImportResult> {
+  //   const { sqlDb, outputs } = params;
+  //   const tabularDataPostgresImporter = createTabularDataPostgresImporter({
+  //     sql: sqlDb,
+  //     logger: this.logger,
+  //     objectStore: this.objectStore,
+  //   });
+
+  //   const batchRequests: BatchImportRequest[] = outputs.map((objLoc) => ({
+  //     bucket: objLoc.bucket,
+  //     key: objLoc.key,
+  //     viewName: objLoc.viewName,
+  //     direction: 'export' as const, // Explicitly marks export direction if the importer supports it
+  //     dropIfExists: false,
+  //   }));
+
+  //   return await tabularDataPostgresImporter.exportBatch(batchRequests);
+  // }
 
   /**
    * Determines how many outputs should be produced from the given inputs and targets.

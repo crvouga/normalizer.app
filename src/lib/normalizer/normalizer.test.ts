@@ -10,7 +10,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
-  const llm = createLLMOpenAI({ logger });
+  const llm = createLLMOpenAI({ logger, model: 'gpt-5-nano' });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   test.skip(

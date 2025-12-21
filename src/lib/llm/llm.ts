@@ -234,30 +234,32 @@ export abstract class LLM {
     chunk: StreamChunk,
     assistantMessage: ToolCallMessage | null,
   ): ToolCallMessage | null {
-    if (chunk.type === 'tool_call') {
-      return {
-        role: 'assistant',
-        content: assistantMessage?.content ?? '',
-        toolCalls: [...(assistantMessage?.toolCalls ?? []), chunk.toolCall],
-      };
-    }
-
-    if (chunk.type === 'done') {
-      if (!assistantMessage) {
+    switch (chunk.type) {
+      case 'tool_call':
         return {
           role: 'assistant',
+          content: assistantMessage?.content ?? '',
+          toolCalls: [...(assistantMessage?.toolCalls ?? []), chunk.toolCall],
+        };
+      case 'done':
+        if (!assistantMessage) {
+          return {
+            role: 'assistant',
+            content: chunk.content,
+            ...(chunk.toolCalls && chunk.toolCalls.length > 0
+              ? { toolCalls: chunk.toolCalls }
+              : {}),
+          };
+        }
+        return {
+          ...assistantMessage,
           content: chunk.content,
           ...(chunk.toolCalls && chunk.toolCalls.length > 0 ? { toolCalls: chunk.toolCalls } : {}),
         };
+      default: {
+        return assistantMessage;
       }
-      return {
-        ...assistantMessage,
-        content: chunk.content,
-        ...(chunk.toolCalls && chunk.toolCalls.length > 0 ? { toolCalls: chunk.toolCalls } : {}),
-      };
     }
-
-    return assistantMessage;
   }
 
   /**

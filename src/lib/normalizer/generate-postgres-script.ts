@@ -19,16 +19,19 @@ export async function generatePostgresScript({
   sqlDb: SqlDb;
   logger: Logger;
   // msgBus: MsgBus;
-}): Promise<string> {
+}): Promise<{
+  explanation: string;
+  postgresScript: string | null;
+}> {
   logger.debug('Starting PostgreSQL script generation', {
     inputCount: inputs.length,
     targetCount: targets.length,
     outputCount: outputs.length,
   });
 
-  const inputTableNames = inputs.map((input) => input.viewName).join(', ');
-  const targetTableNames = targets.map((target) => target.viewName).join(', ');
-  const outputViewNames = outputs.map((output) => output.viewName).join(', ');
+  const inputTableNames = inputs.map((input) => input.viewName);
+  const targetTableNames = targets.map((target) => target.viewName);
+  const outputViewNames = outputs.map((output) => output.viewName);
 
   // Define the query_database tool
   const queryDatabaseTool: ToolDefinition = {
@@ -38,7 +41,7 @@ export async function generatePostgresScript({
     parameters: queryDatabaseSchema,
   };
 
-  const systemPrompt = generateSystemPrompt({
+  const systemPrompt = toSystemPrompt({
     inputTableNames,
     targetTableNames,
     outputViewNames,
@@ -73,6 +76,7 @@ export async function generatePostgresScript({
 
     const response = await llm.completions(messages, {
       tools: [queryDatabaseTool],
+      // temperature: 0.0,
     });
 
     const lastMessage = response[response.length - 1];
@@ -140,13 +144,6 @@ export async function generatePostgresScript({
           content:
             'Stop explaining. Use the query_database tool immediately. Call it with: query_database({"query": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN (\'input_0\', \'target_0\') ORDER BY table_name, ordinal_position"})',
         });
-      } else if (hasSqlStatements && content.trim().length > 50 && iteration > 0) {
-        // Looks like a complete script after some iterations, return it
-        logger.debug('Script generation completed (no tool calls needed)', {
-          iteration: iteration + 1,
-          scriptLength: content.length,
-        });
-        return content;
       } else if (iteration === 0) {
         // First iteration without tools - strongly encourage tool usage
         logger.debug(
@@ -166,33 +163,52 @@ export async function generatePostgresScript({
             'You need to use the query_database tool NOW. Do not explain or give examples. Call the tool with a SELECT query to inspect the tables. Start with: query_database({"query": "SELECT * FROM input_0 LIMIT 1"})',
         });
       } else {
-        // On later iterations, if no tool calls and no SQL, assume we're done
-        logger.debug('No tool calls and no SQL detected, assuming completion', {
+        // On later iterations, if no tool calls, proceed to Phase 2
+        logger.debug('No tool calls detected, proceeding to structured output generation', {
           iteration: iteration + 1,
           contentLength: content.length,
         });
-        return content;
+        break;
       }
     }
 
     iteration++;
   }
 
-  logger.warn('Reached maximum iterations', {
-    maxIterations: MAX_ITERATIONS,
-  });
-
-  // If we've exhausted iterations, return the last message content
-  const lastMessage = messages[messages.length - 1];
-  if (lastMessage && lastMessage.role === 'assistant') {
-    logger.debug('Returning script from last iteration', {
-      scriptLength: lastMessage.content?.length ?? 0,
+  if (iteration >= MAX_ITERATIONS) {
+    logger.warn('Reached maximum iterations', {
+      maxIterations: MAX_ITERATIONS,
     });
-    return lastMessage.content ?? '';
   }
 
-  logger.error('No valid script generated after all iterations');
-  return '';
+  // Phase 2: Generate structured output
+  logger.debug('Starting Phase 2: Structured JSON generation');
+  messages.push({
+    role: 'user',
+    content:
+      'Based on the database schemas you inspected, generate the PostgreSQL transformation script with an explanation. Return the result as structured JSON with "explanation" and "postgresScript" fields.',
+  });
+
+  type OutputType = z.infer<typeof postgresScriptOutputSchema>;
+  for await (const chunk of llm.stream(messages, {
+    schema: postgresScriptOutputSchema,
+    //  temperature: 0.0,
+  })) {
+    if (chunk.type === 'done') {
+      const data = chunk.data as OutputType;
+      logger.debug('Structured output generation completed', {
+        explanationLength: data.explanation.length,
+        postgresScriptLength: data.postgresScript.length,
+      });
+      return data;
+    }
+  }
+
+  logger.error('No valid structured output generated');
+  return {
+    explanation: 'Failed to generate structured output',
+    postgresScript: null,
+  };
 }
 
 /**
@@ -208,64 +224,55 @@ async function executeToolCall(toolCall: ToolCall, sqlDb: SqlDb, logger: Logger)
     const params = queryDatabaseSchema.parse(toolCall.arguments);
     const query = params.query.trim();
 
-    logger.debug('Executing database query', {
+    logger.debug('Executing database query (always uses unsafe)', {
       toolCallId: toolCall.id,
       queryLength: query.length,
       queryPreview: query.substring(0, 100),
     });
 
-    // Determine if this is a SELECT query (returns rows) or a command (modifies data)
-    const queryUpper = query.toUpperCase().trim();
-    const isSelectQuery =
-      queryUpper.startsWith('SELECT') ||
-      queryUpper.startsWith('WITH') ||
-      queryUpper.startsWith('VALUES');
+    // Always use sqlDb.unsafe() for all queries
+    const result = await sqlDb.unsafe(query);
 
-    if (isSelectQuery) {
-      // Use query() for SELECT queries that return rows
-      logger.debug('Executing SELECT query', { toolCallId: toolCall.id });
-      const result = await sqlDb.query(query);
-
-      if (isErr(result)) {
-        logger.error('Query execution failed', {
-          toolCallId: toolCall.id,
-          error: result.error,
-        });
-        return JSON.stringify({ error: result.error });
-      }
-
-      logger.debug('Query executed successfully', {
+    if (isErr(result)) {
+      logger.error('Query execution failed', {
         toolCallId: toolCall.id,
-        rowCount: result.value.length,
+        error: result.error,
       });
+      return JSON.stringify({ error: result.error });
+    }
 
+    const resultSummary =
+      typeof result.value === 'object' && result.value !== null
+        ? Array.isArray(result.value)
+          ? { rowCount: result.value.length }
+          : Object.keys(result.value)
+        : typeof result.value;
+
+    logger.debug('Query executed successfully', {
+      toolCallId: toolCall.id,
+      resultSummary,
+    });
+
+    // Try to guess kind of result for backward compatibility
+    // If it's an array, it's likely SELECT; if it's an object with rowCount, DML; else generic
+    if (Array.isArray(result.value)) {
       return JSON.stringify({
         rows: result.value,
         rowCount: result.value.length,
       });
-    } else {
-      // Use execute() for INSERT, UPDATE, DELETE, DDL, etc.
-      logger.debug('Executing command query', {
-        toolCallId: toolCall.id,
-        queryType: queryUpper.split(' ')[0],
-      });
-      const result = await sqlDb.execute(query);
-
-      if (isErr(result)) {
-        logger.error('Command execution failed', {
-          toolCallId: toolCall.id,
-          error: result.error,
-        });
-        return JSON.stringify({ error: result.error });
-      }
-
-      logger.debug('Command executed successfully', {
-        toolCallId: toolCall.id,
-        rowCount: result.value.rowCount,
-      });
-
+    } else if (
+      result.value &&
+      typeof result.value === 'object' &&
+      'rowCount' in result.value &&
+      typeof result.value.rowCount === 'number'
+    ) {
       return JSON.stringify({
         rowCount: result.value.rowCount,
+        message: 'Query executed successfully',
+      });
+    } else {
+      return JSON.stringify({
+        result: result.value,
         message: 'Query executed successfully',
       });
     }
@@ -289,115 +296,31 @@ const queryDatabaseSchema = z.object({
     ),
 });
 
+// Define the structured output schema for PostgreSQL script generation
+const postgresScriptOutputSchema = z.object({
+  explanation: z
+    .string()
+    .describe('Explanation of how the transformation works and what mappings were applied'),
+  postgresScript: z.string().describe('The complete PostgreSQL CREATE OR REPLACE VIEW statements'),
+});
+
 /**
  * Generates the system prompt for PostgreSQL script generation
  */
-function generateSystemPrompt(params: {
-  inputTableNames: string;
-  targetTableNames: string;
-  outputViewNames: string;
+function toSystemPrompt(params: {
+  inputTableNames: string[];
+  targetTableNames: string[];
+  outputViewNames: string[];
 }): string {
   const { inputTableNames, targetTableNames, outputViewNames } = params;
-  return `
-You are a PostgreSQL expert specializing in data normalization and schema mapping.
+  return `You are a PostgreSQL expert. Generate CREATE OR REPLACE VIEW statements that transform input tables to match target table schemas exactly.
 
-Your task is to generate PostgreSQL scripts that create views mapping input tables to target schemas.
+Tables:
+- Inputs: ${inputTableNames.join(', ')}
+- Targets: ${targetTableNames.join(', ')} (define desired schemas)
+- Outputs: ${outputViewNames.join(', ')} (views to create)
 
-## Context
+Use query_database to inspect actual schemas and data. Map input columns to target columns intelligently (handle naming variations, type conversions, NULLs as needed).
 
-- Input tables are named: ${inputTableNames}
-- Target tables are named: ${targetTableNames}
-- Output views are named: ${outputViewNames}
-- Target tables define the desired output schema (column names, types, structure)
-- Input tables contain the source data that needs to be transformed to match the target schema
-
-## Your Goal
-
-Generate CREATE VIEW statements that transform the input data to match the target schema exactly.
-
-## IMPORTANT: You MUST use the query_database tool first
-
-Before generating any SQL script, you MUST use the query_database tool to:
-1. Inspect the schema of each input table (column names, data types)
-2. Inspect the schema of each target table (column names, data types)
-3. View sample data from input tables to understand the data format
-
-DO NOT generate SQL scripts without first inspecting the actual table structures using the query_database tool. You cannot know the column names or data types without querying the database.
-
-## Requirements
-
-1. **Schema Analysis**
-   - Carefully examine the structure of each input table
-   - Carefully examine the structure of each target table
-   - Identify column mappings between inputs and targets based on semantic meaning
-
-2. **Column Mapping**
-   - Map input columns to target columns by analyzing column names and data patterns
-   - Handle variations in naming conventions (snake_case, camelCase, PascalCase, etc.)
-   - Perform intelligent matching (e.g., "instructor_name" → "CourseInstructor")
-
-3. **Data Transformation**
-   - Apply necessary data type conversions (e.g., TEXT to INTEGER, date formatting)
-   - Handle NULL values appropriately
-   - Preserve data integrity during transformations
-
-4. **View Creation**
-   - Create one output view per input table, named: ${outputViewNames}
-   - Each view should select data from its corresponding input table (${outputViewNames} from ${inputTableNames}, etc.)
-   - The view schema must exactly match the corresponding target table schema
-   - Use the same column names, data types, and structure as the target
-
-5. **SQL Best Practices**
-   - Generate valid PostgreSQL syntax
-   - Use explicit column aliases for clarity
-   - Add comments explaining complex transformations
-   - Ensure the script is idempotent (can be run multiple times safely)
-
-## Output Format
-
-Return ONLY valid PostgreSQL SQL statements. Do not include:
-
-- Markdown code fences
-- Explanatory text before or after the SQL
-- Comments outside of SQL comments (-- or /\* \*/)
-
-Example output structure:
--- Output input_0 to match target_0 schema
-CREATE OR REPLACE VIEW ${outputViewNames.split(', ')[0] ?? 'output_0'} AS
-SELECT
-input_column_1 AS TargetColumn1,
-input_column_2 AS TargetColumn2,
-CAST(input_column_3 AS INTEGER) AS TargetColumn3
-FROM ${inputTableNames.split(', ')[0] ?? 'input_0'};
-
--- Output input_1 to match target_1 schema
-CREATE OR REPLACE VIEW ${outputViewNames.split(', ')[1] ?? 'output_1'} AS
-SELECT
-different_col AS TargetColumn1,
-another_col AS TargetColumn2
-FROM ${inputTableNames.split(', ')[1] ?? 'input_1'};
-
-## Error Handling
-
-- If a target column has no clear mapping in the input, use NULL with appropriate type casting
-- If data types are incompatible, use appropriate PostgreSQL casting functions
-- If you cannot confidently map the data, explain the issue in SQL comments
-
-## Available Tools
-
-You have access to a \`query_database\` tool that lets you execute any SQL query against the database.
-
-**CRITICAL: You MUST call query_database BEFORE generating any SQL script.**
-
-Do NOT explain what you would do. Do NOT give examples. Do NOT say you cannot access the database.
-You CAN and MUST use the query_database tool to inspect the tables.
-
-Start by calling query_database with queries like:
-- \`SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN ('input_0', 'target_0') ORDER BY table_name, ordinal_position\` - To see all column schemas
-- \`SELECT * FROM input_0 LIMIT 3\` - To see sample input data
-- \`SELECT * FROM target_0 LIMIT 1\` - To see target schema structure
-
-After inspecting the schemas with query_database, then generate the transformation script.
-
-Generate precise, executable PostgreSQL code that transforms the input data to perfectly match the target schema.`;
+Output: Return ONLY valid PostgreSQL SQL statements. No markdown code fences, no explanatory text outside SQL comments.`;
 }
