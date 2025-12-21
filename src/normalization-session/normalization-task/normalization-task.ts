@@ -26,7 +26,8 @@ import type { TaskHandler } from '~/src/shared/graphile-worker';
  */
 export const normalizationTask: TaskHandler<'normalization'> = async (ctx, payload) => {
   const { sessionId } = payload;
-  const { logger, db } = ctx;
+  const { db } = ctx;
+  const logger = ctx.logger.child(normalizationTask.name);
 
   logger.info('Starting normalization task', { sessionId });
 

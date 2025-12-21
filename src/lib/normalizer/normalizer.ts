@@ -252,5 +252,5 @@ export function createNormalizer(params: {
   logger: Logger;
   llm: LLM;
 }): Normalizer {
-  return new Normalizer(params.objectStore, params.logger, params.llm);
+  return new Normalizer(params.objectStore, params.logger.child(Normalizer.name), params.llm);
 }
