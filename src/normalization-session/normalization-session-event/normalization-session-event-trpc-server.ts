@@ -48,7 +48,7 @@ export const normalizationSessionEventRouter = router({
         if (
           NormalizationSessionProjection.shouldStartNormalizationJob(projectionBefore, projection)
         ) {
-          await enqueueJob(tx, 'normalization', { sessionId: input.sessionId });
+          await enqueueJob(tx, { type: 'normalization', sessionId: input.sessionId });
         }
       });
       // After commit, load full payload to return

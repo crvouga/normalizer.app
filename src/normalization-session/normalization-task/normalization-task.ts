@@ -5,11 +5,9 @@ import { isErr } from '~/src/lib/result';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import * as schema from '../../db/schema';
-import type { TaskHandler } from '../../lib/graphile-worker-lib';
 import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
 import type { Db, Tx } from '../../shared/db';
-import type { NormalizationJobPayload } from '../../shared/graphile-worker';
 import { createObjectStore } from '../../shared/s3';
 import { getS3Config } from '../../shared/s3-config';
 import type { UserId } from '../../users/user-id';
@@ -20,12 +18,13 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
+import type { TaskHandler } from '~/src/shared/graphile-worker';
 
 /**
  * Normalization task handler
  * Processes a normalization job for a given session
  */
-export const normalizationTask: TaskHandler<NormalizationJobPayload> = async (payload, ctx) => {
+export const normalizationTask: TaskHandler<'normalization'> = async (ctx, payload) => {
   const { sessionId } = payload;
   const { logger, db } = ctx;
 

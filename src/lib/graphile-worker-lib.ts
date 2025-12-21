@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { runMigrations } from 'graphile-worker';
 import { Pool } from 'pg';
+import { z } from 'zod';
 import type { Db, Tx } from '../shared/db';
 import type { Logger } from './logger';
 import { SecretString } from './secrets/secret-string';
@@ -8,13 +9,27 @@ import { SecretString } from './secrets/secret-string';
 /**
  * Task handler type for Graphile Worker
  */
-export type TaskHandler<TPayload = unknown> = (
+export type TaskHandler<TPayload = unknown, TCtx = unknown> = (
+  ctx: TCtx,
   payload: TPayload,
-  ctx: {
-    logger: Logger;
-    db: Db;
-  },
 ) => Promise<void>;
+
+/**
+ * Extract the union of all job type names from a discriminated union
+ */
+export type ExtractJobName<TJobs extends { type: string }> = TJobs['type'];
+
+/**
+ * Extract the payload type for a specific job name (without the 'type' discriminant)
+ */
+export type ExtractPayload<T extends { type: string }> = Omit<T, 'type'>;
+
+/**
+ * Map each job name to its payload type
+ */
+export type JobPayloadMap<TJobs extends { type: string }> = {
+  [K in ExtractJobName<TJobs>]: ExtractPayload<Extract<TJobs, { type: K }>>;
+};
 
 /**
  * Check if Graphile Worker is set up in the database
@@ -123,6 +138,78 @@ export async function ensureGraphileWorkerSetup({
   } finally {
     await pool.end();
   }
+}
+
+/**
+ * Get the Zod schema for a job name (payload without the 'type' discriminant)
+ * Extracts the schema from a discriminated union at runtime
+ */
+export function getJobSchema<TJobs extends { type: string }>(
+  jobsSchema: z.ZodDiscriminatedUnion<'type', z.ZodDiscriminatedUnionOption<'type'>[]>,
+  jobName: ExtractJobName<TJobs>,
+): z.ZodSchema {
+  // Find the matching option in the discriminated union
+  for (const jobOption of jobsSchema.options) {
+    const shape = jobOption.shape;
+    if (shape && 'type' in shape && shape.type instanceof z.ZodLiteral) {
+      if (shape.type.value === jobName) {
+        // Return the schema without the 'type' discriminant field
+        return jobOption.omit({ type: true });
+      }
+    }
+  }
+
+  // This should never happen if jobName is correctly derived from the Jobs schema
+  throw new Error(`Unknown job name: ${String(jobName)}`);
+}
+
+/**
+ * Type-safe function to enqueue a Graphile Worker job within a transaction
+ * Uses Zod schema validation to ensure payload matches the job schema
+ */
+export async function enqueueTypedJob<
+  TJobs extends { type: string },
+  TJobName extends ExtractJobName<TJobs>,
+>(
+  tx: Tx,
+  jobsSchema: z.ZodDiscriminatedUnion<'type', z.ZodDiscriminatedUnionOption<'type'>[]>,
+  jobName: TJobName,
+  payload: JobPayloadMap<TJobs>[TJobName],
+): Promise<void> {
+  const schema = getJobSchema<TJobs>(jobsSchema, jobName);
+  const validatedPayload = schema.parse(payload);
+  await enqueueJob(tx, jobName, validatedPayload);
+}
+
+/**
+ * Create the task list for Graphile Worker
+ * Returns a task list compatible with Graphile Worker's TaskList interface
+ * while providing type safety through validation
+ * Handlers are derived from the Jobs schema - each job name must have a corresponding handler
+ */
+export function createTaskList<TJobs extends { type: string }, Ctx>(
+  jobsSchema: z.ZodDiscriminatedUnion<'type', z.ZodDiscriminatedUnionOption<'type'>[]>,
+  ctx: Ctx,
+  handlers: { [K in ExtractJobName<TJobs>]: TaskHandler<JobPayloadMap<TJobs>[K], Ctx> },
+) {
+  const taskList: Record<string, (payload: unknown, helpers: unknown) => Promise<void>> = {};
+
+  // Build task list dynamically from Jobs schema
+  for (const jobOption of jobsSchema.options) {
+    const shape = jobOption.shape;
+    if (shape && 'type' in shape && shape.type instanceof z.ZodLiteral) {
+      const jobName = shape.type.value as ExtractJobName<TJobs>;
+      const payloadSchema = getJobSchema<TJobs>(jobsSchema, jobName);
+      const handler = handlers[jobName];
+
+      taskList[jobName] = async (payload: unknown, _helpers: unknown) => {
+        const validatedPayload = payloadSchema.parse(payload);
+        await handler(ctx, validatedPayload);
+      };
+    }
+  }
+
+  return taskList;
 }
 
 /**
