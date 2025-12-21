@@ -32,7 +32,6 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
   logger.info('Starting normalization task', { sessionId });
 
   try {
-    // Load initial data
     const { startedByUserId, inProgressEntry, projection } = await loadNormalizationData({
       db,
       logger,
@@ -52,9 +51,7 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
       inputArtifactIds: inProgressEntry.inputArtifactIds,
     });
 
-    // Perform normalization in a single transaction
     await db.transaction(async (tx: Tx) => {
-      // Perform the normalization work
       const outputArtifactIds = await performNormalization({
         tx,
         logger,
@@ -63,7 +60,6 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
         projection,
       });
 
-      // Record the result
       await recordNormalizationResult({
         tx,
         logger,
@@ -100,7 +96,6 @@ async function loadNormalizationData({
 }> {
   const projectionDb = new NormalizationSessionProjectionDb(db, logger);
 
-  // Get the session owner
   const startedByUserId = await projectionDb.getOwner(sessionId);
 
   if (!startedByUserId) {
@@ -110,7 +105,6 @@ async function loadNormalizationData({
 
   const projection = await projectionDb.load(sessionId, startedByUserId);
 
-  // Find the in-progress normalization entry
   const inProgressEntry =
     projection.entries.find(
       (entry) => entry.type === 'normalization' && entry.status === 'in_progress',
@@ -139,42 +133,18 @@ async function performNormalization({
   inProgressEntry: NormalizationSessionProjectionEntry;
   projection: NormalizationSessionProjection;
 }): Promise<ArtifactId[]> {
-  // Create object store and normalizer
   const objectStore = await createObjectStore({ logger });
-  const llm = createLLMOpenAI({ logger });
+  const llm = createLLMOpenAI({ logger, model: 'gpt-5' });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
-  // Load input artifacts
   const artifactDb = new ArtifactDb(tx, logger);
   const inputArtifacts = await artifactDb.getByIds(inProgressEntry.inputArtifactIds);
 
-  if (inputArtifacts.length !== inProgressEntry.inputArtifactIds.length) {
-    logger.warn('Some input artifacts not found', {
-      sessionId,
-      expected: inProgressEntry.inputArtifactIds.length,
-      found: inputArtifacts.length,
-    });
-  }
-
-  // Load target artifacts (if any)
   const targetArtifacts = await artifactDb.getByIds(projection.targetArtifactIds);
 
-  if (
-    projection.targetArtifactIds.length > 0 &&
-    targetArtifacts.length !== projection.targetArtifactIds.length
-  ) {
-    logger.warn('Some target artifacts not found', {
-      sessionId,
-      expected: projection.targetArtifactIds.length,
-      found: targetArtifacts.length,
-    });
-  }
-
-  // Get S3 bucket configuration
   const { s3Bucket } = getS3Config();
   const normalizationRunId = inProgressEntry.normalizationRunId;
 
-  // Prepare inputs and targets for normalization
   const inputs = inputArtifacts.map((artifact) => ({
     key: artifact.object_key,
     bucket: artifact.object_bucket,
@@ -185,7 +155,6 @@ async function performNormalization({
     bucket: artifact.object_bucket,
   }));
 
-  // Call normalize with all inputs and targets
   const normalizeResult = await normalizer.normalize({
     inputs,
     targets,
@@ -204,7 +173,6 @@ async function performNormalization({
 
   const { outputs } = normalizeResult.value;
 
-  // Create artifacts for each output
   const outputArtifactIds: ArtifactId[] = [];
 
   for (const [index, output] of enumerate(outputs)) {
@@ -212,7 +180,6 @@ async function performNormalization({
 
     outputArtifactIds.push(outputArtifactId);
 
-    // Use the first input artifact as a template for cloning
     const maybeTemplateArtifact = inputArtifacts[0];
 
     if (!maybeTemplateArtifact) {
@@ -224,10 +191,8 @@ async function performNormalization({
       uploaded_by: 'system',
     };
 
-    // Clone the artifact with a new ID
     await artifactDb.clone(templateArtifact, outputArtifactId);
 
-    // Update the artifact with output S3 key/bucket and normalized name
     const baseName = templateArtifact.name || templateArtifact.filename;
     const normalizedName = toNormalizedFileName(baseName);
 
@@ -269,7 +234,6 @@ async function recordNormalizationResult({
 }): Promise<void> {
   const now = new Date();
 
-  // Create and insert the system-normalization-completed event
   const eventId = NormalizationSessionEventId.generate();
   const completedEvent: NormalizationSessionEventEntity = {
     id: eventId,
@@ -286,7 +250,6 @@ async function recordNormalizationResult({
 
   await tx.insert(schema.normalizationSessionEvents).values(completedEvent);
 
-  // Refresh the projection
   const projectionDb = new NormalizationSessionProjectionDb(tx, logger);
   await projectionDb.refresh(sessionId, startedByUserId);
 

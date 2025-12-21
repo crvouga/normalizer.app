@@ -59,7 +59,7 @@ export class ArtifactDb {
       .from(schema.artifacts)
       .where(and(inArray(schema.artifacts.id, artifactIds), isNull(schema.artifacts.deleted)));
 
-    return rows.flatMap((row) => {
+    const artifacts = rows.flatMap((row): Artifact[] => {
       const parsed = Artifact.schema.safeParse(row);
       if (parsed.success) {
         return [parsed.data];
@@ -70,6 +70,16 @@ export class ArtifactDb {
       });
       return [];
     });
+
+    // Warn if some artifacts were not found
+    if (artifactIds.length > 0 && artifacts.length !== artifactIds.length) {
+      this.logger?.warn('Some artifacts not found', {
+        expected: artifactIds.length,
+        found: artifacts.length,
+      });
+    }
+
+    return artifacts;
   }
 
   /**

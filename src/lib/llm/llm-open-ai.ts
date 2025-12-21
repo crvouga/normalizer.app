@@ -32,7 +32,7 @@ export interface OpenAIConfig {
   /**
    * Model to use
    */
-  model?: OpenAIModel;
+  model: OpenAIModel;
   /**
    * Base URL for OpenAI API (defaults to https://api.openai.com/v1)
    */
@@ -76,7 +76,7 @@ export class LLMOpenAI extends LLM {
       apiKey: config.apiKey.DANGEROUSLY_readValue(),
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
-    this.model = config.model || 'gpt-4';
+    this.model = config.model;
     this.logger = config.logger;
   }
 
@@ -514,7 +514,7 @@ export class LLMOpenAI extends LLM {
   }
 }
 
-export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel }): LLM {
+export function createLLMOpenAI(params: { logger: Logger; model: OpenAIModel }): LLM {
   const apiKey = SecretString.fromEnvVar('OPENAI_API_KEY');
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
@@ -522,7 +522,7 @@ export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel })
   return new LLMOpenAI({
     apiKey,
     logger: params.logger,
-    model: params.model ?? 'gpt-4',
+    model: params.model,
   }) as LLM;
 }
 
