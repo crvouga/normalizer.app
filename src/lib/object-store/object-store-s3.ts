@@ -21,13 +21,11 @@ export class S3ObjectStore extends ObjectStore {
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
-    serverBaseUrl: _serverBaseUrl,
     logger,
   }: {
     s3Endpoint: string;
     s3AccessKeyId: string;
     s3SecretAccessKey: string;
-    serverBaseUrl?: string;
     logger: Logger;
   }) {
     super();
