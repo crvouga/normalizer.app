@@ -37,14 +37,17 @@ export class Normalizer {
 
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
 
-    const inputs = params.inputs.map((objLoc) => ({ ...objLoc, viewName: `input_${objLoc.key}` }));
-    const targets = params.targets.map((objLoc) => ({
+    const inputs = params.inputs.map((objLoc, index) => ({
       ...objLoc,
-      viewName: `target_${objLoc.key}`,
+      viewName: `input_${index}`,
     }));
-    const outputs = params.targets.map((objLoc) => ({
+    const targets = params.targets.map((objLoc, index) => ({
       ...objLoc,
-      viewName: `output_${objLoc.key}`,
+      viewName: `target_${index}`,
+    }));
+    const outputs = params.targets.map((objLoc, index) => ({
+      ...objLoc,
+      viewName: `output_${index}`,
     }));
 
     const importedBatch = await this.importTabularData({
@@ -70,6 +73,8 @@ export class Normalizer {
       targets,
       outputs,
       llm: this.llm,
+      sqlDb,
+      logger: this.logger,
     });
 
     this.logger.debug('Generated Postgres script', { postgresScript });
