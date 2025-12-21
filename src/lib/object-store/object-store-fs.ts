@@ -3,6 +3,7 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   statSync,
   unlinkSync,
@@ -515,6 +516,237 @@ export class FilesystemObjectStore extends ObjectStore {
         logMessage: 'Failed to read object stream from filesystem',
         context: { bucket: params.bucket, key: params.key },
         errorPrefix: 'Failed to read object stream',
+      });
+    }
+  }
+
+  /**
+   * Recursively walk directory tree and collect all files.
+   */
+  private walkDirectory(
+    dirPath: string,
+    prefix: string,
+    delimiter?: string,
+  ): Array<{ key: string; size: number; lastModified: Date; isPrefix: boolean }> {
+    const results: Array<{ key: string; size: number; lastModified: Date; isPrefix: boolean }> = [];
+
+    try {
+      const entries = readdirSync(dirPath, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = join(dirPath, entry.name);
+        // Ensure prefix ends with / for proper key construction
+        const normalizedPrefix = prefix && !prefix.endsWith('/') ? `${prefix}/` : prefix;
+        const relativeKey = normalizedPrefix ? `${normalizedPrefix}${entry.name}` : entry.name;
+
+        if (entry.isDirectory()) {
+          if (delimiter) {
+            // With delimiter, treat directories as common prefixes
+            results.push({
+              key: `${relativeKey}${delimiter}`,
+              size: 0,
+              lastModified: new Date(),
+              isPrefix: true,
+            });
+          } else {
+            // Without delimiter, recursively walk subdirectories
+            const subResults = this.walkDirectory(fullPath, `${relativeKey}/`, delimiter);
+            results.push(...subResults);
+          }
+        } else if (entry.isFile()) {
+          const stats = statSync(fullPath);
+          results.push({
+            key: relativeKey,
+            size: stats.size,
+            lastModified: stats.mtime,
+            isPrefix: false,
+          });
+        }
+      }
+    } catch (error) {
+      // Ignore permission errors or missing directories
+      this.logger.debug('Error walking directory', { dirPath, error });
+    }
+
+    return results;
+  }
+
+  async listObjects(
+    bucket: string,
+    options?: {
+      prefix?: string;
+      maxKeys?: number;
+      continuationToken?: string;
+      delimiter?: string;
+    },
+  ): Promise<
+    Result<
+      {
+        objects: Array<{
+          key: string;
+          size: number;
+          lastModified: Date;
+        }>;
+        commonPrefixes?: string[];
+        isTruncated: boolean;
+        nextContinuationToken?: string;
+      },
+      string
+    >
+  > {
+    this.logger.debug('Listing objects in filesystem bucket', { bucket, options });
+
+    try {
+      const sanitizedBucket = bucket.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const bucketPath = join(this.basePath, sanitizedBucket);
+
+      if (!existsSync(bucketPath) || !statSync(bucketPath).isDirectory()) {
+        this.logger.debug('Bucket does not exist', { bucket });
+        return Ok({
+          objects: [],
+          isTruncated: false,
+        });
+      }
+
+      const prefix = options?.prefix ?? '';
+      const delimiter = options?.delimiter;
+      const maxKeys = options?.maxKeys ?? 1000;
+      const continuationToken = options?.continuationToken;
+
+      // Get the directory path for the prefix
+      const prefixPath = prefix ? join(bucketPath, prefix) : bucketPath;
+
+      // If prefix path doesn't exist, return empty results
+      if (prefix && (!existsSync(prefixPath) || !statSync(prefixPath).isDirectory())) {
+        return Ok({
+          objects: [],
+          isTruncated: false,
+        });
+      }
+
+      // Walk directory tree - pass prefix so keys are relative to bucket root
+      const allItems = this.walkDirectory(prefixPath, prefix, delimiter);
+
+      // Filter by prefix if provided (keys should already start with prefix from walkDirectory)
+      const filteredItems = allItems;
+
+      // Separate objects and prefixes
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+      const commonPrefixesSet = new Set<string>();
+
+      for (const item of filteredItems) {
+        if (item.isPrefix) {
+          commonPrefixesSet.add(item.key);
+        } else {
+          objects.push({
+            key: item.key,
+            size: item.size,
+            lastModified: item.lastModified,
+          });
+        }
+      }
+
+      // Sort objects by key for consistent pagination
+      objects.sort((a, b) => a.key.localeCompare(b.key));
+
+      // Handle pagination
+      let startIndex = 0;
+      if (continuationToken) {
+        startIndex = objects.findIndex((obj) => obj.key > continuationToken);
+        if (startIndex === -1) {
+          startIndex = objects.length;
+        }
+      }
+
+      const paginatedObjects = objects.slice(startIndex, startIndex + maxKeys);
+      const isTruncated = startIndex + maxKeys < objects.length;
+      const nextContinuationToken = isTruncated
+        ? paginatedObjects[paginatedObjects.length - 1]?.key
+        : undefined;
+
+      this.logger.debug('Finished listing objects from filesystem', {
+        bucket,
+        objectCount: paginatedObjects.length,
+        commonPrefixCount: commonPrefixesSet.size,
+        isTruncated,
+      });
+
+      const result: {
+        objects: Array<{ key: string; size: number; lastModified: Date }>;
+        commonPrefixes?: string[];
+        isTruncated: boolean;
+        nextContinuationToken?: string;
+      } = {
+        objects: paginatedObjects,
+        isTruncated,
+      };
+
+      if (commonPrefixesSet.size > 0) {
+        result.commonPrefixes = Array.from(commonPrefixesSet).sort();
+      }
+
+      if (nextContinuationToken) {
+        result.nextContinuationToken = nextContinuationToken;
+      }
+
+      return Ok(result);
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to list objects from filesystem',
+        context: { bucket, options },
+        errorPrefix: 'Failed to list objects',
+      });
+    }
+  }
+
+  async copyObject(
+    source: ObjectLocation,
+    destination: ObjectLocation,
+  ): Promise<Result<void, string>> {
+    this.logger.debug('Copying object on filesystem', {
+      sourceBucket: source.bucket,
+      sourceKey: source.key,
+      destBucket: destination.bucket,
+      destKey: destination.key,
+    });
+
+    try {
+      // Read source object
+      const readResult = await this.read(source);
+      if (readResult.tag === 'err') {
+        return Err(readResult.error);
+      }
+
+      // Write to destination
+      const writeResult = await this.write({
+        bucket: destination.bucket,
+        key: destination.key,
+        data: readResult.value,
+      });
+
+      if (writeResult.tag === 'err') {
+        return Err(writeResult.error);
+      }
+
+      this.logger.debug('Successfully copied object on filesystem', {
+        sourceBucket: source.bucket,
+        sourceKey: source.key,
+        destBucket: destination.bucket,
+        destKey: destination.key,
+      });
+      return Ok(undefined);
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to copy object on filesystem',
+        context: {
+          sourceBucket: source.bucket,
+          sourceKey: source.key,
+          destBucket: destination.bucket,
+          destKey: destination.key,
+        },
+        errorPrefix: 'Failed to copy object',
       });
     }
   }

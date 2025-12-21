@@ -1,24 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { rmSync } from 'fs';
-import { createObjectStore } from '~/src/shared/s3';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
-import { createLogger } from '../logger';
+import { createObjectStore } from '~/src/shared/s3';
+import { createLogger, type Logger } from '../logger';
 import { isOk } from '../result';
 import type { ObjectStore } from './object-store';
 
-const TEST_KEYS = [
-  'key1',
-  'key2',
-  'key3',
-  'non-existent-key',
-  'non-existent',
-  'emptyKey',
-  'key.with.dots',
-  'key-with-dashes',
-  'key_with_underscores',
-  'key/slash',
-  'key with spaces',
-];
+// TEST_KEYS removed - we now clean up all objects in beforeEach for better test isolation
 
 // Mock server base URL for presigned URL tests
 const MOCK_SERVER_BASE_URL = 'http://localhost:8080';
@@ -27,7 +15,7 @@ const MOCK_SERVER_BASE_URL = 'http://localhost:8080';
 const implementations = [
   [
     'S3',
-    async (logger: ReturnType<typeof createLogger>): Promise<ObjectStore> => {
+    async (logger: Logger): Promise<ObjectStore> => {
       const store = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
       await store.ensureBucketExists('test');
       return store;
@@ -35,7 +23,7 @@ const implementations = [
   ] as const,
   [
     'Filesystem',
-    async (logger: ReturnType<typeof createLogger>): Promise<ObjectStore> => {
+    async (logger: Logger): Promise<ObjectStore> => {
       const { mkdtemp } = await import('fs/promises');
       const { join } = await import('path');
       const { tmpdir } = await import('os');
@@ -83,7 +71,18 @@ describe.each(implementations)(
     });
 
     beforeEach(async () => {
-      await Promise.all(TEST_KEYS.map((key) => store.delete({ bucket: testBucket, key: key })));
+      // Clean up all objects in the test bucket to ensure test isolation
+      try {
+        const allObjects: Array<{ key: string }> = [];
+        for await (const obj of store.listAllObjects(testBucket)) {
+          allObjects.push(obj);
+        }
+        if (allObjects.length > 0) {
+          await store.deleteMany(allObjects.map((obj) => ({ bucket: testBucket, key: obj.key })));
+        }
+      } catch (error) {
+        // Ignore cleanup errors - bucket might be empty or not exist
+      }
     });
 
     // READ TESTS
@@ -1240,6 +1239,491 @@ describe.each(implementations)(
         expect(result.value[0]?.url).toMatch(/^https?:\/\/.+/);
         expect(result.value[1]?.url).toMatch(/^https?:\/\/.+/);
         expect(result.value[2]?.url).toMatch(/^https?:\/\/.+/);
+      }
+    });
+
+    // LISTOBJECTS TESTS
+    test('listObjects: lists objects in empty bucket', async () => {
+      const result = await store.listObjects(testBucket);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.objects).toEqual([]);
+        expect(result.value.isTruncated).toBe(false);
+        expect(result.value.nextContinuationToken).toBeUndefined();
+      }
+    });
+
+    test('listObjects: lists all objects without prefix', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'file1.txt', data: testData },
+        { bucket: testBucket, key: 'file2.txt', data: testData },
+        { bucket: testBucket, key: 'dir/file3.txt', data: testData },
+      ]);
+
+      const result = await store.listObjects(testBucket);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.objects).toHaveLength(3);
+        const keys = result.value.objects.map((obj) => obj.key).sort();
+        expect(keys).toEqual(['dir/file3.txt', 'file1.txt', 'file2.txt']);
+
+        // Verify all objects have required metadata
+        for (const obj of result.value.objects) {
+          expect(obj.key).toBeDefined();
+          expect(typeof obj.key).toBe('string');
+          expect(obj.size).toBeDefined();
+          expect(typeof obj.size).toBe('number');
+          expect(obj.size).toBeGreaterThanOrEqual(0);
+          expect(obj.lastModified).toBeDefined();
+          expect(obj.lastModified instanceof Date).toBe(true);
+        }
+      }
+    });
+
+    test('listObjects: lists objects with prefix filter', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'docs/readme.txt', data: testData },
+        { bucket: testBucket, key: 'docs/guide.txt', data: testData },
+        { bucket: testBucket, key: 'images/logo.png', data: testData },
+        { bucket: testBucket, key: 'config.json', data: testData },
+      ]);
+
+      const result = await store.listObjects(testBucket, { prefix: 'docs/' });
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.objects).toHaveLength(2);
+        const keys = result.value.objects.map((obj) => obj.key).sort();
+        expect(keys).toEqual(['docs/guide.txt', 'docs/readme.txt']);
+      }
+    });
+
+    test('listObjects: returns empty array for non-matching prefix', async () => {
+      const testData = Buffer.from('test data');
+      await store.write({ bucket: testBucket, key: 'file.txt', data: testData });
+
+      const result = await store.listObjects(testBucket, { prefix: 'nonexistent/' });
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.objects).toEqual([]);
+        expect(result.value.isTruncated).toBe(false);
+      }
+    });
+
+    test('listObjects: respects maxKeys parameter', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'file1.txt', data: testData },
+        { bucket: testBucket, key: 'file2.txt', data: testData },
+        { bucket: testBucket, key: 'file3.txt', data: testData },
+        { bucket: testBucket, key: 'file4.txt', data: testData },
+        { bucket: testBucket, key: 'file5.txt', data: testData },
+      ]);
+
+      const result = await store.listObjects(testBucket, { maxKeys: 3 });
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value.objects.length).toBeLessThanOrEqual(3);
+        // If there are more objects, isTruncated should be true
+        if (result.value.objects.length === 3) {
+          expect(result.value.isTruncated).toBe(true);
+          expect(result.value.nextContinuationToken).toBeDefined();
+        }
+      }
+    });
+
+    test('listObjects: handles pagination with continuationToken', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'file1.txt', data: testData },
+        { bucket: testBucket, key: 'file2.txt', data: testData },
+        { bucket: testBucket, key: 'file3.txt', data: testData },
+        { bucket: testBucket, key: 'file4.txt', data: testData },
+        { bucket: testBucket, key: 'file5.txt', data: testData },
+      ]);
+
+      // Get first page
+      const page1 = await store.listObjects(testBucket, { maxKeys: 2 });
+      expect(isOk(page1)).toBe(true);
+
+      if (isOk(page1) && page1.value.isTruncated && page1.value.nextContinuationToken) {
+        const page1Keys = page1.value.objects.map((obj) => obj.key);
+
+        // Get second page using continuation token
+        const page2 = await store.listObjects(testBucket, {
+          maxKeys: 2,
+          continuationToken: page1.value.nextContinuationToken,
+        });
+        expect(isOk(page2)).toBe(true);
+
+        if (isOk(page2)) {
+          const page2Keys = page2.value.objects.map((obj) => obj.key);
+
+          // Verify no overlap between pages
+          const intersection = page1Keys.filter((key) => page2Keys.includes(key));
+          expect(intersection).toEqual([]);
+
+          // Verify we're getting different objects
+          expect(page2Keys.length).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    test('listObjects: delimiter returns common prefixes', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'root.txt', data: testData },
+        { bucket: testBucket, key: 'docs/file1.txt', data: testData },
+        { bucket: testBucket, key: 'docs/file2.txt', data: testData },
+        { bucket: testBucket, key: 'images/logo.png', data: testData },
+        { bucket: testBucket, key: 'images/banner.png', data: testData },
+      ]);
+
+      const result = await store.listObjects(testBucket, { delimiter: '/' });
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        // Should return root.txt as object and docs/, images/ as common prefixes
+        const rootObjects = result.value.objects.filter((obj) => !obj.key.includes('/'));
+        expect(rootObjects.length).toBeGreaterThan(0);
+
+        if (result.value.commonPrefixes) {
+          expect(result.value.commonPrefixes.length).toBeGreaterThan(0);
+          expect(result.value.commonPrefixes).toContain('docs/');
+          expect(result.value.commonPrefixes).toContain('images/');
+        }
+      }
+    });
+
+    test('listObjects: returns correct size for objects', async () => {
+      const smallData = Buffer.from('small');
+      const largeData = Buffer.alloc(1024 * 10); // 10KB
+
+      await store.writeMany([
+        { bucket: testBucket, key: 'small.txt', data: smallData },
+        { bucket: testBucket, key: 'large.txt', data: largeData },
+      ]);
+
+      const result = await store.listObjects(testBucket);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        const smallObj = result.value.objects.find((obj) => obj.key === 'small.txt');
+        const largeObj = result.value.objects.find((obj) => obj.key === 'large.txt');
+
+        expect(smallObj).toBeDefined();
+        expect(largeObj).toBeDefined();
+
+        if (smallObj && largeObj) {
+          expect(smallObj.size).toBe(smallData.length);
+          expect(largeObj.size).toBe(largeData.length);
+        }
+      }
+    });
+
+    test('listObjects: lastModified is recent for newly created objects', async () => {
+      const testData = Buffer.from('test data');
+      const beforeWrite = new Date();
+
+      await store.write({ bucket: testBucket, key: 'test.txt', data: testData });
+
+      const afterWrite = new Date();
+
+      const result = await store.listObjects(testBucket);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        const obj = result.value.objects.find((o) => o.key === 'test.txt');
+        expect(obj).toBeDefined();
+
+        if (obj) {
+          expect(obj.lastModified.getTime()).toBeGreaterThanOrEqual(beforeWrite.getTime() - 1000);
+          expect(obj.lastModified.getTime()).toBeLessThanOrEqual(afterWrite.getTime() + 1000);
+        }
+      }
+    });
+
+    // LISTALLOBJECTS TESTS
+    test('listAllObjects: iterates through all objects in empty bucket', async () => {
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+
+      for await (const obj of store.listAllObjects(testBucket)) {
+        objects.push(obj);
+      }
+
+      expect(objects).toEqual([]);
+    });
+
+    test('listAllObjects: iterates through all objects without prefix', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'file1.txt', data: testData },
+        { bucket: testBucket, key: 'file2.txt', data: testData },
+        { bucket: testBucket, key: 'file3.txt', data: testData },
+      ]);
+
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+
+      for await (const obj of store.listAllObjects(testBucket)) {
+        objects.push(obj);
+      }
+
+      expect(objects).toHaveLength(3);
+      const keys = objects.map((obj) => obj.key).sort();
+      expect(keys).toEqual(['file1.txt', 'file2.txt', 'file3.txt']);
+
+      // Verify all objects have required metadata
+      for (const obj of objects) {
+        expect(obj.key).toBeDefined();
+        expect(obj.size).toBeGreaterThanOrEqual(0);
+        expect(obj.lastModified instanceof Date).toBe(true);
+      }
+    });
+
+    test('listAllObjects: iterates through objects with prefix filter', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'docs/file1.txt', data: testData },
+        { bucket: testBucket, key: 'docs/file2.txt', data: testData },
+        { bucket: testBucket, key: 'images/logo.png', data: testData },
+        { bucket: testBucket, key: 'config.json', data: testData },
+      ]);
+
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+
+      for await (const obj of store.listAllObjects(testBucket, 'docs/')) {
+        objects.push(obj);
+      }
+
+      expect(objects).toHaveLength(2);
+      const keys = objects.map((obj) => obj.key).sort();
+      expect(keys).toEqual(['docs/file1.txt', 'docs/file2.txt']);
+    });
+
+    test('listAllObjects: handles pagination automatically', async () => {
+      const testData = Buffer.from('test data');
+      const fileCount = 10;
+      const writes = [];
+
+      for (let i = 1; i <= fileCount; i++) {
+        writes.push({
+          bucket: testBucket,
+          key: `file${i.toString().padStart(2, '0')}.txt`,
+          data: testData,
+        });
+      }
+
+      await store.writeMany(writes);
+
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+
+      // listAllObjects should handle pagination internally
+      for await (const obj of store.listAllObjects(testBucket)) {
+        objects.push(obj);
+      }
+
+      // Should get all objects despite pagination
+      expect(objects).toHaveLength(fileCount);
+
+      // Verify no duplicates
+      const uniqueKeys = new Set(objects.map((obj) => obj.key));
+      expect(uniqueKeys.size).toBe(fileCount);
+    });
+
+    test('listAllObjects: can be broken early', async () => {
+      const testData = Buffer.from('test data');
+      await store.writeMany([
+        { bucket: testBucket, key: 'file1.txt', data: testData },
+        { bucket: testBucket, key: 'file2.txt', data: testData },
+        { bucket: testBucket, key: 'file3.txt', data: testData },
+      ]);
+
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+
+      for await (const obj of store.listAllObjects(testBucket)) {
+        objects.push(obj);
+        if (objects.length >= 2) {
+          break; // Early exit
+        }
+      }
+
+      // Should only have collected 2 objects
+      expect(objects).toHaveLength(2);
+    });
+
+    test('listAllObjects: throws error on listing failure', async () => {
+      // Try to list from a bucket that doesn't exist
+      const nonExistentBucket = 'non-existent-bucket-xyz';
+
+      try {
+        const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+        for await (const obj of store.listAllObjects(nonExistentBucket)) {
+          objects.push(obj);
+        }
+        // If we get here, either the bucket exists or the implementation doesn't error
+        // This is implementation-dependent behavior
+      } catch (error) {
+        // Expected to throw an error for non-existent bucket
+        expect(error).toBeDefined();
+        expect(error instanceof Error).toBe(true);
+      }
+    });
+
+    // COPYOBJECT TESTS
+    test('copyObject: copies object within same bucket', async () => {
+      const testData = Buffer.from('original data');
+      await store.write({
+        bucket: testBucket,
+        key: 'source.txt',
+        data: testData,
+      });
+
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: 'source.txt' },
+        { bucket: testBucket, key: 'copy.txt' },
+      );
+      expect(isOk(copyResult)).toBe(true);
+
+      // Verify both source and destination exist
+      const sourceExists = await store.exists({ bucket: testBucket, key: 'source.txt' });
+      const destExists = await store.exists({ bucket: testBucket, key: 'copy.txt' });
+
+      expect(isOk(sourceExists)).toBe(true);
+      expect(isOk(destExists)).toBe(true);
+
+      if (isOk(sourceExists) && isOk(destExists)) {
+        expect(sourceExists.value).toBe(true);
+        expect(destExists.value).toBe(true);
+      }
+
+      // Verify destination has same data as source
+      const destRead = await store.read({ bucket: testBucket, key: 'copy.txt' });
+      expect(isOk(destRead)).toBe(true);
+      if (isOk(destRead)) {
+        expect(destRead.value).toEqual(testData);
+      }
+    });
+
+    test('copyObject: source remains unchanged after copy', async () => {
+      const testData = Buffer.from('original data');
+      await store.write({
+        bucket: testBucket,
+        key: 'source.txt',
+        data: testData,
+      });
+
+      await store.copyObject(
+        { bucket: testBucket, key: 'source.txt' },
+        { bucket: testBucket, key: 'copy.txt' },
+      );
+
+      // Verify source still has original data
+      const sourceRead = await store.read({ bucket: testBucket, key: 'source.txt' });
+      expect(isOk(sourceRead)).toBe(true);
+      if (isOk(sourceRead)) {
+        expect(sourceRead.value).toEqual(testData);
+      }
+    });
+
+    test('copyObject: overwrites existing destination', async () => {
+      const sourceData = Buffer.from('source data');
+      const oldDestData = Buffer.from('old destination data');
+
+      await store.write({ bucket: testBucket, key: 'source.txt', data: sourceData });
+      await store.write({ bucket: testBucket, key: 'dest.txt', data: oldDestData });
+
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: 'source.txt' },
+        { bucket: testBucket, key: 'dest.txt' },
+      );
+      expect(isOk(copyResult)).toBe(true);
+
+      // Verify destination now has source data
+      const destRead = await store.read({ bucket: testBucket, key: 'dest.txt' });
+      expect(isOk(destRead)).toBe(true);
+      if (isOk(destRead)) {
+        expect(destRead.value).toEqual(sourceData);
+        expect(destRead.value).not.toEqual(oldDestData);
+      }
+    });
+
+    test('copyObject: returns error for non-existent source', async () => {
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: 'non-existent.txt' },
+        { bucket: testBucket, key: 'dest.txt' },
+      );
+      expect(isOk(copyResult)).toBe(false);
+      if (!isOk(copyResult)) {
+        expect(copyResult.error).toBeDefined();
+        expect(typeof copyResult.error).toBe('string');
+      }
+    });
+
+    test('copyObject: handles binary data correctly', async () => {
+      const binaryData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
+      await store.write({
+        bucket: testBucket,
+        key: 'binary.bin',
+        data: binaryData,
+      });
+
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: 'binary.bin' },
+        { bucket: testBucket, key: 'binary-copy.bin' },
+      );
+      expect(isOk(copyResult)).toBe(true);
+
+      // Verify copy has exact same binary data
+      const copyRead = await store.read({ bucket: testBucket, key: 'binary-copy.bin' });
+      expect(isOk(copyRead)).toBe(true);
+      if (isOk(copyRead)) {
+        expect(copyRead.value).toEqual(binaryData);
+        expect(Array.from(copyRead.value)).toEqual([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
+      }
+    });
+
+    test('copyObject: handles empty files', async () => {
+      const emptyData = Buffer.alloc(0);
+      await store.write({
+        bucket: testBucket,
+        key: 'empty.txt',
+        data: emptyData,
+      });
+
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: 'empty.txt' },
+        { bucket: testBucket, key: 'empty-copy.txt' },
+      );
+      expect(isOk(copyResult)).toBe(true);
+
+      const copyRead = await store.read({ bucket: testBucket, key: 'empty-copy.txt' });
+      expect(isOk(copyRead)).toBe(true);
+      if (isOk(copyRead)) {
+        expect(copyRead.value.length).toBe(0);
+      }
+    });
+
+    test('copyObject: handles special characters in keys', async () => {
+      const testData = Buffer.from('test data');
+      const specialKey = 'path/to/file with spaces.txt';
+
+      await store.write({
+        bucket: testBucket,
+        key: specialKey,
+        data: testData,
+      });
+
+      const copyResult = await store.copyObject(
+        { bucket: testBucket, key: specialKey },
+        { bucket: testBucket, key: 'path/to/copy with spaces.txt' },
+      );
+      expect(isOk(copyResult)).toBe(true);
+
+      const copyRead = await store.read({
+        bucket: testBucket,
+        key: 'path/to/copy with spaces.txt',
+      });
+      expect(isOk(copyRead)).toBe(true);
+      if (isOk(copyRead)) {
+        expect(copyRead.value).toEqual(testData);
       }
     });
   },

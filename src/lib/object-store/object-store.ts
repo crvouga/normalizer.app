@@ -181,4 +181,98 @@ export abstract class ObjectStore {
    * @returns Result containing a ReadableStream of Buffer chunks, or an error message
    */
   abstract readStream(params: ObjectLocation): Promise<Result<ReadableStream<Buffer>, string>>;
+
+  /**
+   * List objects in a bucket with optional prefix filtering and pagination.
+   * This is the core listing method that all implementations must provide.
+   * @param bucket Bucket name to list objects from
+   * @param options Optional configuration for prefix filtering, pagination, and delimiter
+   * @returns Result containing object metadata and pagination information
+   */
+  abstract listObjects(
+    bucket: string,
+    options?: {
+      /** Filter objects to those starting with this prefix */
+      prefix?: string;
+      /** Maximum number of objects to return in this page (default implementation-specific) */
+      maxKeys?: number;
+      /** Token from previous response to get next page of results */
+      continuationToken?: string;
+      /** Delimiter for grouping keys (typically '/') - when set, returns common prefixes */
+      delimiter?: string;
+    },
+  ): Promise<
+    Result<
+      {
+        /** Array of objects found */
+        objects: Array<{
+          key: string;
+          size: number;
+          lastModified: Date;
+        }>;
+        /** Common prefixes when delimiter is used (e.g., "folder-like" paths) */
+        commonPrefixes?: string[];
+        /** Whether there are more results available */
+        isTruncated: boolean;
+        /** Token to use for fetching the next page (if isTruncated is true) */
+        nextContinuationToken?: string;
+      },
+      string
+    >
+  >;
+
+  /**
+   * List all objects in a bucket, handling pagination automatically.
+   * This is a convenience method that iterates through all pages.
+   * For very large buckets, consider using listObjects with manual pagination for better control.
+   * @param bucket Bucket name
+   * @param prefix Optional prefix to filter objects
+   * @returns Async iterator of object metadata
+   */
+  async *listAllObjects(
+    bucket: string,
+    prefix?: string,
+  ): AsyncIterableIterator<{ key: string; size: number; lastModified: Date }> {
+    let continuationToken: string | undefined;
+    do {
+      const options: {
+        prefix?: string;
+        continuationToken?: string;
+      } = {};
+
+      if (prefix !== undefined) {
+        options.prefix = prefix;
+      }
+      if (continuationToken !== undefined) {
+        options.continuationToken = continuationToken;
+      }
+
+      const result = await this.listObjects(bucket, options);
+
+      if (!isOk(result)) {
+        throw new Error(result.error);
+      }
+
+      for (const obj of result.value.objects) {
+        yield obj;
+      }
+
+      if (!result.value.isTruncated) {
+        break;
+      }
+
+      continuationToken = result.value.nextContinuationToken;
+    } while (continuationToken);
+  }
+
+  /**
+   * Copy an object within the same bucket or to a different bucket.
+   * @param source Source object location
+   * @param destination Destination object location
+   * @returns Result indicating success or failure
+   */
+  abstract copyObject(
+    source: ObjectLocation,
+    destination: ObjectLocation,
+  ): Promise<Result<void, string>>;
 }

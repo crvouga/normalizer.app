@@ -479,4 +479,180 @@ export class S3ObjectStore extends ObjectStore {
       });
     }
   }
+
+  async listObjects(
+    bucket: string,
+    options?: {
+      prefix?: string;
+      maxKeys?: number;
+      continuationToken?: string;
+      delimiter?: string;
+    },
+  ): Promise<
+    Result<
+      {
+        objects: Array<{
+          key: string;
+          size: number;
+          lastModified: Date;
+        }>;
+        commonPrefixes?: string[];
+        isTruncated: boolean;
+        nextContinuationToken?: string;
+      },
+      string
+    >
+  > {
+    this.logger.debug('Listing objects in S3 bucket', { bucket, options });
+
+    try {
+      const prefix = options?.prefix ?? '';
+      const maxKeys = options?.maxKeys ?? 1000;
+      const delimiter = options?.delimiter;
+      const startAfter = options?.continuationToken;
+
+      const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
+      const commonPrefixes: string[] = [];
+      let isTruncated = false;
+      let nextContinuationToken: string | undefined;
+
+      // Use minio client's listObjectsV2 which returns a stream
+      // recursive: true when no delimiter (list all recursively), false when delimiter is set (list current level only)
+      const recursive = !delimiter;
+      const stream = this.minioClient.client.listObjectsV2(bucket, prefix, recursive, startAfter);
+
+      return new Promise((resolve) => {
+        let count = 0;
+        let lastKey: string | undefined;
+        let resolved = false;
+
+        const resolveResult = () => {
+          if (resolved) return;
+          resolved = true;
+
+          this.logger.debug('Finished listing objects from S3', {
+            bucket,
+            objectCount: objects.length,
+            commonPrefixCount: commonPrefixes.length,
+            isTruncated,
+          });
+
+          const result: {
+            objects: Array<{ key: string; size: number; lastModified: Date }>;
+            commonPrefixes?: string[];
+            isTruncated: boolean;
+            nextContinuationToken?: string;
+          } = {
+            objects,
+            isTruncated,
+          };
+
+          if (commonPrefixes.length > 0) {
+            result.commonPrefixes = commonPrefixes;
+          }
+
+          if (nextContinuationToken) {
+            result.nextContinuationToken = nextContinuationToken;
+          }
+
+          resolve(Ok(result));
+        };
+
+        stream.on('data', (obj) => {
+          if (count >= maxKeys) {
+            isTruncated = true;
+            nextContinuationToken = lastKey;
+            stream.destroy();
+            resolveResult();
+            return;
+          }
+
+          if (obj.prefix) {
+            // This is a common prefix (directory-like)
+            if (delimiter && !commonPrefixes.includes(obj.prefix)) {
+              commonPrefixes.push(obj.prefix);
+            }
+          } else if (obj.name) {
+            // This is an object
+            objects.push({
+              key: obj.name,
+              size: obj.size ?? 0,
+              lastModified: obj.lastModified ? new Date(obj.lastModified) : new Date(),
+            });
+            lastKey = obj.name;
+            count++;
+          }
+        });
+
+        stream.on('end', () => {
+          resolveResult();
+        });
+
+        stream.on('error', (error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error('Error listing objects from S3', {
+            bucket,
+            error: errorMessage,
+          });
+          resolve(Err(`Failed to list objects: ${errorMessage}`));
+        });
+      });
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to list objects from S3',
+        context: { bucket, options },
+        errorPrefix: 'Failed to list objects',
+      });
+    }
+  }
+
+  async copyObject(
+    source: ObjectLocation,
+    destination: ObjectLocation,
+  ): Promise<Result<void, string>> {
+    this.logger.debug('Copying object in S3', {
+      sourceBucket: source.bucket,
+      sourceKey: source.key,
+      destBucket: destination.bucket,
+      destKey: destination.key,
+    });
+
+    try {
+      // Check if source exists
+      const file = this.s3Client.file(source.key, { bucket: source.bucket });
+      const doesExist = await file.exists();
+      if (!doesExist) {
+        this.logger.debug('Source object not found in S3', {
+          bucket: source.bucket,
+          key: source.key,
+        });
+        return Err(`Object not found: ${ObjectLocation.encode(source)}`);
+      }
+
+      // Use minio client's copyObject method
+      const copySource = `${source.bucket}/${source.key}`;
+      await this.minioClient.client.copyObject(destination.bucket, destination.key, copySource);
+
+      this.logger.debug('Successfully copied object in S3', {
+        sourceBucket: source.bucket,
+        sourceKey: source.key,
+        destBucket: destination.bucket,
+        destKey: destination.key,
+      });
+      return Ok(undefined);
+    } catch (error) {
+      return handleError(error, {
+        logger: this.logger,
+        logMessage: 'Failed to copy object in S3',
+        context: {
+          sourceBucket: source.bucket,
+          sourceKey: source.key,
+          destBucket: destination.bucket,
+          destKey: destination.key,
+        },
+        errorPrefix: 'Failed to copy object',
+      });
+    }
+  }
 }
