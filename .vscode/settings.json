@@ -33,6 +33,7 @@
     "cloc",
     "Graphile",
     "healthcheck",
+    "IPEDSID",
     "isready",
     "parquetjs",
     "pglite",

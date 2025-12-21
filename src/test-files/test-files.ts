@@ -1,4 +1,7 @@
 import { join } from 'path';
+import type { ObjectStore } from '../lib/object-store/object-store';
+
+export const FILES_DIR = join('src', 'test-files', 'files');
 
 /**
  * Returns the absolute path to a test file in the test-files directory.
@@ -7,5 +10,7 @@ import { join } from 'path';
  * @returns {string} The absolute path to the test file.
  */
 export function getTestFilePath(fileName: string): string {
-  return join('src', 'test-files', fileName);
+  return join(FILES_DIR, fileName);
 }
+
+export async function pull(_objectStore: ObjectStore) {}

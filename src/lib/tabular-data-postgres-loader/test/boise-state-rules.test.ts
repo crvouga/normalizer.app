@@ -1,9 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { readFileSync } from 'fs';
 import {
   BOISE_RULES_FILE_NAME,
+  BOISE_RULES_FILE_PATH,
   BOISE_RULES_TABLE_NAME,
-  getHeadersOnly,
   getExpectedRowCountFast,
+  getHeadersOnly,
 } from '~/src/test-files/boise-rules';
 import { isOk } from '../../result';
 import {
@@ -13,8 +15,6 @@ import {
   writeCsvToS3,
   type TestFixtures,
 } from './fixtures';
-import { readFileSync } from 'fs';
-import { getTestFilePath } from '~/src/test-files/test-files';
 
 const TIMEOUT = Infinity;
 
@@ -44,7 +44,7 @@ describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
 
       // Load and upload the CSV file to S3
       // Note: We still need to load for S3 upload, but this is unavoidable for the test
-      const csvPath = getTestFilePath(BOISE_RULES_FILE_NAME);
+      const csvPath = BOISE_RULES_FILE_PATH;
       const csvContent = readFileSync(csvPath, 'utf-8');
 
       const testKey = BOISE_RULES_FILE_NAME;

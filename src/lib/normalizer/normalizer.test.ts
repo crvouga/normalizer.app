@@ -6,7 +6,7 @@ import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
 
 describe.if(isOpenAIEnabled())('Normalizer', async () => {
-  const logger = createLogger({ noop: false });
+  const logger = createLogger({ noop: true });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
