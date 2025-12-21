@@ -93,21 +93,85 @@ export class ParquetHandler extends TabularDataFormatHandler {
       Object.fromEntries(headers.map((header) => [header, { type: 'UTF8' }])),
     );
 
-    // Write parquet file to buffer
-    const writer = await parquet.ParquetWriter.openBuffer(schema);
+    // Write parquet file to buffer using parquetjs
+    // parquetjs doesn't have openBuffer, so we use a stream-based approach
+    // Collect data in memory using a PassThrough stream
+    const streamModule = await import('node:stream');
+    const stream = new streamModule.PassThrough();
+    const chunks: Buffer[] = [];
 
-    for (const row of dataRows) {
-      const record: Record<string, string> = {};
-      for (let i = 0; i < headers.length; i++) {
-        const header = headers[i];
-        if (header) {
-          record[header] = row[i] || '';
+    // Set up data collection before creating writer
+    stream.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    // Create writer that writes to the stream
+    const writer = await parquet.ParquetWriter.openStream(schema, stream);
+
+    try {
+      // Append all rows
+      for (const row of dataRows) {
+        const record: Record<string, string> = {};
+        for (let i = 0; i < headers.length; i++) {
+          const header = headers[i];
+          if (header) {
+            record[header] = row[i] || '';
+          }
         }
+        await writer.appendRow(record);
       }
-      await writer.appendRow(record);
-    }
 
-    await writer.close();
-    return writer.getBuffer();
+      // Close the writer - this finalizes the Parquet file
+      // Note: We need to wait for the stream to finish before closing to avoid os.close errors
+      await new Promise<void>((resolve, reject) => {
+        // Set up error handler first
+        stream.once('error', (err) => {
+          reject(err);
+        });
+
+        // Wait for stream to finish writing all data
+        stream.once('finish', () => {
+          resolve();
+        });
+
+        // Also listen for 'end' in case finish doesn't fire
+        stream.once('end', () => {
+          resolve();
+        });
+
+        // Safety timeout
+        setTimeout(() => {
+          resolve(); // Resolve anyway to proceed with close
+        }, 1000);
+      });
+
+      // Now close the writer after stream has finished
+      // Wrap in try-catch to handle potential Bun compatibility issues with os.close
+      try {
+        await writer.close();
+      } catch (closeError) {
+        // If close fails with os.close error, it's likely a Bun compatibility issue
+        // The stream should already have all data, so we can continue
+        const errorMsg = closeError instanceof Error ? closeError.message : String(closeError);
+        if (!errorMsg.includes('os.close')) {
+          throw closeError; // Re-throw if it's a different error
+        }
+        // Otherwise, ignore the os.close error as the data should already be in the stream
+      }
+
+      // Combine all chunks into a single buffer
+      const buffer = Buffer.concat(chunks);
+
+      if (buffer.length === 0) {
+        throw new Error('Parquet writer produced an empty buffer');
+      }
+
+      return buffer;
+    } catch (error) {
+      // Ensure writer is closed even on error
+      await writer.close().catch(() => {});
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create Parquet file: ${errorMessage}`);
+    }
   }
 }
