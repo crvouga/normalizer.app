@@ -1,3 +1,4 @@
+import { getContentType } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -13,7 +14,7 @@ export class CsvHandler extends TabularDataFormatHandler {
   }
 
   getContentType(): string {
-    return 'text/csv';
+    return getContentType('csv');
   }
 
   detect(buffer: Buffer, filename: string): boolean {

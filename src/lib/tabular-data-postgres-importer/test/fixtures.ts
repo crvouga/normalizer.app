@@ -2,6 +2,7 @@ import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createObjectStore } from '../../../shared/s3';
 import { createLogger } from '../../logger';
 import { isOk } from '../../result';
+import { getContentType } from '../../tabular-data-format';
 import type { SqlDb } from '../../sql-db/sql-db';
 import type { ObjectStore } from '../../object-store/object-store';
 import { PostgresClient } from '../../postgres/postgres-client';
@@ -38,7 +39,7 @@ export async function writeCsvToS3(
     bucket: TEST_BUCKET,
     key,
     data: Buffer.from(csvContent, 'utf-8'),
-    contentType: 'text/csv',
+    contentType: getContentType('csv'),
   });
   if (!isOk(result)) {
     throw new Error(`Failed to write CSV to S3: ${result.error}`);

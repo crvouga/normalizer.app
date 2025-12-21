@@ -1,3 +1,4 @@
+import { getContentType } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -13,7 +14,7 @@ export class JsonHandler extends TabularDataFormatHandler {
   }
 
   getContentType(): string {
-    return 'application/json';
+    return getContentType('json');
   }
 
   detect(buffer: Buffer, filename: string): boolean {

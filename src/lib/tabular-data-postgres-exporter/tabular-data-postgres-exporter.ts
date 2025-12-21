@@ -5,10 +5,12 @@ import { PostgresClient } from '../postgres/postgres-client';
 import { combineUntilError, Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
+import { type TabularFormat, getContentType, normalizeFormat } from '../tabular-data-format';
 import { z } from 'zod';
 
 /**
  * Supported export formats
+ * @deprecated Use TabularFormat from '../tabular-data-format' instead
  */
 export type ExportFormat = 'csv' | 'xlsx' | 'parquet' | 'json';
 
@@ -29,7 +31,7 @@ export interface ExportRequest {
    * Target format for export
    * @default 'csv'
    */
-  format?: ExportFormat;
+  format?: TabularFormat | ExportFormat;
   /**
    * Object store bucket name
    */
@@ -192,7 +194,7 @@ export class TabularDataPostgresExporter {
           csvData = '';
         }
         finalData = Buffer.from(csvData, 'utf-8');
-        contentType = 'text/csv';
+        contentType = getContentType('csv');
       } else {
         // For other formats, ensure we have valid CSV data
         if (csvData.trim() === '') {
@@ -202,8 +204,11 @@ export class TabularDataPostgresExporter {
         }
 
         this.logger.debug('Converting CSV to target format', { format });
-        // Map format name for converter (xlsx -> excel)
-        const converterFormat = format === 'xlsx' ? 'excel' : format;
+        // Normalize format name for converter (xlsx -> excel)
+        const converterFormat = normalizeFormat(format);
+        if (!converterFormat) {
+          return Err(`Failed to export tabular data: Invalid format: ${format}`);
+        }
 
         // Write CSV to temporary location for conversion
         const tempKey = `temp-export-${Date.now()}-${Math.random().toString(36).substring(7)}.csv`;
@@ -213,7 +218,7 @@ export class TabularDataPostgresExporter {
           bucket: tempBucket,
           key: tempKey,
           data: Buffer.from(csvData, 'utf-8'),
-          contentType: 'text/csv',
+          contentType: getContentType('csv'),
         });
 
         if (isErr(writeResult)) {
@@ -239,7 +244,7 @@ export class TabularDataPostgresExporter {
           finalData = readResult.value;
 
           // Determine content type based on format
-          contentType = this.getContentTypeForFormat(format);
+          contentType = getContentType(format);
 
           // Clean up temporary CSV file
           await this.objectStore.delete({ bucket: tempBucket, key: tempKey });
@@ -504,24 +509,6 @@ export class TabularDataPostgresExporter {
     const csvData = this.rowsToCsv(columns, rows);
 
     return Ok({ csvData, rowCount });
-  }
-
-  /**
-   * Get content type for export format
-   */
-  private getContentTypeForFormat(format: ExportFormat): string {
-    switch (format) {
-      case 'csv':
-        return 'text/csv';
-      case 'xlsx':
-        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      case 'parquet':
-        return 'application/parquet';
-      case 'json':
-        return 'application/json';
-      default:
-        return 'application/octet-stream';
-    }
   }
 
   /**

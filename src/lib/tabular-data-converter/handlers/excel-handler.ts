@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { getContentType } from '../../tabular-data-format';
 import { TabularDataFormatHandler } from '../tabular-data-format-handler';
 
 /**
@@ -14,7 +15,7 @@ export class ExcelHandler extends TabularDataFormatHandler {
   }
 
   getContentType(): string {
-    return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return getContentType('excel');
   }
 
   detect(buffer: Buffer, filename: string): boolean {

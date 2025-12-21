@@ -4,6 +4,7 @@ import { createObjectStore } from '../../shared/s3';
 import { createLogger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk } from '../result';
+import { getContentType } from '../tabular-data-format';
 import { TabularDataConverter } from './tabular-data-converter';
 
 describe('FileConverter', async () => {
@@ -33,7 +34,7 @@ describe('FileConverter', async () => {
       bucket: sourceBucket,
       key: sourceKey,
       data: excelBuffer,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType: getContentType('excel'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -67,7 +68,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: excelBuffer,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType: getContentType('excel'),
     });
     if (!isOk(writeResult1)) {
       throw new Error(`Failed to write: ${writeResult1.error}`);
@@ -102,7 +103,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (!isOk(writeResult2)) {
       throw new Error(`Failed to write: ${writeResult2.error}`);
@@ -147,7 +148,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (!isOk(writeResult3)) {
       throw new Error(`Failed to write: ${writeResult3.error}`);
@@ -174,7 +175,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult4.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult4.error}`);
@@ -208,7 +209,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult5.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult5.error}`);
@@ -228,7 +229,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult6.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult6.error}`);
@@ -248,7 +249,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: fileBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult7.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult7.error}`);
@@ -275,7 +276,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: strangeFilename,
       data: Buffer.from(csvContent),
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult8.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult8.error}`);
@@ -300,7 +301,7 @@ describe('FileConverter', async () => {
         bucket: testBucket,
         key,
         data: Buffer.from(content),
-        contentType: `text/${ext}`,
+        contentType: getContentType(ext),
       });
       if (writeResult9.tag !== 'ok') {
         throw new Error(`Failed to write: ${writeResult9.error}`);
@@ -323,7 +324,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (writeResult10.tag !== 'ok') {
       throw new Error(`Failed to write: ${writeResult10.error}`);
@@ -348,7 +349,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: jsonBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -385,7 +386,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: csvBuffer,
-      contentType: 'text/csv',
+      contentType: getContentType('csv'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -422,7 +423,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: jsonBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -473,7 +474,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: excelBuffer,
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType: getContentType('excel'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -510,7 +511,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: jsonBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -541,7 +542,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: jsonBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);
@@ -593,7 +594,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey1,
       data: validBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult1)) {
       throw new Error(`Failed to write: ${writeResult1.error}`);
@@ -611,7 +612,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey2,
       data: invalidBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult2)) {
       throw new Error(`Failed to write: ${writeResult2.error}`);
@@ -636,7 +637,7 @@ describe('FileConverter', async () => {
       bucket: testBucket,
       key: sourceKey,
       data: jsonBuffer,
-      contentType: 'application/json',
+      contentType: getContentType('json'),
     });
     if (!isOk(writeResult)) {
       throw new Error(`Failed to write: ${writeResult.error}`);

@@ -4,6 +4,7 @@ import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
 import { createLogger, type Logger } from '../logger';
 import { isOk } from '../result';
+import { getContentType } from '../tabular-data-format';
 import type { ObjectStore } from './object-store';
 
 // TEST_KEYS removed - we now clean up all objects in beforeEach for better test isolation
@@ -390,7 +391,7 @@ describe.each(implementations)(
         bucket: testBucket,
         key: 'key1',
         data: testData,
-        contentType: 'application/json',
+        contentType: getContentType('json'),
       });
       expect(isOk(result)).toBe(true);
 
@@ -860,7 +861,7 @@ describe.each(implementations)(
       const binaryData = Buffer.from([0x00, 0x01, 0x02]);
 
       const result = await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: jsonData, contentType: 'application/json' },
+        { bucket: testBucket, key: 'key1', data: jsonData, contentType: getContentType('json') },
         { bucket: testBucket, key: 'key2', data: textData, contentType: 'text/plain' },
         {
           bucket: testBucket,
