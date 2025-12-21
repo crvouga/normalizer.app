@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-export const TEST_FILES_DIR = join('test-files');
+export const TEST_FILES_DIR = join('synced', 'test-files');
 
 /**
  * Returns the absolute path to a test file in the test-files directory.

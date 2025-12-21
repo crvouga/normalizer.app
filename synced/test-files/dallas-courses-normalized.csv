@@ -1,0 +1,536 @@
+CourseSubject,CourseNumber,CourseLongTitle,CourseDescription,CourseCreditUnits,CourseCreditMinimumValue,CourseCreditMaximumValue,InstitutionUniqueIdentifier,CourseEffectiveYearMonth,CourseExpirationYearMonth,ActiveCourseIndicator,CourseIdentifier
+OFC,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFC712209908
+OFCT,7472,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFCT7472209908
+BUS,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS801209908
+OFC,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFC801209908
+BUS,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS802209908
+OFC,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFC802209908
+ENGT,2272,Mater & Analy,Mater & Analy,Other,0.0,0.0,,2099-08,2099-12,True,ENGT2272209908
+BUS,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS803209908
+OFC,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFC803209908
+OFCT,8381,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFCT8381209908
+BUS,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS804209908
+BUS,812,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS812209908
+OFC,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,OFC813209908
+BUS,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS814209908
+BUS,106,Prof Dev-Orien,Prof Dev-Orien,Other,0.0,0.0,,2099-08,2099-12,True,BUS106209908
+RDM,106,Prof Dev-Orien,Prof Dev-Orien,Other,0.0,0.0,,2099-08,2099-12,True,RDM106209908
+BUS,107,Prof Dev-Local,Prof Dev-Local,Other,0.0,0.0,,2099-08,2099-12,True,BUS107209908
+ART,122,Adver Design,Adver Design,Other,0.0,0.0,,2099-08,2099-12,True,ART122209908
+MKT,137,Prin Retailing,Prin Retailing,Other,0.0,0.0,,2099-08,2099-12,True,MKT137209908
+MRKT,1370,Prin Retailing,Prin Retailing,Other,0.0,0.0,,2099-08,2099-12,True,MRKT1370209908
+MKT,233,Adv&sales Prom,Adv&sales Prom,Other,0.0,0.0,,2099-08,2099-12,True,MKT233209908
+MRKT,2374,Adv&sales Prom,Adv&sales Prom,Other,0.0,0.0,,2099-08,2099-12,True,MRKT2374209908
+BUS,243,Prof Dev-Organ,Prof Dev-Organ,Other,0.0,0.0,,2099-08,2099-12,True,BUS243209908
+RDM,243,Prof Dev-Organ,Prof Dev-Organ,Other,0.0,0.0,,2099-08,2099-12,True,RDM243209908
+RDM,244,Prof Dev-State,Prof Dev-State,Other,0.0,0.0,,2099-08,2099-12,True,RDM244209908
+MKT,245,Sales Mgt,Sales Mgt,Other,0.0,0.0,,2099-08,2099-12,True,MKT245209908
+RDM,248,Sim Train II,Sim Train II,Other,0.0,0.0,,2099-08,2099-12,True,RDM248209908
+MRKT,2377,Fashion Buying,Fashion Buying,Other,0.0,0.0,,2099-08,2099-12,True,MRKT2377209908
+BUS,291,Fashion Mercha,Fashion Mercha,Other,0.0,0.0,,2099-08,2099-12,True,BUS291209908
+RDM,291,Fashion Mercha,Fashion Mercha,Other,0.0,0.0,,2099-08,2099-12,True,RDM291209908
+RDM,292,Fashion Design,Fashion Design,Other,0.0,0.0,,2099-08,2099-12,True,RDM292209908
+MKT,292,Fashion Design,Fashion Design,Other,0.0,0.0,,2099-08,2099-12,True,MKT292209908
+BUS,701,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS701209908
+MKT,701,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT701209908
+BUS,702,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS702209908
+RDM,702,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM702209908
+BUS,703,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS703209908
+RDM,703,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM703209908
+RDM,711,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM711209908
+BUS,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS712209908
+RDM,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM712209908
+MKT,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT712209908
+RDM,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM713209908
+MKT,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT713209908
+MRKT,7372,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MRKT7372209908
+ENGT,2471,Digit Cir MacH,Digit Cir MacH,Other,0.0,0.0,,2099-08,2099-12,True,ENGT2471209908
+ENGT,2475,Prin & App Mic,Prin & App Mic,Other,0.0,0.0,,2099-08,2099-12,True,ENGT2475209908
+BUS,714,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS714209908
+RDM,714,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM714209908
+MKT,714,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT714209908
+MEDA,1273,Med Proced II,Med Proced II,Other,0.0,0.0,,2099-08,2099-12,True,MEDA1273209908
+MEDA,1275,Clinic Proc I,Clinic Proc I,Other,0.0,0.0,,2099-08,2099-12,True,MEDA1275209908
+RDM,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM801209908
+MKT,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT801209908
+RDM,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM802209908
+MKT,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT802209908
+RDM,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM803209908
+MKT,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT803209908
+RDM,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM804209908
+MKT,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT804209908
+BUS,811,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS811209908
+RDM,811,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM811209908
+MKT,811,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT811209908
+RDM,812,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM812209908
+MKT,812,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT812209908
+BUS,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS813209908
+RDM,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM813209908
+MKT,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT813209908
+MS,151,MacH Op Wld Tl,MacH Op Wld Tl,Other,0.0,0.0,,2099-08,2099-12,True,MS151209908
+CNCT,1375,MacH Op Wld Tl,MacH Op Wld Tl,Other,0.0,0.0,,2099-08,2099-12,True,CNCT1375209908
+RDM,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RDM814209908
+MKT,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,MKT814209908
+LA,131,Int Legal Tech,Int Legal Tech,Other,0.0,0.0,,2099-08,2099-12,True,LA131209908
+LEGL,1370,Int Legal Tech,Int Legal Tech,Other,0.0,0.0,,2099-08,2099-12,True,LEGL1370209908
+LA,133,Law Real Prop,Law Real Prop,Other,0.0,0.0,,2099-08,2099-12,True,LA133209908
+LEGL,1371,Law Real Prop,Law Real Prop,Other,0.0,0.0,,2099-08,2099-12,True,LEGL1371209908
+LA,134,Prin Famil Law,Prin Famil Law,Other,0.0,0.0,,2099-08,2099-12,True,LA134209908
+LEGL,1372,Prin Famil Law,Prin Famil Law,Other,0.0,0.0,,2099-08,2099-12,True,LEGL1372209908
+LA,135,Tx Legal Syst,Tx Legal Syst,Other,0.0,0.0,,2099-08,2099-12,True,LA135209908
+LEGL,1373,Tx & Fed Court,Tx & Fed Court,Other,0.0,0.0,,2099-08,2099-12,True,LEGL1373209908
+LA,139,Legal Resc Dft,Legal Resc Dft,Other,0.0,0.0,,2099-08,2099-12,True,LA139209908
+LA,232,Tort Ins Law,Tort Ins Law,Other,0.0,0.0,,2099-08,2099-12,True,LA232209908
+LEGL,2375,Tort Ins Law,Tort Ins Law,Other,0.0,0.0,,2099-08,2099-12,True,LEGL2375209908
+LA,233,Inc Tax Leg Ac,Inc Tax Leg Ac,Other,0.0,0.0,,2099-08,2099-12,True,LA233209908
+LA,234,Per Prop Sales,Per Prop Sales,Other,0.0,0.0,,2099-08,2099-12,True,LA234209908
+LEGL,2376,Per Prop Sales,Per Prop Sales,Other,0.0,0.0,,2099-08,2099-12,True,LEGL2376209908
+LA,235,Tecq Legal Pra,Tecq Legal Pra,Other,0.0,0.0,,2099-08,2099-12,True,LA235209908
+LA,248,Con & Crim Law,Con & Crim Law,Other,0.0,0.0,,2099-08,2099-12,True,LA248209908
+LEGL,2379,Criminal Law and Procedures,Criminal Law and Procedures,Other,0.0,0.0,,2099-08,2099-12,True,LEGL2379209908
+LA,251,Cmplex Lit/Ant,Cmplex Lit/Ant,Other,0.0,0.0,,2099-08,2099-12,True,LA251209908
+LEGL,2380,Civil Litig II,Civil Litig II,Other,0.0,0.0,,2099-08,2099-12,True,LEGL2380209908
+LA,255,Oil & Gas Law,Oil & Gas Law,Other,0.0,0.0,,2099-08,2099-12,True,LA255209908
+LEGL,2382,Oil & Gas Law,Oil & Gas Law,Other,0.0,0.0,,2099-08,2099-12,True,LEGL2382209908
+LA,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,LA803209908
+LA,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,LA804209908
+LA,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,LA813209908
+LA,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,LA814209908
+BUS,144,Intro Transpor,Intro Transpor,Other,0.0,0.0,,2099-08,2099-12,True,BUS144209908
+TRT,144,Intro Transpor,Intro Transpor,Other,0.0,0.0,,2099-08,2099-12,True,TRT144209908
+BUS,145,Trans Rates Ta,Trans Rates Ta,Other,0.0,0.0,,2099-08,2099-12,True,BUS145209908
+TRT,145,Intro Rate/Tar,Intro Rate/Tar,Other,0.0,0.0,,2099-08,2099-12,True,TRT145209908
+BUS,146,Trans Traf Mgt,Trans Traf Mgt,Other,0.0,0.0,,2099-08,2099-12,True,BUS146209908
+TRT,146,Trans Traf Mgt,Trans Traf Mgt,Other,0.0,0.0,,2099-08,2099-12,True,TRT146209908
+BUS,147,Eco Transporta,Eco Transporta,Other,0.0,0.0,,2099-08,2099-12,True,BUS147209908
+BUS,180,Mgmt Trng,Mgmt Trng,Other,0.0,0.0,,2099-08,2099-12,True,BUS180209908
+BUS,181,Mgmt Trng,Mgmt Trng,Other,0.0,0.0,,2099-08,2099-12,True,BUS181209908
+BUS,182,Mgmt Sem,Mgmt Sem,Other,0.0,0.0,,2099-08,2099-12,True,BUS182209908
+BUS,183,Mgmt Sem,Mgmt Sem,Other,0.0,0.0,,2099-08,2099-12,True,BUS183209908
+BUS,240,Int Com Law I,Int Com Law I,Other,0.0,0.0,,2099-08,2099-12,True,BUS240209908
+TRT,240,Int Com Law I,Int Com Law I,Other,0.0,0.0,,2099-08,2099-12,True,TRT240209908
+BUS,241,Int Com Law II,Int Com Law II,Other,0.0,0.0,,2099-08,2099-12,True,BUS241209908
+TRT,241,Int Com Law II,Int Com Law II,Other,0.0,0.0,,2099-08,2099-12,True,TRT241209908
+BUS,249,Apl Rate & Tar,Apl Rate & Tar,Other,0.0,0.0,,2099-08,2099-12,True,BUS249209908
+TRT,249,Apl Rate & Tar,Apl Rate & Tar,Other,0.0,0.0,,2099-08,2099-12,True,TRT249209908
+TRT,250,Studie-Tran Te,Studie-Tran Te,Other,0.0,0.0,,2099-08,2099-12,True,TRT250209908
+BUS,280,Mgmt Trng,Mgmt Trng,Other,0.0,0.0,,2099-08,2099-12,True,BUS280209908
+BUS,281,Mgmt Trng,Mgmt Trng,Other,0.0,0.0,,2099-08,2099-12,True,BUS281209908
+BUS,282,Mgmt Sem,Mgmt Sem,Other,0.0,0.0,,2099-08,2099-12,True,BUS282209908
+BUS,283,Mgmt Sem,Mgmt Sem,Other,0.0,0.0,,2099-08,2099-12,True,BUS283209908
+BUS,287,Phys Distb Mgm,Phys Distb Mgm,Other,0.0,0.0,,2099-08,2099-12,True,BUS287209908
+TRT,287,Phys Distb Mgm,Phys Distb Mgm,Other,0.0,0.0,,2099-08,2099-12,True,TRT287209908
+TRT,288,Phys Distb Mgm,Phys Distb Mgm,Other,0.0,0.0,,2099-08,2099-12,True,TRT288209908
+TT,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TT713209908
+TRT,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TRT713209908
+TT,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TT803209908
+TRT,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TRT803209908
+TT,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TT813209908
+TRT,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,TRT813209908
+BUS,128,Data Entry Con,Data Entry Con,Other,0.0,0.0,,2099-08,2099-12,True,BUS128209908
+BUS,130,Keypunch,Keypunch,Other,0.0,0.0,,2099-08,2099-12,True,BUS130209908
+ACC,131,Bookkeeping I,Bookkeeping I,Other,0.0,0.0,,2099-08,2099-12,True,ACC131209908
+ACCT,1371,Bookkeeping I,Bookkeeping I,Other,0.0,0.0,,2099-08,2099-12,True,ACCT1371209908
+ACC,132,Bookkeeping II,Bookkeeping II,Other,0.0,0.0,,2099-08,2099-12,True,ACC132209908
+CS,175,Intro Comp Sci,Intro Comp Sci,Other,0.0,0.0,,2099-08,2099-12,True,CS175209908
+ACCT,2302,Prin of Managerial Accounting,Principles of Managerial Accounting,Other,0.0,0.0,,2099-08,2099-12,True,ACCT2302209908
+ACCT,2375,Busine Finance,Busine Finance,Other,0.0,0.0,,2099-08,2099-12,True,ACCT2375209908
+ACCT,2379,Inter Acct II,Inter Acct II,Other,0.0,0.0,,2099-08,2099-12,True,ACCT2379209908
+ACC,239,Income Tax,Income Tax,Other,0.0,0.0,,2099-08,2099-12,True,ACC239209908
+ACCT,2372,Income Tax,Income Tax,Other,0.0,0.0,,2099-08,2099-12,True,ACCT2372209908
+CS,250,Con Topic Cs,Con Topic Cs,Other,0.0,0.0,,2099-08,2099-12,True,CS250209908
+ACC,250,Micro-Comp Bas,Micro-Comp Bas,Other,0.0,0.0,,2099-08,2099-12,True,ACC250209908
+ACCT,2370,Micro-Comp Bas,Micro-Comp Bas,Other,0.0,0.0,,2099-08,2099-12,True,ACCT2370209908
+CS,251,Spec Topic Com,Spec Topic Com,Other,0.0,0.0,,2099-08,2099-12,True,CS251209908
+ACC,701,Work Exp,Work Exp,Other,0.0,0.0,,2099-08,2099-12,True,ACC701209908
+ACC,702,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC702209908
+ACC,703,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC703209908
+ACCT,7371,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACCT7371209908
+BUS,704,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS704209908
+ACC,704,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC704209908
+ACCT,7471,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACCT7471209908
+ACC,711,Work Exp,Work Exp,Other,0.0,0.0,,2099-08,2099-12,True,ACC711209908
+ACC,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC712209908
+BUS,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,BUS713209908
+ACC,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC713209908
+ACCT,7372,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACCT7372209908
+ACC,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC803209908
+HIMT,1470,Disease Cl I,Disease Cl I,Other,0.0,0.0,,2099-08,2099-12,True,HIMT1470209908
+HIMT,1270,Clinic Prac I,Clinic Prac I,Other,0.0,0.0,,2099-08,2099-12,True,HIMT1270209908
+ACC,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC804209908
+ACC,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,ACC814209908
+HORT,1273,Land Comp Desi,Land Comp Desi,Other,0.0,0.0,,2099-08,2099-12,True,HORT1273209908
+RE,130,Prin Practices,Prin Practices,Other,0.0,0.0,,2099-08,2099-12,True,RE130209908
+REAL,1370,Prin Practices,Prin Practices,Other,0.0,0.0,,2099-08,2099-12,True,REAL1370209908
+RE,131,Real Est Finan,Real Est Finan,Other,0.0,0.0,,2099-08,2099-12,True,RE131209908
+RE,133,R E Marketing,R E Marketing,Other,0.0,0.0,,2099-08,2099-12,True,RE133209908
+REAL,1372,R E Marketing,R E Marketing,Other,0.0,0.0,,2099-08,2099-12,True,REAL1372209908
+RE,136,Real Esta Law,Real Esta Law,Other,0.0,0.0,,2099-08,2099-12,True,RE136209908
+RE,138,Re Law: Contra,Re Law: Contra,Other,0.0,0.0,,2099-08,2099-12,True,RE138209908
+REAL,1376,Promu Contract,Promu Contract,Other,0.0,0.0,,2099-08,2099-12,True,REAL1376209908
+RE,230,R E Office Mgt,R E Office Mgt,Other,0.0,0.0,,2099-08,2099-12,True,RE230209908
+REAL,2370,Re Ofc Mgt/Bro,Re Ofc Mgt/Bro,Other,0.0,0.0,,2099-08,2099-12,True,REAL2370209908
+RE,233,Commer Rel Est,Commer Rel Est,Other,0.0,0.0,,2099-08,2099-12,True,RE233209908
+REAL,2371,Commer Rel Est,Commer Rel Est,Other,0.0,0.0,,2099-08,2099-12,True,REAL2371209908
+RE,235,Property Mgt,Property Mgt,Other,0.0,0.0,,2099-08,2099-12,True,RE235209908
+REAL,2372,Property Mgt,Property Mgt,Other,0.0,0.0,,2099-08,2099-12,True,REAL2372209908
+POL,144,Spanish Pb Ser,Spanish Pb Ser,Other,0.0,0.0,,2099-08,2099-12,True,POL144209908
+CJ,144,Prac Spa Publi,Prac Spa Publi,Other,0.0,0.0,,2099-08,2099-12,True,CJ144209908
+CRIJ,1371,Prac Spa Publi,Prac Spa Publi,Other,0.0,0.0,,2099-08,2099-12,True,CRIJ1371209908
+RE,240,Spec Prob R.E.,Spec Prob R.E.,Other,0.0,0.0,,2099-08,2099-12,True,RE240209908
+REAL,2170,Spec Prob R.E.,Spec Prob R.E.,Other,0.0,0.0,,2099-08,2099-12,True,REAL2170209908
+RE,241,Spec Pblms Re,Spec Pblms Re,Other,0.0,0.0,,2099-08,2099-12,True,RE241209908
+REAL,2374,Spec Pblms Re,Spec Pblms Re,Other,0.0,0.0,,2099-08,2099-12,True,REAL2374209908
+RE,250,Real Est Inter,Real Est Inter,Other,0.0,0.0,,2099-08,2099-12,True,RE250209908
+RE,251,Real Est Inter,Real Est Inter,Other,0.0,0.0,,2099-08,2099-12,True,RE251209908
+RADS,2272,Rad Equip Main,Rad Equip Main,Other,0.0,0.0,,2099-08,2099-12,True,RADS2272209908
+RE,254,Real Est Semin,Real Est Semin,Other,0.0,0.0,,2099-08,2099-12,True,RE254209908
+RE,255,Real Est Semin,Real Est Semin,Other,0.0,0.0,,2099-08,2099-12,True,RE255209908
+CIS,105,Intro Com Info,Intro Com Info,Other,0.0,0.0,,2099-08,2099-12,True,CIS105209908
+CIS,110,Data Entry Con,Data Entry Con,Other,0.0,0.0,,2099-08,2099-12,True,CIS110209908
+CIS,115,Oper Technicia,Oper Technicia,Other,0.0,0.0,,2099-08,2099-12,True,CIS115209908
+DP,120,Data Communica,Data Communica,Other,0.0,0.0,,2099-08,2099-12,True,DP120209908
+DP,129,Data Entry Con,Data Entry Con,Other,0.0,0.0,,2099-08,2099-12,True,DP129209908
+CS,131,R P G Prog,R P G Prog,Other,0.0,0.0,,2099-08,2099-12,True,CS131209908
+DP,131,Rpg Prog,Rpg Prog,Other,0.0,0.0,,2099-08,2099-12,True,DP131209908
+DP,133,Begin Prog,Begin Prog,Other,0.0,0.0,,2099-08,2099-12,True,DP133209908
+DP,138,D P Logic,D P Logic,Other,0.0,0.0,,2099-08,2099-12,True,DP138209908
+DP,139,Technician,Technician,Other,0.0,0.0,,2099-08,2099-12,True,DP139209908
+DP,142,Rpg Programmin,Rpg Programmin,Other,0.0,0.0,,2099-08,2099-12,True,DP142209908
+DP,145,Pascal Program,Pascal Program,Other,0.0,0.0,,2099-08,2099-12,True,DP145209908
+CIS,150,Com Prgm Logic,Com Prgm Logic,Other,0.0,0.0,,2099-08,2099-12,True,CIS150209908
+CISC,1375,Com Prgm Logic,Com Prgm Logic,Other,0.0,0.0,,2099-08,2099-12,True,CISC1375209908
+CIS,160,Data Communica,Data Communica,Other,0.0,0.0,,2099-08,2099-12,True,CIS160209908
+CISC,1372,Data Com & Os,Data Com & Os,Other,0.0,0.0,,2099-08,2099-12,True,CISC1372209908
+CIS,162,Cobol Prgm I,Cobol Prgm I,Other,0.0,0.0,,2099-08,2099-12,True,CIS162209908
+CISC,1476,Programming 1,Programming 1,Other,1.0,1.0,,2099-08,2099-12,True,CISC1476209908
+CISC,1374,Pascal Program,Pascal Program,Other,0.0,0.0,,2099-08,2099-12,True,CISC1374209908
+CS,176,Fortran Prog,Fortran Prog,Other,0.0,0.0,,2099-08,2099-12,True,CS176209908
+CIS,210,Assem Lang 1,Assem Lang 1,Other,1.0,1.0,,2099-08,2099-12,True,CIS210209908
+CIS,220,Assem Lang 2,Assem Lang 2,Other,2.0,2.0,,2099-08,2099-12,True,CIS220209908
+CISC,2477,Assem Lang 2,Assem Lang 2,Other,2.0,2.0,,2099-08,2099-12,True,CISC2477209908
+CIS,225,Appld Systems,Appld Systems,Other,0.0,0.0,,2099-08,2099-12,True,CIS225209908
+CISC,2479,Systems Analys,Systems Analys,Other,0.0,0.0,,2099-08,2099-12,True,CISC2479209908
+DP,230,Adv a L C,Adv a L C,Other,0.0,0.0,,2099-08,2099-12,True,DP230209908
+DP,231,Adv Program,Adv Program,Other,0.0,0.0,,2099-08,2099-12,True,DP231209908
+DP,232,Applied System,Applied System,Other,0.0,0.0,,2099-08,2099-12,True,DP232209908
+DP,233,Oper Syst & Co,Oper Syst & Co,Other,0.0,0.0,,2099-08,2099-12,True,DP233209908
+DP,236,Adv Cobol Tecn,Adv Cobol Tecn,Other,0.0,0.0,,2099-08,2099-12,True,DP236209908
+DP,237,Field Exper,Field Exper,Other,0.0,0.0,,2099-08,2099-12,True,DP237209908
+BUS,238,Cost Acctng,Cost Acctng,Other,0.0,0.0,,2099-08,2099-12,True,BUS238209908
+DP,240,Tele Comm I,Tele Comm I,Other,0.0,0.0,,2099-08,2099-12,True,DP240209908
+DP,241,Tele Comm II,Tele Comm II,Other,0.0,0.0,,2099-08,2099-12,True,DP241209908
+DP,242,Com Hw & Db Sy,Com Hw & Db Sy,Other,0.0,0.0,,2099-08,2099-12,True,DP242209908
+DP,243,Comp Ctr Mgt,Comp Ctr Mgt,Other,0.0,0.0,,2099-08,2099-12,True,DP243209908
+DP,244,Basic Programm,Basic Programm,Other,0.0,0.0,,2099-08,2099-12,True,DP244209908
+DP,245,Assmbl Lang II,Assmbl Lang II,Other,0.0,0.0,,2099-08,2099-12,True,DP245209908
+DP,246,Data Base Syst,Data Base Syst,Other,0.0,0.0,,2099-08,2099-12,True,DP246209908
+CS,249,Contem Topics,Contem Topics,Other,0.0,0.0,,2099-08,2099-12,True,CS249209908
+DMAT,96,Essential Math,Essential Math,Other,0.0,0.0,,2099-08,2099-12,True,DMAT96209908
+CIS,252,Adv Cobol Tech,Adv Cobol Tech,Other,0.0,0.0,,2099-08,2099-12,True,CIS252209908
+CIS,254,Data Base Syst,Data Base Syst,Other,0.0,0.0,,2099-08,2099-12,True,CIS254209908
+CISC,2482,Data Base Syst,Data Base Syst,Other,0.0,0.0,,2099-08,2099-12,True,CISC2482209908
+CISC,2483,On-Line Applications,On-Line Applications,Other,0.0,0.0,,2099-08,2099-12,True,CISC2483209908
+CISC,2372,Contemp Topics,Contemp Topics,Other,0.0,0.0,,2099-08,2099-12,True,CISC2372209908
+CIS,264,Spe Topic Comp,Spe Topic Comp,Other,0.0,0.0,,2099-08,2099-12,True,CIS264209908
+CISC,7171,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CISC7171209908
+CISC,7271,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CISC7271209908
+DP,703,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP703209908
+CIS,704,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS704209908
+CISC,7471,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CISC7471209908
+DP,711,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP711209908
+CIS,711,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS711209908
+DP,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP712209908
+CIS,712,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS712209908
+CISC,7272,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CISC7272209908
+DP,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP713209908
+CIS,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS713209908
+CISC,7372,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CISC7372209908
+DP,714,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP714209908
+CIS,714,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS714209908
+DP,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP801209908
+CIS,801,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS801209908
+DP,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP802209908
+CIS,802,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS802209908
+DP,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP803209908
+CIS,803,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS803209908
+DP,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP804209908
+CIS,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS804209908
+DP,811,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP811209908
+DP,812,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP812209908
+CIS,812,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS812209908
+DP,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP813209908
+CIS,813,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,CIS813209908
+DP,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,DP814209908
+DP,140,Oper Console,Oper Console,Other,0.0,0.0,,2099-08,2099-12,True,DP140209908
+VFT,102,Contemp Trends,Contemp Trends,Other,0.0,0.0,,2099-08,2099-12,True,VFT102209908
+VFT,104,Video Software,Video Software,Other,0.0,0.0,,2099-08,2099-12,True,VFT104209908
+VFT,106,Video Producti,Video Producti,Other,0.0,0.0,,2099-08,2099-12,True,VFT106209908
+RFTV,1470,Video Producti,Video Producti,Other,0.0,0.0,,2099-08,2099-12,True,RFTV1470209908
+VFT,108,Video Sound an,Video Sound an,Other,0.0,0.0,,2099-08,2099-12,True,VFT108209908
+VFT,110,Video Prod II,Video Prod II,Other,0.0,0.0,,2099-08,2099-12,True,VFT110209908
+RFTV,1471,Video Prod II,Video Prod II,Other,0.0,0.0,,2099-08,2099-12,True,RFTV1471209908
+VFT,112,Video Editing,Video Editing,Other,0.0,0.0,,2099-08,2099-12,True,VFT112209908
+RFTV,1472,Video Editing,Video Editing,Other,0.0,0.0,,2099-08,2099-12,True,RFTV1472209908
+VFT,114,Video Engine I,Video Engine I,Other,0.0,0.0,,2099-08,2099-12,True,VFT114209908
+VFT,202,Video Prod III,Video Prod III,Other,0.0,0.0,,2099-08,2099-12,True,VFT202209908
+VFT,204,Video Engin II,Video Engin II,Other,0.0,0.0,,2099-08,2099-12,True,VFT204209908
+VFT,206,Video Sound II,Video Sound II,Other,0.0,0.0,,2099-08,2099-12,True,VFT206209908
+VFT,210,Video Prod IV,Video Prod IV,Other,0.0,0.0,,2099-08,2099-12,True,VFT210209908
+RFTV,2471,Video Prod IV,Video Prod IV,Other,0.0,0.0,,2099-08,2099-12,True,RFTV2471209908
+VFT,212,Video Edit II,Video Edit II,Other,0.0,0.0,,2099-08,2099-12,True,VFT212209908
+VFT,214,Bus Aspects of,Bus Aspects of,Other,0.0,0.0,,2099-08,2099-12,True,VFT214209908
+RFTV,2371,Bus Aspects of,Bus Aspects of,Other,0.0,0.0,,2099-08,2099-12,True,RFTV2371209908
+VFT,216,Act & Talent,Act & Talent,Other,0.0,0.0,,2099-08,2099-12,True,VFT216209908
+VFT,218,Scriptwr & Pro,Scriptwr & Pro,Other,0.0,0.0,,2099-08,2099-12,True,VFT218209908
+RFTV,2373,Scriptwr & Pro,Scriptwr & Pro,Other,0.0,0.0,,2099-08,2099-12,True,RFTV2373209908
+MEDA,1276,Clinic Proc II,Clinic Proc II,Other,0.0,0.0,,2099-08,2099-12,True,MEDA1276209908
+VFT,228,Video Animatio,Video Animatio,Other,0.0,0.0,,2099-08,2099-12,True,VFT228209908
+VFT,230,Video Soun III,Video Soun III,Other,0.0,0.0,,2099-08,2099-12,True,VFT230209908
+VFT,232,"Broadcast, Cab","Broadcast, Cab",Other,0.0,0.0,,2099-08,2099-12,True,VFT232209908
+RFTV,2376,"Broadcast, Cab","Broadcast, Cab",Other,0.0,0.0,,2099-08,2099-12,True,RFTV2376209908
+VFT,713,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,VFT713209908
+RFTV,7372,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,RFTV7372209908
+VFT,804,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,VFT804209908
+VFT,814,Work Experienc,Work Experienc,Other,0.0,0.0,,2099-08,2099-12,True,VFT814209908
+FHS,110,Prin Food Beve,Prin Food Beve,Other,0.0,0.0,,2099-08,2099-12,True,FHS110209908
+FHSV,1370,Prin Food Beve,Prin Food Beve,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1370209908
+FS,119,Food Ser Equip,Food Ser Equip,Other,0.0,0.0,,2099-08,2099-12,True,FS119209908
+FHSV,1376,Food Ser Equip,Food Ser Equip,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1376209908
+FS,122,Adv Food Prep,Adv Food Prep,Other,0.0,0.0,,2099-08,2099-12,True,FS122209908
+FHS,122,Adv Food Prep,Adv Food Prep,Other,0.0,0.0,,2099-08,2099-12,True,FHS122209908
+FHSV,1378,Adv Food Prep,Adv Food Prep,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1378209908
+FS,124,Sanita & Safe,Sanita & Safe,Other,0.0,0.0,,2099-08,2099-12,True,FS124209908
+FHS,124,Sanita & Safe,Sanita & Safe,Other,0.0,0.0,,2099-08,2099-12,True,FHS124209908
+FHSV,1379,Sanita & Safe,Sanita & Safe,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1379209908
+FS,135,Nutrit & Menu,Nutrit & Menu,Other,0.0,0.0,,2099-08,2099-12,True,FS135209908
+FHS,135,Nutrit & Menu,Nutrit & Menu,Other,0.0,0.0,,2099-08,2099-12,True,FHS135209908
+FHSV,1381,Nutrit & Menu,Nutrit & Menu,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1381209908
+FS,136,Supv Tech,Supv Tech,Other,0.0,0.0,,2099-08,2099-12,True,FS136209908
+FS,140,Elem Bak Train,Elem Bak Train,Other,0.0,0.0,,2099-08,2099-12,True,FS140209908
+FHS,140,Elem Bak Train,Elem Bak Train,Other,0.0,0.0,,2099-08,2099-12,True,FHS140209908
+FHSV,1383,Elem Bak Train,Elem Bak Train,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1383209908
+FS,141,Bakery Pro Mgt,Bakery Pro Mgt,Other,0.0,0.0,,2099-08,2099-12,True,FS141209908
+FHS,142,Retail Bake Te,Retail Bake Te,Other,0.0,0.0,,2099-08,2099-12,True,FHS142209908
+FHSV,1384,Retail Bake Te,Retail Bake Te,Other,0.0,0.0,,2099-08,2099-12,True,FHSV1384209908
+FS,143,Bakery Merchan,Bakery Merchan,Other,0.0,0.0,,2099-08,2099-12,True,FS143209908
+DMAT,97,Algebra Fund I,Algebra Fund I,Other,0.0,0.0,,2099-08,2099-12,True,DMAT97209908
+MUS,127,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUS127209908
+MUAP,1113,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1113209908
+MUS,129,Oboe,Oboe,Other,0.0,0.0,,2099-08,2099-12,True,MUS129209908
+MUAP,1121,Oboe,Oboe,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1121209908
+MUS,130,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUS130209908
+MUAP,1129,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1129209908
+INTD,1376,Persp Drawing,Persp Drawing,Other,0.0,0.0,,2099-08,2099-12,True,INTD1376209908
+OFCT,2375,Med Office Pro,Med Office Pro,Other,0.0,0.0,,2099-08,2099-12,True,OFCT2375209908
+MUS,131,Bassoon,Bassoon,Other,0.0,0.0,,2099-08,2099-12,True,MUS131209908
+MUAP,1125,Bassoon,Bassoon,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1125209908
+MUS,132,Saxophone,Saxophone,Other,0.0,0.0,,2099-08,2099-12,True,MUS132209908
+MUAP,1133,Saxophone,Saxophone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1133209908
+MUS,133,Trumpet,Trumpet,Other,0.0,0.0,,2099-08,2099-12,True,MUS133209908
+MUAP,1137,Trumpet,Trumpet,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1137209908
+MUS,135,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUS135209908
+MUAP,1145,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1145209908
+MUS,136,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUS136209908
+MUAP,1149,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1149209908
+MUS,137,Tuba,Tuba,Other,0.0,0.0,,2099-08,2099-12,True,MUS137209908
+MUAP,1153,Tuba,Tuba,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1153209908
+AT,242,Auto Trans II,Auto Trans II,Other,0.0,0.0,,2099-08,2099-12,True,AT242209908
+AUTO,2242,Auto Trans II,Auto Trans II,Other,0.0,0.0,,2099-08,2099-12,True,AUTO2242209908
+MUS,139,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUS139209908
+MUAP,1177,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1177209908
+MUAP,1161,Guitar,Guitar,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1161209908
+CISC,2494,Netwr 3 Instal,Netwr 3 Instal,Other,3.0,3.0,,2099-08,2099-12,True,CISC2494209908
+MUS,141,Electric Bass,Electric Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUS141209908
+MUAP,1115,Electric Bass,Electric Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1115209908
+ESOL,45,Dev Read Nontv,Dev Read Nontv,Other,0.0,0.0,,2099-08,2099-12,True,ESOL45209908
+ESOL,55,Dev Writ Nontv,Dev Writ Nontv,Other,0.0,0.0,,2099-08,2099-12,True,ESOL55209908
+MUS,143,App Mus Dr Set,App Mus Dr Set,Other,0.0,0.0,,2099-08,2099-12,True,MUS143209908
+MUAP,1158,App Mus Dr Set,App Mus Dr Set,Other,0.0,0.0,,2099-08,2099-12,True,MUAP1158209908
+MUS,145,Music Theory I,Music Theory I,Other,0.0,0.0,,2099-08,2099-12,True,MUS145209908
+MUSI,1311,Music Theory I,Music Theory I,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1311209908
+MUS,146,Music Theor II,Music Theor II,Other,0.0,0.0,,2099-08,2099-12,True,MUS146209908
+MUSI,1312,Music Theory II,Music Theory II,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1312209908
+ELET,1473,Dig Logic Prin,Dig Logic Prin,Other,0.0,0.0,,2099-08,2099-12,True,ELET1473209908
+ELET,2271,Power Rf Elect,Power Rf Elect,Other,0.0,0.0,,2099-08,2099-12,True,ELET2271209908
+MUS,147,Synthesizer I,Synthesizer I,Other,0.0,0.0,,2099-08,2099-12,True,MUS147209908
+MUSI,1170,Synthesizer I,Synthesizer I,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1170209908
+MUS,148,Synthesizer II,Synthesizer II,Other,0.0,0.0,,2099-08,2099-12,True,MUS148209908
+MUSI,1172,Synthesizer II,Synthesizer II,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1172209908
+MUS,149,Digi Mus Prod.,Digi Mus Prod.,Other,0.0,0.0,,2099-08,2099-12,True,MUS149209908
+MUS,150,Chorus,Chorus,Other,0.0,0.0,,2099-08,2099-12,True,MUS150209908
+MUSI,1183,Voice Class I,Voice Class I,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1183209908
+MUSI,1184,Voice Class II,Voice Class II,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1184209908
+MUS,155,Vocal Ensemble,Vocal Ensemble,Other,0.0,0.0,,2099-08,2099-12,True,MUS155209908
+MUSI,1143,Vocal Ensemble,Vocal Ensemble,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1143209908
+MUS,156,Madrigal Sing,Madrigal Sing,Other,0.0,0.0,,2099-08,2099-12,True,MUS156209908
+MUSI,1152,Madrigal Sing,Madrigal Sing,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1152209908
+MUS,160,Band,Band,Other,0.0,0.0,,2099-08,2099-12,True,MUS160209908
+MUSI,1237,Band,Band,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1237209908
+MUS,161,Musiciansp I,Musiciansp I,Other,0.0,0.0,,2099-08,2099-12,True,MUS161209908
+MUSI,1116,Sight Singing and Ear Train I,Sight Singing and Ear Training I,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1116209908
+MUS,162,Musiciansp II,Musiciansp II,Other,0.0,0.0,,2099-08,2099-12,True,MUS162209908
+MUSI,1117,Sight Singing and Ear Train II,Sight Singing and Ear Training II,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1117209908
+MUS,166,Hist Jz/Rk Mus,Hist Jz/Rk Mus,Other,0.0,0.0,,2099-08,2099-12,True,MUS166209908
+MUSI,1310,American Music,American Music,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1310209908
+MUS,170,Orchestra,Orchestra,Other,0.0,0.0,,2099-08,2099-12,True,MUS170209908
+MUSI,1123,Orchestra,Orchestra,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1123209908
+INTD,2373,Rendering for,Rendering for,Other,0.0,0.0,,2099-08,2099-12,True,INTD2373209908
+MUS,171,Woodwind Ens,Woodwind Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUS171209908
+MUSI,1133,Woodwind Ens,Woodwind Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1133209908
+MEDS,2370,Med Stf Direct,Med Stf Direct,Other,0.0,0.0,,2099-08,2099-12,True,MEDS2370209908
+AHIC,1170,Cardiov Physio,Cardiov Physio,Other,0.0,0.0,,2099-08,2099-12,True,AHIC1170209908
+MUSI,1138,Percussion Ens,Percussion Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1138209908
+MUS,174,Keyboard Ens,Keyboard Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUS174209908
+MUSI,1132,Keyboard Ens,Keyboard Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1132209908
+MUS,176,Sym Wnd Ensemb,Sym Wnd Ensemb,Other,0.0,0.0,,2099-08,2099-12,True,MUS176209908
+MUSI,1140,Sym Wnd Ensemb,Sym Wnd Ensemb,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1140209908
+EITP,1372,Intro Interpre,Intro Interpre,Other,0.0,0.0,,2099-08,2099-12,True,EITP1372209908
+MUS,177,Chamber Ens,Chamber Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUS177209908
+MUSI,1151,Chamber Ens,Chamber Ens,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1151209908
+MUS,181,Lab Band,Lab Band,Other,0.0,0.0,,2099-08,2099-12,True,MUS181209908
+MUSI,9175,Recital,Recital,Other,0.0,0.0,,2099-08,2099-12,True,MUSI9175209908
+MUS,201,Soph Theory,Soph Theory,Other,0.0,0.0,,2099-08,2099-12,True,MUS201209908
+MUS,202,Soph Theory,Soph Theory,Other,0.0,0.0,,2099-08,2099-12,True,MUS202209908
+MUS,203,Composition,Composition,Other,0.0,0.0,,2099-08,2099-12,True,MUS203209908
+MUSI,1386,Composition I,Composition I,Other,0.0,0.0,,2099-08,2099-12,True,MUSI1386209908
+MUS,217,Piano Clas III,Piano Clas III,Other,0.0,0.0,,2099-08,2099-12,True,MUS217209908
+MUSI,2181,Piano Class III,Piano Class III,Other,0.0,0.0,,2099-08,2099-12,True,MUSI2181209908
+MUS,221,Piano,Piano,Other,0.0,0.0,,2099-08,2099-12,True,MUS221209908
+MUAP,2269,Piano,Piano,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2269209908
+MUS,222,Organ,Organ,Other,0.0,0.0,,2099-08,2099-12,True,MUS222209908
+MUAP,2265,Organ,Organ,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2265209908
+MUS,223,Voice,Voice,Other,0.0,0.0,,2099-08,2099-12,True,MUS223209908
+MUAP,2281,Voice,Voice,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2281209908
+MUS,224,Violin,Violin,Other,0.0,0.0,,2099-08,2099-12,True,MUS224209908
+MUAP,2201,Violin,Violin,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2201209908
+MUS,225,Viola,Viola,Other,0.0,0.0,,2099-08,2099-12,True,MUS225209908
+MUAP,2205,Viola,Viola,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2205209908
+MUS,227,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUS227209908
+MUAP,2213,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2213209908
+MUS,228,Flute,Flute,Other,0.0,0.0,,2099-08,2099-12,True,MUS228209908
+MUAP,2217,Flute,Flute,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2217209908
+MUAP,2221,Oboe,Oboe,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2221209908
+MUS,230,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUS230209908
+MUAP,2229,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2229209908
+OFCT,2376,Medical Transc,Medical Transc,Other,0.0,0.0,,2099-08,2099-12,True,OFCT2376209908
+MUAP,2225,Bassoon,Bassoon,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2225209908
+MUS,233,Trumpet,Trumpet,Other,0.0,0.0,,2099-08,2099-12,True,MUS233209908
+MUAP,2241,French Horn,French Horn,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2241209908
+MUS,235,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUS235209908
+MUAP,2245,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2245209908
+MUS,236,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUS236209908
+MUAP,2249,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2249209908
+AHIC,1372,Comp App Al He,Comp App Al He,Other,0.0,0.0,,2099-08,2099-12,True,AHIC1372209908
+MUS,238,Percussion,Percussion,Other,0.0,0.0,,2099-08,2099-12,True,MUS238209908
+MUAP,2257,Percussion,Percussion,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2257209908
+MUS,239,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUS239209908
+MUAP,2277,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2277209908
+MUS,240,Guitar,Guitar,Other,0.0,0.0,,2099-08,2099-12,True,MUS240209908
+MUAP,2261,Guitar,Guitar,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2261209908
+MUS,241,Electric Bass,Electric Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUS241209908
+MUAP,2215,Electric Bass,Electric Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2215209908
+MUAP,2258,Drum Set,Drum Set,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2258209908
+MUS,245,Mus Theory III,Mus Theory III,Other,0.0,0.0,,2099-08,2099-12,True,MUS245209908
+MUSI,2311,Music Theory III,Music Theory III,Other,0.0,0.0,,2099-08,2099-12,True,MUSI2311209908
+MUS,246,Mus Theory IV,Mus Theory IV,Other,0.0,0.0,,2099-08,2099-12,True,MUS246209908
+MUSI,2312,Music Theory IV,Music Theory IV,Other,0.0,0.0,,2099-08,2099-12,True,MUSI2312209908
+MUAP,2365,Organ,Organ,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2365209908
+MEDS,2270,Perform Improv,Perform Improv,Other,0.0,0.0,,2099-08,2099-12,True,MEDS2270209908
+MUS,254,Violin,Violin,Other,0.0,0.0,,2099-08,2099-12,True,MUS254209908
+MUAP,2301,Violin,Violin,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2301209908
+INTD,3470,Int Studio Vi,Int Studio Vi,Other,0.0,0.0,,2099-08,2099-12,True,INTD3470209908
+INTD,3374,Dir Design Res,Dir Design Res,Other,0.0,0.0,,2099-08,2099-12,True,INTD3374209908
+MUS,255,Viola,Viola,Other,0.0,0.0,,2099-08,2099-12,True,MUS255209908
+SWAT,2471,Adv N Hm Acdir,Adv N Hm Acdir,Other,0.0,0.0,,2099-08,2099-12,True,SWAT2471209908
+RFTV,2377,Adv Mulmed Des,Adv Mulmed Des,Other,0.0,0.0,,2099-08,2099-12,True,RFTV2377209908
+MUS,257,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUS257209908
+MUAP,2313,Double Bass,Double Bass,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2313209908
+MUS,258,Flute,Flute,Other,0.0,0.0,,2099-08,2099-12,True,MUS258209908
+MUAP,2317,Flute,Flute,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2317209908
+EITP,1373,Mime Interpret,Mime Interpret,Other,0.0,0.0,,2099-08,2099-12,True,EITP1373209908
+EITP,2376,Trans Sign/Voi,Trans Sign/Voi,Other,0.0,0.0,,2099-08,2099-12,True,EITP2376209908
+EITP,2377,Trans Voice/Si,Trans Voice/Si,Other,0.0,0.0,,2099-08,2099-12,True,EITP2377209908
+DFTG,1271,Cad Operations,Cad Operations,Other,0.0,0.0,,2099-08,2099-12,True,DFTG1271209908
+MUS,260,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUS260209908
+MUAP,2329,Clarinet,Clarinet,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2329209908
+MUS,261,Bassoon,Bassoon,Other,0.0,0.0,,2099-08,2099-12,True,MUS261209908
+MUAP,2325,Bassoon,Bassoon,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2325209908
+MUS,262,Saxophone,Saxophone,Other,0.0,0.0,,2099-08,2099-12,True,MUS262209908
+MUAP,2333,Saxophone,Saxophone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2333209908
+MUS,263,Trumpet,Trumpet,Other,0.0,0.0,,2099-08,2099-12,True,MUS263209908
+MUAP,2337,Trumpet,Trumpet,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2337209908
+MUS,265,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUS265209908
+MUAP,2345,Trombone,Trombone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2345209908
+MUS,266,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUS266209908
+MUAP,2349,Baritone,Baritone,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2349209908
+MUS,268,Percussion,Percussion,Other,0.0,0.0,,2099-08,2099-12,True,MUS268209908
+MUAP,2357,Percussion,Percussion,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2357209908
+MUS,269,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUS269209908
+MUAP,2377,Harp,Harp,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2377209908
+MUS,270,Guitar,Guitar,Other,0.0,0.0,,2099-08,2099-12,True,MUS270209908
+MUAP,2361,Guitar,Guitar,Other,0.0,0.0,,2099-08,2099-12,True,MUAP2361209908
+MUSI,2116,Sight Singing and Ear Trai III,Sight Singing and Ear Training III,Other,0.0,0.0,,2099-08,2099-12,True,MUSI2116209908
+MUS,272,Musiciansp IV,Musiciansp IV,Other,0.0,0.0,,2099-08,2099-12,True,MUS272209908
+PHI,102,Intro Philos,Intro Philos,Other,0.0,0.0,,2099-08,2099-12,True,PHI102209908
+PHI,105,Logic,Logic,Other,0.0,0.0,,2099-08,2099-12,True,PHI105209908
+PHI,202,Int Soc Pol Ph,Int Soc Pol Ph,Other,0.0,0.0,,2099-08,2099-12,True,PHI202209908
+PHI,203,Ethics,Ethics,Other,0.0,0.0,,2099-08,2099-12,True,PHI203209908
+PHI,207,Hst Anc Phi,Hst Anc Phi,Other,0.0,0.0,,2099-08,2099-12,True,PHI207209908
+PHIL,2316,Classical Philosophy,Classical Philosophy,Other,0.0,0.0,,2099-08,2099-12,True,PHIL2316209908
+PHI,210,Studies Philos,Studies Philos,Other,0.0,0.0,,2099-08,2099-12,True,PHI210209908
+CISC,2497,Netwk Srv Supp,Netwk Srv Supp,Other,0.0,0.0,,2099-08,2099-12,True,CISC2497209908
+CISC,2378,Nds Dsgn Imple,Nds Dsgn Imple,Other,0.0,0.0,,2099-08,2099-12,True,CISC2378209908
+CISC,2496,Netwr 4 Instal,Netwr 4 Instal,Other,4.0,4.0,,2099-08,2099-12,True,CISC2496209908
+THE,100,Reh and Perf,Reh and Perf,Other,0.0,0.0,,2099-08,2099-12,True,THE100209908
+THE,101,Intro Theatre,Intro Theatre,Other,0.0,0.0,,2099-08,2099-12,True,THE101209908
+DRAM,1310,Theater Appreciation,Theater Appreciation,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1310209908
+THE,102,Contemp Theat,Contemp Theat,Other,0.0,0.0,,2099-08,2099-12,True,THE102209908
+DRAM,1370,Contemp Theat,Contemp Theat,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1370209908
+THE,103,Stagecraft I,Stagecraft I,Other,0.0,0.0,,2099-08,2099-12,True,THE103209908
+DRAM,1330,Stagecraft I,Stagecraft I,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1330209908
+THE,104,Stagecraft II,Stagecraft II,Other,0.0,0.0,,2099-08,2099-12,True,THE104209908
+DRAM,2331,Stagecraft II,Stagecraft II,Other,0.0,0.0,,2099-08,2099-12,True,DRAM2331209908
+THE,105,Make-Up Stage,Make-Up Stage,Other,0.0,0.0,,2099-08,2099-12,True,THE105209908
+DRAM,1341,Stage Makeup,Stage Makeup,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1341209908
+THE,106,Acting I,Acting I,Other,0.0,0.0,,2099-08,2099-12,True,THE106209908
+DRAM,1351,Acting I,Acting I,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1351209908
+DRAM,9371,Movement Stage,Movement Stage,Other,0.0,0.0,,2099-08,2099-12,True,DRAM9371209908
+THE,111,Hst Theatre II,Hst Theatre II,Other,0.0,0.0,,2099-08,2099-12,True,THE111209908
+THE,112,Beg Dance Thea,Beg Dance Thea,Other,0.0,0.0,,2099-08,2099-12,True,THE112209908
+DANC,1345,Beg Dance Thea,Beg Dance Thea,Other,0.0,0.0,,2099-08,2099-12,True,DANC1345209908
+THE,113,Inter Dance,Inter Dance,Other,0.0,0.0,,2099-08,2099-12,True,THE113209908
+DANC,1346,Inter Dance,Inter Dance,Other,0.0,0.0,,2099-08,2099-12,True,DANC1346209908
+THE,115,Mime,Mime,Other,0.0,0.0,,2099-08,2099-12,True,THE115209908
+DAN,116,Reh & Perf,Reh & Perf,Other,0.0,0.0,,2099-08,2099-12,True,DAN116209908
+DAN,150,Beg Ballet I,Beg Ballet I,Other,0.0,0.0,,2099-08,2099-12,True,DAN150209908
+DAN,151,Beg Ballet II,Beg Ballet II,Other,0.0,0.0,,2099-08,2099-12,True,DAN151209908
+DAN,155,Jazz I,Jazz I,Other,0.0,0.0,,2099-08,2099-12,True,DAN155209908
+DAN,156,Jazz II,Jazz II,Other,0.0,0.0,,2099-08,2099-12,True,DAN156209908
+DAN,160,Intro Dan Hist,Intro Dan Hist,Other,0.0,0.0,,2099-08,2099-12,True,DAN160209908
+AHIC,1270,Phar Al Hea Im,Phar Al Hea Im,Other,0.0,0.0,,2099-08,2099-12,True,AHIC1270209908
+THE,199,Demo Lab,Demo Lab,Other,0.0,0.0,,2099-08,2099-12,True,THE199209908
+DRAM,1170,Demo Lab,Demo Lab,Other,0.0,0.0,,2099-08,2099-12,True,DRAM1170209908
+DAN,200,Concepts II,Concepts II,Other,0.0,0.0,,2099-08,2099-12,True,DAN200209908
+THE,201,Tv Prod I,Tv Prod I,Other,0.0,0.0,,2099-08,2099-12,True,THE201209908
+DRAM,2370,Tv Prod I,Tv Prod I,Other,0.0,0.0,,2099-08,2099-12,True,DRAM2370209908
+THE,202,Tv Prod II,Tv Prod II,Other,0.0,0.0,,2099-08,2099-12,True,THE202209908
+THE,203,Brdcst Comm I,Brdcst Comm I,Other,0.0,0.0,,2099-08,2099-12,True,THE203209908
+THE,204,Brdcst Comm II,Brdcst Comm II,Other,0.0,0.0,,2099-08,2099-12,True,THE204209908
+THE,205,Scene Stud the,Scene Stud the,Other,0.0,0.0,,2099-08,2099-12,True,THE205209908
+DRAM,2351,Acting III,Acting III,Other,0.0,0.0,,2099-08,2099-12,True,DRAM2351209908
+DRAM,2373,Intro Tech Dra,Intro Tech Dra,Other,0.0,0.0,,2099-08,2099-12,True,DRAM2373209908
+THE,209,Light Design,Light Design,Other,0.0,0.0,,2099-08,2099-12,True,THE209209908
+DRAM,2374,Lighting Design,Lighting Design,Other,0.0,0.0,,2099-08,2099-12,True,DRAM2374209908
+THE,235,Costume Histor,Costume Histor,Other,0.0,0.0,,2099-08,2099-12,True,THE235209908
+DAN,250,Inter Ballet I,Inter Ballet I,Other,0.0,0.0,,2099-08,2099-12,True,DAN250209908
+DAN,251,Intr Ballet II,Intr Ballet II,Other,0.0,0.0,,2099-08,2099-12,True,DAN251209908
+DAN,252,Coach & Repert,Coach & Repert,Other,0.0,0.0,,2099-08,2099-12,True,DAN252209908
+SONO,2372,Clinic Ed I,Clinic Ed I,Other,0.0,0.0,,2099-08,2099-12,True,SONO2372209908
+DANC,1151,Freshman Dance Performance,Freshman Dance Performance,Other,0.0,0.0,,2099-08,2099-12,True,DANC1151209908
+DANC,1147,Jazz Dance I,Jazz Dance I,Other,0.0,0.0,,2099-08,2099-12,True,DANC1147209908
+DANC,1148,Jazz II,Jazz II,Other,0.0,0.0,,2099-08,2099-12,True,DANC1148209908
+DANC,2303,Dance Appreciation,Dance Appreciation,Other,0.0,0.0,,2099-08,2099-12,True,DANC2303209908
+DAN,161,Beg Ballet I,Beg Ballet I,Other,0.0,0.0,,2099-08,2099-12,True,DAN161209908
+DANC,1241,Ballet I,Ballet I,Other,0.0,0.0,,2099-08,2099-12,True,DANC1241209908
+ENGL,2308,Creative Writing II,Creative Writing II,Other,0.0,0.0,,2099-08,2099-12,True,ENGL2308209908

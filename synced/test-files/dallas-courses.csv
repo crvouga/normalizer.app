@@ -1,0 +1,559 @@
+courseID,subject,catalogNumber,title,description
+1449,OFC,712,Work Experienc,Work Experienc
+1455,OFCT,7472,Work Experienc,Work Experienc
+1456,BUS,801,Work Experienc,Work Experienc
+1457,OFC,801,Work Experienc,Work Experienc
+1458,BUS,802,Work Experienc,Work Experienc
+1459,OFC,802,Work Experienc,Work Experienc
+1460,ENGT,2272,Mater & Analy,Mater & Analy
+1461,BUS,803,Work Experienc,Work Experienc
+1462,OFC,803,Work Experienc,Work Experienc
+1463,OFCT,8381,Work Experienc,Work Experienc
+1464,BUS,804,Work Experienc,Work Experienc
+1469,BUS,812,Work Experienc,Work Experienc
+1472,OFC,813,Work Experienc,Work Experienc
+1473,BUS,814,Work Experienc,Work Experienc
+1475,BUS,106,Prof Dev-Orien,Prof Dev-Orien
+1476,RDM,106,Prof Dev-Orien,Prof Dev-Orien
+1477,BUS,107,Prof Dev-Local,Prof Dev-Local
+1479,ART,122,Adver Design,Adver Design
+1482,MKT,137,Prin Retailing,Prin Retailing
+1483,MRKT,1370,Prin Retailing,Prin Retailing
+1497,MKT,233,Adv&sales Prom,Adv&sales Prom
+1498,MRKT,2374,Adv&sales Prom,Adv&sales Prom
+1501,BUS,243,Prof Dev-Organ,Prof Dev-Organ
+1502,RDM,243,Prof Dev-Organ,Prof Dev-Organ
+1504,RDM,244,Prof Dev-State,Prof Dev-State
+1506,MKT,245,Sales Mgt,Sales Mgt
+1513,RDM,248,Sim Train II,Sim Train II
+1517,MRKT,2377,Fashion Buying,Fashion Buying
+1518,BUS,291,Fashion Mercha,Fashion Mercha
+1519,RDM,291,Fashion Mercha,Fashion Mercha
+1522,RDM,292,Fashion Design,Fashion Design
+1523,MKT,292,Fashion Design,Fashion Design
+1524,BUS,701,Work Experienc,Work Experienc
+1526,MKT,701,Work Experienc,Work Experienc
+1527,BUS,702,Work Experienc,Work Experienc
+1528,RDM,702,Work Experienc,Work Experienc
+1530,BUS,703,Work Experienc,Work Experienc
+1531,RDM,703,Work Experienc,Work Experienc
+1539,RDM,711,Work Experienc,Work Experienc
+1541,BUS,712,Work Experienc,Work Experienc
+1542,RDM,712,Work Experienc,Work Experienc
+1543,MKT,712,Work Experienc,Work Experienc
+1545,RDM,713,Work Experienc,Work Experienc
+1546,MKT,713,Work Experienc,Work Experienc
+1547,MRKT,7372,Work Experienc,Work Experienc
+1548,ENGT,2471,Digit Cir MacH,Digit Cir MacH
+1549,ENGT,2475,Prin & App Mic,Prin & App Mic
+1550,BUS,714,Work Experienc,Work Experienc
+1551,RDM,714,Work Experienc,Work Experienc
+1552,MKT,714,Work Experienc,Work Experienc
+1553,MEDA,1273,Med Proced II,Med Proced II
+1554,MEDA,1275,Clinic Proc I,Clinic Proc I
+1555,BUS,801,Work Experienc,Work Experienc
+1556,RDM,801,Work Experienc,Work Experienc
+1557,MKT,801,Work Experienc,Work Experienc
+1558,BUS,802,Work Experienc,Work Experienc
+1559,RDM,802,Work Experienc,Work Experienc
+1560,MKT,802,Work Experienc,Work Experienc
+1561,BUS,803,Work Experienc,Work Experienc
+1562,RDM,803,Work Experienc,Work Experienc
+1563,MKT,803,Work Experienc,Work Experienc
+1564,BUS,804,Work Experienc,Work Experienc
+1565,RDM,804,Work Experienc,Work Experienc
+1566,MKT,804,Work Experienc,Work Experienc
+1567,BUS,811,Work Experienc,Work Experienc
+1568,RDM,811,Work Experienc,Work Experienc
+1569,MKT,811,Work Experienc,Work Experienc
+1570,BUS,812,Work Experienc,Work Experienc
+1571,RDM,812,Work Experienc,Work Experienc
+1572,MKT,812,Work Experienc,Work Experienc
+1573,BUS,813,Work Experienc,Work Experienc
+1574,RDM,813,Work Experienc,Work Experienc
+1575,MKT,813,Work Experienc,Work Experienc
+1576,MS,151,MacH Op Wld Tl,MacH Op Wld Tl
+1577,CNCT,1375,MacH Op Wld Tl,MacH Op Wld Tl
+1578,BUS,814,Work Experienc,Work Experienc
+1579,RDM,814,Work Experienc,Work Experienc
+1580,MKT,814,Work Experienc,Work Experienc
+1581,LA,131,Int Legal Tech,Int Legal Tech
+1582,LEGL,1370,Int Legal Tech,Int Legal Tech
+1583,LA,133,Law Real Prop,Law Real Prop
+1584,LEGL,1371,Law Real Prop,Law Real Prop
+1585,LA,134,Prin Famil Law,Prin Famil Law
+1586,LEGL,1372,Prin Famil Law,Prin Famil Law
+1587,LA,135,Tx Legal Syst,Tx Legal Syst
+1588,LEGL,1373,Tx & Fed Court,Tx & Fed Court
+1589,LA,139,Legal Resc Dft,Legal Resc Dft
+1596,LA,232,Tort Ins Law,Tort Ins Law
+1597,LEGL,2375,Tort Ins Law,Tort Ins Law
+1598,LA,233,Inc Tax Leg Ac,Inc Tax Leg Ac
+1599,LA,234,Per Prop Sales,Per Prop Sales
+1600,LEGL,2376,Per Prop Sales,Per Prop Sales
+1601,LA,235,Tecq Legal Pra,Tecq Legal Pra
+1603,LA,248,Con & Crim Law,Con & Crim Law
+1604,LEGL,2379,Criminal Law and Procedures,Criminal Law and Procedures
+1605,LA,251,Cmplex Lit/Ant,Cmplex Lit/Ant
+1606,LEGL,2380,Civil Litig II,Civil Litig II
+1607,LA,255,Oil & Gas Law,Oil & Gas Law
+1608,LEGL,2382,Oil & Gas Law,Oil & Gas Law
+1609,LA,803,Work Experienc,Work Experienc
+1610,LA,804,Work Experienc,Work Experienc
+1611,LA,813,Work Experienc,Work Experienc
+1612,LA,814,Work Experienc,Work Experienc
+1613,BUS,144,Intro Transpor,Intro Transpor
+1614,TRT,144,Intro Transpor,Intro Transpor
+1616,BUS,145,Trans Rates Ta,Trans Rates Ta
+1617,TRT,145,Intro Rate/Tar,Intro Rate/Tar
+1618,BUS,146,Trans Traf Mgt,Trans Traf Mgt
+1619,TRT,146,Trans Traf Mgt,Trans Traf Mgt
+1620,BUS,147,Eco Transporta,Eco Transporta
+1624,BUS,180,Mgmt Trng,Mgmt Trng
+1625,BUS,181,Mgmt Trng,Mgmt Trng
+1626,BUS,182,Mgmt Sem,Mgmt Sem
+1627,BUS,183,Mgmt Sem,Mgmt Sem
+1628,BUS,240,Int Com Law I,Int Com Law I
+1629,TRT,240,Int Com Law I,Int Com Law I
+1630,BUS,241,Int Com Law II,Int Com Law II
+1631,TRT,241,Int Com Law II,Int Com Law II
+1632,BUS,249,Apl Rate & Tar,Apl Rate & Tar
+1633,TRT,249,Apl Rate & Tar,Apl Rate & Tar
+1634,TRT,250,Studie-Tran Te,Studie-Tran Te
+1635,BUS,280,Mgmt Trng,Mgmt Trng
+1636,BUS,281,Mgmt Trng,Mgmt Trng
+1637,BUS,282,Mgmt Sem,Mgmt Sem
+1638,BUS,283,Mgmt Sem,Mgmt Sem
+1639,BUS,287,Phys Distb Mgm,Phys Distb Mgm
+1640,TRT,287,Phys Distb Mgm,Phys Distb Mgm
+1642,TRT,288,Phys Distb Mgm,Phys Distb Mgm
+1643,TT,713,Work Experienc,Work Experienc
+1644,TRT,713,Work Experienc,Work Experienc
+1645,TT,803,Work Experienc,Work Experienc
+1646,TRT,803,Work Experienc,Work Experienc
+1647,TT,813,Work Experienc,Work Experienc
+1648,TRT,813,Work Experienc,Work Experienc
+1649,BUS,128,Data Entry Con,Data Entry Con
+1650,BUS,130,Keypunch,Keypunch
+1651,ACC,131,Bookkeeping I,Bookkeeping I
+1652,ACCT,1371,Bookkeeping I,Bookkeeping I
+1653,ACC,132,Bookkeeping II,Bookkeeping II
+1655,CS,175,Intro Comp Sci,Intro Comp Sci
+1657,ACCT,2302,Prin of Managerial Accounting,Principles of Managerial Accounting
+1664,ACCT,2375,Busine Finance,Busine Finance
+1666,ACCT,2379,Inter Acct II,Inter Acct II
+1672,ACC,239,Income Tax,Income Tax
+1673,ACCT,2372,Income Tax,Income Tax
+1674,CS,250,Con Topic Cs,Con Topic Cs
+1675,ACC,250,Micro-Comp Bas,Micro-Comp Bas
+1676,ACCT,2370,Micro-Comp Bas,Micro-Comp Bas
+1677,CS,251,Spec Topic Com,Spec Topic Com
+1678,ACC,701,Work Exp,Work Exp
+1679,BUS,702,Work Experienc,Work Experienc
+1680,ACC,702,Work Experienc,Work Experienc
+1681,BUS,702,Work Experienc,Work Experienc
+1682,BUS,703,Work Experienc,Work Experienc
+1683,ACC,703,Work Experienc,Work Experienc
+1684,ACCT,7371,Work Experienc,Work Experienc
+1685,BUS,704,Work Experienc,Work Experienc
+1686,ACC,704,Work Experienc,Work Experienc
+1687,ACCT,7471,Work Experienc,Work Experienc
+1688,ACC,711,Work Exp,Work Exp
+1689,BUS,712,Work Experienc,Work Experienc
+1690,ACC,712,Work Experienc,Work Experienc
+1691,BUS,713,Work Experienc,Work Experienc
+1692,ACC,713,Work Experienc,Work Experienc
+1693,ACCT,7372,Work Experienc,Work Experienc
+1694,BUS,714,Work Experienc,Work Experienc
+1700,BUS,803,Work Experienc,Work Experienc
+1701,ACC,803,Work Experienc,Work Experienc
+1702,HIMT,1470,Disease Cl I,Disease Cl I
+1703,HIMT,1270,Clinic Prac I,Clinic Prac I
+1704,BUS,804,Work Experienc,Work Experienc
+1705,ACC,804,Work Experienc,Work Experienc
+1711,BUS,814,Work Experienc,Work Experienc
+1712,ACC,814,Work Experienc,Work Experienc
+1713,HORT,1273,Land Comp Desi,Land Comp Desi
+1714,RE,130,Prin Practices,Prin Practices
+1715,REAL,1370,Prin Practices,Prin Practices
+1716,RE,131,Real Est Finan,Real Est Finan
+1718,RE,133,R E Marketing,R E Marketing
+1719,REAL,1372,R E Marketing,R E Marketing
+1722,RE,136,Real Esta Law,Real Esta Law
+1724,RE,138,Re Law: Contra,Re Law: Contra
+1725,REAL,1376,Promu Contract,Promu Contract
+1726,RE,230,R E Office Mgt,R E Office Mgt
+1727,REAL,2370,Re Ofc Mgt/Bro,Re Ofc Mgt/Bro
+1728,RE,233,Commer Rel Est,Commer Rel Est
+1729,REAL,2371,Commer Rel Est,Commer Rel Est
+1730,RE,235,Property Mgt,Property Mgt
+1731,REAL,2372,Property Mgt,Property Mgt
+1732,POL,144,Spanish Pb Ser,Spanish Pb Ser
+1733,CJ,144,Prac Spa Publi,Prac Spa Publi
+1734,CRIJ,1371,Prac Spa Publi,Prac Spa Publi
+1735,RE,240,Spec Prob R.E.,Spec Prob R.E.
+1736,REAL,2170,Spec Prob R.E.,Spec Prob R.E.
+1737,RE,241,Spec Pblms Re,Spec Pblms Re
+1738,REAL,2374,Spec Pblms Re,Spec Pblms Re
+1739,RE,250,Real Est Inter,Real Est Inter
+1740,RE,251,Real Est Inter,Real Est Inter
+1741,RADS,2272,Rad Equip Main,Rad Equip Main
+1742,RE,254,Real Est Semin,Real Est Semin
+1743,RE,255,Real Est Semin,Real Est Semin
+1744,CIS,105,Intro Com Info,Intro Com Info
+1745,CIS,110,Data Entry Con,Data Entry Con
+1746,CIS,115,Oper Technicia,Oper Technicia
+1747,DP,120,Data Communica,Data Communica
+1748,DP,129,Data Entry Con,Data Entry Con
+1749,CS,131,R P G Prog,R P G Prog
+1750,DP,131,Rpg Prog,Rpg Prog
+1751,DP,133,Begin Prog,Begin Prog
+1754,DP,138,D P Logic,D P Logic
+1755,DP,139,Technician,Technician
+1757,DP,142,Rpg Programmin,Rpg Programmin
+1759,DP,145,Pascal Program,Pascal Program
+1760,CIS,150,Com Prgm Logic,Com Prgm Logic
+1761,CISC,1375,Com Prgm Logic,Com Prgm Logic
+1763,CIS,160,Data Communica,Data Communica
+1764,CISC,1372,Data Com & Os,Data Com & Os
+1765,CIS,162,Cobol Prgm I,Cobol Prgm I
+1766,CISC,1476,Programming 1,Programming 1
+1773,CISC,1374,Pascal Program,Pascal Program
+1774,CS,175,Intro Comp Sci,Intro Comp Sci
+1775,CS,176,Fortran Prog,Fortran Prog
+1778,CIS,210,Assem Lang 1,Assem Lang 1
+1780,CIS,220,Assem Lang 2,Assem Lang 2
+1781,CISC,2477,Assem Lang 2,Assem Lang 2
+1782,CIS,225,Appld Systems,Appld Systems
+1783,CISC,2479,Systems Analys,Systems Analys
+1784,DP,230,Adv a L C,Adv a L C
+1785,DP,231,Adv Program,Adv Program
+1786,DP,232,Applied System,Applied System
+1787,DP,233,Oper Syst & Co,Oper Syst & Co
+1789,DP,236,Adv Cobol Tecn,Adv Cobol Tecn
+1790,DP,237,Field Exper,Field Exper
+1791,BUS,238,Cost Acctng,Cost Acctng
+1792,DP,240,Tele Comm I,Tele Comm I
+1793,DP,241,Tele Comm II,Tele Comm II
+1794,DP,242,Com Hw & Db Sy,Com Hw & Db Sy
+1795,DP,243,Comp Ctr Mgt,Comp Ctr Mgt
+1796,DP,244,Basic Programm,Basic Programm
+1797,DP,245,Assmbl Lang II,Assmbl Lang II
+1798,DP,246,Data Base Syst,Data Base Syst
+1799,CS,249,Contem Topics,Contem Topics
+1800,CS,250,Con Topics Cs,Con Topics Cs
+1801,DMAT,96,Essential Math,Essential Math
+1802,CS,251,Spec Topics-Dp,Spec Topics-Dp
+1803,CIS,252,Adv Cobol Tech,Adv Cobol Tech
+1804,CIS,254,Data Base Syst,Data Base Syst
+1805,CISC,2482,Data Base Syst,Data Base Syst
+1809,CISC,2483,On-Line Applications,On-Line Applications
+1813,CISC,2372,Contemp Topics,Contemp Topics
+1814,CIS,264,Spe Topic Comp,Spe Topic Comp
+1817,CISC,7171,Work Experienc,Work Experienc
+1820,CISC,7271,Work Experienc,Work Experienc
+1821,DP,703,Work Experienc,Work Experienc
+1825,CIS,704,Work Experienc,Work Experienc
+1826,CISC,7471,Work Experienc,Work Experienc
+1827,DP,711,Work Experienc,Work Experienc
+1828,CIS,711,Work Experienc,Work Experienc
+1829,DP,712,Work Experienc,Work Experienc
+1830,CIS,712,Work Experienc,Work Experienc
+1831,CISC,7272,Work Experienc,Work Experienc
+1832,DP,713,Work Experienc,Work Experienc
+1833,CIS,713,Work Experienc,Work Experienc
+1834,CISC,7372,Work Experienc,Work Experienc
+1835,DP,714,Work Experienc,Work Experienc
+1836,CIS,714,Work Experienc,Work Experienc
+1838,DP,801,Work Experienc,Work Experienc
+1839,CIS,801,Work Experienc,Work Experienc
+1840,DP,802,Work Experienc,Work Experienc
+1841,CIS,802,Work Experienc,Work Experienc
+1842,DP,803,Work Experienc,Work Experienc
+1843,CIS,803,Work Experienc,Work Experienc
+1844,DP,804,Work Experienc,Work Experienc
+1845,CIS,804,Work Experienc,Work Experienc
+1846,DP,811,Work Experienc,Work Experienc
+1848,DP,812,Work Experienc,Work Experienc
+1849,CIS,812,Work Experienc,Work Experienc
+1850,DP,813,Work Experienc,Work Experienc
+1851,CIS,813,Work Experienc,Work Experienc
+1852,DP,814,Work Experienc,Work Experienc
+1854,DP,139,Technician,Technician
+1855,DP,140,Oper Console,Oper Console
+1856,VFT,102,Contemp Trends,Contemp Trends
+1857,VFT,104,Video Software,Video Software
+1858,VFT,106,Video Producti,Video Producti
+1859,RFTV,1470,Video Producti,Video Producti
+1860,VFT,108,Video Sound an,Video Sound an
+1861,VFT,110,Video Prod II,Video Prod II
+1862,RFTV,1471,Video Prod II,Video Prod II
+1863,VFT,112,Video Editing,Video Editing
+1864,RFTV,1472,Video Editing,Video Editing
+1865,VFT,114,Video Engine I,Video Engine I
+1866,VFT,202,Video Prod III,Video Prod III
+1867,VFT,204,Video Engin II,Video Engin II
+1868,VFT,206,Video Sound II,Video Sound II
+1869,VFT,210,Video Prod IV,Video Prod IV
+1870,RFTV,2471,Video Prod IV,Video Prod IV
+1871,VFT,212,Video Edit II,Video Edit II
+1872,VFT,214,Bus Aspects of,Bus Aspects of
+1873,RFTV,2371,Bus Aspects of,Bus Aspects of
+1874,VFT,216,Act & Talent,Act & Talent
+1875,VFT,218,Scriptwr & Pro,Scriptwr & Pro
+1876,RFTV,2373,Scriptwr & Pro,Scriptwr & Pro
+1877,MEDA,1276,Clinic Proc II,Clinic Proc II
+1882,VFT,228,Video Animatio,Video Animatio
+1883,VFT,230,Video Soun III,Video Soun III
+1884,VFT,232,"Broadcast, Cab","Broadcast, Cab"
+1885,RFTV,2376,"Broadcast, Cab","Broadcast, Cab"
+1886,VFT,713,Work Experienc,Work Experienc
+1887,RFTV,7372,Work Experienc,Work Experienc
+1891,VFT,804,Work Experienc,Work Experienc
+1893,VFT,814,Work Experienc,Work Experienc
+1895,FHS,110,Prin Food Beve,Prin Food Beve
+1896,FHSV,1370,Prin Food Beve,Prin Food Beve
+1897,FS,119,Food Ser Equip,Food Ser Equip
+1899,FHSV,1376,Food Ser Equip,Food Ser Equip
+1900,FS,122,Adv Food Prep,Adv Food Prep
+1901,FHS,122,Adv Food Prep,Adv Food Prep
+1902,FHSV,1378,Adv Food Prep,Adv Food Prep
+1903,FS,124,Sanita & Safe,Sanita & Safe
+1904,FHS,124,Sanita & Safe,Sanita & Safe
+1905,FHSV,1379,Sanita & Safe,Sanita & Safe
+1906,FS,135,Nutrit & Menu,Nutrit & Menu
+1907,FHS,135,Nutrit & Menu,Nutrit & Menu
+1908,FHSV,1381,Nutrit & Menu,Nutrit & Menu
+1909,FS,136,Supv Tech,Supv Tech
+1910,FS,140,Elem Bak Train,Elem Bak Train
+1911,FHS,140,Elem Bak Train,Elem Bak Train
+1912,FHSV,1383,Elem Bak Train,Elem Bak Train
+1913,FS,141,Bakery Pro Mgt,Bakery Pro Mgt
+1915,FHS,142,Retail Bake Te,Retail Bake Te
+1916,FHSV,1384,Retail Bake Te,Retail Bake Te
+1917,FS,143,Bakery Merchan,Bakery Merchan
+1918,DMAT,97,Algebra Fund I,Algebra Fund I
+335,MUS,127,Double Bass,Double Bass
+336,MUAP,1113,Double Bass,Double Bass
+337,MUS,129,Oboe,Oboe
+338,MUAP,1121,Oboe,Oboe
+339,MUS,130,Clarinet,Clarinet
+340,MUAP,1129,Clarinet,Clarinet
+341,INTD,1376,Persp Drawing,Persp Drawing
+342,OFCT,2375,Med Office Pro,Med Office Pro
+343,MUS,131,Bassoon,Bassoon
+344,MUAP,1125,Bassoon,Bassoon
+345,MUS,132,Saxophone,Saxophone
+346,MUAP,1133,Saxophone,Saxophone
+347,MUS,133,Trumpet,Trumpet
+348,MUAP,1137,Trumpet,Trumpet
+349,MUS,135,Trombone,Trombone
+350,MUAP,1145,Trombone,Trombone
+351,MUS,136,Baritone,Baritone
+352,MUAP,1149,Baritone,Baritone
+353,MUS,137,Tuba,Tuba
+354,MUAP,1153,Tuba,Tuba
+355,AT,242,Auto Trans II,Auto Trans II
+356,AUTO,2242,Auto Trans II,Auto Trans II
+357,MUS,139,Harp,Harp
+358,MUAP,1177,Harp,Harp
+360,MUAP,1161,Guitar,Guitar
+361,CISC,2494,Netwr 3 Instal,Netwr 3 Instal
+362,MUS,141,Electric Bass,Electric Bass
+363,MUAP,1115,Electric Bass,Electric Bass
+364,ESOL,45,Dev Read Nontv,Dev Read Nontv
+365,ESOL,55,Dev Writ Nontv,Dev Writ Nontv
+366,MUS,143,App Mus Dr Set,App Mus Dr Set
+367,MUAP,1158,App Mus Dr Set,App Mus Dr Set
+368,MUS,145,Music Theory I,Music Theory I
+369,MUSI,1311,Music Theory I,Music Theory I
+370,MUS,146,Music Theor II,Music Theor II
+371,MUSI,1312,Music Theory II,Music Theory II
+372,ELET,1473,Dig Logic Prin,Dig Logic Prin
+375,ELET,2271,Power Rf Elect,Power Rf Elect
+376,MUS,147,Synthesizer I,Synthesizer I
+377,MUSI,1170,Synthesizer I,Synthesizer I
+378,MUS,148,Synthesizer II,Synthesizer II
+379,MUSI,1172,Synthesizer II,Synthesizer II
+380,MUS,149,Digi Mus Prod.,Digi Mus Prod.
+381,MUS,150,Chorus,Chorus
+384,MUSI,1183,Voice Class I,Voice Class I
+386,MUSI,1184,Voice Class II,Voice Class II
+387,MUS,155,Vocal Ensemble,Vocal Ensemble
+388,MUSI,1143,Vocal Ensemble,Vocal Ensemble
+389,MUS,156,Madrigal Sing,Madrigal Sing
+390,MUSI,1152,Madrigal Sing,Madrigal Sing
+391,MUS,160,Band,Band
+392,MUSI,1237,Band,Band
+393,MUS,161,Musiciansp I,Musiciansp I
+394,MUSI,1116,Sight Singing and Ear Train I,Sight Singing and Ear Training I
+395,MUS,162,Musiciansp II,Musiciansp II
+396,MUSI,1117,Sight Singing and Ear Train II,Sight Singing and Ear Training II
+397,MUS,166,Hist Jz/Rk Mus,Hist Jz/Rk Mus
+398,MUSI,1310,American Music,American Music
+399,MUS,170,Orchestra,Orchestra
+400,MUSI,1123,Orchestra,Orchestra
+401,INTD,2373,Rendering for,Rendering for
+402,MUS,171,Woodwind Ens,Woodwind Ens
+403,MUSI,1133,Woodwind Ens,Woodwind Ens
+404,MEDS,2370,Med Stf Direct,Med Stf Direct
+407,AHIC,1170,Cardiov Physio,Cardiov Physio
+409,MUSI,1138,Percussion Ens,Percussion Ens
+410,MUS,174,Keyboard Ens,Keyboard Ens
+411,MUSI,1132,Keyboard Ens,Keyboard Ens
+412,MUS,176,Sym Wnd Ensemb,Sym Wnd Ensemb
+413,MUSI,1140,Sym Wnd Ensemb,Sym Wnd Ensemb
+414,EITP,1372,Intro Interpre,Intro Interpre
+415,MUS,177,Chamber Ens,Chamber Ens
+416,MUSI,1151,Chamber Ens,Chamber Ens
+417,MUS,181,Lab Band,Lab Band
+420,MUSI,9175,Recital,Recital
+421,MUS,201,Soph Theory,Soph Theory
+422,MUS,202,Soph Theory,Soph Theory
+423,MUS,203,Composition,Composition
+424,MUSI,1386,Composition I,Composition I
+426,MUS,217,Piano Clas III,Piano Clas III
+427,MUSI,2181,Piano Class III,Piano Class III
+428,MUS,221,Piano,Piano
+429,MUAP,2269,Piano,Piano
+430,MUS,222,Organ,Organ
+431,MUAP,2265,Organ,Organ
+432,MUS,223,Voice,Voice
+433,MUAP,2281,Voice,Voice
+434,MUS,224,Violin,Violin
+435,MUAP,2201,Violin,Violin
+436,MUS,225,Viola,Viola
+437,MUAP,2205,Viola,Viola
+438,MUS,227,Double Bass,Double Bass
+439,MUAP,2213,Double Bass,Double Bass
+440,MUS,228,Flute,Flute
+441,MUAP,2217,Flute,Flute
+444,MUAP,2221,Oboe,Oboe
+445,MUS,230,Clarinet,Clarinet
+446,MUAP,2229,Clarinet,Clarinet
+447,OFCT,2376,Medical Transc,Medical Transc
+450,MUAP,2225,Bassoon,Bassoon
+451,MUS,233,Trumpet,Trumpet
+454,MUAP,2241,French Horn,French Horn
+455,MUS,235,Trombone,Trombone
+456,MUAP,2245,Trombone,Trombone
+457,MUS,236,Baritone,Baritone
+458,MUAP,2249,Baritone,Baritone
+459,AHIC,1372,Comp App Al He,Comp App Al He
+460,MUS,238,Percussion,Percussion
+461,MUAP,2257,Percussion,Percussion
+462,MUS,239,Harp,Harp
+463,MUAP,2277,Harp,Harp
+464,MUS,240,Guitar,Guitar
+465,MUAP,2261,Guitar,Guitar
+466,MUS,241,Electric Bass,Electric Bass
+467,MUAP,2215,Electric Bass,Electric Bass
+469,MUAP,2258,Drum Set,Drum Set
+470,MUS,245,Mus Theory III,Mus Theory III
+471,MUSI,2311,Music Theory III,Music Theory III
+472,MUS,246,Mus Theory IV,Mus Theory IV
+473,MUSI,2312,Music Theory IV,Music Theory IV
+477,MUAP,2365,Organ,Organ
+480,MEDS,2270,Perform Improv,Perform Improv
+481,MUS,254,Violin,Violin
+482,MUAP,2301,Violin,Violin
+483,INTD,3470,Int Studio Vi,Int Studio Vi
+484,INTD,3374,Dir Design Res,Dir Design Res
+486,MUS,255,Viola,Viola
+488,SWAT,2471,Adv N Hm Acdir,Adv N Hm Acdir
+489,RFTV,2377,Adv Mulmed Des,Adv Mulmed Des
+490,MUS,257,Double Bass,Double Bass
+491,MUAP,2313,Double Bass,Double Bass
+492,MUS,258,Flute,Flute
+493,MUAP,2317,Flute,Flute
+494,EITP,1373,Mime Interpret,Mime Interpret
+495,EITP,2376,Trans Sign/Voi,Trans Sign/Voi
+496,EITP,2377,Trans Voice/Si,Trans Voice/Si
+498,DFTG,1271,Cad Operations,Cad Operations
+499,MUS,260,Clarinet,Clarinet
+500,MUAP,2329,Clarinet,Clarinet
+501,MUS,261,Bassoon,Bassoon
+502,MUAP,2325,Bassoon,Bassoon
+503,MUS,262,Saxophone,Saxophone
+504,MUAP,2333,Saxophone,Saxophone
+505,MUS,263,Trumpet,Trumpet
+506,MUAP,2337,Trumpet,Trumpet
+507,MUS,265,Trombone,Trombone
+508,MUAP,2345,Trombone,Trombone
+509,MUS,266,Baritone,Baritone
+510,MUAP,2349,Baritone,Baritone
+511,MUS,268,Percussion,Percussion
+512,MUAP,2357,Percussion,Percussion
+513,MUS,269,Harp,Harp
+514,MUAP,2377,Harp,Harp
+515,MUS,270,Guitar,Guitar
+516,MUAP,2361,Guitar,Guitar
+518,MUSI,2116,Sight Singing and Ear Trai III,Sight Singing and Ear Training III
+519,MUS,272,Musiciansp IV,Musiciansp IV
+521,PHI,102,Intro Philos,Intro Philos
+522,PHI,105,Logic,Logic
+524,PHI,202,Int Soc Pol Ph,Int Soc Pol Ph
+527,PHI,203,Ethics,Ethics
+529,PHI,207,Hst Anc Phi,Hst Anc Phi
+530,PHIL,2316,Classical Philosophy,Classical Philosophy
+533,PHI,210,Studies Philos,Studies Philos
+534,CISC,2497,Netwk Srv Supp,Netwk Srv Supp
+535,CISC,2378,Nds Dsgn Imple,Nds Dsgn Imple
+536,CISC,2496,Netwr 4 Instal,Netwr 4 Instal
+537,THE,100,Reh and Perf,Reh and Perf
+538,THE,101,Intro Theatre,Intro Theatre
+539,DRAM,1310,Theater Appreciation,Theater Appreciation
+540,THE,102,Contemp Theat,Contemp Theat
+541,DRAM,1370,Contemp Theat,Contemp Theat
+542,THE,103,Stagecraft I,Stagecraft I
+543,DRAM,1330,Stagecraft I,Stagecraft I
+545,THE,104,Stagecraft II,Stagecraft II
+546,DRAM,2331,Stagecraft II,Stagecraft II
+547,THE,105,Make-Up Stage,Make-Up Stage
+548,DRAM,1341,Stage Makeup,Stage Makeup
+549,THE,106,Acting I,Acting I
+550,DRAM,1351,Acting I,Acting I
+552,DRAM,9371,Movement Stage,Movement Stage
+557,THE,111,Hst Theatre II,Hst Theatre II
+561,THE,112,Beg Dance Thea,Beg Dance Thea
+562,DANC,1345,Beg Dance Thea,Beg Dance Thea
+563,THE,113,Inter Dance,Inter Dance
+564,DANC,1346,Inter Dance,Inter Dance
+565,THE,115,Mime,Mime
+566,DAN,116,Reh & Perf,Reh & Perf
+567,DAN,150,Beg Ballet I,Beg Ballet I
+568,DAN,151,Beg Ballet II,Beg Ballet II
+569,DAN,155,Jazz I,Jazz I
+570,DAN,156,Jazz II,Jazz II
+571,DAN,160,Intro Dan Hist,Intro Dan Hist
+572,AHIC,1270,Phar Al Hea Im,Phar Al Hea Im
+573,THE,199,Demo Lab,Demo Lab
+574,DRAM,1170,Demo Lab,Demo Lab
+575,DAN,200,Concepts II,Concepts II
+576,THE,201,Tv Prod I,Tv Prod I
+577,DRAM,2370,Tv Prod I,Tv Prod I
+578,THE,202,Tv Prod II,Tv Prod II
+580,THE,203,Brdcst Comm I,Brdcst Comm I
+581,THE,204,Brdcst Comm II,Brdcst Comm II
+582,THE,205,Scene Stud the,Scene Stud the
+583,DRAM,2351,Acting III,Acting III
+585,DRAM,2373,Intro Tech Dra,Intro Tech Dra
+586,THE,209,Light Design,Light Design
+587,DRAM,2374,Lighting Design,Lighting Design
+588,THE,235,Costume Histor,Costume Histor
+589,DAN,250,Inter Ballet I,Inter Ballet I
+590,DAN,251,Intr Ballet II,Intr Ballet II
+591,DAN,252,Coach & Repert,Coach & Repert
+593,SONO,2372,Clinic Ed I,Clinic Ed I
+594,DAN,116,Reh & Perf,Reh & Perf
+595,DANC,1151,Freshman Dance Performance,Freshman Dance Performance
+597,DAN,151,Beg Ballet II,Beg Ballet II
+598,DAN,155,Jazz I,Jazz I
+599,DANC,1147,Jazz Dance I,Jazz Dance I
+600,DAN,156,Jazz II,Jazz II
+601,DANC,1148,Jazz II,Jazz II
+602,DAN,160,Intro Dan Hist,Intro Dan Hist
+603,DANC,2303,Dance Appreciation,Dance Appreciation
+604,DAN,161,Beg Ballet I,Beg Ballet I
+605,DANC,1241,Ballet I,Ballet I
+606,ENGL,2308,Creative Writing II,Creative Writing II
