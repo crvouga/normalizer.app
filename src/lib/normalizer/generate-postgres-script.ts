@@ -1,17 +1,8 @@
 import { z } from 'zod';
 import type { LLM, Message, ToolCall, ToolDefinition } from '../llm/llm';
 import type { Logger } from '../logger';
-import type { SqlDb } from '../sql-db/sql-db';
 import { isErr } from '../result';
-
-// Define the query_database tool schema
-const queryDatabaseSchema = z.object({
-  query: z
-    .string()
-    .describe(
-      'A SQL query to execute against the database. Can be any valid PostgreSQL statement including SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, etc.',
-    ),
-});
+import type { SqlDb } from '../sql-db/sql-db';
 
 export async function generatePostgresScript({
   inputs,
@@ -27,6 +18,7 @@ export async function generatePostgresScript({
   llm: LLM;
   sqlDb: SqlDb;
   logger: Logger;
+  // msgBus: MsgBus;
 }): Promise<string> {
   logger.debug('Starting PostgreSQL script generation', {
     inputCount: inputs.length,
@@ -46,108 +38,11 @@ export async function generatePostgresScript({
     parameters: queryDatabaseSchema,
   };
 
-  const systemPrompt = `
-You are a PostgreSQL expert specializing in data normalization and schema mapping.
-
-Your task is to generate PostgreSQL scripts that create views mapping input tables to target schemas.
-
-## Context
-
-- Input tables are named: ${inputTableNames}
-- Target tables are named: ${targetTableNames}
-- Output views are named: ${outputViewNames}
-- Target tables define the desired output schema (column names, types, structure)
-- Input tables contain the source data that needs to be transformed to match the target schema
-
-## Your Goal
-
-Generate CREATE VIEW statements that transform the input data to match the target schema exactly.
-
-## IMPORTANT: You MUST use the query_database tool first
-
-Before generating any SQL script, you MUST use the query_database tool to:
-1. Inspect the schema of each input table (column names, data types)
-2. Inspect the schema of each target table (column names, data types)
-3. View sample data from input tables to understand the data format
-
-DO NOT generate SQL scripts without first inspecting the actual table structures using the query_database tool. You cannot know the column names or data types without querying the database.
-
-## Requirements
-
-1. **Schema Analysis**
-   - Carefully examine the structure of each input table
-   - Carefully examine the structure of each target table
-   - Identify column mappings between inputs and targets based on semantic meaning
-
-2. **Column Mapping**
-   - Map input columns to target columns by analyzing column names and data patterns
-   - Handle variations in naming conventions (snake_case, camelCase, PascalCase, etc.)
-   - Perform intelligent matching (e.g., "instructor_name" → "CourseInstructor")
-
-3. **Data Transformation**
-   - Apply necessary data type conversions (e.g., TEXT to INTEGER, date formatting)
-   - Handle NULL values appropriately
-   - Preserve data integrity during transformations
-
-4. **View Creation**
-   - Create one output view per input table, named: ${outputViewNames}
-   - Each view should select data from its corresponding input table (${outputViewNames} from ${inputTableNames}, etc.)
-   - The view schema must exactly match the corresponding target table schema
-   - Use the same column names, data types, and structure as the target
-
-5. **SQL Best Practices**
-   - Generate valid PostgreSQL syntax
-   - Use explicit column aliases for clarity
-   - Add comments explaining complex transformations
-   - Ensure the script is idempotent (can be run multiple times safely)
-
-## Output Format
-
-Return ONLY valid PostgreSQL SQL statements. Do not include:
-
-- Markdown code fences
-- Explanatory text before or after the SQL
-- Comments outside of SQL comments (-- or /\* \*/)
-
-Example output structure:
--- Output input_0 to match target_0 schema
-CREATE OR REPLACE VIEW ${outputViewNames[0]} AS
-SELECT
-input_column_1 AS TargetColumn1,
-input_column_2 AS TargetColumn2,
-CAST(input_column_3 AS INTEGER) AS TargetColumn3
-FROM ${inputTableNames[0]};
-
--- Output input_1 to match target_1 schema
-CREATE OR REPLACE VIEW ${outputViewNames[1]} AS
-SELECT
-different_col AS TargetColumn1,
-another_col AS TargetColumn2
-FROM ${inputTableNames[1]};
-
-## Error Handling
-
-- If a target column has no clear mapping in the input, use NULL with appropriate type casting
-- If data types are incompatible, use appropriate PostgreSQL casting functions
-- If you cannot confidently map the data, explain the issue in SQL comments
-
-## Available Tools
-
-You have access to a \`query_database\` tool that lets you execute any SQL query against the database.
-
-**CRITICAL: You MUST call query_database BEFORE generating any SQL script.**
-
-Do NOT explain what you would do. Do NOT give examples. Do NOT say you cannot access the database.
-You CAN and MUST use the query_database tool to inspect the tables.
-
-Start by calling query_database with queries like:
-- \`SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN ('input_0', 'target_0') ORDER BY table_name, ordinal_position\` - To see all column schemas
-- \`SELECT * FROM input_0 LIMIT 3\` - To see sample input data
-- \`SELECT * FROM target_0 LIMIT 1\` - To see target schema structure
-
-After inspecting the schemas with query_database, then generate the transformation script.
-
-Generate precise, executable PostgreSQL code that transforms the input data to perfectly match the target schema.`;
+  const systemPrompt = generateSystemPrompt({
+    inputTableNames,
+    targetTableNames,
+    outputViewNames,
+  });
 
   // Implement agentic loop with tool calls
   const messages: Message[] = [
@@ -383,4 +278,126 @@ async function executeToolCall(toolCall: ToolCall, sqlDb: SqlDb, logger: Logger)
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+// Define the query_database tool schema
+const queryDatabaseSchema = z.object({
+  query: z
+    .string()
+    .describe(
+      'A SQL query to execute against the database. Can be any valid PostgreSQL statement including SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, etc.',
+    ),
+});
+
+/**
+ * Generates the system prompt for PostgreSQL script generation
+ */
+function generateSystemPrompt(params: {
+  inputTableNames: string;
+  targetTableNames: string;
+  outputViewNames: string;
+}): string {
+  const { inputTableNames, targetTableNames, outputViewNames } = params;
+  return `
+You are a PostgreSQL expert specializing in data normalization and schema mapping.
+
+Your task is to generate PostgreSQL scripts that create views mapping input tables to target schemas.
+
+## Context
+
+- Input tables are named: ${inputTableNames}
+- Target tables are named: ${targetTableNames}
+- Output views are named: ${outputViewNames}
+- Target tables define the desired output schema (column names, types, structure)
+- Input tables contain the source data that needs to be transformed to match the target schema
+
+## Your Goal
+
+Generate CREATE VIEW statements that transform the input data to match the target schema exactly.
+
+## IMPORTANT: You MUST use the query_database tool first
+
+Before generating any SQL script, you MUST use the query_database tool to:
+1. Inspect the schema of each input table (column names, data types)
+2. Inspect the schema of each target table (column names, data types)
+3. View sample data from input tables to understand the data format
+
+DO NOT generate SQL scripts without first inspecting the actual table structures using the query_database tool. You cannot know the column names or data types without querying the database.
+
+## Requirements
+
+1. **Schema Analysis**
+   - Carefully examine the structure of each input table
+   - Carefully examine the structure of each target table
+   - Identify column mappings between inputs and targets based on semantic meaning
+
+2. **Column Mapping**
+   - Map input columns to target columns by analyzing column names and data patterns
+   - Handle variations in naming conventions (snake_case, camelCase, PascalCase, etc.)
+   - Perform intelligent matching (e.g., "instructor_name" → "CourseInstructor")
+
+3. **Data Transformation**
+   - Apply necessary data type conversions (e.g., TEXT to INTEGER, date formatting)
+   - Handle NULL values appropriately
+   - Preserve data integrity during transformations
+
+4. **View Creation**
+   - Create one output view per input table, named: ${outputViewNames}
+   - Each view should select data from its corresponding input table (${outputViewNames} from ${inputTableNames}, etc.)
+   - The view schema must exactly match the corresponding target table schema
+   - Use the same column names, data types, and structure as the target
+
+5. **SQL Best Practices**
+   - Generate valid PostgreSQL syntax
+   - Use explicit column aliases for clarity
+   - Add comments explaining complex transformations
+   - Ensure the script is idempotent (can be run multiple times safely)
+
+## Output Format
+
+Return ONLY valid PostgreSQL SQL statements. Do not include:
+
+- Markdown code fences
+- Explanatory text before or after the SQL
+- Comments outside of SQL comments (-- or /\* \*/)
+
+Example output structure:
+-- Output input_0 to match target_0 schema
+CREATE OR REPLACE VIEW ${outputViewNames.split(', ')[0] ?? 'output_0'} AS
+SELECT
+input_column_1 AS TargetColumn1,
+input_column_2 AS TargetColumn2,
+CAST(input_column_3 AS INTEGER) AS TargetColumn3
+FROM ${inputTableNames.split(', ')[0] ?? 'input_0'};
+
+-- Output input_1 to match target_1 schema
+CREATE OR REPLACE VIEW ${outputViewNames.split(', ')[1] ?? 'output_1'} AS
+SELECT
+different_col AS TargetColumn1,
+another_col AS TargetColumn2
+FROM ${inputTableNames.split(', ')[1] ?? 'input_1'};
+
+## Error Handling
+
+- If a target column has no clear mapping in the input, use NULL with appropriate type casting
+- If data types are incompatible, use appropriate PostgreSQL casting functions
+- If you cannot confidently map the data, explain the issue in SQL comments
+
+## Available Tools
+
+You have access to a \`query_database\` tool that lets you execute any SQL query against the database.
+
+**CRITICAL: You MUST call query_database BEFORE generating any SQL script.**
+
+Do NOT explain what you would do. Do NOT give examples. Do NOT say you cannot access the database.
+You CAN and MUST use the query_database tool to inspect the tables.
+
+Start by calling query_database with queries like:
+- \`SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN ('input_0', 'target_0') ORDER BY table_name, ordinal_position\` - To see all column schemas
+- \`SELECT * FROM input_0 LIMIT 3\` - To see sample input data
+- \`SELECT * FROM target_0 LIMIT 1\` - To see target schema structure
+
+After inspecting the schemas with query_database, then generate the transformation script.
+
+Generate precise, executable PostgreSQL code that transforms the input data to perfectly match the target schema.`;
 }
