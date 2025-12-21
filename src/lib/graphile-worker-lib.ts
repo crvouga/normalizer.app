@@ -167,7 +167,7 @@ export function getJobSchema<TJobs extends { type: string }>(
  * Type-safe function to enqueue a Graphile Worker job within a transaction
  * Uses Zod schema validation to ensure payload matches the job schema
  */
-export async function enqueueTypedJob<
+export async function enqueueJob<
   TJobs extends { type: string },
   TJobName extends ExtractJobName<TJobs>,
 >(
@@ -178,7 +178,19 @@ export async function enqueueTypedJob<
 ): Promise<void> {
   const schema = getJobSchema<TJobs>(jobsSchema, jobName);
   const validatedPayload = schema.parse(payload);
-  await enqueueJob(tx, jobName, validatedPayload);
+  const payloadJson = JSON.stringify(validatedPayload);
+  const escapedPayloadJson = payloadJson.replace(/'/g, "''");
+  try {
+    await tx.execute(
+      sql.raw(`SELECT graphile_worker.add_job('${jobName}'::text, '${escapedPayloadJson}'::json)`),
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to enqueue Graphile Worker job '${jobName}': ${errorMessage}. ` +
+        `Make sure Graphile Worker is initialized by running the worker at least once.`,
+    );
+  }
 }
 
 /**
@@ -210,25 +222,4 @@ export function createTaskList<TJobs extends { type: string }, Ctx>(
   }
 
   return taskList;
-}
-
-/**
- * Enqueue a Graphile Worker job within a transaction
- * This is a generic function that works with any job name and payload
- */
-export async function enqueueJob(tx: Tx, jobName: string, payload: unknown): Promise<void> {
-  const payloadJson = JSON.stringify(payload);
-  const escapedJson = payloadJson.replace(/'/g, "''");
-
-  try {
-    await tx.execute(
-      sql.raw(`SELECT graphile_worker.add_job('${jobName}'::text, '${escapedJson}'::json)`),
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Failed to enqueue Graphile Worker job '${jobName}': ${errorMessage}. ` +
-        `Make sure Graphile Worker is initialized by running the worker at least once.`,
-    );
-  }
 }

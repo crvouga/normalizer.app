@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import {
   createTaskList as createTaskListLib,
-  enqueueTypedJob,
+  enqueueJob as enqueueJobLib,
   type TaskHandler as TaskHandlerLib,
   type JobPayloadMap,
 } from '../lib/graphile-worker-lib';
@@ -28,12 +28,9 @@ export type TaskHandler<TJobName extends Job['type']> = TaskHandlerLib<
 >;
 
 export async function enqueueJob(tx: Tx, job: Job): Promise<void> {
-  await enqueueTypedJob(tx, Job, job.type, job);
+  await enqueueJobLib(tx, Job, job.type, job);
 }
 
-export function createTaskList(
-  ctx: { logger: Logger; db: Db },
-  handlers: { [K in Job['type']]: TaskHandler<K> },
-) {
+export function createTaskList(ctx: JobCtx, handlers: { [K in Job['type']]: TaskHandler<K> }) {
   return createTaskListLib<Job, JobCtx>(Job, ctx, handlers);
 }
