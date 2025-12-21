@@ -44,7 +44,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-export.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
       format: 'csv',
@@ -97,7 +97,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-export.xlsx';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
       format: 'excel',
@@ -147,7 +147,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-export.parquet';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
       format: 'parquet',
@@ -194,7 +194,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-export.json';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
       format: 'json',
@@ -295,7 +295,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-data-match.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
       format: 'csv',
@@ -335,7 +335,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-file-exists.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -377,7 +377,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
 
     const exportKey = 'test-row-count.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });

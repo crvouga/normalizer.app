@@ -70,9 +70,21 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     );
 
     const batchResult = await exporter.exportBatch([
-      { tableName: tableName1, bucket: TEST_BUCKET, key: 'test-batch-1.csv' },
-      { tableName: tableName2, bucket: TEST_BUCKET, key: 'test-batch-2.csv' },
-      { tableName: tableName3, bucket: TEST_BUCKET, key: 'test-batch-3.csv' },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-1.csv',
+      },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-2.csv',
+      },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName3)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-3.csv',
+      },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -164,9 +176,21 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     );
 
     const batchResult = await exporter.exportBatch([
-      { tableName: tableName1, bucket: TEST_BUCKET, key: 'test-batch-mix-1.csv' },
-      { tableName: 'non_existent_table', bucket: TEST_BUCKET, key: 'test-batch-mix-fail.csv' },
-      { tableName: tableName2, bucket: TEST_BUCKET, key: 'test-batch-mix-2.csv' },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-mix-1.csv',
+      },
+      {
+        query: 'SELECT * FROM non_existent_table',
+        bucket: TEST_BUCKET,
+        key: 'test-batch-mix-fail.csv',
+      },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-mix-2.csv',
+      },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -247,15 +271,20 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     );
 
     const batchResult = await exporter.exportBatch([
-      { tableName: tableName1, bucket: TEST_BUCKET, key: 'test-batch-format-1.csv', format: 'csv' },
       {
-        tableName: tableName2,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-format-1.csv',
+        format: 'csv',
+      },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
         bucket: TEST_BUCKET,
         key: 'test-batch-format-2.xlsx',
         format: 'excel',
       },
       {
-        tableName: tableName3,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName3)}`,
         bucket: TEST_BUCKET,
         key: 'test-batch-format-3.json',
         format: 'json',
@@ -321,7 +350,11 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     );
 
     const batchResult = await exporter.exportBatch([
-      { tableName, bucket: TEST_BUCKET, key: 'test-batch-mixed-table.csv' },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-mixed-table.csv',
+      },
       {
         query: `SELECT name, value FROM ${postgresClient.escapeIdentifier(tableName)} WHERE value::integer > 15`,
         bucket: TEST_BUCKET,
@@ -381,7 +414,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       exportKeys.push(exportKey);
 
       requests.push({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
       });
@@ -413,9 +446,9 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     const { exporter } = fixtures;
 
     const batchResult = await exporter.exportBatch([
-      { tableName: 'non_existent_1', bucket: TEST_BUCKET, key: 'test-fail-1.csv' },
-      { tableName: 'non_existent_2', bucket: TEST_BUCKET, key: 'test-fail-2.csv' },
-      { tableName: 'non_existent_3', bucket: TEST_BUCKET, key: 'test-fail-3.csv' },
+      { query: 'SELECT * FROM non_existent_1', bucket: TEST_BUCKET, key: 'test-fail-1.csv' },
+      { query: 'SELECT * FROM non_existent_2', bucket: TEST_BUCKET, key: 'test-fail-2.csv' },
+      { query: 'SELECT * FROM non_existent_3', bucket: TEST_BUCKET, key: 'test-fail-3.csv' },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -470,8 +503,16 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
 
     const startTime = Date.now();
     const batchResult = await exporter.exportBatch([
-      { tableName: tableName1, bucket: TEST_BUCKET, key: 'test-batch-stats-1.csv' },
-      { tableName: tableName2, bucket: TEST_BUCKET, key: 'test-batch-stats-2.csv' },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-stats-1.csv',
+      },
+      {
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
+        bucket: TEST_BUCKET,
+        key: 'test-batch-stats-2.csv',
+      },
     ]);
     const endTime = Date.now();
 
@@ -521,7 +562,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     );
 
     const request = {
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: 'test-batch-context.csv',
       format: 'csv' as const,
@@ -533,7 +574,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     const itemResult = batchResult.results[0]!;
 
     // Verify request context is preserved
-    expect(itemResult.request.tableName).toBe(request.tableName);
+    expect(itemResult.request.query).toBe(request.query);
     expect(itemResult.request.bucket).toBe(request.bucket);
     expect(itemResult.request.key).toBe(request.key);
     expect(itemResult.request.format).toBe(request.format);

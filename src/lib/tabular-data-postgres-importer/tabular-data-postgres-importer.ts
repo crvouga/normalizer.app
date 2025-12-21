@@ -9,7 +9,7 @@ import { TabularDataConverter } from '../tabular-data-converter/tabular-data-con
 /**
  * Request for a single batch import operation
  */
-export interface BatchImportRequest {
+export interface ImportRequest {
   /**
    * Object store bucket name
    */
@@ -41,7 +41,7 @@ export interface BatchImportItemResult {
   /**
    * The original request
    */
-  request: BatchImportRequest;
+  request: ImportRequest;
   /**
    * Import result - success with table name and row count, or error message
    */
@@ -250,7 +250,7 @@ export class TabularDataPostgresImporter {
    * @param requests - Array of batch import requests, each specifying a file location and table options
    * @returns BatchImportResult containing individual results and summary statistics
    */
-  async importBatch(requests: BatchImportRequest[]): Promise<BatchImportResult> {
+  async importBatch(requests: ImportRequest[]): Promise<BatchImportResult> {
     const startTime = Date.now();
     this.logger.info('Starting batch import', { requestCount: requests.length });
 
@@ -290,7 +290,7 @@ export class TabularDataPostgresImporter {
    * Import a single file with request context for batch operations
    */
   private async importSingleWithRequest(
-    request: BatchImportRequest,
+    request: ImportRequest,
   ): Promise<Result<{ tableName: string; rowCount: number }, string>> {
     const options: { viewName: string; dropIfExists?: boolean; truncate?: boolean } = {
       viewName: request.viewName,
@@ -314,7 +314,7 @@ export class TabularDataPostgresImporter {
    * Build batch results from settled promises
    */
   private buildBatchResults(
-    requests: BatchImportRequest[],
+    requests: ImportRequest[],
     settledResults: PromiseSettledResult<Result<{ tableName: string; rowCount: number }, string>>[],
   ): BatchImportItemResult[] {
     return requests.map((request, index) => {

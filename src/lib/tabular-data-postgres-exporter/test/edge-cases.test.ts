@@ -47,7 +47,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-special-chars.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -91,7 +91,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-null-values.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -140,7 +140,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-empty-strings.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -187,7 +187,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-large-text.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -229,7 +229,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-many-columns.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -396,7 +396,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
 
     const exportKey = 'test-quoted-values.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });

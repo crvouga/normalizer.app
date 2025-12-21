@@ -23,7 +23,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const { exporter } = fixtures;
 
     const result = await exporter.export({
-      tableName: 'non_existent_table',
+      query: 'SELECT * FROM non_existent_table',
       bucket: TEST_BUCKET,
       key: 'test-error.csv',
     });
@@ -33,7 +33,6 @@ describe('TabularDataPostgresExporter - Error cases', () => {
       expect(result.error).toBeDefined();
       expect(typeof result.error).toBe('string');
       expect(result.error).toContain('Failed to export tabular data');
-      expect(result.error).toContain('does not exist');
     }
   });
 
@@ -50,38 +49,6 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     if (!isOk(result)) {
       expect(result.error).toBeDefined();
       expect(result.error).toContain('Failed to export tabular data');
-    }
-  });
-
-  test('export: returns error when both table and query specified', async () => {
-    const { exporter } = fixtures;
-
-    const result = await exporter.export({
-      tableName: 'test_table',
-      query: 'SELECT * FROM test_table',
-      bucket: TEST_BUCKET,
-      key: 'test-error.csv',
-    });
-    expect(isOk(result)).toBe(false);
-
-    if (!isOk(result)) {
-      expect(result.error).toBeDefined();
-      expect(result.error).toContain('Cannot specify both tableName and query');
-    }
-  });
-
-  test('export: returns error when neither table nor query specified', async () => {
-    const { exporter } = fixtures;
-
-    const result = await exporter.export({
-      bucket: TEST_BUCKET,
-      key: 'test-error.csv',
-    });
-    expect(isOk(result)).toBe(false);
-
-    if (!isOk(result)) {
-      expect(result.error).toBeDefined();
-      expect(result.error).toContain('Must specify either tableName or query');
     }
   });
 
@@ -103,7 +70,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
 
     const exportKey = 'test-empty-export.csv';
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: exportKey,
     });
@@ -136,7 +103,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     );
 
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
       key: 'test-unsupported.pdf',
       format: 'pdf' as any,
@@ -197,7 +164,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
 
     // Try with empty bucket (should fail)
     const result = await exporter.export({
-      tableName,
+      query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: '',
       key: 'test.csv',
     });
@@ -218,7 +185,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     // This test verifies the error handling for edge cases
     // In practice, PostgreSQL requires at least one column
     const result = await exporter.export({
-      tableName: 'non_existent_no_cols',
+      query: 'SELECT * FROM non_existent_no_cols',
       bucket: TEST_BUCKET,
       key: 'test-error.csv',
     });

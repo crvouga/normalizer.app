@@ -6,10 +6,15 @@ import { Err, isErr, isOk, Ok, type Result } from '~/src/lib/result';
 import type { SqlDb } from '~/src/lib/sql-db/sql-db';
 import {
   createTabularDataPostgresImporter,
-  type BatchImportRequest,
   type BatchImportResult,
+  type ImportRequest,
 } from '~/src/lib/tabular-data-postgres-importer/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
+import {
+  createTabularDataPostgresExporter,
+  type BatchExportResult,
+  type ExportRequest,
+} from '../tabular-data-postgres-exporter/tabular-data-postgres-exporter';
 import { generatePostgresScript } from './generate-postgres-script';
 
 export class Normalizer {
@@ -87,10 +92,20 @@ export class Normalizer {
       return Err('No Postgres script generated');
     }
 
-    const result = await sqlDb.unsafe(generated.postgresScript);
-    if (isErr(result)) {
-      this.logger.error('Failed to execute Postgres script', { error: result.error });
-      return Err(`Failed to execute Postgres script: ${result.error}`);
+    const executed = await sqlDb.unsafe(generated.postgresScript);
+    if (isErr(executed)) {
+      this.logger.error('Failed to execute Postgres script', { error: executed.error });
+      return Err(`Failed to execute Postgres script: ${executed.error}`);
+    }
+
+    const exported = await this.exportTabularData({
+      sqlDb,
+      outputs,
+    });
+
+    if (isErr(exported.result)) {
+      this.logger.error('Failed to export tabular data', { error: exported.result.error });
+      return Err(`Failed to export tabular data: ${exported.result.error}`);
     }
 
     // Read all inputs using batch operation
@@ -192,48 +207,59 @@ export class Normalizer {
       objectStore: this.objectStore,
     });
 
-    const batchRequests: BatchImportRequest[] = [
-      ...inputs.map((objLoc) => ({
-        bucket: objLoc.bucket,
-        key: objLoc.key,
-        viewName: objLoc.viewName,
-        dropIfExists: true,
-      })),
-      ...targets.map((objLoc) => ({
-        bucket: objLoc.bucket,
-        key: objLoc.key,
-        viewName: objLoc.viewName,
-        dropIfExists: true,
-      })),
+    const importRequests: ImportRequest[] = [
+      ...inputs.map(
+        (objLoc): ImportRequest => ({
+          bucket: objLoc.bucket,
+          key: objLoc.key,
+          viewName: objLoc.viewName,
+          dropIfExists: true,
+        }),
+      ),
+      ...targets.map(
+        (objLoc): ImportRequest => ({
+          bucket: objLoc.bucket,
+          key: objLoc.key,
+          viewName: objLoc.viewName,
+          dropIfExists: true,
+        }),
+      ),
     ];
 
-    return await tabularDataPostgresImporter.importBatch(batchRequests);
+    const result = await tabularDataPostgresImporter.importBatch(importRequests);
+
+    return result;
   }
 
-  // /**
-  //  * Exports tabular data from PostgreSQL tables to output object locations.
-  //  */
-  // private async exportTabularData(params: {
-  //   sqlDb: SqlDb;
-  //   outputs: (ObjectLocation & { viewName: string })[];
-  // }): Promise<BatchImportResult> {
-  //   const { sqlDb, outputs } = params;
-  //   const tabularDataPostgresImporter = createTabularDataPostgresImporter({
-  //     sql: sqlDb,
-  //     logger: this.logger,
-  //     objectStore: this.objectStore,
-  //   });
+  /**
+   * Imports tabular data from inputs and targets into PostgreSQL tables.
+   */
+  private async exportTabularData(params: {
+    sqlDb: SqlDb;
+    outputs: (ObjectLocation & { viewName: string })[];
+  }): Promise<BatchExportResult> {
+    const { sqlDb, outputs } = params;
+    const tabularDataPostgresExporter = createTabularDataPostgresExporter({
+      sql: sqlDb,
+      logger: this.logger,
+      objectStore: this.objectStore,
+    });
 
-  //   const batchRequests: BatchImportRequest[] = outputs.map((objLoc) => ({
-  //     bucket: objLoc.bucket,
-  //     key: objLoc.key,
-  //     viewName: objLoc.viewName,
-  //     direction: 'export' as const, // Explicitly marks export direction if the importer supports it
-  //     dropIfExists: false,
-  //   }));
+    const exportRequests: ExportRequest[] = [
+      ...outputs.map(
+        (objLoc): ExportRequest => ({
+          bucket: objLoc.bucket,
+          key: objLoc.key,
+          format: 'csv',
+          query: `SELECT * FROM ${objLoc.viewName}`,
+        }),
+      ),
+    ];
 
-  //   return await tabularDataPostgresImporter.exportBatch(batchRequests);
-  // }
+    const result = await tabularDataPostgresExporter.exportBatch(exportRequests);
+
+    return result;
+  }
 
   /**
    * Determines how many outputs should be produced from the given inputs and targets.

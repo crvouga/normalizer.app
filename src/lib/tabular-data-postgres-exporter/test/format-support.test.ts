@@ -44,7 +44,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-csv-format.csv';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'csv',
@@ -90,7 +90,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-csv-types.csv';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'csv',
@@ -135,7 +135,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-xlsx-format.xlsx';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'excel',
@@ -180,7 +180,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-xlsx-roundtrip.xlsx';
       const exportResult = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'excel',
@@ -223,7 +223,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-parquet-format.parquet';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'parquet',
@@ -268,7 +268,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-json-format.json';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'json',
@@ -315,7 +315,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
 
       const exportKey = 'test-json-empty.json';
       const result = await exporter.export({
-        tableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'json',
@@ -366,7 +366,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       // Export to CSV
       const exportKey = 'test-roundtrip.csv';
       const exportResult = await exporter.export({
-        tableName: sourceTableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(sourceTableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'csv',
@@ -417,7 +417,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       // Export to JSON
       const exportKey = 'test-roundtrip.json';
       const exportResult = await exporter.export({
-        tableName: sourceTableName,
+        query: `SELECT * FROM ${postgresClient.escapeIdentifier(sourceTableName)}`,
         bucket: TEST_BUCKET,
         key: exportKey,
         format: 'json',
