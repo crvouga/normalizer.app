@@ -2,7 +2,7 @@ import type { LLM } from '~/src/lib/llm/llm';
 import type { Logger } from '~/src/lib/logger';
 import type { ObjectLocation } from '~/src/lib/object-store/object-location';
 import type { ObjectStore } from '~/src/lib/object-store/object-store';
-import { Err, isErr, isOk, Ok, type Result } from '~/src/lib/result';
+import { Err, isErr, Ok, type Result } from '~/src/lib/result';
 import type { SqlDb } from '~/src/lib/sql-db/sql-db';
 import {
   createTabularDataPostgresImporter,
@@ -10,6 +10,7 @@ import {
   type ImportRequest,
 } from '~/src/lib/tabular-data-postgres-importer/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
+import { getFormatFromKey, type TabularFormat } from '../tabular-data-format/tabular-data-format';
 import {
   createTabularDataPostgresExporter,
   type BatchExportResult,
@@ -98,96 +99,18 @@ export class Normalizer {
       return Err(`Failed to execute Postgres script: ${executed.error}`);
     }
 
+    const format = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
+
     const exported = await this.exportTabularData({
       sqlDb,
       outputs,
+      exportFormat: format,
     });
 
     if (isErr(exported.result)) {
       this.logger.error('Failed to export tabular data', { error: exported.result.error });
       return Err(`Failed to export tabular data: ${exported.result.error}`);
     }
-
-    // Read all inputs using batch operation
-    const inputsReadResult = await this.objectStore.readMany(params.inputs);
-    if (!isOk(inputsReadResult)) {
-      this.logger.error('Failed to read input objects', { error: inputsReadResult.error });
-      return Err(`Failed to read input objects: ${inputsReadResult.error}`);
-    }
-
-    const inputData: Array<{ location: ObjectLocation; data: Buffer }> = [];
-    for (const item of inputsReadResult.value) {
-      if (item.data === null) {
-        this.logger.error('Failed to read input object', { objectKey: item.key });
-        return Err(`Failed to read input object ${item.key}: object not found`);
-      }
-
-      inputData.push({ location: { bucket: item.bucket, key: item.key }, data: item.data });
-    }
-
-    // Read all targets using batch operation
-    const targetsReadResult = await this.objectStore.readMany(params.targets);
-    if (!isOk(targetsReadResult)) {
-      this.logger.error('Failed to read target objects', { error: targetsReadResult.error });
-      return Err(`Failed to read target objects: ${targetsReadResult.error}`);
-    }
-
-    const targetData: Array<{ location: ObjectLocation; data: Buffer }> = [];
-    for (const item of targetsReadResult.value) {
-      if (item.data === null) {
-        this.logger.error('Failed to read target object', { objectKey: item.key });
-        return Err(`Failed to read target object ${item.key}: object not found`);
-      }
-
-      targetData.push({ location: { bucket: item.bucket, key: item.key }, data: item.data });
-    }
-
-    // Determine number of outputs and process them
-    const numberOfOutputs = this.determineNumberOfOutputs(inputData, targetData);
-
-    // Extract extension from first target or input for naming
-    const extension = this.getExtension(params.targets[0]?.key || params.inputs[0]?.key || '');
-
-    // Process all outputs and prepare write entries
-    const writeEntries: Array<ObjectLocation & { data: Buffer }> = [];
-    for (let i = 0; i < numberOfOutputs; i++) {
-      const outputKey = `${params.outputObjectKeyPrefix}${i}${extension}`;
-
-      // Process inputs and targets to produce output data
-      const outputDataResult = this.processOutput(inputData, targetData, i);
-      if (!isOk(outputDataResult)) {
-        this.logger.error('Failed to process output', {
-          outputIndex: i,
-          error: outputDataResult.error,
-        });
-        return Err(`Failed to process output ${i}: ${outputDataResult.error}`);
-      }
-
-      writeEntries.push({
-        bucket: params.outputObjectBucket,
-        key: outputKey,
-        data: outputDataResult.value,
-      });
-    }
-
-    // Write all outputs using batch operation
-    const writeResult = await this.objectStore.writeMany(writeEntries);
-    if (!isOk(writeResult)) {
-      this.logger.error('Failed to write output objects', { error: writeResult.error });
-      return Err(`Failed to write output objects: ${writeResult.error}`);
-    }
-
-    const outputLocations = writeResult.value;
-
-    this.logger.debug('Successfully created all outputs', {
-      outputCount: outputLocations.length,
-    });
-
-    this.logger.debug('Normalization completed', {
-      inputCount: params.inputs.length,
-      targetCount: params.targets.length,
-      outputCount: outputs.length,
-    });
 
     return Ok({ outputs });
   }
@@ -237,8 +160,9 @@ export class Normalizer {
   private async exportTabularData(params: {
     sqlDb: SqlDb;
     outputs: (ObjectLocation & { viewName: string })[];
+    exportFormat: TabularFormat;
   }): Promise<BatchExportResult> {
-    const { sqlDb, outputs } = params;
+    const { sqlDb, outputs, exportFormat } = params;
     const tabularDataPostgresExporter = createTabularDataPostgresExporter({
       sql: sqlDb,
       logger: this.logger,
@@ -250,7 +174,7 @@ export class Normalizer {
         (objLoc): ExportRequest => ({
           bucket: objLoc.bucket,
           key: objLoc.key,
-          format: 'csv',
+          format: exportFormat,
           query: `SELECT * FROM ${objLoc.viewName}`,
         }),
       ),
@@ -259,61 +183,6 @@ export class Normalizer {
     const result = await tabularDataPostgresExporter.exportBatch(exportRequests);
 
     return result;
-  }
-
-  /**
-   * Determines how many outputs should be produced from the given inputs and targets.
-   * Default implementation: produces one output per input.
-   * Override this method to implement custom normalization logic.
-   */
-  protected determineNumberOfOutputs(
-    inputData: Array<{ location: ObjectLocation; data: Buffer }>,
-    targetData: Array<{ location: ObjectLocation; data: Buffer }>,
-  ): number {
-    // Default: one output per input
-    // This can be overridden to implement custom normalization logic
-    // Note: targetData is available for custom implementations
-    void targetData;
-    return inputData.length > 0 ? inputData.length : 1;
-  }
-
-  /**
-   * Processes input and target data to produce output data for a given output index.
-   * Default implementation: clones the input data at the given index.
-   * Override this method to implement custom normalization logic.
-   */
-  protected processOutput(
-    inputData: Array<{ location: ObjectLocation; data: Buffer }>,
-    targetData: Array<{ location: ObjectLocation; data: Buffer }>,
-    outputIndex: number,
-  ): Result<Buffer, string> {
-    // Default: clone the input data at the output index
-    // This can be overridden to implement custom normalization logic
-    // Note: targetData is available for custom implementations
-    void targetData;
-
-    if (inputData.length === 0) {
-      return Err('No input data available to process');
-    }
-
-    const inputIndex = outputIndex % inputData.length;
-    const input = inputData[inputIndex];
-    if (!input) {
-      return Err(`Input data at index ${inputIndex} is undefined`);
-    }
-
-    return Ok(input.data);
-  }
-
-  /**
-   * Extracts file extension from an object key.
-   */
-  private getExtension(key: string): string {
-    const lastDot = key.lastIndexOf('.');
-    if (lastDot === -1 || lastDot === key.length - 1) {
-      return '';
-    }
-    return key.substring(lastDot);
   }
 }
 

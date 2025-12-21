@@ -13,7 +13,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const llm = createLLMOpenAI({ logger, model: 'gpt-5-nano' });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
-  test.skip(
+  test(
     'normalize: should be implemented',
     async () => {
       const targetFile = [

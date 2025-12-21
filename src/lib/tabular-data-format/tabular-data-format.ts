@@ -167,3 +167,13 @@ export function isValidFormat(format: TabularFormat | (string & {})): boolean {
 export function getAllFormats(): readonly TabularFormat[] {
   return Object.keys(FORMAT_REGISTRY) as TabularFormat[];
 }
+
+/**
+ * Get the format from a key
+ * @param key - The key to get the format from
+ * @returns The format
+ */
+export function getFormatFromKey(key: string): TabularFormat {
+  const extension = getExtension(key.split('.').pop() ?? '');
+  return normalizeFormat(extension) ?? 'csv';
+}
