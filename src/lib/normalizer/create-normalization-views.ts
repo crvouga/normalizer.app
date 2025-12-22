@@ -5,6 +5,10 @@ import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 
+/**
+ * Create normalization views that transform input tables to match target schemas.
+ * Uses an agentic loop with the LLM and a SQL tool for iterative view creation.
+ */
 export async function createNormalizationViews({
   inputs,
   targets,
@@ -20,50 +24,22 @@ export async function createNormalizationViews({
   sqlDb: SqlDb;
   logger: Logger;
 }): Promise<Result<null, string>> {
-  logger.debug('Starting normalization view creation', {
+  logger.info('Starting normalization view creation', {
     inputCount: inputs.length,
     targetCount: targets.length,
     outputCount: outputs.length,
+    inputTableNames: inputs.map((input) => input.viewName),
+    targetTableNames: targets.map((target) => target.viewName),
+    outputViewNames: outputs.map((output) => output.viewName),
   });
 
   const inputTableNames = inputs.map((input) => input.viewName);
   const targetTableNames = targets.map((target) => target.viewName);
   const outputViewNames = outputs.map((output) => output.viewName);
+  const queryDatabaseTool = createQueryDatabaseTool({ sqlDb, logger });
+  const systemPrompt = createSystemPrompt({ inputTableNames, targetTableNames, outputViewNames });
 
-  const queryDatabaseSchema = z.object({
-    query: z
-      .string()
-      .describe(
-        'A SQL query to execute against the database. Can be SELECT queries to inspect schemas, or CREATE/DROP/ALTER statements to create views, materialized views, tables, indexes, etc.',
-      ),
-  });
-
-  const queryDatabaseTool: ExecutableTool = {
-    name: 'query_database',
-    description:
-      'Execute a SQL query (SELECT to inspect, CREATE to change the schema) against the PostgreSQL database.',
-    parameters: queryDatabaseSchema,
-    async execute(args: unknown) {
-      const query = queryDatabaseSchema.parse(args).query.trim();
-      const result = await sqlDb.unsafe(query);
-      if (isErr(result)) {
-        return JSON.stringify({ error: result.error });
-      }
-      if (Array.isArray(result.value)) {
-        return JSON.stringify({ rows: result.value });
-      }
-      if (result.value && typeof result.value === 'object' && 'rowCount' in result.value) {
-        return JSON.stringify({ rowCount: result.value.rowCount });
-      }
-      return JSON.stringify({ result: result.value });
-    },
-  };
-
-  const systemPrompt = toSystemPrompt({
-    inputTableNames,
-    targetTableNames,
-    outputViewNames,
-  });
+  logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
 
   const loopResult = await runAgenticLoop({
     llm,
@@ -80,28 +56,6 @@ export async function createNormalizationViews({
     ],
     tools: [queryDatabaseTool],
     logger,
-    shouldContinue(_message, iteration) {
-      if (iteration === 0) {
-        return {
-          shouldContinue: true,
-          followUpMessage:
-            "You MUST use the query_database tool to inspect the table schemas. I cannot proceed without knowing the actual column names and data types. Please call query_database with queries like: \"SELECT column_name, data_type FROM information_schema.columns WHERE table_name IN ('input_0', 'target_0') ORDER BY table_name, ordinal_position\" to see the schemas.",
-        };
-      }
-
-      if (iteration === 1) {
-        return {
-          shouldContinue: true,
-          followUpMessage:
-            'You need to use the query_database tool NOW. Do not explain or give examples. Call the tool with a SELECT query to inspect the tables. Start with: query_database({"query": "SELECT * FROM input_0 LIMIT 1"})',
-        };
-      }
-
-      logger.debug('No tool calls detected, assuming database objects have been created', {
-        iteration: iteration + 1,
-      });
-      return { shouldContinue: false };
-    },
   });
 
   if (isErr(loopResult)) {
@@ -109,14 +63,18 @@ export async function createNormalizationViews({
     return Err(loopResult.error);
   }
 
-  logger.debug('Normalization views created successfully');
+  logger.info('Normalization views created successfully', {
+    iterations: loopResult.value.iterations,
+    completedNormally: loopResult.value.completedNormally,
+  });
+
   return Ok(null);
 }
 
 /**
  * Generates the system prompt for normalization view creation
  */
-function toSystemPrompt(params: {
+function createSystemPrompt(params: {
   inputTableNames: string[];
   targetTableNames: string[];
   outputViewNames: string[];
@@ -141,4 +99,60 @@ Map input columns to target columns intelligently (handle naming variations, typ
 IMPORTANT: PostgreSQL converts unquoted identifiers to lowercase. You MUST use double quotes around ALL column aliases to preserve their case exactly as they appear in the target table. For example: SELECT col AS "MixedCaseColumn" (not AS MixedCaseColumn).
 
 Create all necessary database objects directly in the database using the query_database tool.`;
+}
+
+/**
+ * Creates the query_database tool with logging of executed queries and errors.
+ */
+function createQueryDatabaseTool({
+  sqlDb,
+  logger,
+}: {
+  sqlDb: SqlDb;
+  logger: Logger;
+}): ExecutableTool {
+  const queryDatabaseSchema = z.object({
+    query: z
+      .string()
+      .describe(
+        'A SQL query to execute against the database. Can be SELECT queries to inspect schemas, or CREATE/DROP/ALTER statements to create views, materialized views, tables, indexes, etc.',
+      ),
+  });
+
+  const queryDatabaseTool: ExecutableTool = {
+    name: 'query_database',
+    description:
+      'Execute a SQL query (SELECT to inspect, CREATE to change the schema) against the PostgreSQL database.',
+    parameters: queryDatabaseSchema,
+    async execute(args) {
+      const { query } = queryDatabaseSchema.parse(args);
+      try {
+        logger.debug('Executing query_database tool', { query });
+        const result = await sqlDb.unsafe(query.trim());
+        if (isErr(result)) {
+          logger.warn('query_database tool error', { query, error: result.error });
+          return JSON.stringify({ error: result.error });
+        }
+        if (Array.isArray(result.value)) {
+          logger.debug('query_database tool returned rows', { rowCount: result.value.length });
+          return JSON.stringify({ rows: result.value });
+        }
+        if (result.value && typeof result.value === 'object' && 'rowCount' in result.value) {
+          logger.debug('query_database tool result has rowCount', {
+            rowCount: result.value.rowCount,
+          });
+          return JSON.stringify({ rowCount: result.value.rowCount });
+        }
+        logger.debug('query_database tool returned generic result', { result: result.value });
+        return JSON.stringify({ result: result.value });
+      } catch (err) {
+        const errMsg =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+        logger.error('Exception in query_database tool', { error: errMsg, query });
+        return JSON.stringify({ error: errMsg });
+      }
+    },
+  };
+
+  return queryDatabaseTool;
 }
