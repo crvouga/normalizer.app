@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { runAgenticLoop, type ExecutableTool } from '../llm/agentic-loop';
+import { AgenticLoop, type ExecutableTool } from '../llm/agentic-loop';
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
@@ -41,8 +41,13 @@ export async function createNormalizationViews({
 
   logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
 
-  const loopResult = await runAgenticLoop({
+  const agentLoop = new AgenticLoop({
     llm,
+    logger,
+  });
+
+  const ran = await agentLoop.run({
+    tools: [queryDatabaseTool],
     initialMessages: [
       {
         role: 'system',
@@ -54,18 +59,18 @@ export async function createNormalizationViews({
           'First, use the query_database tool with SELECT queries to inspect the schemas of the input and target tables. Then create the output views (or materialized views, tables, indexes, etc. as needed) directly using CREATE statements executed via the query_database tool.',
       },
     ],
-    tools: [queryDatabaseTool],
-    logger,
   });
 
-  if (isErr(loopResult)) {
-    logger.error('Failed to create normalization views', { error: loopResult.error });
-    return Err(loopResult.error);
+  if (isErr(ran)) {
+    logger.error('Failed to create normalization views', { error: ran.error });
+    return Err(ran.error);
   }
 
   logger.info('Normalization views created successfully', {
-    iterations: loopResult.value.iterations,
-    completedNormally: loopResult.value.completedNormally,
+    stepNumber: ran.value.stepNumber,
+    phase: ran.value.phase,
+    completedNormally: ran.value.completedNormally,
+    budgetUsed: ran.value.budgetUsed,
   });
 
   return Ok(null);
