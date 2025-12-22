@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createObjectStore } from '~/src/shared/s3';
-import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
+import { createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
 import { createLogger } from '../logger';
 import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
@@ -10,7 +10,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
-  const llm = createLLMOpenAI({ logger, model: CHEAPEST_MODEL });
+  const llm = createLLMOpenAI({ logger, model: 'gpt-5' });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   test(
@@ -80,6 +80,88 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
           targets: [targetWriteResult],
           inputs: [inputWriteResult],
           outputObjectKeyPrefix: 'files/normalized/',
+          outputObjectBucket: testBucket,
+        }),
+      );
+      const outputRead = unwrap(
+        await objectStore.read({
+          bucket: testBucket,
+          key: normalized.outputs[0]!.key,
+        }),
+      );
+      const actualOutputFile = fromJsonBuffer(outputRead);
+      expect(actualOutputFile).toEqual(expectedOutputFile);
+    },
+    Infinity,
+  );
+
+  test(
+    'normalize: should be implemented 2',
+    async () => {
+      const targetFile = [
+        {
+          CourseSubject: 'MATH',
+          CourseNumber: '101',
+          CourseName: 'Introduction to Mathematics',
+          CourseDescription: 'This is a description of the course',
+          CourseInstructor: 'John Doe',
+          CourseInstructorEmail: 'john.doe@example.com',
+          CourseInstructorPhone: '123-456-7890',
+          CourseInstructorOffice: '123 Main St, Anytown, USA',
+          CourseInstructorOfficeHours: '10:00-11:00',
+        },
+      ];
+      type Target = (typeof targetFile)[number];
+      const inputFile = [
+        {
+          id: 'ENG 101',
+          title: 'Introduction to English',
+          description: 'This is a description of the course',
+          instructor_id: '1234567890',
+          instructor_name: 'Jane Doe',
+          instructor_email: 'jane.doe@example.com',
+          instructor_phone: '098-765-4321',
+          instructor_office: '456 Main St, Anytown, USA',
+          instructor_office_hours: '12:00-13:00',
+        },
+      ];
+      const expectedOutputFile: Target[] = [
+        {
+          CourseSubject: 'ENG',
+          CourseNumber: '101',
+          CourseName: 'Introduction to English',
+          CourseDescription: 'This is a description of the course',
+          CourseInstructor: 'Jane Doe',
+          CourseInstructorEmail: 'jane.doe@example.com',
+          CourseInstructorPhone: '098-765-4321',
+          CourseInstructorOffice: '456 Main St, Anytown, USA',
+          CourseInstructorOfficeHours: '12:00-13:00',
+        },
+      ];
+      logger.debug('expectedOutputFile', {
+        expectedOutputFile: JSON.stringify(expectedOutputFile),
+      });
+      const targetWriteResult = unwrap(
+        await objectStore.write({
+          bucket: testBucket,
+          key: 'files/target-1.json',
+          data: intoJsonBuffer(targetFile),
+          contentType: 'application/json',
+        }),
+      );
+      const inputWriteResult = unwrap(
+        await objectStore.write({
+          bucket: testBucket,
+          key: 'files/input-1.json',
+          data: intoJsonBuffer(inputFile),
+          contentType: 'application/json',
+        }),
+      );
+      const normalized = unwrap(
+        await normalizer.normalize({
+          targets: [targetWriteResult],
+          inputs: [inputWriteResult],
+          outputObjectKeyPrefix: 'files/normalized-1/',
           outputObjectBucket: testBucket,
         }),
       );
