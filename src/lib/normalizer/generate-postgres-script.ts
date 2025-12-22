@@ -322,5 +322,7 @@ Tables:
 
 Use query_database to inspect actual schemas and data. Map input columns to target columns intelligently (handle naming variations, type conversions, NULLs as needed).
 
+IMPORTANT: PostgreSQL converts unquoted identifiers to lowercase. You MUST use double quotes around ALL column aliases to preserve their case exactly as they appear in the target table. For example: SELECT col AS "MixedCaseColumn" (not AS MixedCaseColumn).
+
 Output: Return ONLY valid PostgreSQL SQL statements. No markdown code fences, no explanatory text outside SQL comments.`;
 }

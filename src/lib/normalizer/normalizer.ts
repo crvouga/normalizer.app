@@ -10,7 +10,11 @@ import {
   type ImportRequest,
 } from '~/src/lib/tabular-data-postgres-importer/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
-import { getFormatFromKey, type TabularFormat } from '../tabular-data-format/tabular-data-format';
+import {
+  getExtension,
+  getFormatFromKey,
+  type TabularFormat,
+} from '../tabular-data-format/tabular-data-format';
 import {
   createTabularDataPostgresExporter,
   type BatchExportResult,
@@ -43,16 +47,19 @@ export class Normalizer {
 
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
 
-    const inputs = params.inputs.map((objLoc, index) => ({
+    const inputs = params.inputs.map((objLoc, index): ObjectLocation & { viewName: string } => ({
       ...objLoc,
       viewName: `input_${index}`,
     }));
-    const targets = params.targets.map((objLoc, index) => ({
+    const targets = params.targets.map((objLoc, index): ObjectLocation & { viewName: string } => ({
       ...objLoc,
       viewName: `target_${index}`,
     }));
-    const outputs = params.targets.map((objLoc, index) => ({
-      ...objLoc,
+    const exportFormat = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
+    const exportExtension = getExtension(exportFormat);
+    const outputs = params.targets.map((_, index): ObjectLocation & { viewName: string } => ({
+      key: `${params.outputObjectKeyPrefix}output_${index}.${exportExtension}`,
+      bucket: params.outputObjectBucket,
       viewName: `output_${index}`,
     }));
 

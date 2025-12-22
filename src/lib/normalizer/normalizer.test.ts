@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createObjectStore } from '~/src/shared/s3';
-import { createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
+import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
 import { createLogger } from '../logger';
 import { unwrap } from '../result';
 import { createNormalizer } from './normalizer';
@@ -10,7 +10,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
-  const llm = createLLMOpenAI({ logger, model: 'gpt-5-nano' });
+  const llm = createLLMOpenAI({ logger, model: CHEAPEST_MODEL });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   test(
