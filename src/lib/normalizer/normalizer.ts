@@ -82,12 +82,12 @@ export class Normalizer {
     });
 
     const generated = await generatePostgresScript({
+      logger: this.logger,
+      llm: this.llm,
       inputs,
       targets,
       outputs,
-      llm: this.llm,
       sqlDb,
-      logger: this.logger,
     });
 
     this.logger.debug('Generated Postgres script', {
@@ -108,12 +108,10 @@ export class Normalizer {
       return Err(`Failed to execute Postgres script: ${executed.error}`);
     }
 
-    const format = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
-
     const exported = await this.exportTabularData({
       sqlDb,
       outputs,
-      exportFormat: format,
+      exportFormat,
     });
 
     if (isErr(exported.result)) {
