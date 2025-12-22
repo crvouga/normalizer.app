@@ -43,7 +43,7 @@ export async function createNormalizationViews({
     description:
       'Execute a SQL query (SELECT to inspect, CREATE to change the schema) against the PostgreSQL database.',
     parameters: queryDatabaseSchema,
-    execute: async (args: unknown) => {
+    async execute(args: unknown) {
       const query = queryDatabaseSchema.parse(args).query.trim();
       const result = await sqlDb.unsafe(query);
       if (isErr(result)) {
