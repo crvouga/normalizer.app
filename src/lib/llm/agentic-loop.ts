@@ -1,5 +1,6 @@
 import type { LLM, Message, ToolDefinition } from './llm';
 import type { Logger } from '../logger';
+import { Err, Ok, type Result } from '../result';
 
 /**
  * Extended tool definition that includes execution logic
@@ -15,8 +16,9 @@ export interface ExecutableTool extends ToolDefinition {
 
 /**
  * Handler called when LLM responds without tool calls
+ * Returns whether to continue the loop and optional follow-up message
  */
-export interface NoToolCallHandler {
+export interface ShouldContinueHandler {
   /**
    * @param message - The assistant's message without tool calls
    * @param iteration - Current iteration number (0-indexed)
@@ -53,7 +55,7 @@ export interface AgenticLoopOptions {
    * Handler for when LLM doesn't use tools
    * If not provided, loop breaks on first non-tool response
    */
-  onNoToolCalls?: NoToolCallHandler;
+  shouldContinue?: ShouldContinueHandler;
 }
 
 export interface AgenticLoopResult {
@@ -71,146 +73,155 @@ export interface AgenticLoopResult {
  * Runs an agentic loop where LLM can iteratively call tools
  * until it's ready to provide a final response
  */
-export async function runAgenticLoop(options: AgenticLoopOptions): Promise<AgenticLoopResult> {
-  const { llm, initialMessages, tools, maxIterations = 10, logger, onNoToolCalls } = options;
+export async function runAgenticLoop(
+  options: AgenticLoopOptions,
+): Promise<Result<AgenticLoopResult, string>> {
+  const { llm, initialMessages, tools, maxIterations = 10, logger, shouldContinue } = options;
 
-  const messages: Message[] = [...initialMessages];
-  let iteration = 0;
+  try {
+    const messages: Message[] = [...initialMessages];
+    let iteration = 0;
 
-  logger.debug('Starting agentic loop', {
-    maxIterations,
-    toolCount: tools.length,
-    toolNames: tools.map((t) => t.name),
-  });
-
-  while (iteration < maxIterations) {
-    logger.debug('Agentic loop iteration', {
-      iteration: iteration + 1,
+    logger.debug('Starting agentic loop', {
       maxIterations,
-      messageCount: messages.length,
+      toolCount: tools.length,
+      toolNames: tools.map((t) => t.name),
     });
 
-    // Call LLM with tools
-    const response = await llm.completions(messages, { tools });
-
-    const lastMessage = response[response.length - 1];
-
-    if (!lastMessage || lastMessage.role !== 'assistant') {
-      logger.warn('Unexpected message role or missing message', {
+    while (iteration < maxIterations) {
+      logger.debug('Agentic loop iteration', {
         iteration: iteration + 1,
-        lastMessageRole: lastMessage?.role,
-      });
-      break;
-    }
-
-    messages.push(lastMessage);
-
-    // Check if there are tool calls
-    const hasToolCalls =
-      'toolCalls' in lastMessage &&
-      lastMessage.toolCalls !== undefined &&
-      lastMessage.toolCalls.length > 0;
-
-    if (hasToolCalls && lastMessage.toolCalls) {
-      logger.debug('Executing tool calls', {
-        iteration: iteration + 1,
-        toolCallCount: lastMessage.toolCalls.length,
-        toolCallNames: lastMessage.toolCalls.map((tc) => tc.name),
+        maxIterations,
+        messageCount: messages.length,
       });
 
-      // Execute all tool calls
-      for (const toolCall of lastMessage.toolCalls) {
-        logger.debug('Executing tool call', {
-          toolCallId: toolCall.id,
-          toolName: toolCall.name,
+      // Call LLM with tools
+      const response = await llm.completions(messages, { tools });
+
+      const lastMessage = response[response.length - 1];
+
+      if (!lastMessage || lastMessage.role !== 'assistant') {
+        logger.warn('Unexpected message role or missing message', {
+          iteration: iteration + 1,
+          lastMessageRole: lastMessage?.role,
+        });
+        break;
+      }
+
+      messages.push(lastMessage);
+
+      // Check if there are tool calls
+      const hasToolCalls =
+        'toolCalls' in lastMessage &&
+        lastMessage.toolCalls !== undefined &&
+        lastMessage.toolCalls.length > 0;
+
+      if (hasToolCalls && lastMessage.toolCalls) {
+        logger.debug('Executing tool calls', {
+          iteration: iteration + 1,
+          toolCallCount: lastMessage.toolCalls.length,
+          toolCallNames: lastMessage.toolCalls.map((tc) => tc.name),
         });
 
-        // Find the matching tool
-        const tool = tools.find((t) => t.name === toolCall.name);
-
-        if (!tool) {
-          logger.warn('Unknown tool requested', { toolName: toolCall.name });
-          messages.push({
-            role: 'tool',
-            content: JSON.stringify({ error: `Unknown tool: ${toolCall.name}` }),
-            toolCallId: toolCall.id,
-          });
-          continue;
-        }
-
-        // Execute the tool
-        try {
-          const result = await tool.execute(toolCall.arguments);
-          messages.push({
-            role: 'tool',
-            content: result,
-            toolCallId: toolCall.id,
-          });
-        } catch (error) {
-          logger.error('Tool execution error', {
+        // Execute all tool calls
+        for (const toolCall of lastMessage.toolCalls) {
+          logger.debug('Executing tool call', {
             toolCallId: toolCall.id,
             toolName: toolCall.name,
-            error: error instanceof Error ? error.message : String(error),
           });
-          messages.push({
-            role: 'tool',
-            content: JSON.stringify({
-              error: error instanceof Error ? error.message : String(error),
-            }),
-            toolCallId: toolCall.id,
-          });
-        }
-      }
-    } else {
-      // No tool calls - check if we should continue
-      if (onNoToolCalls) {
-        const decision = onNoToolCalls(lastMessage, iteration);
 
-        if (!decision.shouldContinue) {
-          logger.debug('No tool calls handler decided to stop', {
+          // Find the matching tool
+          const tool = tools.find((t) => t.name === toolCall.name);
+
+          if (!tool) {
+            logger.warn('Unknown tool requested', { toolName: toolCall.name });
+            messages.push({
+              role: 'tool',
+              content: JSON.stringify({ error: `Unknown tool: ${toolCall.name}` }),
+              toolCallId: toolCall.id,
+            });
+            continue;
+          }
+
+          // Execute the tool
+          try {
+            const result = await tool.execute(toolCall.arguments);
+            messages.push({
+              role: 'tool',
+              content: result,
+              toolCallId: toolCall.id,
+            });
+          } catch (error) {
+            logger.error('Tool execution error', {
+              toolCallId: toolCall.id,
+              toolName: toolCall.name,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            messages.push({
+              role: 'tool',
+              content: JSON.stringify({
+                error: error instanceof Error ? error.message : String(error),
+              }),
+              toolCallId: toolCall.id,
+            });
+          }
+        }
+      } else {
+        // No tool calls - check if we should continue
+        if (shouldContinue) {
+          const decision = shouldContinue(lastMessage, iteration);
+
+          if (!decision.shouldContinue) {
+            logger.debug('No tool calls handler decided to stop', {
+              iteration: iteration + 1,
+            });
+            break;
+          }
+
+          if (decision.followUpMessage) {
+            logger.debug('No tool calls handler provided follow-up message', {
+              iteration: iteration + 1,
+            });
+            messages.push({
+              role: 'user',
+              content: decision.followUpMessage,
+            });
+          }
+        } else {
+          // Default behavior: stop on first non-tool response
+          logger.debug('No tool calls detected, stopping loop', {
             iteration: iteration + 1,
           });
           break;
         }
-
-        if (decision.followUpMessage) {
-          logger.debug('No tool calls handler provided follow-up message', {
-            iteration: iteration + 1,
-          });
-          messages.push({
-            role: 'user',
-            content: decision.followUpMessage,
-          });
-        }
-      } else {
-        // Default behavior: stop on first non-tool response
-        logger.debug('No tool calls detected, stopping loop', {
-          iteration: iteration + 1,
-        });
-        break;
       }
+
+      iteration++;
     }
 
-    iteration++;
-  }
+    const completedNormally = iteration < maxIterations;
 
-  const completedNormally = iteration < maxIterations;
+    if (!completedNormally) {
+      logger.warn('Agentic loop reached maximum iterations', {
+        maxIterations,
+      });
+    }
 
-  if (!completedNormally) {
-    logger.warn('Agentic loop reached maximum iterations', {
-      maxIterations,
+    logger.debug('Agentic loop completed', {
+      iterations: iteration,
+      completedNormally,
+      finalMessageCount: messages.length,
     });
+
+    return Ok({
+      messages,
+      completedNormally,
+      iterations: iteration,
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error during agentic loop execution';
+    logger.error('Agentic loop failed', { error: errorMessage });
+    return Err(errorMessage);
   }
-
-  logger.debug('Agentic loop completed', {
-    iterations: iteration,
-    completedNormally,
-    finalMessageCount: messages.length,
-  });
-
-  return {
-    messages,
-    completedNormally,
-    iterations: iteration,
-  };
 }

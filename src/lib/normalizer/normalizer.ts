@@ -20,7 +20,7 @@ import {
   type BatchExportResult,
   type ExportRequest,
 } from '../tabular-data-postgres-exporter/tabular-data-postgres-exporter';
-import { generatePostgresScript } from './generate-postgres-script';
+import { createNormalizationViews } from './create-normalization-views';
 
 export class Normalizer {
   constructor(
@@ -81,7 +81,7 @@ export class Normalizer {
       outputObjectBucket: params.outputObjectBucket,
     });
 
-    const generated = await generatePostgresScript({
+    const viewCreationResult = await createNormalizationViews({
       logger: this.logger,
       llm: this.llm,
       inputs,
@@ -90,22 +90,11 @@ export class Normalizer {
       sqlDb,
     });
 
-    this.logger.debug('Generated Postgres script', {
-      explanation: generated.explanation,
-      postgresScript: generated.postgresScript,
-    });
-
-    console.log(generated.postgresScript);
-
-    if (!generated.postgresScript) {
-      this.logger.error('No Postgres script generated');
-      return Err('No Postgres script generated');
-    }
-
-    const executed = await sqlDb.unsafe(generated.postgresScript);
-    if (isErr(executed)) {
-      this.logger.error('Failed to execute Postgres script', { error: executed.error });
-      return Err(`Failed to execute Postgres script: ${executed.error}`);
+    if (isErr(viewCreationResult)) {
+      this.logger.error('Failed to create normalization views', {
+        error: viewCreationResult.error,
+      });
+      return Err(`Failed to create normalization views: ${viewCreationResult.error}`);
     }
 
     const exported = await this.exportTabularData({
