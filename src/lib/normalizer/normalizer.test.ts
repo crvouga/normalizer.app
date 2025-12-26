@@ -186,10 +186,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
           expect(actualItem.InstructorFirst).toBe(expectedItem.InstructorFirst);
           expect(actualItem.InstructorLast).toBe(expectedItem.InstructorLast);
           expect(actualItem.InstructorEmail).toBe(expectedItem.InstructorEmail);
-
-          if (actualItem.id) {
-            expect(actualItem.id).toBe(expectedItem.id);
-          }
+          expect(actualItem.id).toBe(expectedItem.id);
         },
       });
     },
@@ -215,7 +212,6 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
             product_name: 'Widget Pro',
             price_per_unit: '29.99',
             qty: 3,
-
             street: '123 Main St',
             suite: 'Suite 100',
             city: 'New York',
@@ -260,55 +256,39 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
           expect(actual).toHaveLength(1);
           const actualItem = actual[0]!;
           const expectedItem = expected[0]!;
-
           expect(actualItem.OrderID).toBe(expectedItem.OrderID);
-
-          const actualDate = new Date(actualItem.OrderDate as string).toISOString().split('T')[0];
-          const expectedDate = new Date(expectedItem.OrderDate).toISOString().split('T')[0];
-          expect(actualDate).toBe(expectedDate);
-
+          compareDates(actualItem.OrderDate, expectedItem.OrderDate);
           expect(actualItem.CustomerFullName).toBe(expectedItem.CustomerFullName);
           expect(actualItem.CustomerEmail).toBe(expectedItem.CustomerEmail);
           expect(actualItem.ItemName).toBe(expectedItem.ItemName);
-
-          const actualUnitPrice =
-            typeof actualItem.UnitPrice === 'string'
-              ? parseFloat(actualItem.UnitPrice)
-              : actualItem.UnitPrice;
-          expect(actualUnitPrice).toBeCloseTo(expectedItem.UnitPrice, 2);
-
-          const actualQuantity =
-            typeof actualItem.Quantity === 'string'
-              ? parseInt(actualItem.Quantity, 10)
-              : actualItem.Quantity;
-          expect(actualQuantity).toBe(expectedItem.Quantity);
-
-          const actualLineTotal =
-            typeof actualItem.LineTotal === 'string'
-              ? parseFloat(actualItem.LineTotal)
-              : actualItem.LineTotal;
-          expect(actualLineTotal).toBeCloseTo(expectedItem.LineTotal, 2);
-
-          const actualDiscountPercent =
-            typeof actualItem.DiscountPercent === 'string'
-              ? parseFloat(actualItem.DiscountPercent)
-              : actualItem.DiscountPercent;
-          expect(actualDiscountPercent).toBe(expectedItem.DiscountPercent);
-
-          const actualFinalTotal =
-            typeof actualItem.FinalTotal === 'string'
-              ? parseFloat(actualItem.FinalTotal)
-              : actualItem.FinalTotal;
-          expect(actualFinalTotal).toBeCloseTo(expectedItem.FinalTotal, 2);
-
+          expect(toFloat(actualItem.UnitPrice)).toBeCloseTo(expectedItem.UnitPrice, 2);
+          expect(toInt(actualItem.Quantity)).toBe(expectedItem.Quantity);
+          expect(toFloat(actualItem.LineTotal)).toBeCloseTo(expectedItem.LineTotal, 2);
+          expect(toFloat(actualItem.DiscountPercent)).toBe(expectedItem.DiscountPercent);
+          expect(toFloat(actualItem.FinalTotal)).toBeCloseTo(expectedItem.FinalTotal, 2);
           expect(actualItem.ShippingAddress).toBe(expectedItem.ShippingAddress);
-
-          expect(String(actualItem.OrderStatus).toUpperCase()).toBe(
-            String(expectedItem.OrderStatus).toUpperCase(),
-          );
+          compareCaseInsensitive(actualItem.OrderStatus, expectedItem.OrderStatus);
         },
       });
     },
     Infinity,
   );
 });
+
+function toFloat(value: string | number): number {
+  return typeof value === 'string' ? parseFloat(value) : value;
+}
+
+function toInt(value: string | number): number {
+  return typeof value === 'string' ? parseInt(value, 10) : value;
+}
+
+function compareDates(actual: string, expected: string) {
+  const actualDate = new Date(actual).toISOString().split('T')[0];
+  const expectedDate = new Date(expected).toISOString().split('T')[0];
+  expect(actualDate).toBe(expectedDate);
+}
+
+function compareCaseInsensitive(actual: string, expected: string) {
+  expect(String(actual).toUpperCase()).toBe(String(expected).toUpperCase());
+}
