@@ -12,7 +12,7 @@ export async function testNormalizer<TInput, TTarget>(params: {
   expectedOutputFile: TTarget[];
   testBucket: string;
   logger: Logger;
-  customAssertions?: (actual: TTarget[], expected: TTarget[]) => void;
+  assertions?: (actual: TTarget[], expected: TTarget[]) => void;
 }) {
   const {
     normalizer,
@@ -22,7 +22,7 @@ export async function testNormalizer<TInput, TTarget>(params: {
     expectedOutputFile,
     testBucket,
     logger,
-    customAssertions,
+    assertions,
   } = params;
   const testId = Math.random().toString(36).substring(2, 15);
 
@@ -86,8 +86,8 @@ export async function testNormalizer<TInput, TTarget>(params: {
     expectedOutputFile,
   });
 
-  if (customAssertions) {
-    customAssertions(actualOutputFile, expectedOutputFile);
+  if (assertions) {
+    assertions(actualOutputFile, expectedOutputFile);
   } else {
     expect(actualOutputFile).toEqual(expectedOutputFile);
   }
@@ -115,4 +115,22 @@ function intoJsonBuffer<T>(data: T): Buffer {
 
 function fromJsonBuffer<T>(data: Buffer): T {
   return JSON.parse(data.toString());
+}
+
+export function toFloat(value: string | number): number {
+  return typeof value === 'string' ? parseFloat(value) : value;
+}
+
+export function toInt(value: string | number): number {
+  return typeof value === 'string' ? parseInt(value, 10) : value;
+}
+
+export function compareDates(actual: string, expected: string) {
+  const actualDate = new Date(actual).toISOString().split('T')[0];
+  const expectedDate = new Date(expected).toISOString().split('T')[0];
+  expect(actualDate).toBe(expectedDate);
+}
+
+export function compareCaseInsensitive(actual: string, expected: string) {
+  expect(String(actual).toUpperCase()).toBe(String(expected).toUpperCase());
 }

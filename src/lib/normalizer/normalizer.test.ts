@@ -1,16 +1,22 @@
 import { describe, expect, test } from 'bun:test';
 import { createObjectStore } from '~/src/shared/s3';
-import { createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
+import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
 import { createLogger } from '../logger';
 import { createNormalizer } from './normalizer';
-import { testNormalizer } from './test/test-normalizer';
+import {
+  compareCaseInsensitive,
+  compareDates,
+  testNormalizer,
+  toFloat,
+  toInt,
+} from './test/test-normalizer';
 
 describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const logger = createLogger({ noop: false });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
-  const llm = createLLMOpenAI({ logger, model: 'gpt-5-nano' });
+  const llm = createLLMOpenAI({ logger, model: CHEAPEST_MODEL });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   test(
@@ -112,7 +118,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
             CourseInstructorOfficeHours: '12:00-13:00',
           },
         ],
-        customAssertions(actual, expected) {
+        assertions(actual, expected) {
           expect(actual).toHaveLength(1);
           const actualItem = actual[0]!;
           const expectedItem = expected[0]!;
@@ -175,7 +181,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
             InstructorEmail: 'alee@school.edu',
           },
         ],
-        customAssertions(actual, expected) {
+        assertions(actual, expected) {
           expect(actual).toHaveLength(1);
           const actualItem = actual[0]!;
           const expectedItem = expected[0]!;
@@ -252,7 +258,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
             OrderStatus: 'PROCESSING',
           },
         ],
-        customAssertions(actual, expected) {
+        assertions(actual, expected) {
           expect(actual).toHaveLength(1);
           const actualItem = actual[0]!;
           const expectedItem = expected[0]!;
@@ -274,21 +280,3 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
     Infinity,
   );
 });
-
-function toFloat(value: string | number): number {
-  return typeof value === 'string' ? parseFloat(value) : value;
-}
-
-function toInt(value: string | number): number {
-  return typeof value === 'string' ? parseInt(value, 10) : value;
-}
-
-function compareDates(actual: string, expected: string) {
-  const actualDate = new Date(actual).toISOString().split('T')[0];
-  const expectedDate = new Date(expected).toISOString().split('T')[0];
-  expect(actualDate).toBe(expectedDate);
-}
-
-function compareCaseInsensitive(actual: string, expected: string) {
-  expect(String(actual).toUpperCase()).toBe(String(expected).toUpperCase());
-}
