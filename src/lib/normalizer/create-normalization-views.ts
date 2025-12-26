@@ -48,6 +48,10 @@ export async function createNormalizationViews({
 
   const ran = await agentLoop.run({
     tools: [queryDatabaseTool],
+    goal: {
+      description:
+        'Create normalization views that transform input tables to match target schemas exactly.',
+    },
     initialMessages: [
       {
         role: 'system',
@@ -92,6 +96,18 @@ Tables:
 - Targets: ${targetTableNames.join(', ')} (define desired schemas)
 - Outputs: ${outputViewNames.join(', ')} (views/objects to create)
 
+CRITICAL WORKFLOW:
+1. First, inspect the ACTUAL column names in the input tables using: SELECT * FROM ${inputTableNames[0]} LIMIT 0; or query information_schema.columns
+2. Then, inspect the ACTUAL column names in the target tables using the same approach
+3. Create views that SELECT from input tables using the ACTUAL column names (which PostgreSQL converts to lowercase if unquoted), and ALIAS them to match the target schema exactly
+
+IMPORTANT COLUMN NAME HANDLING:
+- PostgreSQL converts unquoted identifiers to lowercase. When you query input tables, the column names will be lowercase (e.g., "description", "instructor_email")
+- You MUST use the actual lowercase column names from the input table in your SELECT statements
+- You MUST use double quotes around ALL column aliases in the SELECT to preserve their case exactly as they appear in the target table
+- Example: SELECT description AS "CourseDescription", instructor_email AS "CourseInstructorEmail" FROM input_0;
+- DO NOT try to select from input tables using capitalized column names - they don't exist! Always use the actual lowercase names.
+
 Use the query_database tool to inspect actual schemas and data with SELECT queries. Then create the necessary database objects directly using CREATE statements executed via the query_database tool. You may need to create:
 - Regular views (CREATE OR REPLACE VIEW)
 - Materialized views (CREATE MATERIALIZED VIEW) if performance requires it
@@ -100,8 +116,6 @@ Use the query_database tool to inspect actual schemas and data with SELECT queri
 - Any other database objects required for the transformation
 
 Map input columns to target columns intelligently (handle naming variations, type conversions, NULLs as needed).
-
-IMPORTANT: PostgreSQL converts unquoted identifiers to lowercase. You MUST use double quotes around ALL column aliases to preserve their case exactly as they appear in the target table. For example: SELECT col AS "MixedCaseColumn" (not AS MixedCaseColumn).
 
 Create all necessary database objects directly in the database using the query_database tool.`;
 }
@@ -134,22 +148,28 @@ function createQueryDatabaseTool({
       try {
         logger.debug('Executing query_database tool', { query });
         const result = await sqlDb.unsafe(query.trim());
+
         if (isErr(result)) {
           logger.warn('query_database tool error', { query, error: result.error });
           return JSON.stringify({ error: result.error });
         }
-        if (Array.isArray(result.value)) {
-          logger.debug('query_database tool returned rows', { rowCount: result.value.length });
-          return JSON.stringify({ rows: result.value });
+
+        const value = result.value;
+
+        if (Array.isArray(value)) {
+          logger.debug('query_database tool returned rows', { rowCount: value.length });
+          return JSON.stringify({ rows: value });
         }
-        if (result.value && typeof result.value === 'object' && 'rowCount' in result.value) {
+
+        if (value && typeof value === 'object' && 'rowCount' in value) {
           logger.debug('query_database tool result has rowCount', {
-            rowCount: result.value.rowCount,
+            rowCount: value.rowCount,
           });
-          return JSON.stringify({ rowCount: result.value.rowCount });
+          return JSON.stringify({ rowCount: value.rowCount });
         }
-        logger.debug('query_database tool returned generic result', { result: result.value });
-        return JSON.stringify({ result: result.value });
+
+        logger.debug('query_database tool returned generic result', { result: value });
+        return JSON.stringify({ result: value });
       } catch (err) {
         const errMsg =
           err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);

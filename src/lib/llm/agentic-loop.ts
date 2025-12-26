@@ -280,7 +280,7 @@ export class AgenticLoop {
 
   constructor(options: AgentOptions) {
     this.llm = options.llm;
-    this.logger = options.logger;
+    this.logger = options.logger.child(AgenticLoop.name);
 
     // Initialize budget tracking (will be reset on each run)
     this.budgetUsed = {
