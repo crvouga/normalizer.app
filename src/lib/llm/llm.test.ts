@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
-import { CHEAPEST_MODEL, createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
+import { DEFAULT_MODEL, createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
 
 describe.if(isOpenAIEnabled())('LLM (OpenAI)', () => {
   const llm: LLM = createLLMOpenAI({
     logger: createLogger({ noop: true }),
-    model: CHEAPEST_MODEL,
+    model: DEFAULT_MODEL,
   });
 
   test('completions: returns a text completion from a simple prompt', async () => {
