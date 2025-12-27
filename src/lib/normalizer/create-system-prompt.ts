@@ -38,6 +38,10 @@ CRITICAL WORKFLOW:
    - Use default values when input data doesn't have required fields (e.g., 0 for missing percentages, NULL where appropriate)
    - Handle NULLs appropriately
    - Preserve data integrity and meaning - PRESERVE ORIGINAL CASE from input data unless there's a clear semantic reason to transform it
+   - CRITICAL: When combining fields (e.g., subject + number → id), inspect the target table example values to determine the exact format/separator used:
+     * If target example shows "BIO-200", use a dash separator: subject || '-' || number
+     * If target example shows "BIO200", concatenate without separator: subject || number
+     * Always match the format pattern shown in the target example for composite fields
 
 IMPORTANT COLUMN NAME HANDLING:
 - CRITICAL: Tables are created with quoted identifiers, so column names preserve their original case (e.g., "Prefix", "Code", "Name")
@@ -57,7 +61,11 @@ SEMANTIC MATCHING REQUIREMENTS:
   * Only apply case transformations when semantically required (e.g., status codes that must be uppercase like "PROCESSING", "PENDING")
   * For most text fields, preserve the original case from the input data
 - Transform data values correctly only when semantically necessary (e.g., date format conversions, combining/splitting fields)
-- Handle composite fields (e.g., if input has "subject" and "number" separately but target has "id" combining them, concatenate appropriately)
+- Handle composite fields (e.g., if input has "subject" and "number" separately but target has "id" combining them):
+  * CRITICAL: Inspect the target table example values to determine the exact format/separator pattern
+  * If target example shows "BIO-200", use: "subject" || '-' || "number"
+  * If target example shows "BIO200", use: "subject" || "number"
+  * Always match the separator and format pattern shown in the target example
 - When combining address components (street, suite, city, state, zip), ensure proper comma placement: "street, suite, city, state zip" (note the comma before state and space before zip)
 - Preserve the semantic meaning of the data - don't just copy values blindly
 - CRITICAL: For calculated/derived fields (like discounts, totals, percentages):
