@@ -179,16 +179,17 @@ describe.if(isOpenAIEnabled())('NormalizationTask', async () => {
       expect(outputArtifact.name).toBeDefined();
       expect(outputArtifact.uploaded_by).toBe('system');
 
-      // Download and verify output artifact schema matches target schema
-      const outputReadResult = unwrap(
-        await objectStore.read({
-          bucket: outputArtifact.object_bucket,
-          key: outputArtifact.object_key,
-        }),
-      );
+      // Download and verify output artifact schema matches target schema using download URL from artifact record
+      expect(outputArtifact.download_url).toBeDefined();
+      expect(outputArtifact.download_url).not.toBeNull();
+      const downloadUrl = outputArtifact.download_url!;
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download artifact: ${response.status} ${response.statusText}`);
+      }
 
-      // Parse output file (assuming JSON format based on target format)
-      const outputData = JSON.parse(outputReadResult.toString('utf-8'));
+      const outputData = await response.json();
+
       expect(Array.isArray(outputData)).toBe(true);
       expect(outputData.length).toBeGreaterThan(0);
 

@@ -1,9 +1,10 @@
-import type { Artifact } from '~/src/artifacts/artifact-type';
 import { enumerate } from '~/src/lib/array/enumerate';
 import { createLLMOpenAI, DEFAULT_MODEL } from '~/src/lib/llm/llm-open-ai';
 import { isErr } from '~/src/lib/result';
+import { Artifact as ArtifactFactory } from '../../artifacts/artifact';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
+import { populateArtifactUrls } from '../../artifacts/artifact-urls-populate';
 import * as schema from '../../db/schema';
 import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
@@ -58,6 +59,7 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
         sessionId,
         inProgressEntry,
         projection,
+        startedByUserId,
       });
 
       await recordNormalizationResult({
@@ -126,12 +128,14 @@ async function performNormalization({
   sessionId,
   inProgressEntry,
   projection,
+  startedByUserId,
 }: {
   tx: Tx;
   logger: Logger;
   sessionId: NormalizationSessionId;
   inProgressEntry: NormalizationSessionProjectionEntry;
   projection: NormalizationSessionProjection;
+  startedByUserId: UserId;
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
   const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
@@ -173,34 +177,53 @@ async function performNormalization({
 
   const outputArtifactIds: ArtifactId[] = [];
 
+  const maybeTemplateArtifact = inputArtifacts[0];
+
+  if (!maybeTemplateArtifact) {
+    throw new Error('No input artifacts available to use as template');
+  }
+
+  const baseName = maybeTemplateArtifact.name || maybeTemplateArtifact.filename;
+  const normalizedName = toNormalizedFileName(baseName);
+
   for (const [index, output] of enumerate(outputs)) {
     const outputArtifactId = ArtifactId.generate();
 
     outputArtifactIds.push(outputArtifactId);
 
-    const maybeTemplateArtifact = inputArtifacts[0];
-
-    if (!maybeTemplateArtifact) {
-      throw new Error('No input artifacts available to use as template');
-    }
-
-    const templateArtifact: Artifact = {
-      ...maybeTemplateArtifact,
+    const artifact = ArtifactFactory.create({
+      id: outputArtifactId,
+      filename: maybeTemplateArtifact.filename,
+      content_type: maybeTemplateArtifact.content_type,
       uploaded_by: 'system',
-      object_bucket: output.bucket,
-      object_key: output.key,
-    };
-
-    await artifactDb.clone(templateArtifact, outputArtifactId);
-
-    const baseName = templateArtifact.name || templateArtifact.filename;
-    const normalizedName = toNormalizedFileName(baseName);
-
-    await artifactDb.update(outputArtifactId, {
-      object_key: output.key,
-      object_bucket: output.bucket,
       name: outputs.length > 1 ? `${normalizedName}-${index}` : normalizedName,
     });
+
+    await artifactDb.create({
+      id: artifact.id,
+      filename: artifact.filename,
+      content_type: artifact.content_type,
+      size: 0,
+      file_type: artifact.file_type,
+      status: 'uploaded',
+      uploaded_by: artifact.uploaded_by,
+      object_bucket: output.bucket,
+      object_key: output.key,
+      name: artifact.name ?? null,
+      uploaded_by_user_id: startedByUserId,
+    });
+  }
+
+  // Populate download URLs for output artifacts
+  const outputArtifacts = await artifactDb.getByIds(outputArtifactIds);
+  const { artifacts: artifactsWithUrls } = await populateArtifactUrls({
+    artifacts: outputArtifacts,
+    objectStore,
+  });
+
+  // Update artifacts with populated URLs
+  for (const artifact of artifactsWithUrls) {
+    await artifactDb.updateUrls(artifact);
   }
 
   logger.debug('Created normalized artifacts', {

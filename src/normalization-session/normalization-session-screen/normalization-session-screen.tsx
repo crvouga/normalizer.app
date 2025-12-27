@@ -18,7 +18,6 @@ export const NormalizationSessionScreen = (props: {
   normalizationSessionId: NormalizationSessionId;
 }) => {
   const { setCurrentScreen } = useCurrentScreen();
-  // useNormalizationSessionPolling(props.normalizationSessionId);
   useNormalizationSessionSubscription(props.normalizationSessionId);
 
   const normalizationSessionProjection = useEntityStoreSelector(
