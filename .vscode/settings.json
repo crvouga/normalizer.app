@@ -42,6 +42,7 @@
     "parquetjs",
     "pglite",
     "presign",
+    "presigning",
     "spreadsheetml",
     "sslmode",
     "stringifying"

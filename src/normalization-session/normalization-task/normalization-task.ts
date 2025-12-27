@@ -4,7 +4,7 @@ import { isErr } from '~/src/lib/result';
 import { Artifact as ArtifactFactory } from '../../artifacts/artifact';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
-import { populateArtifactUrls } from '../../artifacts/artifact-urls-populate';
+import { refreshArtifactData } from '../../artifacts/artifact-refresh';
 import * as schema from '../../db/schema';
 import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
@@ -214,16 +214,22 @@ async function performNormalization({
     });
   }
 
-  // Populate download URLs for output artifacts
+  // Refresh derived data (URLs, sizes, etc.) for output artifacts
   const outputArtifacts = await artifactDb.getByIds(outputArtifactIds);
-  const { artifacts: artifactsWithUrls } = await populateArtifactUrls({
+  const { artifacts: artifactsWithUrls } = await refreshArtifactData({
     artifacts: outputArtifacts,
     objectStore,
   });
 
-  // Update artifacts with populated URLs
+  // Update artifacts with populated URLs and sizes
   for (const artifact of artifactsWithUrls) {
     await artifactDb.updateUrls(artifact);
+
+    // Update size if it was populated (size changed from 0)
+    const originalArtifact = outputArtifacts.find((a) => a.id === artifact.id);
+    if (originalArtifact && originalArtifact.size === 0 && artifact.size > 0) {
+      await artifactDb.updateStatus(artifact.id, artifact.status, artifact.size);
+    }
   }
 
   logger.debug('Created normalized artifacts', {

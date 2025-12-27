@@ -6,7 +6,7 @@ import { UserId } from '../users/user-id';
 import * as schema from '../db/schema';
 import { Artifact } from './artifact';
 import { ArtifactId } from './artifact-id';
-import { populateArtifactUrls } from './artifact-urls-populate';
+import { refreshArtifactData } from './artifact-refresh';
 
 /**
  * Database operations for artifacts
@@ -251,40 +251,8 @@ export class ArtifactDb {
   }
 
   /**
-   * Clone an artifact with a new ID
-   * Creates a copy of the artifact with a new ID and updated timestamps
-   */
-  async clone(artifact: Artifact, newId: ArtifactId): Promise<void> {
-    const now = new Date();
-    await this.tx.insert(schema.artifacts).values({
-      id: newId,
-      filename: artifact.filename,
-      content_type: artifact.content_type,
-      size: artifact.size,
-      file_type: artifact.file_type,
-      status: artifact.status,
-      object_bucket: artifact.object_bucket,
-      object_key: artifact.object_key,
-      name: artifact.name ?? null,
-      uploaded_by: artifact.uploaded_by ?? 'user',
-      uploaded_by_user_id: artifact.uploaded_by_user_id ?? null,
-      upload_ip: artifact.upload_ip ?? null,
-      sha256: artifact.sha256 ?? null,
-      download_url: artifact.download_url ?? null,
-      download_url_expires_at: artifact.download_url_expires_at ?? null,
-      upload_url: artifact.upload_url ?? null,
-      upload_url_expires_at: artifact.upload_url_expires_at ?? null,
-      tags: artifact.tags ?? null,
-      description: artifact.description ?? null,
-      deleted: artifact.deleted ?? null,
-      created_at: now,
-      updated_at: now,
-    });
-  }
-
-  /**
-   * Refreshes artifact URLs by populating them with fresh presigned URLs if needed,
-   * and persists the updated URLs to the database.
+   * Refreshes all derived artifact data (URLs, sizes, etc.) by populating them from the object store,
+   * and persists the updated data to the database.
    */
   async refresh(params: { artifacts: Artifact[]; objectStore: ObjectStore }): Promise<Artifact[]> {
     const { artifacts, objectStore } = params;
@@ -293,20 +261,20 @@ export class ArtifactDb {
       return artifacts;
     }
 
-    // Populate URLs and get update metadata
-    const { artifacts: artifactsWithUrls, updated } = await populateArtifactUrls({
+    // Refresh derived data (URLs, sizes, etc.) and get update metadata
+    const { artifacts: artifactsWithUrls, updated } = await refreshArtifactData({
       artifacts: artifacts,
       objectStore,
     });
 
-    // Update database for artifacts with refreshed URLs
+    // Update database for artifacts with refreshed derived data
     if (updated.size > 0) {
-      this.logger?.debug('Updating artifact URLs', {
+      this.logger?.debug('Updating artifact derived data', {
         count: updated.size,
         artifactIds: Array.from(updated),
       });
 
-      // Update all artifacts with refreshed URLs in parallel
+      // Update all artifacts with refreshed data in parallel
       await Promise.all(
         artifactsWithUrls
           .filter((artifact) => updated.has(String(artifact.id)))

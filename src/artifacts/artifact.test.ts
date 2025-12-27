@@ -5,9 +5,9 @@ import { isOk } from '../lib/result';
 import { createObjectStore } from '../shared/s3';
 import { Artifact, Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
-import { populateArtifactUrls } from './artifact-urls-populate';
+import { refreshArtifactData } from './artifact-refresh';
 
-describe('Artifact.populateUrls', async () => {
+describe('Artifact.refreshData', async () => {
   const logger = createLogger({ noop: true });
   const testBucket = 'test';
   const objectStore: ObjectStore = await createObjectStore({ logger });
@@ -34,7 +34,7 @@ describe('Artifact.populateUrls', async () => {
     expect(artifactForTest.upload_url).toBeNull();
     expect(artifactForTest.download_url).toBeNull();
 
-    const { artifacts: populated, updated } = await populateArtifactUrls({
+    const { artifacts: populated, updated } = await refreshArtifactData({
       artifacts: [artifactForTest],
       objectStore,
     });
@@ -76,7 +76,7 @@ describe('Artifact.populateUrls', async () => {
       object_bucket: testBucket,
       object_key: object_key,
     };
-    const firstPop = await populateArtifactUrls({
+    const firstPop = await refreshArtifactData({
       artifacts: [artifactForTest],
       objectStore,
     });
@@ -88,7 +88,7 @@ describe('Artifact.populateUrls', async () => {
     }
 
     // The second run should preserve the URLs (not update them, so the set will be empty)
-    const secondPop = await populateArtifactUrls({
+    const secondPop = await refreshArtifactData({
       artifacts: [populated],
       objectStore,
     });
@@ -127,7 +127,7 @@ describe('Artifact.populateUrls', async () => {
       download_url_expires_at: pastDate,
     };
 
-    const { artifacts: result, updated } = await populateArtifactUrls({
+    const { artifacts: result, updated } = await refreshArtifactData({
       artifacts: [artifactForTest],
       objectStore,
     });
@@ -169,7 +169,7 @@ describe('Artifact.populateUrls', async () => {
       object_key: object_key,
     };
 
-    const { artifacts: result } = await populateArtifactUrls({
+    const { artifacts: result } = await refreshArtifactData({
       artifacts: [artifactForTest],
       objectStore,
     });
