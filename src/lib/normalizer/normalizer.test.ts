@@ -12,7 +12,7 @@ import {
 } from './test/test-normalizer';
 
 describe.if(isOpenAIEnabled())('Normalizer', async () => {
-  const logger = createLogger({ noop: false });
+  const logger = createLogger({ noop: true });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });
   await objectStore.ensureBucketExists(testBucket);
@@ -20,7 +20,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   test(
-    'it should work 1',
+    'should map course data with direct field mappings and preserve input values',
     async () => {
       await testNormalizer({
         normalizer,
@@ -72,7 +72,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   );
 
   test(
-    'it should work 2',
+    'should parse composite course ID and handle field name variations (id → subject/number, title → name)',
     async () => {
       await testNormalizer({
         normalizer,
@@ -140,7 +140,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   );
 
   test(
-    'it should work 2 (tricky mapping: constructing ID from subject/number, splitting name)',
+    'should construct composite fields and split combined fields (subject+number → id, full_name → first+last)',
     async () => {
       await testNormalizer({
         normalizer,
@@ -200,7 +200,7 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
   );
 
   test(
-    'it should handle tricky transformations: dates, nulls, calculations, and complex mappings',
+    'should handle complex transformations: date formatting, field combination, calculations, address formatting, case transformation, and default values',
     async () => {
       await testNormalizer({
         normalizer,
@@ -267,11 +267,11 @@ describe.if(isOpenAIEnabled())('Normalizer', async () => {
           expect(actualItem.CustomerFullName).toBe(expectedItem.CustomerFullName);
           expect(actualItem.CustomerEmail).toBe(expectedItem.CustomerEmail);
           expect(actualItem.ItemName).toBe(expectedItem.ItemName);
-          expect(toFloat(actualItem.UnitPrice)).toBeCloseTo(expectedItem.UnitPrice, 2);
+          expect(toFloat(actualItem.UnitPrice)).toBeCloseTo(expectedItem.UnitPrice);
           expect(toInt(actualItem.Quantity)).toBe(expectedItem.Quantity);
-          expect(toFloat(actualItem.LineTotal)).toBeCloseTo(expectedItem.LineTotal, 2);
-          // expect(toFloat(actualItem.DiscountPercent)).toBe(expectedItem.DiscountPercent);
-          expect(toFloat(actualItem.FinalTotal)).toBeCloseTo(expectedItem.FinalTotal, 2);
+          expect(toFloat(actualItem.LineTotal)).toBeCloseTo(expectedItem.LineTotal);
+          expect(toFloat(actualItem.DiscountPercent)).toBe(expectedItem.DiscountPercent);
+          expect(toFloat(actualItem.FinalTotal)).toBeCloseTo(expectedItem.FinalTotal);
           expect(actualItem.ShippingAddress).toBe(expectedItem.ShippingAddress);
           compareCaseInsensitive(actualItem.OrderStatus, expectedItem.OrderStatus);
         },

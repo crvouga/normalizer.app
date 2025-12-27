@@ -1,9 +1,11 @@
+import { z } from 'zod';
 import { AgenticLoop } from '../llm/agentic-loop';
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { createQueryDatabaseTool } from './create-query-database-tool';
+import { createSystemPrompt } from './create-system-prompt';
 
 /**
  * Create normalization views that transform input tables to match target schemas both structurally and semantically.
@@ -37,7 +39,11 @@ export async function createNormalizationViews({
   const targetTableNames = targets.map((target) => target.viewName);
   const outputViewNames = outputs.map((output) => output.viewName);
   const queryDatabaseTool = createQueryDatabaseTool({ sqlDb, logger });
-  const systemPrompt = createSystemPrompt({ inputTableNames, targetTableNames, outputViewNames });
+  const systemPrompt = createSystemPrompt({
+    inputViewNames: inputTableNames,
+    targetViewNames: targetTableNames,
+    outputViewName: outputViewNames,
+  });
 
   logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
 
@@ -49,6 +55,52 @@ export async function createNormalizationViews({
       description:
         'Create normalization views that transform input tables to match target schemas both structurally AND semantically. The views must correctly map input data values to target schema values, not just match column names.',
     },
+    shouldContinue: async (_message, stepNumber) => {
+      // Check if all required output views exist
+      for (const outputViewName of outputViewNames) {
+        const checkResult = await sqlDb.query<{ exists: boolean }>(
+          `SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = $1
+          ) as exists`,
+          z.object({ exists: z.boolean() }),
+          [outputViewName],
+        );
+
+        if (isErr(checkResult)) {
+          logger.warn('Failed to check if output view exists', {
+            viewName: outputViewName,
+            error: checkResult.error,
+          });
+          // If we can't check, assume it doesn't exist and continue
+          return {
+            shouldContinue: true,
+            followUpMessage: `The output view "${outputViewName}" does not exist yet. You must create it using CREATE OR REPLACE VIEW "${outputViewName}" AS ... before finishing. Use the query_database tool to create the view.`,
+          };
+        }
+
+        const exists = checkResult.value[0]?.exists ?? false;
+
+        if (!exists) {
+          logger.debug('Output view does not exist yet', {
+            viewName: outputViewName,
+            stepNumber,
+          });
+          return {
+            shouldContinue: true,
+            followUpMessage: `The output view "${outputViewName}" does not exist yet. You must create it using CREATE OR REPLACE VIEW "${outputViewName}" AS ... before finishing. Use the query_database tool to create the view.`,
+          };
+        }
+      }
+
+      // All views exist, allow the loop to stop
+      logger.debug('All output views exist, allowing loop to complete', {
+        outputViewNames,
+        stepNumber,
+      });
+      return { shouldContinue: false };
+    },
     initialMessages: [
       {
         role: 'system',
@@ -57,7 +109,7 @@ export async function createNormalizationViews({
       {
         role: 'user',
         content:
-          'First, use the query_database tool with SELECT queries to inspect both the schemas AND actual data values in the input and target tables. Understand the semantic meaning of each field and how input data should be transformed to match the target schema. Then create the output views (or materialized views, tables, indexes, etc. as needed) that correctly transform the input data semantically, not just structurally.',
+          'First, use the query_database tool with SELECT queries to inspect both the schemas AND actual data values in the input and target tables. Understand the semantic meaning of each field and how input data should be transformed to match the target schema. Then create the output views (or materialized views, tables, indexes, etc. as needed) that correctly transform the input data semantically, not just structurally. You MUST create all output views before finishing.',
       },
     ],
   });
@@ -67,74 +119,44 @@ export async function createNormalizationViews({
     return Err(ran.error);
   }
 
+  // Validate that all output views were created
+  for (const outputViewName of outputViewNames) {
+    const checkResult = await sqlDb.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = $1
+      ) as exists`,
+      z.object({ exists: z.boolean() }),
+      [outputViewName],
+    );
+
+    if (isErr(checkResult)) {
+      logger.error('Failed to validate output view exists', {
+        viewName: outputViewName,
+        error: checkResult.error,
+      });
+      return Err(`Failed to validate that output view "${outputViewName}" was created`);
+    }
+
+    const exists = checkResult.value[0]?.exists ?? false;
+    if (!exists) {
+      logger.error('Output view was not created', {
+        viewName: outputViewName,
+        stepNumber: ran.value.stepNumber,
+        phase: ran.value.phase,
+      });
+      return Err(`Output view "${outputViewName}" was not created by the agentic loop`);
+    }
+  }
+
   logger.info('Normalization views created successfully', {
     stepNumber: ran.value.stepNumber,
     phase: ran.value.phase,
     completedNormally: ran.value.completedNormally,
     budgetUsed: ran.value.budgetUsed,
+    outputViewNames,
   });
 
   return Ok(null);
-}
-
-/**
- * Generates the system prompt for normalization view creation
- */
-function createSystemPrompt(params: {
-  inputTableNames: string[];
-  targetTableNames: string[];
-  outputViewNames: string[];
-}): string {
-  const { inputTableNames, targetTableNames, outputViewNames } = params;
-  return `You are a PostgreSQL expert. Create database objects (views, materialized views, tables, indexes, etc.) that transform input tables to match target table schemas BOTH STRUCTURALLY AND SEMANTICALLY.
-
-CRITICAL: This is not just about matching column names - you must understand the SEMANTIC MEANING of the data and correctly transform input values to match the target schema's expected values.
-
-Tables:
-- Inputs: ${inputTableNames.join(', ')}
-- Targets: ${targetTableNames.join(', ')} (define desired schemas AND example data)
-- Outputs: ${outputViewNames.join(', ')} (views/objects to create)
-
-CRITICAL WORKFLOW:
-1. First, inspect the ACTUAL column names AND SAMPLE DATA VALUES in the input tables using: SELECT * FROM ${inputTableNames[0]} LIMIT 10; or query information_schema.columns
-2. Then, inspect the ACTUAL column names AND SAMPLE DATA VALUES in the target tables using the same approach
-3. Understand the SEMANTIC MEANING of each field:
-   - What does each input column represent?
-   - What does each target column represent?
-   - How should input values be transformed to match target values?
-4. Create views that SELECT from input tables using the ACTUAL column names (which PostgreSQL converts to lowercase if unquoted), and ALIAS them to match the target schema exactly
-5. Apply necessary transformations to ensure data values match semantically:
-   - Combine fields (e.g., first_name + last_name → full_name)
-   - Split fields (e.g., full_name → first_name, last_name)
-   - Transform formats (e.g., date formats, phone number formats, case transformations)
-   - Map values (e.g., status codes, category names)
-   - Calculate derived values (e.g., totals, percentages)
-   - Handle NULLs appropriately
-   - Preserve data integrity and meaning
-
-IMPORTANT COLUMN NAME HANDLING:
-- PostgreSQL converts unquoted identifiers to lowercase. When you query input tables, the column names will be lowercase (e.g., "description", "instructor_email")
-- You MUST use the actual lowercase column names from the input table in your SELECT statements
-- You MUST use double quotes around ALL column aliases in the SELECT to preserve their case exactly as they appear in the target table
-- Example: SELECT description AS "CourseDescription", instructor_email AS "CourseInstructorEmail" FROM input_0;
-- DO NOT try to select from input tables using capitalized column names - they don't exist! Always use the actual lowercase names.
-
-SEMANTIC MATCHING REQUIREMENTS:
-- Inspect actual data values in both input and target tables to understand the expected format and meaning
-- Map input columns to target columns based on SEMANTIC EQUIVALENCE, not just name similarity
-- Transform data values correctly (e.g., if target expects "PROCESSING" but input has "processing", use UPPER() or appropriate transformation)
-- Handle composite fields (e.g., if input has "subject" and "number" separately but target has "id" combining them, concatenate appropriately)
-- Preserve the semantic meaning of the data - don't just copy values blindly
-- Verify your transformations by comparing sample output data with target table data
-
-Use the query_database tool to inspect actual schemas AND DATA VALUES with SELECT queries. Then create the necessary database objects directly using CREATE statements executed via the query_database tool. You may need to create:
-- Regular views (CREATE OR REPLACE VIEW)
-- Materialized views (CREATE MATERIALIZED VIEW) if performance requires it
-- Temporary tables (CREATE TEMP TABLE) if intermediate transformations are needed
-- Indexes (CREATE INDEX) if needed for performance
-- Any other database objects required for the transformation
-
-Map input columns to target columns intelligently based on semantic meaning (handle naming variations, type conversions, value transformations, NULLs, and data composition/decomposition as needed).
-
-Create all necessary database objects directly in the database using the query_database tool.`;
 }

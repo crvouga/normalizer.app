@@ -128,18 +128,25 @@ export interface ShouldContinueHandler {
    * @param message - The assistant's message without tool calls
    * @param stepNumber - Current step number (1-indexed)
    * @param state - Current agent state
-   * @returns Control flow decision
+   * @returns Control flow decision (can be async)
    */
   (
     message: Message,
     stepNumber: number,
     state: AgentState,
-  ): {
-    /** Whether to continue the loop or break */
-    shouldContinue: boolean;
-    /** Optional follow-up message to send to LLM */
-    followUpMessage?: string;
-  };
+  ):
+    | {
+        /** Whether to continue the loop or break */
+        shouldContinue: boolean;
+        /** Optional follow-up message to send to LLM */
+        followUpMessage?: string;
+      }
+    | Promise<{
+        /** Whether to continue the loop or break */
+        shouldContinue: boolean;
+        /** Optional follow-up message to send to LLM */
+        followUpMessage?: string;
+      }>;
 }
 
 /**
@@ -546,7 +553,8 @@ export class AgenticLoop {
     this.transitionPhase('reasoning');
 
     if (this.shouldContinue) {
-      const decision = this.shouldContinue(message, this.stepNumber, this.getState());
+      const decisionResult = this.shouldContinue(message, this.stepNumber, this.getState());
+      const decision = await Promise.resolve(decisionResult);
 
       if (!decision.shouldContinue) {
         this.logger.debug('No tool calls handler decided to stop', {
