@@ -193,8 +193,8 @@ export class ArtifactDb {
       tags?: string[] | null;
       sha256?: string | null;
       upload_ip?: string | null;
-      s3_key?: string | null;
-      s3_bucket?: string | null;
+      object_key?: string | null;
+      object_bucket?: string | null;
     },
   ): Promise<Artifact> {
     const updateData: Partial<{
@@ -204,8 +204,8 @@ export class ArtifactDb {
       tags: string[] | null;
       sha256: string | null;
       upload_ip: string | null;
-      s3_key: string;
-      s3_bucket: string;
+      object_key: string;
+      object_bucket: string;
       updated_at: Date;
     }> = {
       updated_at: new Date(),
@@ -230,11 +230,11 @@ export class ArtifactDb {
     if (updates.upload_ip !== undefined) {
       updateData.upload_ip = updates.upload_ip;
     }
-    if (updates.s3_key !== undefined && updates.s3_key !== null) {
-      updateData.s3_key = updates.s3_key;
+    if (updates.object_key !== undefined && updates.object_key !== null) {
+      updateData.object_key = updates.object_key;
     }
-    if (updates.s3_bucket !== undefined && updates.s3_bucket !== null) {
-      updateData.s3_bucket = updates.s3_bucket;
+    if (updates.object_bucket !== undefined && updates.object_bucket !== null) {
+      updateData.object_bucket = updates.object_bucket;
     }
 
     await this.tx

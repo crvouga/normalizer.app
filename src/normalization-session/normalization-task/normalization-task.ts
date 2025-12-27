@@ -1,6 +1,6 @@
 import type { Artifact } from '~/src/artifacts/artifact-type';
 import { enumerate } from '~/src/lib/array/enumerate';
-import { createLLMOpenAI } from '~/src/lib/llm/llm-open-ai';
+import { createLLMOpenAI, DEFAULT_MODEL } from '~/src/lib/llm/llm-open-ai';
 import { isErr } from '~/src/lib/result';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
@@ -134,14 +134,12 @@ async function performNormalization({
   projection: NormalizationSessionProjection;
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
-  const llm = createLLMOpenAI({ logger, model: 'gpt-5' });
+  const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
   const normalizer = createNormalizer({ objectStore, logger, llm });
 
   const artifactDb = new ArtifactDb(tx, logger);
   const inputArtifacts = await artifactDb.getByIds(inProgressEntry.inputArtifactIds);
-
   const targetArtifacts = await artifactDb.getByIds(projection.targetArtifactIds);
-
   const { s3Bucket } = getS3Config();
   const normalizationRunId = inProgressEntry.normalizationRunId;
 
@@ -189,6 +187,8 @@ async function performNormalization({
     const templateArtifact: Artifact = {
       ...maybeTemplateArtifact,
       uploaded_by: 'system',
+      object_bucket: output.bucket,
+      object_key: output.key,
     };
 
     await artifactDb.clone(templateArtifact, outputArtifactId);
@@ -197,8 +197,8 @@ async function performNormalization({
     const normalizedName = toNormalizedFileName(baseName);
 
     await artifactDb.update(outputArtifactId, {
-      s3_key: output.key,
-      s3_bucket: output.bucket,
+      object_key: output.key,
+      object_bucket: output.bucket,
       name: outputs.length > 1 ? `${normalizedName}-${index}` : normalizedName,
     });
   }

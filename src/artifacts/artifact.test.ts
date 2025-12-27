@@ -15,7 +15,7 @@ describe('Artifact.populateUrls', async () => {
 
   test('should generate valid presigned upload and download URLs', async () => {
     const artifactId = ArtifactId.generate();
-    const s3_key = `populate-live/test-file-${Math.random()}`;
+    const object_key = `populate-live/test-file-${Math.random()}`;
     const filename = 'my-doc.txt';
     const artifact = ArtifactModule.create({
       id: artifactId,
@@ -27,7 +27,7 @@ describe('Artifact.populateUrls', async () => {
     const artifactForTest: Artifact = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: s3_key,
+      object_key: object_key,
     };
 
     // Ensure upload and download URLs are initially missing
@@ -61,7 +61,7 @@ describe('Artifact.populateUrls', async () => {
 
   test('should not update URLs if still valid and base matches', async () => {
     const artifactId = ArtifactId.generate();
-    const s3_key = `populate-valid/test-file-${Math.random()}`;
+    const object_key = `populate-valid/test-file-${Math.random()}`;
     const filename = 'valid.txt';
     const artifact = ArtifactModule.create({
       uploaded_by: 'user',
@@ -74,7 +74,7 @@ describe('Artifact.populateUrls', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: s3_key,
+      object_key: object_key,
     };
     const firstPop = await populateArtifactUrls({
       artifacts: [artifactForTest],
@@ -106,7 +106,7 @@ describe('Artifact.populateUrls', async () => {
 
   test('should update URLs if they are expired', async () => {
     const artifactId = ArtifactId.generate();
-    const s3_key = `expire-test/test-file-${Math.random()}`;
+    const object_key = `expire-test/test-file-${Math.random()}`;
     const filename = 'expire-me.txt';
     const artifact = ArtifactModule.create({
       uploaded_by: 'user',
@@ -120,7 +120,7 @@ describe('Artifact.populateUrls', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: s3_key,
+      object_key: object_key,
       upload_url: 'http://should-be-replaced',
       download_url: 'http://should-be-replaced',
       upload_url_expires_at: pastDate,
@@ -155,7 +155,7 @@ describe('Artifact.populateUrls', async () => {
     }
 
     const artifactId = ArtifactId.generate();
-    const s3_key = `https-enforce/test-file-${Math.random()}`;
+    const object_key = `https-enforce/test-file-${Math.random()}`;
     const artifact = ArtifactModule.create({
       uploaded_by: 'user',
       id: artifactId,
@@ -166,7 +166,7 @@ describe('Artifact.populateUrls', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: s3_key,
+      object_key: object_key,
     };
 
     const { artifacts: result } = await populateArtifactUrls({

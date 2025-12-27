@@ -76,7 +76,7 @@ async function uploadProfilePictureToS3(params: {
 
     logger.info('Uploaded profile picture to S3', {
       user_id: userId,
-      s3_key: s3Key,
+      object_key: s3Key,
       size: buffer.length,
     });
 
@@ -84,7 +84,7 @@ async function uploadProfilePictureToS3(params: {
   } catch (error) {
     logger.error('Failed to upload profile picture to S3', {
       user_id: userId,
-      s3_key: s3Key,
+      object_key: s3Key,
       error,
     });
     throw error;
@@ -180,14 +180,14 @@ export async function deleteProfilePicture(
       if (isOk(result)) {
         logger.info('Deleted profile picture from S3', {
           user_id: userId,
-          s3_key: s3Key,
+          object_key: s3Key,
         });
       }
     } catch (error) {
       // Ignore errors - file might not exist
       logger.debug('Failed to delete profile picture (might not exist)', {
         user_id: userId,
-        s3_key: s3Key,
+        object_key: s3Key,
       });
     }
   }
