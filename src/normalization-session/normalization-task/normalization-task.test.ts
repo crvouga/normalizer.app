@@ -7,7 +7,6 @@ import { createLogger } from '~/src/lib/logger';
 import { unwrap } from '~/src/lib/result';
 import { NormalizationRunId } from '~/src/normalization-session/normalization-run-id';
 import { NormalizationSessionEventDb } from '~/src/normalization-session/normalization-session-event/normalization-session-event-db';
-import { NormalizationSessionEventEntity } from '~/src/normalization-session/normalization-session-event/normalization-session-event-entity';
 import { NormalizationSessionEventId } from '~/src/normalization-session/normalization-session-event/normalization-session-event-id';
 import { NormalizationSessionId } from '~/src/normalization-session/normalization-session-id';
 import { NormalizationSessionProjectionDb } from '~/src/normalization-session/normalization-session-projection/normalization-session-projection-db';
@@ -121,43 +120,34 @@ describe.if(isOpenAIEnabled())('NormalizationTask', async () => {
         uploaded_by_user_id: userId,
       });
 
-      // Create normalization session events
       const eventDb = new NormalizationSessionEventDb(db, logger);
-      const startedAt = new Date();
 
-      // Create user-started-session event
-      const startEventId = NormalizationSessionEventId.generate();
-      const startEvent: NormalizationSessionEventEntity = {
-        id: startEventId,
+      await eventDb.append({
+        id: NormalizationSessionEventId.generate(),
         normalization_session_id: sessionId,
         event: {
           type: 'user-started-session',
           sessionId,
           targetArtifactIds: [targetArtifactId],
-          startedAt,
+          startedAt: new Date(),
           startedByUserId: userId,
         },
-        created_at: startedAt,
-      };
-      await eventDb.append(startEvent);
+        created_at: new Date(),
+      });
 
-      // Create user-requested-normalization event (creates in-progress entry)
-      const requestedAt = new Date();
-      const requestEventId = NormalizationSessionEventId.generate();
-      const requestEvent: NormalizationSessionEventEntity = {
-        id: requestEventId,
+      await eventDb.append({
+        id: NormalizationSessionEventId.generate(),
         normalization_session_id: sessionId,
         event: {
           type: 'user-requested-normalization',
           sessionId,
           inputArtifactIds: [inputArtifactId],
-          requestedAt,
+          requestedAt: new Date(),
           requestedByUserId: userId,
           normalizationRunId,
         },
-        created_at: requestedAt,
-      };
-      await eventDb.append(requestEvent);
+        created_at: new Date(),
+      });
 
       // Refresh projection to ensure it's in the database
       const projectionDb = new NormalizationSessionProjectionDb(db, logger);
@@ -185,8 +175,43 @@ describe.if(isOpenAIEnabled())('NormalizationTask', async () => {
       const outputArtifact = outputArtifacts[0]!;
       expect(outputArtifact.object_bucket).toBeDefined();
       expect(outputArtifact.object_key).toBeDefined();
+      expect(outputArtifact.object_key).not.toBe(inputKey);
       expect(outputArtifact.name).toBeDefined();
       expect(outputArtifact.uploaded_by).toBe('system');
+
+      // Download and verify output artifact schema matches target schema
+      const outputReadResult = unwrap(
+        await objectStore.read({
+          bucket: outputArtifact.object_bucket,
+          key: outputArtifact.object_key,
+        }),
+      );
+
+      // Parse output file (assuming JSON format based on target format)
+      const outputData = JSON.parse(outputReadResult.toString('utf-8'));
+      expect(Array.isArray(outputData)).toBe(true);
+      expect(outputData.length).toBeGreaterThan(0);
+
+      // Extract schema (keys) from target and output
+      const targetSchema = new Set(Object.keys(targetFile[0]!));
+      const outputSchema = new Set(Object.keys(outputData[0]!));
+
+      // Assert schemas match
+      expect(outputSchema.size).toBe(targetSchema.size);
+      for (const key of targetSchema) {
+        if (!outputSchema.has(key)) {
+          throw new Error(
+            `Output schema missing key: ${key}. Output has keys: ${Array.from(outputSchema).join(', ')}`,
+          );
+        }
+      }
+      for (const key of outputSchema) {
+        if (!targetSchema.has(key)) {
+          throw new Error(
+            `Output schema has extra key: ${key}. Target has keys: ${Array.from(targetSchema).join(', ')}`,
+          );
+        }
+      }
 
       // Verify completion event was created
       const events = await eventDb.getBySessionId(sessionId);
@@ -199,14 +224,16 @@ describe.if(isOpenAIEnabled())('NormalizationTask', async () => {
       }
 
       // Clean up S3 files
-      await objectStore.delete({
-        bucket: testBucket,
-        key: inputKey,
-      });
-      await objectStore.delete({
-        bucket: testBucket,
-        key: targetKey,
-      });
+      await objectStore.delete({ bucket: testBucket, key: inputKey });
+      await objectStore.delete({ bucket: testBucket, key: targetKey });
+
+      // Clean up output artifact
+      if (outputArtifact.object_key) {
+        await objectStore.delete({
+          bucket: outputArtifact.object_bucket,
+          key: outputArtifact.object_key,
+        });
+      }
     },
     Infinity,
   );

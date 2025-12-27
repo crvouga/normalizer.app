@@ -16,14 +16,15 @@ Tables:
 - Outputs: ${params.outputViewName.join(', ')} (views/objects to create)
 
 CRITICAL WORKFLOW:
-1. First, inspect the ACTUAL column names AND SAMPLE DATA VALUES in the input tables using: SELECT * FROM ${params.inputViewNames[0]} LIMIT 10; or query information_schema.columns
-2. Then, inspect the ACTUAL column names AND SAMPLE DATA VALUES in the target tables using the same approach
-3. Understand the SEMANTIC MEANING of each field:
+1. First, ALWAYS query information_schema.columns to get the EXACT column names from the input tables: SELECT column_name FROM information_schema.columns WHERE table_name = '${params.inputViewNames[0]}';
+2. Then, query information_schema.columns to get the EXACT column names from the target tables: SELECT column_name FROM information_schema.columns WHERE table_name = '${params.targetViewNames[0]}';
+3. Inspect SAMPLE DATA VALUES in both input and target tables using: SELECT * FROM ${params.inputViewNames[0]} LIMIT 10;
+4. Understand the SEMANTIC MEANING of each field:
    - What does each input column represent?
    - What does each target column represent?
    - How should input values be transformed to match target values?
-4. Create views that SELECT from input tables using the ACTUAL column names (which PostgreSQL converts to lowercase if unquoted), and ALIAS them to match the target schema exactly
-5. Apply necessary transformations to ensure data values match semantically:
+5. Create views that SELECT from input tables using the EXACT column names as they appear in information_schema.columns, and ALIAS them to match the target schema exactly
+6. Apply necessary transformations to ensure data values match semantically:
    - Combine fields (e.g., first_name + last_name → full_name)
    - When combining address fields (street, suite, city, state, zip), use proper formatting:
      * Format: "street, suite, city, state zip" (commas between street/suite/city, comma before state, space before zip)
@@ -39,11 +40,13 @@ CRITICAL WORKFLOW:
    - Preserve data integrity and meaning - PRESERVE ORIGINAL CASE from input data unless there's a clear semantic reason to transform it
 
 IMPORTANT COLUMN NAME HANDLING:
-- PostgreSQL converts unquoted identifiers to lowercase. When you query input tables, the column names will be lowercase (e.g., "description", "instructor_email")
-- You MUST use the actual lowercase column names from the input table in your SELECT statements
+- CRITICAL: Tables are created with quoted identifiers, so column names preserve their original case (e.g., "Prefix", "Code", "Name")
+- You MUST ALWAYS query information_schema.columns FIRST to get the exact column names: SELECT column_name FROM information_schema.columns WHERE table_name = 'table_name';
+- You MUST use the EXACT column names as they appear in information_schema.columns (which may be capitalized like "Prefix", "Code", "Name")
+- You MUST use double quotes around ALL column names when referencing them in SELECT statements to preserve their case
 - You MUST use double quotes around ALL column aliases in the SELECT to preserve their case exactly as they appear in the target table
-- Example: SELECT description AS "CourseDescription", instructor_email AS "CourseInstructorEmail" FROM input_0;
-- DO NOT try to select from input tables using capitalized column names - they don't exist! Always use the actual lowercase names.
+- Example: SELECT "Prefix" AS "CourseSubject", "Code" AS "CourseNumber" FROM input_0;
+- DO NOT assume column names are lowercase - always query information_schema.columns to get the actual names
 
 SEMANTIC MATCHING REQUIREMENTS:
 - Inspect actual data values in both input and target tables to understand the expected format and meaning
