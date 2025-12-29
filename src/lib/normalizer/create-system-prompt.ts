@@ -25,23 +25,24 @@ CRITICAL WORKFLOW:
    - How should input values be transformed to match target values?
 5. Create views that SELECT from input tables using the EXACT column names as they appear in information_schema.columns, and ALIAS them to match the target schema exactly
 6. Apply necessary transformations to ensure data values match semantically:
-   - Combine fields (e.g., first_name + last_name → full_name)
-   - When combining address fields (street, suite, city, state, zip), use proper formatting:
-     * Format: "street, suite, city, state zip" (commas between street/suite/city, comma before state, space before zip)
-     * Example: street='123 Main St', suite='Suite 100', city='New York', state='NY', zip='10001' → "123 Main St, Suite 100, New York, NY 10001"
-     * Use CONCAT_WS or string concatenation with proper comma placement
-   - Split fields (e.g., full_name → first_name, last_name)
-   - Transform formats ONLY when semantically required (e.g., date format conversions, phone number format standardization)
-   - Apply case transformations ONLY when semantically required (e.g., status codes that must be uppercase), NOT just because target example shows different case
-   - Map values (e.g., status codes, category names) - but preserve original case unless mapping requires specific format
-   - Calculate derived values ONLY from input data (e.g., LineTotal = UnitPrice * Quantity, but DiscountPercent = 0 if input has no discount info)
-   - Use default values when input data doesn't have required fields (e.g., 0 for missing percentages, NULL where appropriate)
+   - Combine fields when input has separate fields that map to a single target field
+   - Split fields when input has a single field that maps to multiple target fields:
+     * CRITICAL: Query both input and target tables to identify when a single input field needs to be split
+     * Analyze target examples to understand how the split should work (e.g., "Ann Lee" → "Ann" and "Lee")
+     * Use SQL functions like SPLIT_PART(string, delimiter, field_number) or regex functions to split values
+     * For names: typically split on spaces, taking first part as first name, remaining parts as last name
+     * Handle edge cases (single name, multiple middle names, etc.) appropriately
+   - Transform formats when semantically required (e.g., date format conversions, standardized formats)
+   - Apply case transformations ONLY when semantically required (e.g., codes that must be uppercase), NOT just because target example shows different case
+   - Map values when needed - but preserve original case unless mapping requires specific format
+   - Calculate derived values ONLY from input data - do not copy calculation logic from target examples
+   - Use default values when input data doesn't have required fields (e.g., 0 for missing numeric fields, NULL where appropriate)
    - Handle NULLs appropriately
    - Preserve data integrity and meaning - PRESERVE ORIGINAL CASE from input data unless there's a clear semantic reason to transform it
-   - CRITICAL: When combining fields (e.g., subject + number → id), inspect the target table example values to determine the exact format/separator used:
-     * If target example shows "BIO-200", use a dash separator: subject || '-' || number
-     * If target example shows "BIO200", concatenate without separator: subject || number
-     * Always match the format pattern shown in the target example for composite fields
+   - CRITICAL: When combining fields, query the target table to inspect example values and determine the exact format/separator pattern:
+     * Analyze target examples to detect how composite values are formatted
+     * Identify separators (dashes, spaces, underscores, or none) from the target examples
+     * Match the exact format pattern, including separators, shown in the target table examples
 
 IMPORTANT COLUMN NAME HANDLING:
 - CRITICAL: Tables are created with quoted identifiers, so column names preserve their original case (e.g., "Prefix", "Code", "Name")
@@ -49,7 +50,7 @@ IMPORTANT COLUMN NAME HANDLING:
 - You MUST use the EXACT column names as they appear in information_schema.columns (which may be capitalized like "Prefix", "Code", "Name")
 - You MUST use double quotes around ALL column names when referencing them in SELECT statements to preserve their case
 - You MUST use double quotes around ALL column aliases in the SELECT to preserve their case exactly as they appear in the target table
-- Example: SELECT "Prefix" AS "CourseSubject", "Code" AS "CourseNumber" FROM input_0;
+- Example: SELECT "ColumnName" AS "TargetColumnName" FROM input_0;
 - DO NOT assume column names are lowercase - always query information_schema.columns to get the actual names
 
 SEMANTIC MATCHING REQUIREMENTS:
@@ -57,22 +58,34 @@ SEMANTIC MATCHING REQUIREMENTS:
 - Map input columns to target columns based on SEMANTIC EQUIVALENCE, not just name similarity
 - CRITICAL: Preserve the original case and format from input data unless there's a semantic requirement to transform it
   * The target table shows EXAMPLE values to illustrate the schema structure - do NOT copy or match those exact values
-  * If input has "English", output should be "English" (preserve case), NOT "ENGLISH" just because target example shows "MATH"
-  * Only apply case transformations when semantically required (e.g., status codes that must be uppercase like "PROCESSING", "PENDING")
+  * Preserve original case from input data unless there's a clear semantic reason to transform it
+  * Only apply case transformations when semantically required (e.g., codes that must be uppercase)
   * For most text fields, preserve the original case from the input data
 - Transform data values correctly only when semantically necessary (e.g., date format conversions, combining/splitting fields)
-- Handle composite fields (e.g., if input has "subject" and "number" separately but target has "id" combining them):
-  * CRITICAL: Inspect the target table example values to determine the exact format/separator pattern
-  * If target example shows "BIO-200", use: "subject" || '-' || "number"
-  * If target example shows "BIO200", use: "subject" || "number"
-  * Always match the separator and format pattern shown in the target example
-- When combining address components (street, suite, city, state, zip), ensure proper comma placement: "street, suite, city, state zip" (note the comma before state and space before zip)
+- Handle field splitting (when input has a single field that maps to multiple target fields):
+  * CRITICAL: Query both input and target tables to identify when splitting is needed
+  * Compare input field values with target field examples to understand the split pattern
+  * Analyze target examples to determine the delimiter and how many parts to extract
+  * Use SQL SPLIT_PART(string, delimiter, field_number) to extract specific parts
+  * Use SUBSTRING with POSITION to extract remaining parts after a delimiter
+  * For space-delimited values: first part typically maps to first field, remaining parts to second field
+  * Example pattern: SPLIT_PART("input_field", ' ', 1) AS "FirstPart", SUBSTRING("input_field" FROM POSITION(' ' IN "input_field") + 1) AS "SecondPart"
+- Handle composite fields (when input has separate fields that need to be combined into a single target field):
+  * CRITICAL: Query the target table to inspect example values and determine the exact format/separator pattern
+  * Analyze the target examples to detect how values are combined (what separators, if any, are used)
+  * Match the exact format pattern, including separators, shown in the target table examples
+  * Use SQL string concatenation (||) with the appropriate separator literals to replicate the pattern
 - Preserve the semantic meaning of the data - don't just copy values blindly
-- CRITICAL: For calculated/derived fields (like discounts, totals, percentages):
+- CRITICAL: For calculated/derived fields:
+  * First, query the input table to check which fields actually exist
   * Only calculate based on what's ACTUALLY present in the input data
-  * If input data doesn't have a field (e.g., no discount information), use appropriate default values (e.g., 0 for DiscountPercent, NULL where appropriate)
+  * If a target field requires calculation but the input doesn't have the necessary source fields, use appropriate default values:
+    - For numeric fields (percentages, counts, etc.): use 0 (e.g., COALESCE(calculation, 0) or CASE WHEN field IS NULL THEN 0 ELSE calculation END)
+    - For optional fields: use NULL
+  * Do NOT attempt calculations that would result in NULL/NaN - use default values instead
+  * Use SQL COALESCE or CASE statements to ensure numeric calculations never result in NULL/NaN
   * Do NOT copy calculation logic or values from the target table - the target table is only a SCHEMA/STRUCTURE reference
-  * For example: if target has DiscountPercent: 10 and FinalTotal: 80.97, but input has no discount data, output should have DiscountPercent: 0 and FinalTotal should equal LineTotal (no discount applied)
+  * Example: If target has DiscountPercent but input has no discount-related fields, use 0::numeric, not a calculation that results in NULL/NaN
 - Verify your transformations by comparing sample output data with target table data
 
 Use the query_database tool to inspect actual schemas AND DATA VALUES with SELECT queries. Then create the necessary database objects directly using CREATE statements executed via the query_database tool. You may need to create:
