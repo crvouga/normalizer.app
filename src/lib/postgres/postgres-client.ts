@@ -39,28 +39,40 @@ export class PostgresClient {
     return `"${identifier.replace(/"/g, '""')}"`;
   }
 
-  async tableExists(
-    tableName: string,
-    schema: string = 'public',
-  ): Promise<Result<boolean, string>> {
-    this.logger.debug(`Checking if table exists: ${schema}.${tableName}`);
+  /**
+   * Check if an object exists in the given schema.
+   * Returns true if a table, view, or materialized view with the given name exists.
+   */
+  async viewExist(tableName: string, schema: string = 'public'): Promise<Result<boolean, string>> {
+    this.logger.debug(`Checking if table/view/matview exists: ${schema}.${tableName}`);
     const result = await this.db.query(
-      `SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = $1 
-        AND table_name = $2
-      ) as exists`,
+      `
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = $1 AND table_name = $2
+
+        UNION
+
+        SELECT 1 FROM information_schema.views
+        WHERE table_schema = $1 AND table_name = $2
+
+        UNION
+
+        SELECT 1 FROM pg_matviews
+        WHERE schemaname = $1 AND matviewname = $2
+      ) as exists
+      `,
       z.object({ exists: z.boolean() }),
       [schema, tableName],
     );
 
     if (!isOk(result)) {
-      this.logger.error(`Failed to check if table exists: ${result.error}`);
-      return Err(`Failed to check if table exists: ${result.error}`);
+      this.logger.error(`Failed to check if table/view/matview exists: ${result.error}`);
+      return Err(`Failed to check if table/view/matview exists: ${result.error}`);
     }
 
     this.logger.debug(
-      `Table exists result for ${schema}.${tableName}: ${result.value[0]?.exists ?? false}`,
+      `Object exists result for ${schema}.${tableName}: ${result.value[0]?.exists ?? false}`,
     );
     return Ok(result.value[0]?.exists ?? false);
   }
@@ -547,7 +559,58 @@ export class PostgresClient {
 
     return sanitized;
   }
+
+  /**
+   * Check if multiple views exist in the database
+   */
+  async viewsExist(
+    viewNames: string[],
+    schema: string = 'public',
+  ): Promise<Result<null, ViewsExistsError>> {
+    for (const viewName of viewNames) {
+      const checkResult = await this.viewExist(viewName, schema);
+
+      if (isErr(checkResult)) {
+        this.logger.error('Failed to validate output view exists', {
+          viewName,
+          error: checkResult.error,
+        });
+        return Err({
+          type: 'errored',
+          error: checkResult.error,
+          viewName,
+        });
+      }
+
+      const exists = checkResult.value;
+      if (!exists) {
+        this.logger.error('Output view was not created', {
+          viewName,
+        });
+        return Err({
+          type: 'not-created',
+          viewName,
+        });
+      }
+    }
+
+    return Ok(null);
+  }
 }
+
+/**
+ * Error type for view existence checks
+ */
+export type ViewsExistsError =
+  | {
+      type: 'errored';
+      error: string;
+      viewName: string;
+    }
+  | {
+      type: 'not-created';
+      viewName: string;
+    };
 
 export const createPostgresClient = (params: { db: SqlDb; logger: Logger }): PostgresClient => {
   const logger = params.logger.child(PostgresClient.name);

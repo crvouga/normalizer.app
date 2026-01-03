@@ -5,8 +5,11 @@ import type { Logger } from '../logger';
 import { createPostgresClient } from '../postgres/postgres-client';
 import { Err, isErr, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
+import { createFollowUpPrompt } from './create-follow-up-prompt';
+import { createGoalPrompt } from './create-goal-prompt';
 import { createQueryDatabaseTool } from './create-query-database-tool';
 import { createSystemPrompt } from './create-system-prompt';
+import { createUserPrompt } from './create-user-prompt';
 import type { NormalizerEvent } from './normalizer-event';
 
 /**
@@ -48,6 +51,8 @@ export async function createNormalizationViews({
     targetViewNames: targetTableNames,
     outputViewName: outputViewNames,
   });
+  const goalPrompt = createGoalPrompt();
+  const userPrompt = createUserPrompt();
 
   logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
 
@@ -56,46 +61,7 @@ export async function createNormalizationViews({
   const ran = await agentLoop.run({
     tools: [queryDatabaseTool],
     goal: {
-      description:
-        'Create normalization views that transform input tables to match target schemas both structurally AND semantically. The views must correctly map input data values to target schema values, not just match column names.',
-    },
-    shouldContinue: async (_message, stepNumber) => {
-      // Check if all required output views exist
-      for (const outputViewName of outputViewNames) {
-        const checkResult = await postgresClient.tableExists(outputViewName);
-
-        if (isErr(checkResult)) {
-          logger.warn('Failed to check if output view exists', {
-            viewName: outputViewName,
-            error: checkResult.error,
-          });
-          // If we can't check, assume it doesn't exist and continue
-          return {
-            shouldContinue: true,
-            followUpMessage: `The output view "${outputViewName}" does not exist yet. You must create it using CREATE OR REPLACE VIEW "${outputViewName}" AS ... before finishing. Use the query_database tool to create the view.`,
-          };
-        }
-
-        const exists = checkResult.value;
-
-        if (!exists) {
-          logger.debug('Output view does not exist yet', {
-            viewName: outputViewName,
-            stepNumber,
-          });
-          return {
-            shouldContinue: true,
-            followUpMessage: `The output view "${outputViewName}" does not exist yet. You must create it using CREATE OR REPLACE VIEW "${outputViewName}" AS ... before finishing. Use the query_database tool to create the view.`,
-          };
-        }
-      }
-
-      // All views exist, allow the loop to stop
-      logger.debug('All output views exist, allowing loop to complete', {
-        outputViewNames,
-        stepNumber,
-      });
-      return { shouldContinue: false };
+      description: goalPrompt,
     },
     initialMessages: [
       {
@@ -104,10 +70,33 @@ export async function createNormalizationViews({
       },
       {
         role: 'user',
-        content:
-          'First, use the query_database tool with SELECT queries to inspect both the schemas AND actual data values in the input and target tables. Understand the semantic meaning of each field and how input data should be transformed to match the target schema. Then create the output views (or materialized views, tables, indexes, etc. as needed) that correctly transform the input data semantically, not just structurally. You MUST create all output views before finishing.',
+        content: userPrompt,
       },
     ],
+    async shouldContinue(_message, stepNumber) {
+      const checked = await postgresClient.viewsExist(outputViewNames);
+
+      if (isErr(checked)) {
+        const error = checked.error;
+        logger.debug('Some output views do not exist yet or errored, continuing agentic loop', {
+          error,
+          stepNumber,
+        });
+        return {
+          shouldContinue: true,
+          followUpMessage: createFollowUpPrompt({
+            outputViewName: error.viewName,
+          }),
+        };
+      }
+
+      logger.debug('All output views exist, allowing loop to complete', {
+        outputViewNames,
+        stepNumber,
+      });
+
+      return { shouldContinue: false };
+    },
   });
 
   if (isErr(ran)) {
@@ -115,26 +104,19 @@ export async function createNormalizationViews({
     return Err(ran.error);
   }
 
-  // Validate that all output views were created
-  for (const outputViewName of outputViewNames) {
-    const checkResult = await postgresClient.tableExists(outputViewName);
+  const checked = await postgresClient.viewsExist(outputViewNames);
 
-    if (isErr(checkResult)) {
-      logger.error('Failed to validate output view exists', {
-        viewName: outputViewName,
-        error: checkResult.error,
-      });
-      return Err(`Failed to validate that output view "${outputViewName}" was created`);
-    }
-
-    const exists = checkResult.value;
-    if (!exists) {
-      logger.error('Output view was not created', {
-        viewName: outputViewName,
-        stepNumber: ran.value.stepNumber,
-        phase: ran.value.phase,
-      });
-      return Err(`Output view "${outputViewName}" was not created by the agentic loop`);
+  if (isErr(checked)) {
+    logger.error('Failed to validate output views exist', {
+      error: checked.error,
+    });
+    switch (checked.error.type) {
+      case 'errored':
+        return Err(checked.error.error);
+      case 'not-created':
+        return Err(`The output view "${checked.error.viewName}" was not created.`);
+      default:
+        return Err('Unknown error');
     }
   }
 

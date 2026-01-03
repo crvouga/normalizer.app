@@ -55,7 +55,7 @@ describe('PostgresClient', () => {
 
   describe('tableExists', () => {
     test('returns false for non-existent table', async () => {
-      const result = await client.tableExists('non_existent_table');
+      const result = await client.viewExist('non_existent_table');
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toBe(false);
@@ -71,7 +71,7 @@ describe('PostgresClient', () => {
       expect(isOk(createResult)).toBe(true);
 
       // Check if exists
-      const existsResult = await client.tableExists(tableName);
+      const existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -80,7 +80,7 @@ describe('PostgresClient', () => {
 
     test('handles custom schema', async () => {
       // Note: PGLite may not support custom schemas, so this test may need adjustment
-      const result = await client.tableExists('non_existent', 'public');
+      const result = await client.viewExist('non_existent', 'public');
       expect(isOk(result)).toBe(true);
     });
   });
@@ -94,7 +94,7 @@ describe('PostgresClient', () => {
       expect(isOk(result)).toBe(true);
 
       // Verify table exists
-      const existsResult = await client.tableExists(tableName);
+      const existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -188,7 +188,7 @@ describe('PostgresClient', () => {
       expect(isOk(result)).toBe(true);
 
       // Verify table exists (name will be escaped)
-      const existsResult = await client.tableExists(tableName);
+      const existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
     });
   });
@@ -203,7 +203,7 @@ describe('PostgresClient', () => {
       expect(isOk(createResult)).toBe(true);
 
       // Verify it exists
-      let existsResult = await client.tableExists(tableName);
+      let existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -214,7 +214,7 @@ describe('PostgresClient', () => {
       expect(isOk(dropResult)).toBe(true);
 
       // Verify it no longer exists
-      existsResult = await client.tableExists(tableName);
+      existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(false);
@@ -812,7 +812,7 @@ describe('PostgresClient', () => {
       expect(isOk(createResult)).toBe(true);
 
       // Verify table exists
-      let existsResult = await client.tableExists(tableName);
+      let existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -865,7 +865,7 @@ describe('PostgresClient', () => {
       expect(isOk(dropResult)).toBe(true);
 
       // Verify table no longer exists
-      existsResult = await client.tableExists(tableName);
+      existsResult = await client.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(false);

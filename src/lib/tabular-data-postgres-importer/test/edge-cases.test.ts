@@ -42,7 +42,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       expect(result.value.rowCount).toBe(0);
 
       // Verify table exists with schema
-      const existsResult = await postgresClient.tableExists(tableName);
+      const existsResult = await postgresClient.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -139,7 +139,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       expect(sanitizedTableName).not.toContain('!');
 
       // Verify table exists
-      const existsResult = await postgresClient.tableExists(sanitizedTableName);
+      const existsResult = await postgresClient.viewExist(sanitizedTableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -187,7 +187,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
     if (isOk(result)) {
       // Table name should start with underscore
       expect(result.value.tableName).toMatch(/^_/);
-      const existsResult = await postgresClient.tableExists(result.value.tableName);
+      const existsResult = await postgresClient.viewExist(result.value.tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -217,7 +217,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     if (isOk(result)) {
       expect(result.value.tableName.length).toBeLessThanOrEqual(63);
-      const existsResult = await postgresClient.tableExists(result.value.tableName);
+      const existsResult = await postgresClient.viewExist(result.value.tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);

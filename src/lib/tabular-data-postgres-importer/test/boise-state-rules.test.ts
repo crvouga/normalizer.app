@@ -69,7 +69,7 @@ describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
       expect(result.value.rowCount).toBe(expectedRowCount);
 
       // Verify table exists
-      const existsResult = await postgresClient.tableExists(tableName);
+      const existsResult = await postgresClient.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);

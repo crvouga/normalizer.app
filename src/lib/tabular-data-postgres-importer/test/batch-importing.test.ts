@@ -72,7 +72,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     // Verify all tables exist
     for (const tableName of [tableName1, tableName2, tableName3]) {
-      const existsResult = await postgresClient.tableExists(tableName);
+      const existsResult = await postgresClient.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -360,7 +360,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     // Verify all tables exist
     for (const tableName of tableNames) {
-      const existsResult = await postgresClient.tableExists(tableName);
+      const existsResult = await postgresClient.viewExist(tableName);
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);

@@ -427,7 +427,7 @@ export class TabularDataPostgresImporter {
     }
 
     // Check if table exists
-    const tableExistsResult = await this.postgresClient.tableExists(tableName);
+    const tableExistsResult = await this.postgresClient.viewExist(tableName);
     if (isErr(tableExistsResult)) {
       return Err(`Failed to check if table exists: ${tableExistsResult.error}`);
     }
