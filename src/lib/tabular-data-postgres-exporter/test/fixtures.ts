@@ -1,10 +1,10 @@
-import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createObjectStore } from '../../../shared/s3';
+import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createLogger } from '../../logger';
+import type { ObjectStore } from '../../object-store/object-store';
+import { createPostgresClient, PostgresClient } from '../../postgres/postgres-client';
 import { isOk } from '../../result';
 import type { SqlDb } from '../../sql-db/sql-db';
-import type { ObjectStore } from '../../object-store/object-store';
-import { PostgresClient } from '../../postgres/postgres-client';
 import { TabularDataPostgresExporter } from '../tabular-data-postgres-exporter';
 
 export const TEST_BUCKET = 'test-bucket';
@@ -92,7 +92,7 @@ export async function setupFixtures(): Promise<TestFixtures> {
   const objectStore = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
   await objectStore.ensureBucketExists(TEST_BUCKET);
   const exporter = new TabularDataPostgresExporter(db, logger, objectStore);
-  const postgresClient = new PostgresClient(db);
+  const postgresClient = createPostgresClient({ db, logger });
   const testTables: string[] = [];
 
   return {

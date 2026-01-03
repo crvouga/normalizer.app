@@ -10,6 +10,7 @@ import {
   type ImportRequest,
 } from '~/src/lib/tabular-data-postgres-importer/tabular-data-postgres-importer';
 import { createPgliteSqlDb } from '~/src/shared/sql-db';
+import { EventEmitter } from '../event-emitter/event-emitter';
 import {
   getExtension,
   getFormatFromKey,
@@ -21,13 +22,20 @@ import {
   type ExportRequest,
 } from '../tabular-data-postgres-exporter/tabular-data-postgres-exporter';
 import { createNormalizationViews } from './create-normalization-views';
+import type { NormalizerEvent } from './normalizer-event';
+
+type ObjectLocationWithViewName = ObjectLocation & { viewName: string };
 
 export class Normalizer {
+  public readonly eventEmitter: EventEmitter<NormalizerEvent>;
+
   constructor(
     private readonly objectStore: ObjectStore,
     private readonly logger: Logger,
     private readonly llm: LLM,
-  ) {}
+  ) {
+    this.eventEmitter = new EventEmitter<NormalizerEvent>();
+  }
 
   /**
    * Normalizes objects by processing inputs against targets and producing outputs.
@@ -47,21 +55,27 @@ export class Normalizer {
 
     const sqlDb = await createPgliteSqlDb({ logger: this.logger });
 
-    const inputs = params.inputs.map((objLoc, index): ObjectLocation & { viewName: string } => ({
-      ...objLoc,
-      viewName: `input_${index}`,
-    }));
-    const targets = params.targets.map((objLoc, index): ObjectLocation & { viewName: string } => ({
-      ...objLoc,
-      viewName: `target_${index}`,
-    }));
+    const inputs = params.inputs.map(
+      (objLoc, index): ObjectLocationWithViewName => ({
+        ...objLoc,
+        viewName: `input_${index}`,
+      }),
+    );
+    const targets = params.targets.map(
+      (objLoc, index): ObjectLocationWithViewName => ({
+        ...objLoc,
+        viewName: `target_${index}`,
+      }),
+    );
     const exportFormat = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
     const exportExtension = getExtension(exportFormat);
-    const outputs = params.targets.map((_, index): ObjectLocation & { viewName: string } => ({
-      key: `${params.outputObjectKeyPrefix}output_${index}.${exportExtension}`,
-      bucket: params.outputObjectBucket,
-      viewName: `output_${index}`,
-    }));
+    const outputs = params.targets.map(
+      (_, index): ObjectLocationWithViewName => ({
+        key: `${params.outputObjectKeyPrefix}output_${index}.${exportExtension}`,
+        bucket: params.outputObjectBucket,
+        viewName: `output_${index}`,
+      }),
+    );
 
     const importedBatch = await this.importTabularData({
       sqlDb,
@@ -84,6 +98,7 @@ export class Normalizer {
     const viewCreationResult = await createNormalizationViews({
       logger: this.logger,
       llm: this.llm,
+      eventEmitter: this.eventEmitter,
       inputs,
       targets,
       outputs,
@@ -116,8 +131,8 @@ export class Normalizer {
    */
   private async importTabularData(params: {
     sqlDb: SqlDb;
-    inputs: (ObjectLocation & { viewName: string })[];
-    targets: (ObjectLocation & { viewName: string })[];
+    inputs: ObjectLocationWithViewName[];
+    targets: ObjectLocationWithViewName[];
   }): Promise<BatchImportResult> {
     const { sqlDb, inputs, targets } = params;
     const tabularDataPostgresImporter = createTabularDataPostgresImporter({
@@ -187,5 +202,6 @@ export function createNormalizer(params: {
   logger: Logger;
   llm: LLM;
 }): Normalizer {
-  return new Normalizer(params.objectStore, params.logger.child(Normalizer.name), params.llm);
+  const logger = params.logger.child(Normalizer.name);
+  return new Normalizer(params.objectStore, logger, params.llm);
 }

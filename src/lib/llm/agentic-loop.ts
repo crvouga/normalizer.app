@@ -231,11 +231,6 @@ export interface AgentRunOptions {
   memory?: AgentMemory;
 }
 
-/**
- * @deprecated Use AgentOptions and AgentRunOptions instead
- */
-export interface AgenticLoopOptions extends AgentOptions, AgentRunOptions {}
-
 export interface AgenticLoopResult {
   /** Conversation messages (for LLM continuation) */
   conversationMessages: Message[];
@@ -688,37 +683,6 @@ export class AgenticLoop {
   }
 }
 
-/**
- * Runs an agentic loop where LLM can iteratively call tools
- * until it's ready to provide a final response
- *
- * @deprecated Use `new Agent({ llm, logger }).run({ tools, initialMessages, ... })` instead
- */
-export async function runAgenticLoop(
-  options: AgenticLoopOptions,
-): Promise<Result<AgenticLoopResult, string>> {
-  const agent = new AgenticLoop({ llm: options.llm, logger: options.logger });
-  const runOptions: AgentRunOptions = {
-    tools: options.tools,
-    initialMessages: options.initialMessages,
-  };
-  if (options.maxIterations !== undefined) {
-    runOptions.maxIterations = options.maxIterations;
-  }
-  if (options.shouldContinue !== undefined) {
-    runOptions.shouldContinue = options.shouldContinue;
-  }
-  if (options.budgetLimits !== undefined) {
-    runOptions.budgetLimits = options.budgetLimits;
-  }
-  if (options.hooks !== undefined) {
-    runOptions.hooks = options.hooks;
-  }
-  if (options.goal !== undefined) {
-    runOptions.goal = options.goal;
-  }
-  if (options.memory !== undefined) {
-    runOptions.memory = options.memory;
-  }
-  return agent.run(runOptions);
+export function createAgenticLoop(options: AgentOptions): AgenticLoop {
+  return new AgenticLoop(options);
 }

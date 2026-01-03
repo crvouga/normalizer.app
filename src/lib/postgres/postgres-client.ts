@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import type { SqlDb, SqlTransaction } from '../sql-db/sql-db';
+import type { Logger } from '../logger';
 import { Err, Ok, isErr, isOk, type Result } from '../result';
+import type { SqlDb, SqlTransaction } from '../sql-db/sql-db';
 
 /**
  * Metadata for a PostgreSQL table column
@@ -21,31 +22,28 @@ export interface TableColumn {
 }
 
 /**
- * Client for querying PostgreSQL metadata using the SqlDb abstraction.
- * Provides methods for inspecting tables, schemas, and data.
+ * Client for querying PostgreSQL metadata using the SqlDb abstraction,
+ * with dependency-injected logging.
  */
 export class PostgresClient {
-  constructor(private readonly db: SqlDb) {}
+  constructor(
+    private readonly db: SqlDb,
+    private readonly logger: Logger,
+  ) {}
 
   /**
    * Escape PostgreSQL identifier (table/column names)
    * Wraps in double quotes to handle special characters safely
    */
   escapeIdentifier(identifier: string): string {
-    // Replace any double quotes with escaped version and wrap in quotes
     return `"${identifier.replace(/"/g, '""')}"`;
   }
 
-  /**
-   * Check if a table exists in the specified schema
-   * @param tableName - Name of the table to check
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing true if table exists, false otherwise, or an error
-   */
   async tableExists(
     tableName: string,
     schema: string = 'public',
   ): Promise<Result<boolean, string>> {
+    this.logger.debug(`Checking if table exists: ${schema}.${tableName}`);
     const result = await this.db.query(
       `SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -57,22 +55,21 @@ export class PostgresClient {
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to check if table exists: ${result.error}`);
       return Err(`Failed to check if table exists: ${result.error}`);
     }
 
+    this.logger.debug(
+      `Table exists result for ${schema}.${tableName}: ${result.value[0]?.exists ?? false}`,
+    );
     return Ok(result.value[0]?.exists ?? false);
   }
 
-  /**
-   * Get table column metadata (schema information)
-   * @param tableName - Name of the table
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing array of column metadata, or an error
-   */
   async getTableSchema(
     tableName: string,
     schema: string = 'public',
   ): Promise<Result<ColumnMetadata[], string>> {
+    this.logger.debug(`Getting schema for table: ${schema}.${tableName}`);
     const result = await this.db.query(
       `SELECT column_name, data_type, is_nullable
        FROM information_schema.columns
@@ -87,48 +84,40 @@ export class PostgresClient {
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to get table schema: ${result.error}`);
       return Err(`Failed to get table schema: ${result.error}`);
     }
 
     return Ok(result.value);
   }
 
-  /**
-   * Get the number of rows in a table
-   * @param tableName - Name of the table
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing row count, or an error
-   */
   async getTableRowCount(
     tableName: string,
     schema: string = 'public',
   ): Promise<Result<number, string>> {
     const escapedTableName = this.escapeIdentifier(tableName);
     const escapedSchema = this.escapeIdentifier(schema);
+
+    this.logger.debug(`Getting row count for table: ${schema}.${tableName}`);
     const result = await this.db.query(
       `SELECT COUNT(*) as count FROM ${escapedSchema}.${escapedTableName}`,
       z.object({ count: z.number() }),
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to get table row count: ${result.error}`);
       return Err(`Failed to get table row count: ${result.error}`);
     }
 
     if (result.value.length > 0) {
+      this.logger.debug(`Row count for ${schema}.${tableName}: ${result.value[0]!.count}`);
       return Ok(result.value[0]!.count);
     }
 
+    this.logger.debug(`Row count for ${schema}.${tableName} is 0 (empty table)`);
     return Ok(0);
   }
 
-  /**
-   * Get all rows from a table with schema validation
-   * @param tableName - Name of the table
-   * @param rowSchema - Zod schema to validate each row against
-   * @param schema - Schema name (defaults to 'public')
-   * @param orderBy - Optional ORDER BY clause (defaults to 'ORDER BY 1')
-   * @returns Result containing array of validated rows, or an error
-   */
   async getTableRows<T>(
     tableName: string,
     rowSchema: z.ZodType<T>,
@@ -137,51 +126,46 @@ export class PostgresClient {
   ): Promise<Result<T[], string>> {
     const escapedTableName = this.escapeIdentifier(tableName);
     const escapedSchema = this.escapeIdentifier(schema);
+
+    this.logger.debug(`Getting all rows from table: ${schema}.${tableName} with order: ${orderBy}`);
     const result = await this.db.query(
       `SELECT * FROM ${escapedSchema}.${escapedTableName} ${orderBy}`,
       rowSchema,
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to get table rows: ${result.error}`);
       return Err(`Failed to get table rows: ${result.error}`);
     }
 
     return Ok(result.value);
   }
 
-  /**
-   * Drop a table if it exists
-   * @param tableName - Name of the table to drop
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result indicating success or failure
-   */
   async dropTable(tableName: string, schema: string = 'public'): Promise<Result<void, string>> {
     const escapedTableName = this.escapeIdentifier(tableName);
     const escapedSchema = this.escapeIdentifier(schema);
+    this.logger.info(`Dropping table if exists: ${schema}.${tableName}`);
     const result = await this.db.unsafe(
       `DROP TABLE IF EXISTS ${escapedSchema}.${escapedTableName}`,
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to drop table: ${result.error}`);
       return Err(`Failed to drop table: ${result.error}`);
     }
 
+    this.logger.info(`Table dropped: ${schema}.${tableName} (if existed)`);
     return Ok(undefined);
   }
 
-  /**
-   * Create a table with the specified columns
-   * @param tableName - Name of the table to create
-   * @param columns - Array of column definitions
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result indicating success or failure
-   */
   async createTable(
     tableName: string,
     columns: TableColumn[],
     schema: string = 'public',
   ): Promise<Result<void, string>> {
+    this.logger.info(`Creating table: ${schema}.${tableName} with ${columns.length} columns`);
     if (columns.length === 0) {
+      this.logger.error('Attempted to create table with no columns');
       return Err('Cannot create table with no columns');
     }
 
@@ -199,49 +183,44 @@ export class PostgresClient {
     );
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to create table: ${result.error}`);
       return Err(`Failed to create table: ${result.error}`);
     }
 
+    this.logger.info(`Table created: ${schema}.${tableName}`);
     return Ok(undefined);
   }
 
-  /**
-   * Truncate a table (remove all rows)
-   * @param tableName - Name of the table to truncate
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result indicating success or failure
-   */
   async truncateTable(tableName: string, schema: string = 'public'): Promise<Result<void, string>> {
     const escapedTableName = this.escapeIdentifier(tableName);
     const escapedSchema = this.escapeIdentifier(schema);
+    this.logger.info(`Truncating table: ${schema}.${tableName}`);
     const result = await this.db.unsafe(`TRUNCATE TABLE ${escapedSchema}.${escapedTableName}`);
 
     if (!isOk(result)) {
+      this.logger.error(`Failed to truncate table: ${result.error}`);
       return Err(`Failed to truncate table: ${result.error}`);
     }
 
+    this.logger.info(`Table truncated: ${schema}.${tableName}`);
     return Ok(undefined);
   }
 
-  /**
-   * Insert a batch of rows into a table using parameterized queries
-   * Processes rows in batches to stay within parameter limits (max 10,000 parameters per query)
-   * and handles transaction internally
-   * @param tableName - Name of the table
-   * @param columns - Array of column names
-   * @param rows - Array of row data (each row is an array of values)
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing the total number of rows inserted, or an error
-   */
   async insertBatch(
     tableName: string,
     columns: string[],
     rows: (string | number | boolean | null)[][],
     schema: string = 'public',
   ): Promise<Result<number, string>> {
-    if (rows.length === 0) return Ok(0);
+    if (rows.length === 0) {
+      this.logger.info(`No rows provided to insert into ${schema}.${tableName}, skipping`);
+      return Ok(0);
+    }
 
-    if (columns.length === 0) return Err('Cannot insert into table with no columns');
+    if (columns.length === 0) {
+      this.logger.error('Attempted to insert into table with no columns');
+      return Err('Cannot insert into table with no columns');
+    }
 
     const escapedColumnNames = columns.map((col) => this.escapeIdentifier(col)).join(', ');
     const maxParamsPerQuery = 10_000;
@@ -249,6 +228,10 @@ export class PostgresClient {
     // Ensure minimum batch size of 100 for better performance, but cap at 5000 for memory efficiency
     const calculatedBatchSize = Math.floor(maxParamsPerQuery / columns.length);
     const batchSize = Math.max(100, Math.min(calculatedBatchSize, 5000));
+
+    this.logger.info(
+      `Inserting ${rows.length} rows into ${schema}.${tableName} (batch size: ${batchSize})`,
+    );
 
     const transactionResult = await this.db.begin(async (tx) => {
       return this.processBatchesInTransaction({
@@ -262,15 +245,14 @@ export class PostgresClient {
     });
 
     if (!isOk(transactionResult)) {
+      this.logger.error(`Transaction failed during insert: ${transactionResult.error}`);
       return Err(`Transaction failed: ${transactionResult.error}`);
     }
 
+    this.logger.info(`Inserted ${transactionResult.value} rows into ${schema}.${tableName}`);
     return transactionResult;
   }
 
-  /**
-   * Process all batches within a transaction
-   */
   private async processBatchesInTransaction({
     tx,
     tableName,
@@ -288,8 +270,15 @@ export class PostgresClient {
   }): Promise<Result<number, string>> {
     let totalInserted = 0;
 
+    this.logger.debug(
+      `Processing insert in batches for ${schema}.${tableName} (batch size: ${batchSize})`,
+    );
+
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
+      this.logger.debug(
+        `Inserting batch [${i + 1}, ${i + batch.length}] into ${schema}.${tableName}`,
+      );
       const insertResult = await this.insertBatchInTransaction({
         tx,
         tableName,
@@ -299,6 +288,9 @@ export class PostgresClient {
       });
 
       if (!isOk(insertResult)) {
+        this.logger.error(
+          `Failed to insert batch at rows [${i + 1}, ${i + batch.length}]: ${insertResult.error}`,
+        );
         return Err(`Failed to insert batch: ${insertResult.error}`);
       }
 
@@ -308,9 +300,6 @@ export class PostgresClient {
     return Ok(totalInserted);
   }
 
-  /**
-   * Insert a single batch of rows within a transaction
-   */
   private async insertBatchInTransaction({
     tx,
     tableName,
@@ -330,18 +319,17 @@ export class PostgresClient {
       batch,
       schema,
     });
+    this.logger.debug(`Executing batch insert query for ${schema}.${tableName}: ${query}`);
     const insertResult = await tx.unsafe(query, values);
 
     if (!isOk(insertResult)) {
+      this.logger.error(`Batch insert failed: ${insertResult.error}`);
       return Err(insertResult.error);
     }
 
     return Ok(undefined);
   }
 
-  /**
-   * Build parameterized query and values array for a batch
-   */
   private buildBatchQuery({
     tableName,
     escapedColumnNames,
@@ -372,16 +360,6 @@ export class PostgresClient {
     return { query, values };
   }
 
-  /**
-   * Import CSV data directly using PostgreSQL COPY command for maximum performance.
-   * Note: PGlite doesn't support COPY FROM STDIN, so this falls back to batch insert.
-   *
-   * @param tableName - Name of the table to import into
-   * @param columns - Array of column names
-   * @param csvData - CSV data as string (including header row)
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing the number of rows imported, or an error
-   */
   async copyFromCsv(
     tableName: string,
     columns: string[],
@@ -389,10 +367,13 @@ export class PostgresClient {
     schema: string = 'public',
   ): Promise<Result<number, string>> {
     if (columns.length === 0) {
+      this.logger.error(`Cannot copy into table with no columns: ${schema}.${tableName}`);
       return Err('Cannot copy into table with no columns');
     }
 
     try {
+      this.logger.info(`Starting CSV import into ${schema}.${tableName}...`);
+
       // Parse CSV data into rows
       // Split by newline and filter empty lines
       const lines = csvData
@@ -401,7 +382,7 @@ export class PostgresClient {
         .filter((line) => line.trim().length > 0);
 
       if (lines.length <= 1) {
-        // Only header or empty
+        this.logger.info(`CSV has only header or empty for ${schema}.${tableName}, skipping`);
         return Ok(0);
       }
 
@@ -421,16 +402,22 @@ export class PostgresClient {
       }
 
       // Use batch insert
-      return this.insertBatch(tableName, columns, rows, schema);
+      const insertResult = await this.insertBatch(tableName, columns, rows, schema);
+      if (isErr(insertResult)) {
+        this.logger.error(`Error while inserting CSV data: ${insertResult.error}`);
+        return insertResult;
+      }
+      this.logger.info(
+        `CSV import success: ${insertResult.value} rows into ${schema}.${tableName}`,
+      );
+      return insertResult;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to copy data: ${errorMessage}`);
       return Err(`Failed to copy data: ${errorMessage}`);
     }
   }
 
-  /**
-   * Parse a CSV line handling quoted values
-   */
   private parseCsvLine(line: string): string[] {
     const result: string[] = [];
     let current = '';
@@ -464,16 +451,6 @@ export class PostgresClient {
     return result;
   }
 
-  /**
-   * Import CSV data from a stream using optimized batch inserts.
-   * Uses streaming for memory efficiency and optimized batch sizes for performance.
-   *
-   * @param tableName - Name of the table to import into
-   * @param columns - Array of column names
-   * @param rowStream - Async generator yielding data rows (arrays of values)
-   * @param schema - Schema name (defaults to 'public')
-   * @returns Result containing the number of rows imported, or an error
-   */
   async copyFromStream(
     tableName: string,
     columns: string[],
@@ -481,15 +458,15 @@ export class PostgresClient {
     schema: string = 'public',
   ): Promise<Result<number, string>> {
     if (columns.length === 0) {
+      this.logger.error(
+        `Cannot copy from stream into table with no columns: ${schema}.${tableName}`,
+      );
       return Err('Cannot copy into table with no columns');
     }
 
     return this.insertFromStream(tableName, columns, rowStream, schema);
   }
 
-  /**
-   * Import data from a stream using optimized batch inserts.
-   */
   private async insertFromStream(
     tableName: string,
     columns: string[],
@@ -497,10 +474,8 @@ export class PostgresClient {
     schema: string,
   ): Promise<Result<number, string>> {
     try {
-      // Calculate optimal batch size based on column count
       const maxParamsPerQuery = 10_000;
       const optimalBatchSize = Math.max(1, Math.floor(maxParamsPerQuery / columns.length));
-      // Cap at reasonable size for memory efficiency
       const batchSize = Math.min(optimalBatchSize, 5000);
 
       let totalInserted = 0;
@@ -510,13 +485,21 @@ export class PostgresClient {
         if (batch.length === 0) return;
         const insertResult = await this.insertBatch(tableName, columns, batch, schema);
         if (isErr(insertResult)) {
+          this.logger.error(
+            `Error while inserting stream batch into ${schema}.${tableName}: ${insertResult.error}`,
+          );
           throw new Error(insertResult.error);
         }
+        this.logger.debug(
+          `Inserted another ${insertResult.value} rows into ${schema}.${tableName} from stream`,
+        );
         totalInserted += insertResult.value;
         batch = [];
       };
 
-      // Process rows in batches
+      this.logger.info(
+        `Beginning stream import into ${schema}.${tableName} (batch size: ${batchSize})`,
+      );
       for await (const row of rowStream) {
         batch.push(row);
         if (batch.length >= batchSize) {
@@ -527,9 +510,14 @@ export class PostgresClient {
       // Flush remaining rows
       await flushBatch();
 
+      this.logger.info(
+        `Stream import completed: ${totalInserted} rows inserted into ${schema}.${tableName}`,
+      );
+
       return Ok(totalInserted);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to insert from stream: ${errorMessage}`);
       return Err(`Failed to insert from stream: ${errorMessage}`);
     }
   }
@@ -560,3 +548,8 @@ export class PostgresClient {
     return sanitized;
   }
 }
+
+export const createPostgresClient = (params: { db: SqlDb; logger: Logger }): PostgresClient => {
+  const logger = params.logger.child(PostgresClient.name);
+  return new PostgresClient(params.db, logger);
+};

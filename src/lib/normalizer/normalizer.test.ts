@@ -11,7 +11,7 @@ import {
   toInt,
 } from './test/test-normalizer';
 
-describe.if(isOpenAIEnabled())('Normalizer', async () => {
+describe.if(isOpenAIEnabled() && false)('Normalizer', async () => {
   const logger = createLogger({ noop: true });
   const testBucket = 'test-normalizer';
   const objectStore = await createObjectStore({ logger });

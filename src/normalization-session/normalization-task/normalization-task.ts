@@ -1,6 +1,7 @@
 import { enumerate } from '~/src/lib/array/enumerate';
 import { createLLMOpenAI, DEFAULT_MODEL } from '~/src/lib/llm/llm-open-ai';
 import { isErr } from '~/src/lib/result';
+import type { TaskHandler } from '~/src/shared/graphile-worker';
 import { Artifact as ArtifactFactory } from '../../artifacts/artifact';
 import { ArtifactDb } from '../../artifacts/artifact-db';
 import { ArtifactId } from '../../artifacts/artifact-id';
@@ -19,7 +20,6 @@ import type { NormalizationSessionProjection } from '../normalization-session-pr
 import { NormalizationSessionProjectionDb } from '../normalization-session-projection/normalization-session-projection-db';
 import type { NormalizationSessionProjectionEntry } from '../normalization-session-projection/normalization-session-projection-entry';
 import { toNormalizedFileName } from './normalized-file-name';
-import type { TaskHandler } from '~/src/shared/graphile-worker';
 
 /**
  * Normalization task handler
@@ -139,7 +139,12 @@ async function performNormalization({
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
   const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
-  const normalizer = createNormalizer({ objectStore, logger, llm });
+
+  const normalizer = createNormalizer({
+    objectStore,
+    logger,
+    llm,
+  });
 
   const artifactDb = new ArtifactDb(tx, logger);
   const inputArtifacts = await artifactDb.getByIds(inProgressEntry.inputArtifactIds);

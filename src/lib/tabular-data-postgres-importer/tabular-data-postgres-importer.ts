@@ -1,7 +1,11 @@
 import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
-import { PostgresClient, type TableColumn } from '../postgres/postgres-client';
+import {
+  createPostgresClient,
+  PostgresClient,
+  type TableColumn,
+} from '../postgres/postgres-client';
 import { combineUntilError, Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { TabularDataConverter } from '../tabular-data-converter/tabular-data-converter';
@@ -109,7 +113,7 @@ export class TabularDataPostgresImporter {
       objectStore: this.objectStore,
       logger: this.logger,
     });
-    this.postgresClient = new PostgresClient(sql);
+    this.postgresClient = createPostgresClient({ db: sql, logger });
   }
 
   /**

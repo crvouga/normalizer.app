@@ -1,11 +1,13 @@
-import { z } from 'zod';
-import { AgenticLoop } from '../llm/agentic-loop';
+import type { EventEmitter } from '../event-emitter/event-emitter';
+import { createAgenticLoop } from '../llm/agentic-loop';
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
+import { createPostgresClient } from '../postgres/postgres-client';
 import { Err, isErr, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { createQueryDatabaseTool } from './create-query-database-tool';
 import { createSystemPrompt } from './create-system-prompt';
+import type { NormalizerEvent } from './normalizer-event';
 
 /**
  * Create normalization views that transform input tables to match target schemas both structurally and semantically.
@@ -26,6 +28,7 @@ export async function createNormalizationViews({
   llm: LLM;
   sqlDb: SqlDb;
   logger: Logger;
+  eventEmitter: EventEmitter<NormalizerEvent>;
 }): Promise<Result<null, string>> {
   logger.info('Starting normalization view creation', {
     inputCount: inputs.length,
@@ -38,6 +41,7 @@ export async function createNormalizationViews({
   const inputTableNames = inputs.map((input) => input.viewName);
   const targetTableNames = targets.map((target) => target.viewName);
   const outputViewNames = outputs.map((output) => output.viewName);
+  const postgresClient = createPostgresClient({ db: sqlDb, logger });
   const queryDatabaseTool = createQueryDatabaseTool({ sqlDb, logger });
   const systemPrompt = createSystemPrompt({
     inputViewNames: inputTableNames,
@@ -47,7 +51,7 @@ export async function createNormalizationViews({
 
   logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
 
-  const agentLoop = new AgenticLoop({ llm, logger });
+  const agentLoop = createAgenticLoop({ llm, logger });
 
   const ran = await agentLoop.run({
     tools: [queryDatabaseTool],
@@ -58,15 +62,7 @@ export async function createNormalizationViews({
     shouldContinue: async (_message, stepNumber) => {
       // Check if all required output views exist
       for (const outputViewName of outputViewNames) {
-        const checkResult = await sqlDb.query<{ exists: boolean }>(
-          `SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name = $1
-          ) as exists`,
-          z.object({ exists: z.boolean() }),
-          [outputViewName],
-        );
+        const checkResult = await postgresClient.tableExists(outputViewName);
 
         if (isErr(checkResult)) {
           logger.warn('Failed to check if output view exists', {
@@ -80,7 +76,7 @@ export async function createNormalizationViews({
           };
         }
 
-        const exists = checkResult.value[0]?.exists ?? false;
+        const exists = checkResult.value;
 
         if (!exists) {
           logger.debug('Output view does not exist yet', {
@@ -121,15 +117,7 @@ export async function createNormalizationViews({
 
   // Validate that all output views were created
   for (const outputViewName of outputViewNames) {
-    const checkResult = await sqlDb.query<{ exists: boolean }>(
-      `SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = $1
-      ) as exists`,
-      z.object({ exists: z.boolean() }),
-      [outputViewName],
-    );
+    const checkResult = await postgresClient.tableExists(outputViewName);
 
     if (isErr(checkResult)) {
       logger.error('Failed to validate output view exists', {
@@ -139,7 +127,7 @@ export async function createNormalizationViews({
       return Err(`Failed to validate that output view "${outputViewName}" was created`);
     }
 
-    const exists = checkResult.value[0]?.exists ?? false;
+    const exists = checkResult.value;
     if (!exists) {
       logger.error('Output view was not created', {
         viewName: outputViewName,

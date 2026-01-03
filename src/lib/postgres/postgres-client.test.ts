@@ -4,7 +4,7 @@ import { createPgliteSqlDb } from '../../shared/sql-db';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
-import { PostgresClient, type TableColumn } from './postgres-client';
+import { createPostgresClient, PostgresClient, type TableColumn } from './postgres-client';
 
 describe('PostgresClient', () => {
   const logger = createLogger({ noop: true });
@@ -14,7 +14,7 @@ describe('PostgresClient', () => {
 
   beforeAll(async () => {
     db = await createPgliteSqlDb({ logger });
-    client = new PostgresClient(db);
+    client = createPostgresClient({ db, logger });
   });
 
   afterAll(async () => {

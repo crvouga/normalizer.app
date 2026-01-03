@@ -217,14 +217,14 @@ export abstract class LLM {
    */
   async completions(messages: Message[], options?: StreamOptions): Promise<Message[]> {
     const result: Message[] = [...messages];
-    let assistantMessage: ToolCallMessage | null = null;
+    let runningMessage: ToolCallMessage | null = null;
 
     for await (const chunk of this.stream(messages, options)) {
-      assistantMessage = this.processStreamChunk(chunk, assistantMessage);
+      runningMessage = this.processStreamChunk(chunk, runningMessage);
     }
 
-    if (assistantMessage) {
-      result.push(assistantMessage);
+    if (runningMessage) {
+      result.push(runningMessage);
     }
 
     return result;
@@ -246,7 +246,7 @@ export abstract class LLM {
           return {
             role: 'assistant',
             content: chunk.content,
-            ...(chunk.toolCalls && chunk.toolCalls.length > 0
+            ...(Array.isArray(chunk.toolCalls) && chunk.toolCalls.length > 0
               ? { toolCalls: chunk.toolCalls }
               : {}),
           };
@@ -254,7 +254,9 @@ export abstract class LLM {
         return {
           ...assistantMessage,
           content: chunk.content,
-          ...(chunk.toolCalls && chunk.toolCalls.length > 0 ? { toolCalls: chunk.toolCalls } : {}),
+          ...(Array.isArray(chunk.toolCalls) && chunk.toolCalls.length > 0
+            ? { toolCalls: chunk.toolCalls }
+            : {}),
         };
       default: {
         return assistantMessage;
