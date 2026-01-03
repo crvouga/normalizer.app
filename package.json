@@ -39,7 +39,7 @@
     "test-files:push": "bun run src/test-files/script-push.ts",
     "type-check": "tsc --noEmit --watch",
     "type-check:once": "tsc --noEmit",
-    "worker": "bun run --watch src/worker.tsx"
+    "worker": "bun run src/worker.tsx"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
