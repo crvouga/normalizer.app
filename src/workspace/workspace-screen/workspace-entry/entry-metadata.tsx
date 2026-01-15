@@ -39,7 +39,7 @@ export const EntryMetadata = (props: {
     for (const eventEntity of events) {
       const event = eventEntity.event;
       if (
-        event.type === 'user-canceled-normalization' &&
+        event.type === 'normalization/user-canceled' &&
         event.normalizationRunId === props.entry.normalizationRunId
       ) {
         endTime = event.canceledAt.getTime();

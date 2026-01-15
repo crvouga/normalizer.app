@@ -65,7 +65,7 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
       await recordNormalizationResult({
         tx,
         logger,
-        sessionId,
+        workspaceId: sessionId,
         startedByUserId,
         inProgressEntry,
         outputArtifactIds,
@@ -254,14 +254,14 @@ async function performNormalization({
 async function recordNormalizationResult({
   tx,
   logger,
-  sessionId,
+  workspaceId,
   startedByUserId,
   inProgressEntry,
   outputArtifactIds,
 }: {
   tx: Tx;
   logger: Logger;
-  sessionId: WorkspaceId;
+  workspaceId: WorkspaceId;
   startedByUserId: UserId;
   inProgressEntry: WorkspaceProjectionEntry;
   outputArtifactIds: ArtifactId[];
@@ -271,10 +271,10 @@ async function recordNormalizationResult({
   const eventId = WorkspaceEventId.generate();
   const completedEvent: WorkspaceEventEntity = {
     id: eventId,
-    workspace_id: sessionId,
+    workspace_id: workspaceId,
     event: {
-      type: 'system-normalization-completed',
-      sessionId,
+      type: 'normalization/system-completed',
+      workspaceId,
       normalizationRunId: inProgressEntry.normalizationRunId,
       outputArtifactIds,
       completedAt: now,
@@ -285,10 +285,10 @@ async function recordNormalizationResult({
   await tx.insert(schema.workspaceEvents).values(completedEvent);
 
   const projectionDb = new WorkspaceProjectionDb(tx, logger);
-  await projectionDb.refresh(sessionId, startedByUserId);
+  await projectionDb.refresh(workspaceId, startedByUserId);
 
   logger.info('Normalization task completed', {
-    sessionId,
+    sessionId: workspaceId,
     normalizationRunId: inProgressEntry.normalizationRunId,
     outputArtifactIds,
   });

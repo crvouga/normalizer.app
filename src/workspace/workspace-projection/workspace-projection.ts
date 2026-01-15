@@ -19,16 +19,16 @@ export type WorkspaceProjection = z.infer<typeof schema>;
 
 const reducer = (state: WorkspaceProjection, event: WorkspaceEvent): WorkspaceProjection => {
   switch (event.type) {
-    case 'user-started-session':
+    case 'workspace/user-started':
       return {
         ...state,
-        id: event.sessionId,
+        id: event.workspaceId,
         targetArtifactIds: event.targetArtifactIds,
         startedAt: event.startedAt,
         startedByUserId: event.startedByUserId,
         entries: [],
       };
-    case 'user-requested-normalization':
+    case 'normalization/user-requested':
       const latestEntry = state.entries[state.entries.length - 1];
 
       if (latestEntry?.status === 'in_progress') {
@@ -48,7 +48,7 @@ const reducer = (state: WorkspaceProjection, event: WorkspaceEvent): WorkspacePr
         ...state,
         entries: [...state.entries, entryNew],
       };
-    case 'user-canceled-normalization':
+    case 'normalization/user-canceled':
       const entryIndex = state.entries.findIndex(
         (entry) =>
           entry.type === 'normalization' && entry.normalizationRunId === event.normalizationRunId,
@@ -84,7 +84,7 @@ const reducer = (state: WorkspaceProjection, event: WorkspaceEvent): WorkspacePr
         ...state,
         entries: updatedEntries,
       };
-    case 'system-normalization-completed':
+    case 'normalization/system-completed':
       const completedEntryIndex = state.entries.findIndex(
         (entry) =>
           entry.type === 'normalization' && entry.normalizationRunId === event.normalizationRunId,

@@ -2,10 +2,10 @@ import { eq } from 'drizzle-orm';
 import type { Logger } from '~/src/lib/logger';
 import type { Db, Tx } from '~/src/shared/db';
 import * as schema from '../../db/schema';
-import { WorkspaceEventEntity } from './workspace-event-entity';
-import { WorkspaceEventId } from './workspace-event-id';
 import { WorkspaceId } from '../workspace-id';
+import { WorkspaceEventEntity } from './workspace-event-entity';
 import { WorkspaceEventEntityPersisted } from './workspace-event-entity-persisted';
+import { WorkspaceEventId } from './workspace-event-id';
 
 /**
  * Database operations for workspace events
@@ -17,25 +17,29 @@ export class WorkspaceEventDb {
   ) {}
 
   async getByWorkspaceId(workspaceId: WorkspaceId): Promise<WorkspaceEventEntity[]> {
-    // Query all events for this session
-    const events = await this.tx
+    const persistedEvents = await this.tx
       .select()
       .from(schema.workspaceEvents)
       .where(eq(schema.workspaceEvents.workspace_id, workspaceId))
       .orderBy(schema.workspaceEvents.created_at);
 
-    // Validate events
-    const validatedEvents: WorkspaceEventEntityPersisted[] = events.flatMap(
-      (event: (typeof events)[number]) => {
-        const parsedEvent = WorkspaceEventEntityPersisted.schema.safeParse(event);
-        if (parsedEvent.success) {
-          return [parsedEvent.data];
-        }
-        return [];
-      },
-    );
+    const events = persistedEvents.flatMap((event): WorkspaceEventEntity[] => {
+      const parsedEvent = WorkspaceEventEntityPersisted.schema.safeParse(event);
 
-    return validatedEvents.map(WorkspaceEventEntityPersisted.migrate);
+      if (!parsedEvent.success) {
+        this.logger.error('Failed to parse workspace event', {
+          event,
+          error: parsedEvent.error,
+        });
+        return [];
+      }
+
+      const migratedEvent = WorkspaceEventEntityPersisted.migrate(parsedEvent.data);
+
+      return [migratedEvent];
+    });
+
+    return events;
   }
 
   /**

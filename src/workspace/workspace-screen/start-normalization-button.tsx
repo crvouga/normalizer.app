@@ -27,14 +27,15 @@ export const StartNormalizationButton = (props: {
       const normalizationRunId = NormalizationRunId.generate();
       const response = await trpcClient.workspace.events.append.mutate({
         event: {
-          type: 'user-requested-normalization',
-          sessionId: props.workspaceId,
+          type: 'normalization/user-requested',
+          workspaceId: props.workspaceId,
+          targetArtifactIds: [],
           normalizationRunId,
           inputArtifactIds,
           requestedAt: new Date(),
           requestedByUserId: currentUser.id,
         },
-        sessionId: props.workspaceId,
+        workspaceId: props.workspaceId,
       });
       const payload = WorkspacePayload.schema.parse(response);
       return { payload };

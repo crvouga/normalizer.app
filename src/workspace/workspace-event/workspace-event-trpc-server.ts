@@ -20,7 +20,7 @@ export const workspaceEventRouter = router({
   append: procedure
     .input(
       z.object({
-        sessionId: WorkspaceId.schema,
+        workspaceId: WorkspaceId.schema,
         event: WorkspaceEvent.schema,
       }),
     )
@@ -28,25 +28,25 @@ export const workspaceEventRouter = router({
     .mutation(async ({ input, ctx }) => {
       const eventId = WorkspaceEventId.generate();
       ctx.logger.info('Workspace event append', {
-        sessionId: input.sessionId,
+        sessionId: input.workspaceId,
         eventId,
         eventType: input.event.type,
         userId: ctx.userId,
       });
       const event: WorkspaceEventEntity = {
         id: eventId,
-        workspace_id: input.sessionId,
+        workspace_id: input.workspaceId,
         event: input.event,
         created_at: new Date(),
       };
       await ctx.db.transaction(async (tx) => {
         const projectionDb = createWorkspaceProjectionDb({ tx, logger: ctx.logger });
-        const projectionBefore = await projectionDb.load(input.sessionId, ctx.userId);
+        const projectionBefore = await projectionDb.load(input.workspaceId, ctx.userId);
         const eventDb = createWorkspaceEventDb({ tx, logger: ctx.logger });
         await eventDb.append(event);
-        const projection = await projectionDb.refresh(input.sessionId, ctx.userId);
+        const projection = await projectionDb.refresh(input.workspaceId, ctx.userId);
         if (WorkspaceProjection.shouldStartNormalizationJob(projectionBefore, projection)) {
-          await enqueueJob(tx, { type: 'normalization', sessionId: input.sessionId });
+          await enqueueJob(tx, { type: 'normalization', sessionId: input.workspaceId });
         }
       });
       // After commit, load full payload to return
@@ -54,22 +54,22 @@ export const workspaceEventRouter = router({
         tx: ctx.db,
         logger: ctx.logger,
       });
-      const ownerId = await projectionDb.getOwner(input.sessionId);
+      const ownerId = await projectionDb.getOwner(input.workspaceId);
       if (!ownerId) {
         throw new Error('Workspace not found');
       }
       const eventsDb = createWorkspaceEventDb({ tx: ctx.db, logger: ctx.logger });
-      const events = await eventsDb.getByWorkspaceId(input.sessionId);
-      const projection = await projectionDb.load(input.sessionId, ownerId);
+      const events = await eventsDb.getByWorkspaceId(input.workspaceId);
+      const projection = await projectionDb.load(input.workspaceId, ownerId);
       const artifactIds = WorkspaceProjection.toArtifactIds(projection);
       const artifactDb = createArtifactDb({ tx: ctx.db, logger: ctx.logger });
       const artifacts = await artifactDb.getRefreshed(artifactIds, ctx.objectStore);
 
       const resourceOwnership: ResourceOwnershipEntity[] = [
         {
-          id: ResourceOwnershipEntityId.create('workspace', input.sessionId),
+          id: ResourceOwnershipEntityId.create('workspace', input.workspaceId),
           resourceType: 'workspace',
-          resourceId: input.sessionId,
+          resourceId: input.workspaceId,
           ownerId,
         },
       ];

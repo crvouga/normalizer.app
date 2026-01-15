@@ -29,7 +29,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
     async () => {
       // Generate IDs
       const userId = UserId.generate();
-      const sessionId = WorkspaceId.generate();
+      const workspaceId = WorkspaceId.generate();
       const normalizationRunId = NormalizationRunId.generate();
       const inputArtifactId = ArtifactId.generate();
       const targetArtifactId = ArtifactId.generate();
@@ -126,10 +126,10 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
 
       await eventDb.append({
         id: WorkspaceEventId.generate(),
-        workspace_id: sessionId,
+        workspace_id: workspaceId,
         event: {
-          type: 'user-started-session',
-          sessionId,
+          type: 'workspace/user-started',
+          workspaceId,
           targetArtifactIds: [targetArtifactId],
           startedAt: new Date(),
           startedByUserId: userId,
@@ -139,10 +139,11 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
 
       await eventDb.append({
         id: WorkspaceEventId.generate(),
-        workspace_id: sessionId,
+        workspace_id: workspaceId,
         event: {
-          type: 'user-requested-normalization',
-          sessionId,
+          type: 'normalization/user-requested',
+          workspaceId: workspaceId,
+          targetArtifactIds: [targetArtifactId],
           inputArtifactIds: [inputArtifactId],
           requestedAt: new Date(),
           requestedByUserId: userId,
@@ -153,14 +154,14 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
 
       // Refresh projection to ensure it's in the database
       const projectionDb = new WorkspaceProjectionDb(db, logger);
-      await projectionDb.refresh(sessionId, userId);
+      await projectionDb.refresh(workspaceId, userId);
 
       // Call the normalization task handler
       const ctx = { db, logger };
-      await normalizationTask(ctx, { sessionId });
+      await normalizationTask(ctx, { sessionId: workspaceId });
 
       // Verify output artifacts were created
-      const projection = await projectionDb.load(sessionId, userId);
+      const projection = await projectionDb.load(workspaceId, userId);
       const completedEntry = projection.entries.find(
         (entry: WorkspaceProjectionEntry) =>
           entry.type === 'normalization' && entry.status === 'completed',
@@ -218,13 +219,13 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       }
 
       // Verify completion event was created
-      const events = await eventDb.getByWorkspaceId(sessionId);
+      const events = await eventDb.getByWorkspaceId(workspaceId);
       const completionEvent = events.find(
-        (e: WorkspaceEventEntity) => e.event.type === 'system-normalization-completed',
+        (e: WorkspaceEventEntity) => e.event.type === 'normalization/system-completed',
       );
       expect(completionEvent).toBeDefined();
-      expect(completionEvent?.event.type).toBe('system-normalization-completed');
-      if (completionEvent?.event.type === 'system-normalization-completed') {
+      expect(completionEvent?.event.type).toBe('normalization/system-completed');
+      if (completionEvent?.event.type === 'normalization/system-completed') {
         expect(completionEvent.event.normalizationRunId).toBe(normalizationRunId);
         expect(completionEvent.event.outputArtifactIds.length).toBeGreaterThan(0);
       }

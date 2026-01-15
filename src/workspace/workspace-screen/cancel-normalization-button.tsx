@@ -21,13 +21,13 @@ export const CancelNormalizationButton = (props: {
     async mutationFn() {
       const response = await trpcClient.workspace.events.append.mutate({
         event: {
-          type: 'user-canceled-normalization',
-          sessionId: props.workspaceId,
+          type: 'normalization/user-canceled',
+          workspaceId: props.workspaceId,
           normalizationRunId: props.normalizationRunId,
           canceledAt: new Date(),
           canceledByUserId: currentUser.id,
         },
-        sessionId: props.workspaceId,
+        workspaceId: props.workspaceId,
       });
       const payload = WorkspacePayload.schema.parse(response);
       return { payload };

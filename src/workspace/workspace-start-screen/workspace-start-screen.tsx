@@ -12,6 +12,7 @@ import { showErrorToast, showSuccessToast } from '../../ui/toast';
 import { WorkspaceId } from '../workspace-id';
 import { WorkspacePayload } from '../workspace-payload/workspace-payload';
 import { useAddWorkspacePayloadToStore } from '../workspace-payload/workspace-payload-store';
+import type { WorkspaceEvent } from '../workspace-event/workspace-event';
 
 export const StartWorkspaceScreen = () => {
   const { t } = useI18n();
@@ -23,26 +24,26 @@ export const StartWorkspaceScreen = () => {
   // Start workspace mutation
   const mutation = useMutation({
     async mutationFn({ targetArtifactIds }: { targetArtifactIds: ArtifactId[] }) {
-      const sessionId = WorkspaceId.generate();
+      const workspaceId = WorkspaceId.generate();
       const startedAt = new Date();
       const startedByUserId = currentUser.id;
 
-      const event = {
-        type: 'user-started-session' as const,
-        sessionId,
+      const event: WorkspaceEvent = {
+        type: 'workspace/user-started',
+        workspaceId,
         targetArtifactIds,
         startedAt,
         startedByUserId,
       };
 
       const response = await trpcClient.workspace.events.append.mutate({
-        sessionId,
+        workspaceId: workspaceId,
         event,
       });
 
       const payload = WorkspacePayload.schema.parse(response);
 
-      return { sessionId, payload };
+      return { sessionId: workspaceId, payload };
     },
     onSuccess(data) {
       addToStore(data.payload);
