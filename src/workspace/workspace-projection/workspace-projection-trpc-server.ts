@@ -123,7 +123,7 @@ const load = async (input: {
   try {
     const sessionProjectionDb = new WorkspaceProjectionDb(db, logger);
     const workspaceEventDb = new WorkspaceEventDb(db, logger);
-    const sessionEvents = await workspaceEventDb.getBySessionId(sessionId);
+    const sessionEvents = await workspaceEventDb.getByWorkspaceId(sessionId);
     const sessionProjection = await sessionProjectionDb.load(sessionId, ownerId);
 
     const artifactIds = new Set<string>();

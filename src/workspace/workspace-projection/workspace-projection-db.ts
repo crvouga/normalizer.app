@@ -22,12 +22,9 @@ export class WorkspaceProjectionDb {
    * 1. Querying all events for the session
    * 2. Reducing them to compute the current state
    */
-  async load(
-    sessionId: WorkspaceId,
-    startedByUserId: UserId,
-  ): Promise<WorkspaceProjection> {
+  async load(sessionId: WorkspaceId, startedByUserId: UserId): Promise<WorkspaceProjection> {
     const workspaceEventDb = new WorkspaceEventDb(this.tx, this.logger);
-    const events = await workspaceEventDb.getBySessionId(sessionId);
+    const events = await workspaceEventDb.getByWorkspaceId(sessionId);
 
     const initialState = WorkspaceProjection.init({
       sessionId,
@@ -48,10 +45,7 @@ export class WorkspaceProjectionDb {
    * 2. Reducing them to compute the current state
    * 3. Upserting the projection to the database
    */
-  async refresh(
-    sessionId: WorkspaceId,
-    startedByUserId: UserId,
-  ): Promise<WorkspaceProjection> {
+  async refresh(sessionId: WorkspaceId, startedByUserId: UserId): Promise<WorkspaceProjection> {
     const projection = await this.load(sessionId, startedByUserId);
 
     // Upsert the projection for this workspace

@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { WorkspaceEventId } from './workspace-event-id';
 import { WorkspaceId } from '../workspace-id';
 import { WorkspaceEvent } from './workspace-event';
+import { WorkspaceEventId } from './workspace-event-id';
 
 /**
  * Zod schema for the WorkspaceEventEntity, matching the database schema.

@@ -3,8 +3,16 @@ import { ArtifactId } from '../../artifacts/artifact-id';
 import { UserId } from '../../users/user-id';
 import { NormalizationRunId } from '../normalization-run-id';
 import { WorkspaceId } from '../workspace-id';
+import type { WorkspaceEvent } from './workspace-event';
 
 const schema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('start-session'),
+    sessionId: WorkspaceId.schema,
+    targetArtifactIds: z.array(ArtifactId.schema),
+    startedAt: z.coerce.date(),
+    startedByUserId: UserId.schema,
+  }),
   z.object({
     type: z.literal('user-started-session'),
     sessionId: WorkspaceId.schema,
@@ -36,8 +44,20 @@ const schema = z.discriminatedUnion('type', [
   }),
 ]);
 
-export type WorkspaceEvent = z.infer<typeof schema>;
+export type WorkspaceEventPersisted = z.infer<typeof schema>;
 
-export const WorkspaceEvent = {
+function migrate(persisted: WorkspaceEventPersisted): WorkspaceEvent {
+  switch (persisted.type) {
+    case 'start-session': {
+      return { ...persisted, type: 'user-started-session' };
+    }
+    default: {
+      return persisted;
+    }
+  }
+}
+
+export const WorkspaceEventPersisted = {
   schema,
+  migrate,
 };

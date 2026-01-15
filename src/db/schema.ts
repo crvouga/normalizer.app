@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
+import type { WorkspaceEventPersisted } from '../workspace/workspace-event/workspace-event-persisted';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
 export const artifactUploadedByEnum = pgEnum('artifact_uploaded_by', ['system', 'user']);
@@ -91,13 +92,11 @@ export const workspaceEvents = pgTable(
   {
     id: text('id').primaryKey(),
     workspace_id: text('workspace_id').notNull(),
-    event: jsonb('event').notNull(),
+    event: jsonb('event').notNull().$type<WorkspaceEventPersisted>(),
     created_at: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => ({
-    workspaceIdIdx: index('workspace_events_workspace_id_idx').on(
-      table.workspace_id,
-    ),
+    workspaceIdIdx: index('workspace_events_workspace_id_idx').on(table.workspace_id),
   }),
 );
 

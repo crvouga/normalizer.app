@@ -5,6 +5,7 @@ import * as schema from '../../db/schema';
 import { WorkspaceEventEntity } from './workspace-event-entity';
 import { WorkspaceEventId } from './workspace-event-id';
 import { WorkspaceId } from '../workspace-id';
+import { WorkspaceEventEntityPersisted } from './workspace-event-entity-persisted';
 
 /**
  * Database operations for workspace events
@@ -15,20 +16,18 @@ export class WorkspaceEventDb {
     private readonly logger: Logger,
   ) {}
 
-  async getBySessionId(
-    sessionId: WorkspaceId,
-  ): Promise<WorkspaceEventEntity[]> {
+  async getByWorkspaceId(workspaceId: WorkspaceId): Promise<WorkspaceEventEntity[]> {
     // Query all events for this session
     const events = await this.tx
       .select()
       .from(schema.workspaceEvents)
-      .where(eq(schema.workspaceEvents.workspace_id, sessionId))
+      .where(eq(schema.workspaceEvents.workspace_id, workspaceId))
       .orderBy(schema.workspaceEvents.created_at);
 
     // Validate events
-    const validatedEvents: WorkspaceEventEntity[] = events.flatMap(
+    const validatedEvents: WorkspaceEventEntityPersisted[] = events.flatMap(
       (event: (typeof events)[number]) => {
-        const parsedEvent = WorkspaceEventEntity.schema.safeParse(event);
+        const parsedEvent = WorkspaceEventEntityPersisted.schema.safeParse(event);
         if (parsedEvent.success) {
           return [parsedEvent.data];
         }
@@ -36,7 +35,7 @@ export class WorkspaceEventDb {
       },
     );
 
-    return validatedEvents;
+    return validatedEvents.map(WorkspaceEventEntityPersisted.migrate);
   }
 
   /**
@@ -68,9 +67,6 @@ export class WorkspaceEventDb {
   }
 }
 
-export function createWorkspaceEventDb(params: {
-  tx: Tx | Db;
-  logger: Logger;
-}): WorkspaceEventDb {
+export function createWorkspaceEventDb(params: { tx: Tx | Db; logger: Logger }): WorkspaceEventDb {
   return new WorkspaceEventDb(params.tx, params.logger);
 }

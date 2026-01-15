@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ArtifactId } from '../../artifacts/artifact-id';
 import { UserId } from '../../users/user-id';
 import type { WorkspaceEvent } from '../workspace-event/workspace-event';
-import type { WorkspaceEventEntity } from '../workspace-event/workspace-event-entity';
+import { WorkspaceEventEntity } from '../workspace-event/workspace-event-entity';
 import { WorkspaceId } from '../workspace-id';
 import { WorkspaceProjectionEntry } from './workspace-projection-entry';
 
@@ -17,12 +17,8 @@ const schema = z.object({
 
 export type WorkspaceProjection = z.infer<typeof schema>;
 
-const reducer = (
-  state: WorkspaceProjection,
-  event: WorkspaceEvent,
-): WorkspaceProjection => {
+const reducer = (state: WorkspaceProjection, event: WorkspaceEvent): WorkspaceProjection => {
   switch (event.type) {
-    case 'start-session':
     case 'user-started-session':
       return {
         ...state,
@@ -148,10 +144,7 @@ const init = (input: {
   };
 };
 
-const reduce = (
-  events: WorkspaceEventEntity[],
-  initialState: WorkspaceProjection,
-) => {
+const reduce = (events: WorkspaceEventEntity[], initialState: WorkspaceProjection) => {
   return events.reduce((state, eventEntity) => reducer(state, eventEntity.event), initialState);
 };
 

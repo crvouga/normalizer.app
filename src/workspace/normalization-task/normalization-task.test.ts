@@ -218,7 +218,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       }
 
       // Verify completion event was created
-      const events = await eventDb.getBySessionId(sessionId);
+      const events = await eventDb.getByWorkspaceId(sessionId);
       const completionEvent = events.find(
         (e: WorkspaceEventEntity) => e.event.type === 'system-normalization-completed',
       );

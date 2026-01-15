@@ -29,10 +29,10 @@ function AppSidebar() {
   const user = useCurrentUser();
   const currentScreen = useCurrentScreen();
 
-  const handleSessionClick = (sessionId: WorkspaceId) => {
+  const handleSessionClick = (id: WorkspaceId) => {
     currentScreen.setCurrentScreen({
       type: 'workspace',
-      workspaceId: sessionId,
+      workspaceId: id,
     });
   };
 
@@ -68,13 +68,7 @@ function AppScreen() {
       return <StartWorkspaceScreen />;
     }
     case 'workspace': {
-      return (
-        <WorkspaceScreen
-          workspaceId={WorkspaceId.schema.parse(
-            currentScreen.workspaceId,
-          )}
-        />
-      );
+      return <WorkspaceScreen workspaceId={WorkspaceId.schema.parse(currentScreen.workspaceId)} />;
     }
   }
 }

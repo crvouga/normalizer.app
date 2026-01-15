@@ -5,22 +5,22 @@ import type { WorkspaceId } from './workspace-id';
 /**
  * Create a permission to view a workspace
  */
-export function canViewWorkspace(sessionId: WorkspaceId) {
-  return createPermission('workspace', 'view', sessionId);
+export function canViewWorkspace(workspaceId: WorkspaceId) {
+  return createPermission('workspace', 'view', workspaceId);
 }
 
 /**
  * Create a permission to edit a workspace
  */
-export function canEditWorkspace(sessionId: WorkspaceId) {
-  return createPermission('workspace', 'edit', sessionId);
+export function canEditWorkspace(workspaceId: WorkspaceId) {
+  return createPermission('workspace', 'edit', workspaceId);
 }
 
 /**
  * Create a permission to delete a workspace
  */
-export function canDeleteWorkspace(sessionId: WorkspaceId) {
-  return createPermission('workspace', 'delete', sessionId);
+export function canDeleteWorkspace(workspaceId: WorkspaceId) {
+  return createPermission('workspace', 'delete', workspaceId);
 }
 
 /**

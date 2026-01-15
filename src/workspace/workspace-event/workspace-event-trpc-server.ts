@@ -59,7 +59,7 @@ export const workspaceEventRouter = router({
         throw new Error('Workspace not found');
       }
       const eventsDb = createWorkspaceEventDb({ tx: ctx.db, logger: ctx.logger });
-      const events = await eventsDb.getBySessionId(input.sessionId);
+      const events = await eventsDb.getByWorkspaceId(input.sessionId);
       const projection = await projectionDb.load(input.sessionId, ownerId);
       const artifactIds = WorkspaceProjection.toArtifactIds(projection);
       const artifactDb = createArtifactDb({ tx: ctx.db, logger: ctx.logger });
