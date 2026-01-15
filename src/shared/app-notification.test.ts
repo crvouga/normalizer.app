@@ -3,7 +3,7 @@ import type { Db } from './db';
 import { cleanupDb, createDb, getPostgresConnection } from './db';
 import { createLogger } from '../lib/logger';
 import { PostgresNotification } from '../lib/postgres-notification';
-import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
+import { WorkspaceId } from '../workspace/workspace-id';
 import { AppNotification } from './app-notification';
 
 describe('AppNotification', () => {
@@ -28,10 +28,10 @@ describe('AppNotification', () => {
 
   test('notify returns true', async () => {
     const appNotification = new AppNotification(db);
-    const sessionId = NormalizationSessionId.generate();
+    const sessionId = WorkspaceId.generate();
 
     const result = await appNotification.notify({
-      type: 'normalization_session_projection_update',
+      type: 'workspace_projection_update',
       payload: sessionId,
     });
 
@@ -40,18 +40,18 @@ describe('AppNotification', () => {
 
   test('listen callback API - receives typed notification payload', async () => {
     const appNotification = new AppNotification(db);
-    const sessionId = NormalizationSessionId.generate();
+    const sessionId = WorkspaceId.generate();
 
     // Set up a promise to track when the callback is called
-    let receivedPayload: NormalizationSessionId | null = null;
+    let receivedPayload: WorkspaceId | null = null;
     let callbackCalled = false;
-    const callbackPromise = new Promise<NormalizationSessionId>((resolve) => {
-      const callback = (payload: NormalizationSessionId) => {
+    const callbackPromise = new Promise<WorkspaceId>((resolve) => {
+      const callback = (payload: WorkspaceId) => {
         receivedPayload = payload;
         callbackCalled = true;
         resolve(payload);
       };
-      appNotification.listen('normalization_session_projection_update', callback);
+      appNotification.listen('workspace_projection_update', callback);
     });
 
     // Wait a bit to ensure listener is set up
@@ -59,14 +59,14 @@ describe('AppNotification', () => {
 
     // Send notification using AppNotification
     await appNotification.notify({
-      type: 'normalization_session_projection_update',
+      type: 'workspace_projection_update',
       payload: sessionId,
     });
 
     // Wait for callback to be called (with timeout)
     const received = await Promise.race([
       callbackPromise,
-      new Promise<NormalizationSessionId>((_, reject) =>
+      new Promise<WorkspaceId>((_, reject) =>
         setTimeout(() => reject(new Error('Callback not called within timeout')), 2000),
       ),
     ]);
@@ -80,16 +80,16 @@ describe('AppNotification', () => {
 
   test('listen callback API - unsubscribe function works', async () => {
     const appNotification = new AppNotification(db);
-    const sessionId = NormalizationSessionId.generate();
+    const sessionId = WorkspaceId.generate();
 
     let callbackCalled = false;
-    const callback = (_payload: NormalizationSessionId) => {
+    const callback = (_payload: WorkspaceId) => {
       callbackCalled = true;
     };
 
     // Set up listener with callback
     const unsubscribe = await appNotification.listen(
-      'normalization_session_projection_update',
+      'workspace_projection_update',
       callback,
     );
     expect(unsubscribe).toBeDefined();
@@ -103,7 +103,7 @@ describe('AppNotification', () => {
 
     // Send notification - callback should not be called
     await appNotification.notify({
-      type: 'normalization_session_projection_update',
+      type: 'workspace_projection_update',
       payload: sessionId,
     });
 
@@ -116,10 +116,10 @@ describe('AppNotification', () => {
 
   test('subscribe generator API - yields typed notification payloads', async () => {
     const appNotification = new AppNotification(db);
-    const sessionId = NormalizationSessionId.generate();
+    const sessionId = WorkspaceId.generate();
 
     // Set up generator
-    const generator = appNotification.subscribe('normalization_session_projection_update');
+    const generator = appNotification.subscribe('workspace_projection_update');
 
     // Start consuming immediately
     const firstNextPromise = generator.next();
@@ -129,14 +129,14 @@ describe('AppNotification', () => {
 
     // Send notification
     await appNotification.notify({
-      type: 'normalization_session_projection_update',
+      type: 'workspace_projection_update',
       payload: sessionId,
     });
 
     // Get the first value from the generator (with timeout)
     const firstResult = await Promise.race([
       firstNextPromise,
-      new Promise<IteratorResult<NormalizationSessionId, void>>((_, reject) =>
+      new Promise<IteratorResult<WorkspaceId, void>>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout waiting for first notification')), 2000),
       ),
     ]);
@@ -147,16 +147,16 @@ describe('AppNotification', () => {
     const secondNextPromise = generator.next();
 
     // Send another notification
-    const sessionId2 = NormalizationSessionId.generate();
+    const sessionId2 = WorkspaceId.generate();
     await appNotification.notify({
-      type: 'normalization_session_projection_update',
+      type: 'workspace_projection_update',
       payload: sessionId2,
     });
 
     // Get the second value (with timeout)
     const secondResult = await Promise.race([
       secondNextPromise,
-      new Promise<IteratorResult<NormalizationSessionId, void>>((_, reject) =>
+      new Promise<IteratorResult<WorkspaceId, void>>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout waiting for second notification')), 2000),
       ),
     ]);
@@ -170,14 +170,14 @@ describe('AppNotification', () => {
   test('subscribe generator API - works with for await loop', async () => {
     const appNotification = new AppNotification(db);
     const sessionIds = [
-      NormalizationSessionId.generate(),
-      NormalizationSessionId.generate(),
-      NormalizationSessionId.generate(),
+      WorkspaceId.generate(),
+      WorkspaceId.generate(),
+      WorkspaceId.generate(),
     ];
-    const receivedPayloads: NormalizationSessionId[] = [];
+    const receivedPayloads: WorkspaceId[] = [];
 
     // Start the generator
-    const generator = appNotification.subscribe('normalization_session_projection_update');
+    const generator = appNotification.subscribe('workspace_projection_update');
 
     // Wait a bit to ensure listener is set up
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -195,7 +195,7 @@ describe('AppNotification', () => {
     // Send notifications
     for (const sessionId of sessionIds) {
       await appNotification.notify({
-        type: 'normalization_session_projection_update',
+        type: 'workspace_projection_update',
         payload: sessionId,
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -216,21 +216,21 @@ describe('AppNotification', () => {
   test('listen callback API - multiple notifications received in order', async () => {
     const appNotification = new AppNotification(db);
     const sessionIds = [
-      NormalizationSessionId.generate(),
-      NormalizationSessionId.generate(),
-      NormalizationSessionId.generate(),
+      WorkspaceId.generate(),
+      WorkspaceId.generate(),
+      WorkspaceId.generate(),
     ];
-    const receivedPayloads: NormalizationSessionId[] = [];
+    const receivedPayloads: WorkspaceId[] = [];
 
     // Set up listener
-    const allReceivedPromise = new Promise<NormalizationSessionId[]>((resolve) => {
-      const callback = (payload: NormalizationSessionId) => {
+    const allReceivedPromise = new Promise<WorkspaceId[]>((resolve) => {
+      const callback = (payload: WorkspaceId) => {
         receivedPayloads.push(payload);
         if (receivedPayloads.length === sessionIds.length) {
           resolve(receivedPayloads);
         }
       };
-      appNotification.listen('normalization_session_projection_update', callback);
+      appNotification.listen('workspace_projection_update', callback);
     });
 
     // Wait a bit to ensure listener is set up
@@ -239,7 +239,7 @@ describe('AppNotification', () => {
     // Send multiple notifications
     for (const sessionId of sessionIds) {
       await appNotification.notify({
-        type: 'normalization_session_projection_update',
+        type: 'workspace_projection_update',
         payload: sessionId,
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -248,7 +248,7 @@ describe('AppNotification', () => {
     // Wait for all notifications to be received
     const received = await Promise.race([
       allReceivedPromise,
-      new Promise<NormalizationSessionId[]>((_, reject) =>
+      new Promise<WorkspaceId[]>((_, reject) =>
         setTimeout(() => reject(new Error('Not all callbacks called within timeout')), 3000),
       ),
     ]);
@@ -258,6 +258,6 @@ describe('AppNotification', () => {
     expect(receivedPayloads).toEqual(sessionIds);
 
     // Clean up
-    await appNotification.unlisten('normalization_session_projection_update');
+    await appNotification.unlisten('workspace_projection_update');
   });
 });

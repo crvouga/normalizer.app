@@ -2,7 +2,7 @@ import { run } from 'graphile-worker';
 import { createLogger } from './lib/logger';
 import { onShutdown } from './lib/process/on-shutdown';
 import { SecretString } from './lib/secrets/secret-string';
-import { normalizationTask } from './normalization-session/normalization-task/normalization-task';
+import { normalizationTask } from './workspace/normalization-task/normalization-task';
 import { createDb } from './shared/db';
 import { createTaskList } from './shared/graphile-worker';
 

@@ -64,7 +64,7 @@ export interface UseMutationResult<TData, TInput> {
  * ```tsx
  * const { state, mutate, isPending } = useMutation({
  *   mutationFn: async (inputArtifactIds: ArtifactId[]) => {
- *     await trpcClient.normalizationSession.events.append.mutate({
+ *     await trpcClient.workspace.events.append.mutate({
  *       event: { type: 'user-requested-normalization', inputArtifactIds },
  *       sessionId,
  *     });

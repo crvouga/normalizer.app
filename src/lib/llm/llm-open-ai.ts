@@ -527,5 +527,5 @@ export function createLLMOpenAI(params: { logger: Logger; model: OpenAIModel }):
 }
 
 export function isOpenAIEnabled(): boolean {
-  return process.env.OPENAI_API_KEY !== undefined;
+  return typeof process.env.OPENAI_API_KEY === 'string' && process.env.OPENAI_API_KEY.length > 0;
 }

@@ -1,9 +1,9 @@
 import { AuthRedirectHandler } from './auth/auth-redirect-handler';
 import { useI18n } from './i18n/use-i18n';
-import { NormalizationSessionId } from './normalization-session/normalization-session-id';
-import { NormalizationSessionProjectionList } from './normalization-session/normalization-session-list/normalization-session-list';
-import { NormalizationSessionScreen } from './normalization-session/normalization-session-screen/normalization-session-screen';
-import { StartNormalizationSessionScreen } from './normalization-session/normalization-session-start-screen/normalization-session-start-screen';
+import { WorkspaceId } from './workspace/workspace-id';
+import { WorkspaceProjectionList } from './workspace/workspace-list/workspace-list';
+import { WorkspaceScreen } from './workspace/workspace-screen/workspace-screen';
+import { StartWorkspaceScreen } from './workspace/workspace-start-screen/workspace-start-screen';
 import { useCurrentScreen } from './screen/use-current-screen';
 import { Sparkles } from './ui/sparkles';
 import { Button } from './ui/button';
@@ -29,10 +29,10 @@ function AppSidebar() {
   const user = useCurrentUser();
   const currentScreen = useCurrentScreen();
 
-  const handleSessionClick = (sessionId: NormalizationSessionId) => {
+  const handleSessionClick = (sessionId: WorkspaceId) => {
     currentScreen.setCurrentScreen({
-      type: 'normalization-session',
-      normalizationSessionId: sessionId,
+      type: 'workspace',
+      workspaceId: sessionId,
     });
   };
 
@@ -43,16 +43,16 @@ function AppSidebar() {
         <Button
           className="w-full"
           text={t('app.newSession')}
-          onClick={() => currentScreen.setCurrentScreen({ type: 'start-normalization-session' })}
+          onClick={() => currentScreen.setCurrentScreen({ type: 'start-workspace' })}
         />
       </div>
       <div className="w-full flex-1 overflow-hidden">
-        <NormalizationSessionProjectionList
+        <WorkspaceProjectionList
           userId={user.id}
           onSessionClick={handleSessionClick}
           isSelected={(id) =>
-            currentScreen.currentScreen.type === 'normalization-session' &&
-            currentScreen.currentScreen.normalizationSessionId === id
+            currentScreen.currentScreen.type === 'workspace' &&
+            currentScreen.currentScreen.workspaceId === id
           }
         />
       </div>
@@ -64,14 +64,14 @@ function AppSidebar() {
 function AppScreen() {
   const { currentScreen } = useCurrentScreen();
   switch (currentScreen.type) {
-    case 'start-normalization-session': {
-      return <StartNormalizationSessionScreen />;
+    case 'start-workspace': {
+      return <StartWorkspaceScreen />;
     }
-    case 'normalization-session': {
+    case 'workspace': {
       return (
-        <NormalizationSessionScreen
-          normalizationSessionId={NormalizationSessionId.schema.parse(
-            currentScreen.normalizationSessionId,
+        <WorkspaceScreen
+          workspaceId={WorkspaceId.schema.parse(
+            currentScreen.workspaceId,
           )}
         />
       );

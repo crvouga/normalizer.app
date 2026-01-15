@@ -98,7 +98,7 @@
     "notOwner": "You are not the owner of this session",
     "unauthorized": "You are not authorized to perform this action"
   },
-  "normalizationSession": {
+  "workspace": {
     "artifactsLabel": "Artifacts",
     "targetArtifactsLabel": "Target Artifact",
     "inputArtifactsLabel": "Input Artifact",

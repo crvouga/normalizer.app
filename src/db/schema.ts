@@ -9,7 +9,7 @@ import {
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
+import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
 
 export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
 export const artifactUploadedByEnum = pgEnum('artifact_uploaded_by', ['system', 'user']);
@@ -86,31 +86,31 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   }),
 }));
 
-export const normalizationSessionEvents = pgTable(
-  'normalization_session_events',
+export const workspaceEvents = pgTable(
+  'workspace_events',
   {
     id: text('id').primaryKey(),
-    normalization_session_id: text('normalization_session_id').notNull(),
+    workspace_id: text('workspace_id').notNull(),
     event: jsonb('event').notNull(),
     created_at: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => ({
-    normalizationSessionIdIdx: index('normalization_session_events_session_id_idx').on(
-      table.normalization_session_id,
+    workspaceIdIdx: index('workspace_events_workspace_id_idx').on(
+      table.workspace_id,
     ),
   }),
 );
 
-export type INormalizationSessionEvent = typeof normalizationSessionEvents.$inferSelect;
+export type IWorkspaceEvent = typeof workspaceEvents.$inferSelect;
 
-export const normalizationSessionProjections = pgTable('normalization_session_projections', {
-  normalization_session_id: text('normalization_session_id').primaryKey(),
-  projection: jsonb('projection').notNull().$type<NormalizationSessionProjection>(),
+export const workspaceProjections = pgTable('workspace_projections', {
+  workspace_id: text('workspace_id').primaryKey(),
+  projection: jsonb('projection').notNull().$type<WorkspaceProjection>(),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
-export type INormalizationSessionProjection = typeof normalizationSessionProjections.$inferSelect;
+export type IWorkspaceProjection = typeof workspaceProjections.$inferSelect;
 
 export const keyValueStore = pgTable('key_value_store', {
   key: text('key').primaryKey(),

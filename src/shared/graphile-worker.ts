@@ -6,7 +6,7 @@ import {
   type JobPayloadMap,
 } from '../lib/graphile-worker-lib';
 import type { Logger } from '../lib/logger';
-import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
+import { WorkspaceId } from '../workspace/workspace-id';
 import type { Db, Tx } from './db';
 
 export type JobCtx = {
@@ -17,7 +17,7 @@ export type JobCtx = {
 export const Job = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('normalization'),
-    sessionId: NormalizationSessionId.schema,
+    sessionId: WorkspaceId.schema,
   }),
 ]);
 export type Job = z.infer<typeof Job>;

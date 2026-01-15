@@ -1,10 +1,10 @@
 import type { Artifact } from '../artifacts/artifact';
 import type { ArtifactId } from '../artifacts/artifact-id';
 import type { EntitySlice, IndexDefinition } from '../lib/entity-store-library';
-import type { NormalizationSessionEventEntity } from '../normalization-session/normalization-session-event/normalization-session-event-entity';
-import type { NormalizationSessionEventId } from '../normalization-session/normalization-session-event/normalization-session-event-id';
-import type { NormalizationSessionId } from '../normalization-session/normalization-session-id';
-import type { NormalizationSessionProjection } from '../normalization-session/normalization-session-projection/normalization-session-projection';
+import type { WorkspaceEventEntity } from '../workspace/workspace-event/workspace-event-entity';
+import type { WorkspaceEventId } from '../workspace/workspace-event/workspace-event-id';
+import type { WorkspaceId } from '../workspace/workspace-id';
+import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
 import type { ResourceOwnershipEntity } from '../permissions/resource-ownership-entity';
 import type { ResourceOwnershipEntityId } from '../permissions/resource-ownership-entity-id';
 import type { User } from '../users/user';
@@ -15,22 +15,22 @@ export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
     users: EntitySlice<UserId, User>;
-    normalizationSessionEvents: EntitySlice<
-      NormalizationSessionEventId,
-      NormalizationSessionEventEntity
+    workspaceEvents: EntitySlice<
+      WorkspaceEventId,
+      WorkspaceEventEntity
     >;
-    normalizationSessionProjections: EntitySlice<
-      NormalizationSessionId,
-      NormalizationSessionProjection
+    workspaceProjections: EntitySlice<
+      WorkspaceId,
+      WorkspaceProjection
     >;
     resourceOwnerships: EntitySlice<ResourceOwnershipEntityId, ResourceOwnershipEntity>;
   };
   indexes: {
-    indexNormalizationSessionEventsBySessionId: Record<
-      NormalizationSessionId,
-      NormalizationSessionEventId[]
+    indexWorkspaceEventsBySessionId: Record<
+      WorkspaceId,
+      WorkspaceEventId[]
     >;
-    indexNormalizationSessionProjectionsByUserId: Record<UserId, NormalizationSessionId[]>;
+    indexWorkspaceProjectionsByUserId: Record<UserId, WorkspaceId[]>;
     indexResourceOwnershipsByResourceId: Record<string, ResourceOwnershipEntityId[]>;
   };
 };
@@ -46,11 +46,11 @@ export const initialEntityStore: EntityStore = {
       byId: {},
       allIds: [],
     },
-    normalizationSessionEvents: {
+    workspaceEvents: {
       byId: {},
       allIds: [],
     },
-    normalizationSessionProjections: {
+    workspaceProjections: {
       byId: {},
       allIds: [],
     },
@@ -60,8 +60,8 @@ export const initialEntityStore: EntityStore = {
     },
   },
   indexes: {
-    indexNormalizationSessionEventsBySessionId: {},
-    indexNormalizationSessionProjectionsByUserId: {},
+    indexWorkspaceEventsBySessionId: {},
+    indexWorkspaceProjectionsByUserId: {},
     indexResourceOwnershipsByResourceId: {},
   },
 };
@@ -76,17 +76,17 @@ type IndexDefinitionsConfig = {
 
 // Define indexes declaratively with type safety
 export const indexDefinitions: IndexDefinitionsConfig = {
-  indexNormalizationSessionEventsBySessionId: {
-    entityType: 'normalizationSessionEvents',
+  indexWorkspaceEventsBySessionId: {
+    entityType: 'workspaceEvents',
     definition: {
       getIndexKey(entity) {
         if (
           entity &&
           typeof entity === 'object' &&
-          'normalization_session_id' in entity &&
-          typeof entity.normalization_session_id === 'string'
+          'workspace_id' in entity &&
+          typeof entity.workspace_id === 'string'
         ) {
-          return entity.normalization_session_id;
+          return entity.workspace_id;
         }
         return undefined;
       },
@@ -103,8 +103,8 @@ export const indexDefinitions: IndexDefinitionsConfig = {
       },
     },
   },
-  indexNormalizationSessionProjectionsByUserId: {
-    entityType: 'normalizationSessionProjections',
+  indexWorkspaceProjectionsByUserId: {
+    entityType: 'workspaceProjections',
     definition: {
       getIndexKey(entity) {
         if (

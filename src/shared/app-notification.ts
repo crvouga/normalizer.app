@@ -1,4 +1,4 @@
-import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
+import { WorkspaceId } from '../workspace/workspace-id';
 import type { Db, Tx } from './db';
 import { getPostgresConnection } from './db';
 import { PostgresNotification } from '../lib/postgres-notification';
@@ -8,8 +8,8 @@ import { PostgresNotification } from '../lib/postgres-notification';
  * Discriminated union for type-safe notification handling
  */
 export type Notification = {
-  type: 'normalization_session_projection_update';
-  payload: NormalizationSessionId;
+  type: 'workspace_projection_update';
+  payload: WorkspaceId;
 };
 
 /**
@@ -44,8 +44,8 @@ export class AppNotification {
     payload: string,
   ): Extract<Notification, { type: T }>['payload'] {
     switch (type) {
-      case 'normalization_session_projection_update': {
-        const parsed = NormalizationSessionId.schema.parse(payload);
+      case 'workspace_projection_update': {
+        const parsed = WorkspaceId.schema.parse(payload);
         return parsed as Extract<Notification, { type: T }>['payload'];
       }
       default: {
@@ -63,8 +63,8 @@ export class AppNotification {
    */
   async notify(notification: Notification): Promise<true> {
     switch (notification.type) {
-      case 'normalization_session_projection_update': {
-        await this.pgNotify.notify('normalization_session_projection_update', notification.payload);
+      case 'workspace_projection_update': {
+        await this.pgNotify.notify('workspace_projection_update', notification.payload);
         return true;
       }
       default: {
@@ -84,9 +84,9 @@ export class AppNotification {
    * @example
    * ```ts
    * const appNotification = new AppNotification(db);
-   * const unsubscribe = await appNotification.listen('normalization_session_projection_update', (sessionId) => {
-   *   // sessionId is typed as NormalizationSessionId
-   *   console.log('Session updated:', sessionId);
+   * const unsubscribe = await appNotification.listen('workspace_projection_update', (sessionId) => {
+   *   // sessionId is typed as WorkspaceId
+   *   console.log('Workspace updated:', sessionId);
    * });
    * // Later, to stop listening:
    * await unsubscribe();
@@ -143,8 +143,8 @@ export class AppNotification {
    * // In a tRPC subscription
    * .subscription(async function* ({ input, ctx }) {
    *   const appNotification = new AppNotification(ctx.db);
-   *   for await (const sessionId of appNotification.subscribe('normalization_session_projection_update')) {
-   *     // sessionId is typed as NormalizationSessionId
+   *   for await (const sessionId of appNotification.subscribe('workspace_projection_update')) {
+   *     // sessionId is typed as WorkspaceId
    *     yield { sessionId };
    *   }
    * })
@@ -154,8 +154,8 @@ export class AppNotification {
    * ```ts
    * // Direct usage
    * const appNotification = new AppNotification(db);
-   * for await (const sessionId of appNotification.subscribe('normalization_session_projection_update')) {
-   *   console.log('Session updated:', sessionId);
+   * for await (const sessionId of appNotification.subscribe('workspace_projection_update')) {
+   *   console.log('Workspace updated:', sessionId);
    * }
    * ```
    */

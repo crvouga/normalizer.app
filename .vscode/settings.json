@@ -37,6 +37,7 @@
     "healthcheck",
     "IPEDSID",
     "isready",
+    "networkidle",
     "officedocument",
     "openxmlformats",
     "parquetjs",

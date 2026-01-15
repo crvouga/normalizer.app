@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { NormalizationSessionId } from '../normalization-session/normalization-session-id';
+import { WorkspaceId } from '../workspace/workspace-id';
 
 export const CurrentScreen = z.discriminatedUnion('type', [
   z.object({
-    type: z.literal('start-normalization-session'),
+    type: z.literal('start-workspace'),
   }),
   z.object({
-    type: z.literal('normalization-session'),
-    normalizationSessionId: NormalizationSessionId.schema,
+    type: z.literal('workspace'),
+    workspaceId: WorkspaceId.schema,
   }),
 ]);
 

@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Resource types in the application
  */
 export const ResourceType = z.enum([
-  'normalization-session',
+  'workspace',
   'artifact',
   'user',
   // Future: Add more resource types as needed
