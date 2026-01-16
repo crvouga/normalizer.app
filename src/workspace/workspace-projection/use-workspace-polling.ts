@@ -6,10 +6,7 @@ import type { WorkspaceId } from '../workspace-id';
 import { WorkspacePayload } from '../workspace-payload/workspace-payload';
 import { useAddWorkspacePayloadToStore } from '../workspace-payload/workspace-payload-store';
 
-export function useWorkspacePolling(
-  id: WorkspaceId,
-  intervalMs = 5000,
-): RemoteResult<void, Error> {
+export function useWorkspacePolling(id: WorkspaceId, intervalMs = 5000): RemoteResult<void, Error> {
   const addToStore = useAddWorkspacePayloadToStore();
   const [state, setState] = useState<RemoteResult<void, Error>>(NotAsked);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

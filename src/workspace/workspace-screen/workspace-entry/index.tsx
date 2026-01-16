@@ -14,10 +14,7 @@ export const WorkspaceEntry = (props: {
         <div className="flex flex-col gap-2 pb-8">
           <UserInputBubble artifactIds={props.entry.inputArtifactIds} />
           <OutputArea>
-            <NormalizationEntry
-              entry={props.entry}
-              workspaceId={props.workspaceId}
-            />
+            <NormalizationEntry entry={props.entry} workspaceId={props.workspaceId} />
           </OutputArea>
         </div>
       );

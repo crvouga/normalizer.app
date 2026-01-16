@@ -16,10 +16,7 @@ export const WorkspaceScreenInputForm = (props: {
   const [inputArtifactIds, setInputArtifactIds] = useState<ArtifactId[]>([]);
   const submitHandlerRef = useRef<(() => void) | null>(null);
 
-  const lastEntry =
-    props.workspaceProjection.entries[
-      props.workspaceProjection.entries.length - 1
-    ];
+  const lastEntry = props.workspaceProjection.entries[props.workspaceProjection.entries.length - 1];
   const isLastEntryInProgress = lastEntry?.status === 'in_progress';
 
   const handleStart = () => {
@@ -45,8 +42,8 @@ export const WorkspaceScreenInputForm = (props: {
             normalizationRunId={lastEntry.normalizationRunId}
           />
         ) : (
-        <StartNormalizationButton
-          workspaceId={props.workspaceId}
+          <StartNormalizationButton
+            workspaceId={props.workspaceId}
             inputArtifactIds={inputArtifactIds}
             onStart={handleStart}
             disabled={isLastEntryInProgress}

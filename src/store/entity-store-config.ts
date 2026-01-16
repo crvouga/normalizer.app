@@ -15,21 +15,12 @@ export type EntityStore = {
   entities: {
     artifacts: EntitySlice<ArtifactId, Artifact>;
     users: EntitySlice<UserId, User>;
-    workspaceEvents: EntitySlice<
-      WorkspaceEventId,
-      WorkspaceEventEntity
-    >;
-    workspaceProjections: EntitySlice<
-      WorkspaceId,
-      WorkspaceProjection
-    >;
+    workspaceEvents: EntitySlice<WorkspaceEventId, WorkspaceEventEntity>;
+    workspaceProjections: EntitySlice<WorkspaceId, WorkspaceProjection>;
     resourceOwnerships: EntitySlice<ResourceOwnershipEntityId, ResourceOwnershipEntity>;
   };
   indexes: {
-    indexWorkspaceEventsBySessionId: Record<
-      WorkspaceId,
-      WorkspaceEventId[]
-    >;
+    indexWorkspaceEventsBySessionId: Record<WorkspaceId, WorkspaceEventId[]>;
     indexWorkspaceProjectionsByUserId: Record<UserId, WorkspaceId[]>;
     indexResourceOwnershipsByResourceId: Record<string, ResourceOwnershipEntityId[]>;
   };

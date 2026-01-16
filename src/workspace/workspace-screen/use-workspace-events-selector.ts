@@ -10,9 +10,7 @@ import type { WorkspaceId } from '../workspace-id';
  * @param sessionId - The workspace ID to filter events by
  * @returns Array of workspace events for the workspace
  */
-export function useWorkspaceEventsSelector(
-  sessionId: WorkspaceId,
-): WorkspaceEventEntity[] {
+export function useWorkspaceEventsSelector(sessionId: WorkspaceId): WorkspaceEventEntity[] {
   // Get event IDs from the index with shallow equality check
   const eventIds: WorkspaceEventId[] = useEntityStoreSelector(
     (state) => state.indexes.indexWorkspaceEventsBySessionId[sessionId] || [],

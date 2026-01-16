@@ -9,9 +9,7 @@ import type { WorkspaceProjection } from '../workspace-projection/workspace-proj
  * @param userId - The user ID to filter workspaces by
  * @returns Array of workspace projections for the user
  */
-export function useWorkspacesByUserSelector(
-  userId: UserId,
-): WorkspaceProjection[] {
+export function useWorkspacesByUserSelector(userId: UserId): WorkspaceProjection[] {
   // Get workspace IDs from the index with shallow equality check
   const workspaceIds = useEntityStoreSelector(
     (state) => state.indexes.indexWorkspaceProjectionsByUserId[userId] || [],

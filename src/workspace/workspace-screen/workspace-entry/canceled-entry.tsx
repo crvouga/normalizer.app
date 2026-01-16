@@ -8,9 +8,7 @@ export const CanceledEntry = (_props: { entry: WorkspaceProjectionEntry }) => {
   return (
     <div className="flex items-center gap-2 py-2">
       <X className="size-4 text-slate-400 dark:text-slate-500" />
-      <span className="text-sm text-slate-500 dark:text-slate-400">
-        {t('workspace.canceled')}
-      </span>
+      <span className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.canceled')}</span>
     </div>
   );
 };

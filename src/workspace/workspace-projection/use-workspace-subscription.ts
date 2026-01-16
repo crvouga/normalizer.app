@@ -13,9 +13,7 @@ import { useAddWorkspacePayloadToStore } from '../workspace-payload/workspace-pa
  * @param id - The workspace ID to subscribe to
  * @returns The current remote result state (RemoteResult<void, Error>)
  */
-export function useWorkspaceSubscription(
-  id: WorkspaceId,
-): RemoteResult<void, Error> {
+export function useWorkspaceSubscription(id: WorkspaceId): RemoteResult<void, Error> {
   const addToStore = useAddWorkspacePayloadToStore();
   const [state, setState] = useState<RemoteResult<void, Error>>(NotAsked);
   const unsubscribeRef = useRef<(() => void) | null>(null);

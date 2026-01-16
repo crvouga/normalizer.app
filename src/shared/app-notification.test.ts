@@ -88,10 +88,7 @@ describe('AppNotification', () => {
     };
 
     // Set up listener with callback
-    const unsubscribe = await appNotification.listen(
-      'workspace_projection_update',
-      callback,
-    );
+    const unsubscribe = await appNotification.listen('workspace_projection_update', callback);
     expect(unsubscribe).toBeDefined();
     expect(typeof unsubscribe).toBe('function');
 
@@ -169,11 +166,7 @@ describe('AppNotification', () => {
 
   test('subscribe generator API - works with for await loop', async () => {
     const appNotification = new AppNotification(db);
-    const sessionIds = [
-      WorkspaceId.generate(),
-      WorkspaceId.generate(),
-      WorkspaceId.generate(),
-    ];
+    const sessionIds = [WorkspaceId.generate(), WorkspaceId.generate(), WorkspaceId.generate()];
     const receivedPayloads: WorkspaceId[] = [];
 
     // Start the generator
@@ -215,11 +208,7 @@ describe('AppNotification', () => {
 
   test('listen callback API - multiple notifications received in order', async () => {
     const appNotification = new AppNotification(db);
-    const sessionIds = [
-      WorkspaceId.generate(),
-      WorkspaceId.generate(),
-      WorkspaceId.generate(),
-    ];
+    const sessionIds = [WorkspaceId.generate(), WorkspaceId.generate(), WorkspaceId.generate()];
     const receivedPayloads: WorkspaceId[] = [];
 
     // Set up listener

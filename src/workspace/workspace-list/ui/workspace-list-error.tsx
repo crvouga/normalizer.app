@@ -9,16 +9,9 @@ interface WorkspaceListErrorProps {
 /**
  * Error state for the normalization session list.
  */
-export function WorkspaceListError({
-  error,
-  onRetry,
-}: WorkspaceListErrorProps) {
+export function WorkspaceListError({ error, onRetry }: WorkspaceListErrorProps) {
   const { t } = useI18n();
   return (
-    <ErrorSection
-      error={error}
-      onRetry={onRetry}
-      message={t('workspace.list.failedToLoad')}
-    />
+    <ErrorSection error={error} onRetry={onRetry} message={t('workspace.list.failedToLoad')} />
   );
 }
