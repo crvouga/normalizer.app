@@ -13,6 +13,7 @@
     "db": "bun run db:studio",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/run-migrations.ts",
+    "db:migrate:workspace-events": "bun run src/db/migrate-workspace-events.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:up": "bun run db:migrate",
