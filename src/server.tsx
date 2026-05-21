@@ -1,4 +1,5 @@
 import { serve } from 'bun';
+import { sql } from 'drizzle-orm';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
 import clientHtml from './client.html';
 import { assertPortNotUsed } from './lib/assert-port-not-used';
@@ -50,7 +51,22 @@ async function main() {
       ...trpcEndpoints,
 
       async '/health'() {
-        return Response.json({ status: 'ok' });
+        // Probe the database so Fly's health check fails fast when the
+        // postgres connection is stale (e.g. after a suspend/resume cycle)
+        // and Fly can replace the machine instead of letting requests hang
+        // for minutes on a TCP keepalive timeout.
+        try {
+          await db.execute(sql`SELECT 1`);
+          return Response.json({ status: 'ok' });
+        } catch (error) {
+          logger.warn('Health check failed', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return Response.json(
+            { status: 'unhealthy', reason: 'database' },
+            { status: 503 },
+          );
+        }
       },
 
       '/*': clientHtml,

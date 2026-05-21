@@ -42,20 +42,24 @@ export const createPostgresConnection = async ({
   }
 
   logger.info('Creating new database connection...');
-  const sql = postgres(dbUrlObj.toString());
+  // Connection hardening, primarily for surviving Fly machine suspend/resume
+  // cycles where loopback TCP sockets between this app and the in-container
+  // Postgres can be left in a half-dead state. With these timeouts, stale
+  // pool connections are reaped quickly and replaced rather than hanging
+  // queries for minutes waiting on TCP keepalive.
+  const sql = postgres(dbUrlObj.toString(), {
+    connect_timeout: 10,
+    idle_timeout: 30,
+    max_lifetime: 60 * 30,
+  });
 
   logger.info('Checking database health...');
-  const interval = setInterval(() => {
-    logger.info('Checking database health...');
-  }, 1000);
   try {
     await sql`SELECT 1`;
     logger.info('Database connection successful');
   } catch (error) {
     logger.error('Database connection failed:', error as Record<string, unknown>);
     throw new Error('Failed to connect to database');
-  } finally {
-    clearInterval(interval);
   }
 
   return sql;

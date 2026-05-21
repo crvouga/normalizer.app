@@ -11,15 +11,46 @@
 #
 # No volumes, no compose. State lives inside the container and dies with it.
 #
-# Fly.io deploy: MinIO listens on 127.0.0.1 only, so presigned upload URLs are
-# proxied through the app server's /api/objects/* endpoints. For browsers to
-# reach those URLs, SERVER_BASE_URL must be the public origin:
+# ---------------------------------------------------------------------------
+# Fly.io deploy
+# ---------------------------------------------------------------------------
 #
-#   fly secrets set SERVER_BASE_URL=https://your-app.example.com
+# fly.toml is managed out-of-band (not in this repo). Required configuration:
 #
-# (Optional) Lock down the proxy signing secret:
+#   1. Secrets (set once via `fly secrets set ...`):
 #
-#   fly secrets set OBJECT_STORE_PRESIGNED_URL_SECRET=$(openssl rand -hex 32)
+#        SERVER_BASE_URL=https://<your-public-origin>
+#          MinIO listens on 127.0.0.1 only, so presigned upload URLs are
+#          proxied through the app server's /api/objects/* endpoints. For
+#          browsers to reach those URLs, SERVER_BASE_URL must be the public
+#          origin (e.g. https://normalizer.chrisvouga.dev).
+#
+#        OBJECT_STORE_PRESIGNED_URL_SECRET=<openssl rand -hex 32>
+#          HMAC key used to sign /api/objects/* presigned URLs. Falls back
+#          to a hard-coded default if unset; override in production.
+#
+#   2. fly.toml [http_service] -- this single-container architecture is NOT
+#      auto-suspend safe (loopback Postgres connections go stale on resume
+#      and hang requests for minutes). Required settings:
+#
+#        internal_port      = 8080
+#        force_https        = true
+#        auto_stop_machines = "off"
+#        min_machines_running = 1
+#
+#   3. fly.toml [[http_service.checks]] -- needed so Fly replaces a machine
+#      whose loopback DB connection goes bad. /health probes Postgres and
+#      returns 503 on failure. Recommended:
+#
+#        method       = "GET"
+#        path         = "/health"
+#        interval     = "30s"
+#        timeout      = "10s"
+#        grace_period = "60s"   # entrypoint takes a few seconds to boot pg+minio
+#
+#   4. fly.toml [build] -- point at this Dockerfile (the default behavior).
+#
+# Local preview of this exact image:  bun run docker:preview
 
 FROM oven/bun:1
 
