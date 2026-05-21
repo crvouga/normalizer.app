@@ -29,14 +29,32 @@
 #          HMAC key used to sign /api/objects/* presigned URLs. Falls back
 #          to a hard-coded default if unset; override in production.
 #
-#   2. fly.toml [http_service] -- this single-container architecture is NOT
-#      auto-suspend safe (loopback Postgres connections go stale on resume
-#      and hang requests for minutes). Required settings:
+#   2. fly.toml [http_service] -- pick ONE of:
 #
-#        internal_port      = 8080
-#        force_https        = true
-#        auto_stop_machines = "off"
-#        min_machines_running = 1
+#      (a) Always-on (recommended for production):
+#            internal_port        = 8080
+#            force_https          = true
+#            auto_stop_machines   = "off"
+#            min_machines_running = 1
+#
+#          Why: this single-container architecture is NOT auto-SUSPEND safe.
+#          Pausing/resuming the VM strands loopback TCP connections between
+#          the bun server and postgres, which then hangs requests for minutes.
+#
+#      (b) Scale-to-zero (works, but cold-start latency on first request):
+#            internal_port        = 8080
+#            force_https          = true
+#            auto_stop_machines   = "stop"     # NOT "suspend"
+#            auto_start_machines  = true
+#            min_machines_running = 0
+#
+#          Why this works: the entrypoint shuts everything down cleanly on
+#          SIGTERM (server -> worker -> `pg_ctl stop -m fast` -> minio), so
+#          postgres flushes its WAL before the machine is stopped. On the
+#          next request Fly cold-starts the machine, the entrypoint sees the
+#          existing $PGDATA, skips initdb, and reconnects to fresh data.
+#          Cold-start adds ~5-15s of latency to the first request after idle.
+#          DO NOT use "suspend" -- see (a).
 #
 #   3. fly.toml [[http_service.checks]] -- needed so Fly replaces a machine
 #      whose loopback DB connection goes bad. /health probes Postgres and
@@ -49,6 +67,10 @@
 #        grace_period = "60s"   # entrypoint takes a few seconds to boot pg+minio
 #
 #   4. fly.toml [build] -- point at this Dockerfile (the default behavior).
+#
+# Diagnostics endpoints:
+#   GET /health        -- cheap; probes db only; suitable for Fly health check
+#   GET /health/deep   -- comprehensive; probes db + object store; verbose body
 #
 # Local preview of this exact image:  bun run docker:preview
 
@@ -97,16 +119,72 @@ ENV NODE_ENV=production \
 
 EXPOSE 8080
 
-# Inline entrypoint: boot postgres + minio, provision them, run migrations,
-# launch the worker in the background, then exec the server in the foreground.
+# Inline entrypoint: boots postgres + minio, runs migrations, launches the
+# worker, then the server. Bash stays PID 1 so trap handlers fire on
+# SIGTERM and we can shut postgres down cleanly (required for scale-to-zero
+# with auto_stop_machines = "stop", and good hygiene either way).
 COPY <<'EOF' /entrypoint.sh
 #!/usr/bin/env bash
 set -euo pipefail
 
+log() { printf '[entrypoint %s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+
+# --- Track every long-running child by PID so cleanup can stop them in
+# --- the right order. Empty values are ignored by `kill -0` checks.
+PG_PID=
+MINIO_PID=
+WORKER_PID=
+SERVER_PID=
+
+# Send SIGTERM and wait up to 30s; escalate to SIGKILL if the process
+# refuses to exit. Returns immediately for an empty/already-dead PID.
+terminate() {
+  local name=$1
+  local pid=$2
+  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    return 0
+  fi
+  log "stopping $name (pid=$pid)"
+  kill -TERM "$pid" 2>/dev/null || true
+  local i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    i=$((i + 1))
+    if [ "$i" -gt 60 ]; then  # 60 * 0.5s = 30s
+      log "$name did not exit within 30s, sending SIGKILL"
+      kill -KILL "$pid" 2>/dev/null || true
+      break
+    fi
+    sleep 0.5
+  done
+  log "$name stopped"
+}
+
 cleanup() {
-  echo "[entrypoint] shutting down..."
-  jobs -p | xargs -r kill 2>/dev/null || true
-  wait 2>/dev/null || true
+  trap '' EXIT INT TERM  # disarm; cleanup must be idempotent
+  log "shutdown initiated (uptime ${SECONDS}s)"
+
+  # Order matters: stop accepting new requests, drain the worker, then
+  # flush the database, then take down minio.
+  terminate server "$SERVER_PID"
+  terminate worker "$WORKER_PID"
+
+  # Postgres: try a clean `pg_ctl stop -m fast` first (flushes WAL and
+  # disconnects clients politely). Fall back to plain SIGTERM only if
+  # pg_ctl is unavailable or fails.
+  if [ -n "$PG_PID" ] && kill -0 "$PG_PID" 2>/dev/null; then
+    log "stopping postgres via pg_ctl (pid=$PG_PID)"
+    if ! su -s /bin/bash postgres -c \
+      "pg_ctl stop -D \"$PGDATA\" -m fast -w -t 30" >/dev/null 2>&1; then
+      log "pg_ctl stop failed, falling back to SIGTERM"
+      terminate postgres "$PG_PID"
+    else
+      wait "$PG_PID" 2>/dev/null || true
+      log "postgres stopped"
+    fi
+  fi
+
+  terminate minio "$MINIO_PID"
+  log "shutdown complete (uptime ${SECONDS}s)"
 }
 trap cleanup EXIT INT TERM
 
@@ -115,44 +193,70 @@ mkdir -p "$PGDATA"
 chown -R postgres:postgres "$PGDATA"
 chmod 700 "$PGDATA"
 
-if [ ! -s "$PGDATA/PG_VERSION" ]; then
-  echo "[entrypoint] initializing postgres data dir at $PGDATA"
-  su -s /bin/bash postgres -c "initdb -D \"$PGDATA\" --auth=trust --username=postgres -E UTF8 >/dev/null"
+if [ -s "$PGDATA/PG_VERSION" ]; then
+  log "reusing existing postgres data dir at $PGDATA"
+else
+  log "initializing fresh postgres data dir at $PGDATA"
+  su -s /bin/bash postgres -c \
+    "initdb -D \"$PGDATA\" --auth=trust --username=postgres -E UTF8 >/dev/null"
 fi
 
-echo "[entrypoint] starting postgres on 127.0.0.1:5432"
+log "starting postgres on 127.0.0.1:5432"
 su -s /bin/bash postgres -c \
   "postgres -D \"$PGDATA\" -c listen_addresses=127.0.0.1 -c max_connections=100" &
+PG_PID=$!
 
-until pg_isready -h 127.0.0.1 -U postgres -q; do
-  sleep 0.3
-done
-echo "[entrypoint] postgres is ready"
-
-# --- MinIO --------------------------------------------------------------------
+# --- MinIO (start in parallel; we'll wait for both readiness checks) ---------
 mkdir -p /tmp/minio-data
-echo "[entrypoint] starting minio on 127.0.0.1:9000"
+log "starting minio on 127.0.0.1:9000"
 minio server /tmp/minio-data --address ":9000" --console-address ":9001" \
   >/var/log/minio.log 2>&1 &
+MINIO_PID=$!
 
-until curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; do
+# --- Wait for postgres -------------------------------------------------------
+PG_WAIT_START=$SECONDS
+while ! pg_isready -h 127.0.0.1 -U postgres -q; do
+  if [ $((SECONDS - PG_WAIT_START)) -gt 30 ]; then
+    log "ERROR: postgres did not become ready within 30s"
+    exit 1
+  fi
   sleep 0.3
 done
-echo "[entrypoint] minio is ready"
+log "postgres ready in $((SECONDS - PG_WAIT_START))s (pid=$PG_PID)"
 
-mc alias set local "http://127.0.0.1:9000" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+# --- Wait for minio ----------------------------------------------------------
+MINIO_WAIT_START=$SECONDS
+while ! curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; do
+  if [ $((SECONDS - MINIO_WAIT_START)) -gt 30 ]; then
+    log "ERROR: minio did not become ready within 30s"
+    exit 1
+  fi
+  sleep 0.3
+done
+log "minio ready in $((SECONDS - MINIO_WAIT_START))s (pid=$MINIO_PID)"
+
+mc alias set local "http://127.0.0.1:9000" \
+  "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
 mc mb --ignore-existing "local/$S3_BUCKET" >/dev/null
-echo "[entrypoint] bucket '$S3_BUCKET' ready"
+log "bucket '$S3_BUCKET' ready"
 
-# --- App ----------------------------------------------------------------------
-echo "[entrypoint] running database migrations"
+# --- App ---------------------------------------------------------------------
+log "running database migrations"
 bun run db:migrate
 
-echo "[entrypoint] starting worker"
+log "starting worker"
 bun run src/worker.tsx &
+WORKER_PID=$!
 
-echo "[entrypoint] starting server on :$PORT"
-exec bun run src/server.tsx
+log "starting server on :$PORT"
+bun run src/server.tsx &
+SERVER_PID=$!
+
+log "boot complete in ${SECONDS}s (pg=$PG_PID minio=$MINIO_PID worker=$WORKER_PID server=$SERVER_PID)"
+
+# Bash stays PID 1 and waits on the server. SIGTERM from Fly/Docker
+# interrupts `wait`, runs the trap, and we get an orderly shutdown.
+wait "$SERVER_PID"
 EOF
 
 RUN chmod +x /entrypoint.sh
