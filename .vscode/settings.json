@@ -37,6 +37,7 @@
     "healthcheck",
     "IPEDSID",
     "isready",
+    "minioadmin",
     "networkidle",
     "officedocument",
     "openxmlformats",

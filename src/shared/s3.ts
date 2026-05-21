@@ -5,19 +5,25 @@ import { getS3Config } from './s3-config';
 
 export async function createObjectStore({
   logger,
+  serverBaseUrl,
 }: {
   logger: Logger;
   serverBaseUrl?: string;
 }): Promise<ObjectStore> {
   const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } = getS3Config();
 
-  logger.info('Initializing S3 object store...', { endpoint: s3Endpoint, bucket: s3Bucket });
+  logger.info('Initializing S3 object store...', {
+    endpoint: s3Endpoint,
+    bucket: s3Bucket,
+    serverBaseUrl,
+  });
 
   try {
     const objectStore = new S3ObjectStore({
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
+      serverBaseUrl,
       logger,
     });
     logger.debug('S3 Endpoint validated', { endpoint: s3Endpoint });

@@ -6,33 +6,43 @@ import { Err, Ok, type Result } from '../result';
 import { parseAndValidateURL } from '../url';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
+import { generateServerPresignedUrl, isLoopbackHost } from './presigned-url';
 
 /**
  * S3 implementation of ObjectStore using Bun's S3Client and MinioClient.
  * Accepts S3 credentials as constructor arguments and initializes clients.
+ *
+ * When `S3_ENDPOINT` is a loopback address (e.g. the single-container Fly
+ * deployment where MinIO runs on `127.0.0.1:9000`) and `serverBaseUrl` is
+ * provided, presigned URLs are generated against the app server's
+ * `/api/objects/...` proxy instead of MinIO directly, so browsers can reach
+ * them.
  */
 export class S3ObjectStore extends ObjectStore {
   private readonly s3Client: S3Client;
   private readonly minioClient: MinioClient;
   private readonly s3Endpoint: string;
+  private readonly serverBaseUrl: string | undefined;
   private readonly logger: Logger;
 
   constructor({
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
+    serverBaseUrl,
     logger,
   }: {
     s3Endpoint: string;
     s3AccessKeyId: string;
     s3SecretAccessKey: string;
+    serverBaseUrl?: string | undefined;
     logger: Logger;
   }) {
     super();
     // Use parseAndValidateURL to validate and normalize the s3Endpoint
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
-    // Note: serverBaseUrl is accepted for API compatibility but S3 uses its own presigned URLs
+    this.serverBaseUrl = serverBaseUrl?.replace(/\/$/, '');
     this.logger = logger.child(S3ObjectStore.name);
 
     this.s3Client = new S3Client({
@@ -322,6 +332,14 @@ export class S3ObjectStore extends ObjectStore {
     return Err(`Failed to ensure bucket exists: ${result.error}`);
   }
 
+  /**
+   * True when MinIO is loopback-only and the app server should proxy presigned
+   * URLs through `/api/objects/...` so external clients can reach them.
+   */
+  private shouldProxyPresign(): boolean {
+    return this.serverBaseUrl !== undefined && isLoopbackHost(this.s3Endpoint);
+  }
+
   async presignMany(
     entries: Array<
       ObjectLocation & { method: 'GET' | 'PUT'; expiresIn: number; useHTTPS?: boolean }
@@ -331,7 +349,11 @@ export class S3ObjectStore extends ObjectStore {
       return Ok([]);
     }
 
-    this.logger.debug('Generating multiple presigned URLs', { count: entries.length });
+    const proxyPresign = this.shouldProxyPresign();
+    this.logger.debug('Generating multiple presigned URLs', {
+      count: entries.length,
+      proxyPresign,
+    });
 
     try {
       // Process all presign operations in parallel, preserving order
@@ -339,24 +361,36 @@ export class S3ObjectStore extends ObjectStore {
         entries.map(async (entry) => {
           const { bucket, key, method, expiresIn, useHTTPS } = entry;
           try {
-            // Use Bun's S3Client to generate presigned URL
-            const file = this.s3Client.file(key, { bucket });
-
             let url: string;
-            if (method === 'GET') {
-              url = file.presign({ expiresIn, method: 'GET' });
+
+            if (proxyPresign && this.serverBaseUrl) {
+              url = generateServerPresignedUrl({
+                serverBaseUrl: this.serverBaseUrl,
+                bucket,
+                key,
+                method,
+                expiresIn,
+                useHTTPS,
+              });
             } else {
-              url = file.presign({ expiresIn, method: 'PUT' });
-            }
+              // Use Bun's S3Client to generate presigned URL
+              const file = this.s3Client.file(key, { bucket });
 
-            // Validate the generated URL
-            if (!url || typeof url !== 'string' || url.trim() === '') {
-              throw new Error('Presigned URL generation returned empty or invalid URL');
-            }
+              if (method === 'GET') {
+                url = file.presign({ expiresIn, method: 'GET' });
+              } else {
+                url = file.presign({ expiresIn, method: 'PUT' });
+              }
 
-            // Ensure HTTPS if requested
-            if (useHTTPS && url.startsWith('http://')) {
-              url = url.replace('http://', 'https://');
+              // Validate the generated URL
+              if (!url || typeof url !== 'string' || url.trim() === '') {
+                throw new Error('Presigned URL generation returned empty or invalid URL');
+              }
+
+              // Ensure HTTPS if requested
+              if (useHTTPS && url.startsWith('http://')) {
+                url = url.replace('http://', 'https://');
+              }
             }
 
             this.logger.debug('Generated presigned URL', {
@@ -365,6 +399,7 @@ export class S3ObjectStore extends ObjectStore {
               method,
               expiresIn,
               useHTTPS,
+              proxyPresign,
             });
             return { bucket, key, url };
           } catch (error) {
@@ -396,8 +431,22 @@ export class S3ObjectStore extends ObjectStore {
   }
 
   async getEndpointInfo(): Promise<Result<{ baseUrl: string; useHTTPS: boolean }, string>> {
-    this.logger.debug('Fetching endpoint info', { s3Endpoint: this.s3Endpoint });
+    this.logger.debug('Fetching endpoint info', {
+      s3Endpoint: this.s3Endpoint,
+      serverBaseUrl: this.serverBaseUrl,
+    });
     try {
+      // When proxying through the app server, the public endpoint that
+      // browsers see is the server, not MinIO. refreshArtifactData uses this
+      // base URL to decide if cached presigned URLs need to be regenerated.
+      if (this.shouldProxyPresign() && this.serverBaseUrl) {
+        const url = new URL(this.serverBaseUrl);
+        const baseUrl = `${url.protocol}//${url.host}`;
+        const useHTTPS = url.protocol === 'https:';
+        this.logger.debug('Fetched endpoint info (proxy mode)', { baseUrl, useHTTPS });
+        return Ok({ baseUrl, useHTTPS });
+      }
+
       let baseUrl: string;
       try {
         const url = new URL(this.s3Endpoint);

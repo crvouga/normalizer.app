@@ -1,6 +1,7 @@
 import type { ObjectStore } from './object-store';
 import type { Logger } from '../logger';
 import { isOk } from '../result';
+import { verifyServerPresignedSignature } from './presigned-url';
 
 /**
  * HTTP handlers for serving presigned URLs from ObjectStore.
@@ -62,9 +63,17 @@ export class ObjectStoreHttpHandlers {
         return new Response('Invalid presigned URL: method mismatch', { status: 403 });
       }
 
-      // Note: Signature verification is handled by the ObjectStore implementation
-      // For filesystem implementation, we rely on the object store's internal verification
-      // For S3 implementation, the signature is validated by S3 itself
+      const signatureValid = verifyServerPresignedSignature({
+        bucket,
+        key,
+        method,
+        expiresAt,
+        signature: signatureParam,
+      });
+      if (!signatureValid) {
+        this.logger.warn('Invalid signature on presigned GET URL', { bucket, key });
+        return new Response('Invalid presigned URL: signature mismatch', { status: 403 });
+      }
 
       // Read the object from the store
       const result = await this.objectStore.read({ bucket, key });
@@ -159,6 +168,18 @@ export class ObjectStoreHttpHandlers {
           actual: method,
         });
         return new Response('Invalid presigned URL: method mismatch', { status: 403 });
+      }
+
+      const signatureValid = verifyServerPresignedSignature({
+        bucket,
+        key,
+        method,
+        expiresAt,
+        signature: signatureParam,
+      });
+      if (!signatureValid) {
+        this.logger.warn('Invalid signature on presigned PUT URL', { bucket, key });
+        return new Response('Invalid presigned URL: signature mismatch', { status: 403 });
       }
 
       // Get the request body

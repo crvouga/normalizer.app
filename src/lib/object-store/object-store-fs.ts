@@ -1,4 +1,3 @@
-import { createHmac } from 'crypto';
 import {
   createReadStream,
   existsSync,
@@ -15,13 +14,7 @@ import type { Logger } from '../logger';
 import { Err, Ok, type Result } from '../result';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
-
-/**
- * Secret key for signing presigned URLs. In production, this should be stored securely.
- * For filesystem implementation, we use a simple secret for URL signing.
- */
-const PRESIGNED_URL_SECRET =
-  process.env.OBJECT_STORE_PRESIGNED_URL_SECRET || 'default-secret-key-change-in-production';
+import { generateServerPresignedUrl } from './presigned-url';
 
 /**
  * Filesystem implementation of ObjectStore.
@@ -363,19 +356,6 @@ export class FilesystemObjectStore extends ObjectStore {
     return this.createBucket(bucket);
   }
 
-  /**
-   * Generate a signature for presigned URL validation.
-   */
-  private generateSignature(
-    bucket: string,
-    key: string,
-    method: string,
-    expiresAt: number,
-  ): string {
-    const message = `${method}:${bucket}:${key}:${expiresAt}`;
-    return createHmac('sha256', PRESIGNED_URL_SECRET).update(message).digest('hex');
-  }
-
   async presignMany(
     entries: Array<
       ObjectLocation & { method: 'GET' | 'PUT'; expiresIn: number; useHTTPS?: boolean }
@@ -393,19 +373,14 @@ export class FilesystemObjectStore extends ObjectStore {
         entries.map(async (entry) => {
           const { bucket, key, method, expiresIn, useHTTPS } = entry;
           try {
-            const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-            const signature = this.generateSignature(bucket, key, method, expiresAt);
-
-            // Encode bucket and key for URL
-            const encodedBucket = encodeURIComponent(bucket);
-            const encodedKey = encodeURIComponent(key);
-
-            // Build presigned URL
-            const baseUrl = useHTTPS
-              ? this.serverBaseUrl.replace(/^http:/, 'https:')
-              : this.serverBaseUrl;
-
-            const url = `${baseUrl}/api/objects/${encodedBucket}/${encodedKey}?expires=${expiresAt}&method=${method}&signature=${signature}`;
+            const url = generateServerPresignedUrl({
+              serverBaseUrl: this.serverBaseUrl,
+              bucket,
+              key,
+              method,
+              expiresIn,
+              useHTTPS,
+            });
 
             this.logger.debug('Generated presigned URL', {
               bucket,
@@ -416,7 +391,6 @@ export class FilesystemObjectStore extends ObjectStore {
             });
             return { bucket, key, url };
           } catch (error) {
-            // If any presign fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(
               `Failed to generate presigned URL for ${ObjectLocation.encode({ bucket, key })}: ${errorMessage}`,

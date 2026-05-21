@@ -37,6 +37,7 @@ async function main() {
   await assertPortNotUsed({ port, logger });
 
   const server = serve({
+    hostname: '0.0.0.0',
     port,
 
     routes: {

@@ -10,6 +10,16 @@
 # Run:    docker run --rm -p 8080:8080 normalizer-app
 #
 # No volumes, no compose. State lives inside the container and dies with it.
+#
+# Fly.io deploy: MinIO listens on 127.0.0.1 only, so presigned upload URLs are
+# proxied through the app server's /api/objects/* endpoints. For browsers to
+# reach those URLs, SERVER_BASE_URL must be the public origin:
+#
+#   fly secrets set SERVER_BASE_URL=https://your-app.example.com
+#
+# (Optional) Lock down the proxy signing secret:
+#
+#   fly secrets set OBJECT_STORE_PRESIGNED_URL_SECRET=$(openssl rand -hex 32)
 
 FROM oven/bun:1
 
@@ -44,6 +54,7 @@ COPY . .
 
 ENV NODE_ENV=production \
     PORT=8080 \
+    SERVER_BASE_URL=http://localhost:8080 \
     DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable \
     S3_ENDPOINT=http://127.0.0.1:9000 \
     S3_ACCESS_KEY=minioadmin \
