@@ -109,7 +109,18 @@
       "title": "Normalization logs",
       "showAll": "Show all logs",
       "hide": "Hide logs",
-      "waiting": "Waiting for normalization activity..."
+      "waiting": "Waiting for normalization activity...",
+      "reasoning": "Thinking...",
+      "progress": {
+        "starting": "Starting normalization...",
+        "readingFiles": "Reading your files...",
+        "loadedFile": "Loaded {{name}} ({{count}} rows)",
+        "analyzing": "Analyzing how to transform your data...",
+        "applying": "Applying changes...",
+        "generatingOutput": "Generating your normalized file...",
+        "complete": "Done! Your file is ready.",
+        "failed": "Something went wrong while normalizing your file. Please try again."
+      }
     },
     "inProgress": "In Progress",
     "completed": "Completed",

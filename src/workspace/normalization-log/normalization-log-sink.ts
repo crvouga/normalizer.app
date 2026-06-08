@@ -8,7 +8,8 @@ import {
   type NormalizationLogInsert,
 } from './normalization-log-db';
 
-const FLUSH_INTERVAL_MS = 200;
+const PROGRESS_FLUSH_INTERVAL_MS = 200;
+const REASONING_FLUSH_INTERVAL_MS = 80;
 const MAX_BUFFER_SIZE = 25;
 
 export type NormalizationLogSink = {
@@ -26,29 +27,55 @@ export function createNormalizationLogSink(params: {
   const logDb = createNormalizationLogDb({ db });
   const appNotification = new AppNotification(db);
 
-  let buffer: NormalizationLogInsert[] = [];
-  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let progressBuffer: NormalizationLogInsert[] = [];
+  let reasoningBuffer: NormalizationLogInsert[] = [];
+  let progressFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
   let isClosed = false;
   let flushPromise: Promise<void> = Promise.resolve();
 
-  const scheduleFlush = () => {
-    if (flushTimer !== null || isClosed) {
+  const scheduleProgressFlush = () => {
+    if (progressFlushTimer !== null || isClosed) {
       return;
     }
 
-    flushTimer = setTimeout(() => {
-      flushTimer = null;
-      void flush();
-    }, FLUSH_INTERVAL_MS);
+    progressFlushTimer = setTimeout(() => {
+      progressFlushTimer = null;
+      void enqueueFlush('progress');
+    }, PROGRESS_FLUSH_INTERVAL_MS);
   };
 
-  const flush = async (): Promise<void> => {
-    if (buffer.length === 0) {
+  const scheduleReasoningFlush = () => {
+    if (reasoningFlushTimer !== null || isClosed) {
       return;
     }
 
-    const entries = buffer;
-    buffer = [];
+    reasoningFlushTimer = setTimeout(() => {
+      reasoningFlushTimer = null;
+      void enqueueFlush('reasoning');
+    }, REASONING_FLUSH_INTERVAL_MS);
+  };
+
+  const flushBuffers = async (target: 'progress' | 'reasoning' | 'all'): Promise<void> => {
+    const entries =
+      target === 'all'
+        ? [...progressBuffer, ...reasoningBuffer]
+        : target === 'progress'
+          ? progressBuffer
+          : reasoningBuffer;
+
+    if (target === 'all') {
+      progressBuffer = [];
+      reasoningBuffer = [];
+    } else if (target === 'progress') {
+      progressBuffer = [];
+    } else {
+      reasoningBuffer = [];
+    }
+
+    if (entries.length === 0) {
+      return;
+    }
 
     try {
       await logDb.insertBatch({
@@ -68,44 +95,75 @@ export function createNormalizationLogSink(params: {
         entryCount: entries.length,
         error: error instanceof Error ? error.message : String(error),
       });
-      buffer = [...entries, ...buffer];
+
+      if (target === 'all') {
+        progressBuffer = [...entries.filter((e) => e.kind !== 'reasoning'), ...progressBuffer];
+        reasoningBuffer = [...entries.filter((e) => e.kind === 'reasoning'), ...reasoningBuffer];
+      } else if (target === 'progress') {
+        progressBuffer = [...entries, ...progressBuffer];
+      } else {
+        reasoningBuffer = [...entries, ...reasoningBuffer];
+      }
     }
   };
 
-  const enqueueFlush = () => {
-    flushPromise = flushPromise.then(() => flush());
+  const enqueueFlush = (target: 'progress' | 'reasoning' | 'all') => {
+    flushPromise = flushPromise.then(() => flushBuffers(target));
     return flushPromise;
   };
 
-  return {
-    push(entry: NormalizationLogInsert) {
-      if (isClosed) {
-        return;
-      }
+  const pushToBuffer = (entry: NormalizationLogInsert) => {
+    if (isClosed) {
+      return;
+    }
 
-      buffer.push(entry);
+    if (entry.kind === 'reasoning') {
+      reasoningBuffer.push(entry);
 
-      if (buffer.length >= MAX_BUFFER_SIZE) {
-        if (flushTimer !== null) {
-          clearTimeout(flushTimer);
-          flushTimer = null;
+      if (reasoningBuffer.length >= MAX_BUFFER_SIZE) {
+        if (reasoningFlushTimer !== null) {
+          clearTimeout(reasoningFlushTimer);
+          reasoningFlushTimer = null;
         }
-        void enqueueFlush();
+        void enqueueFlush('reasoning');
         return;
       }
 
-      scheduleFlush();
-    },
+      scheduleReasoningFlush();
+      return;
+    }
+
+    progressBuffer.push(entry);
+
+    if (progressBuffer.length >= MAX_BUFFER_SIZE) {
+      if (progressFlushTimer !== null) {
+        clearTimeout(progressFlushTimer);
+        progressFlushTimer = null;
+      }
+      void enqueueFlush('progress');
+      return;
+    }
+
+    scheduleProgressFlush();
+  };
+
+  return {
+    push: pushToBuffer,
 
     async flushAndClose() {
       isClosed = true;
 
-      if (flushTimer !== null) {
-        clearTimeout(flushTimer);
-        flushTimer = null;
+      if (progressFlushTimer !== null) {
+        clearTimeout(progressFlushTimer);
+        progressFlushTimer = null;
       }
 
-      await enqueueFlush();
+      if (reasoningFlushTimer !== null) {
+        clearTimeout(reasoningFlushTimer);
+        reasoningFlushTimer = null;
+      }
+
+      await enqueueFlush('all');
     },
   };
 }

@@ -117,6 +117,7 @@ export const normalizationLogs = dbSchema.table(
     seq: bigserial('seq', { mode: 'number' }).primaryKey(),
     workspace_id: text('workspace_id').notNull(),
     normalization_run_id: text('normalization_run_id').notNull(),
+    kind: text('kind').notNull().default('progress'),
     level: text('level').notNull(),
     scope: text('scope').notNull(),
     message: text('message').notNull(),

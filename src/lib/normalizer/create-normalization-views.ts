@@ -10,6 +10,8 @@ import { createGoalPrompt } from './create-goal-prompt';
 import { createQueryDatabaseTool } from './create-query-database-tool';
 import { createSystemPrompt } from './create-system-prompt';
 import { createUserPrompt } from './create-user-prompt';
+import type { NormalizationProgressReporter } from '~/src/workspace/normalization-log/normalization-progress-reporter';
+import { NormalizationProgressMessages } from '~/src/workspace/normalization-log/normalization-progress-messages';
 import type { NormalizerEvent } from './normalizer-event';
 
 /**
@@ -24,6 +26,7 @@ export async function createNormalizationViews({
   llm,
   sqlDb,
   logger,
+  progressReporter,
 }: {
   inputs: Array<{ viewName: string }>;
   targets: Array<{ viewName: string }>;
@@ -32,6 +35,7 @@ export async function createNormalizationViews({
   sqlDb: SqlDb;
   logger: Logger;
   eventEmitter: EventEmitter<NormalizerEvent>;
+  progressReporter?: NormalizationProgressReporter;
 }): Promise<Result<null, string>> {
   logger.info('Starting normalization view creation', {
     inputCount: inputs.length,
@@ -76,6 +80,8 @@ export async function createNormalizationViews({
     }
   }
 
+  progressReporter?.progress(NormalizationProgressMessages.analyzing);
+
   const agentLoop = createAgenticLoop({ llm, logger });
   let lastSqlError: string | undefined;
 
@@ -86,6 +92,12 @@ export async function createNormalizationViews({
       description: goalPrompt,
     },
     hooks: {
+      onReasoningDelta(delta) {
+        progressReporter?.reasoning(delta);
+      },
+      onToolBatchStarted() {
+        progressReporter?.progress(NormalizationProgressMessages.applying);
+      },
       afterToolBatch(results) {
         for (const result of results) {
           if (result.toolName !== 'query_database') continue;

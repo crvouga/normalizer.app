@@ -3,9 +3,14 @@ import type { Db, Tx } from '~/src/shared/db';
 import * as schema from '../../db/schema';
 import type { NormalizationRunId } from '../normalization-run-id';
 import type { WorkspaceId } from '../workspace-id';
-import type { NormalizationLog, NormalizationLogLevel } from './normalization-log';
+import type {
+  NormalizationLog,
+  NormalizationLogKind,
+  NormalizationLogLevel,
+} from './normalization-log';
 
 export type NormalizationLogInsert = {
+  kind: NormalizationLogKind;
   level: NormalizationLogLevel;
   scope: string;
   message: string;
@@ -27,6 +32,7 @@ export class NormalizationLogDb {
     const rows = input.entries.map((entry) => ({
       workspace_id: input.workspaceId,
       normalization_run_id: input.normalizationRunId,
+      kind: entry.kind,
       level: entry.level,
       scope: entry.scope,
       message: entry.message,
@@ -37,6 +43,7 @@ export class NormalizationLogDb {
 
     return inserted.map((row) => ({
       seq: row.seq,
+      kind: row.kind as NormalizationLogKind,
       level: row.level as NormalizationLogLevel,
       scope: row.scope,
       message: row.message,
@@ -67,6 +74,7 @@ export class NormalizationLogDb {
 
     return rows.map((row) => ({
       seq: row.seq,
+      kind: (row.kind ?? 'progress') as NormalizationLogKind,
       level: row.level as NormalizationLogLevel,
       scope: row.scope,
       message: row.message,

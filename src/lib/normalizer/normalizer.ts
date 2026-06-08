@@ -3,7 +3,7 @@ import type { Logger } from '~/src/lib/logger';
 import { objectKey } from '~/src/lib/object-store/object-key';
 import type { ObjectLocation } from '~/src/lib/object-store/object-location';
 import type { ObjectStore } from '~/src/lib/object-store/object-store';
-import { Err, isErr, Ok, type Result } from '~/src/lib/result';
+import { Err, isErr, isOk, Ok, type Result } from '~/src/lib/result';
 import type { SqlDb } from '~/src/lib/sql-db/sql-db';
 import {
   createTabularDataPostgresImporter,
@@ -22,10 +22,15 @@ import {
   type BatchExportResult,
   type ExportRequest,
 } from '../tabular-data-postgres-exporter/tabular-data-postgres-exporter';
+import type { NormalizationProgressReporter } from '~/src/workspace/normalization-log/normalization-progress-reporter';
+import { NormalizationProgressMessages } from '~/src/workspace/normalization-log/normalization-progress-messages';
 import { createNormalizationViews } from './create-normalization-views';
 import type { NormalizerEvent } from './normalizer-event';
 
-type ObjectLocationWithViewName = ObjectLocation & { viewName: string };
+type ObjectLocationWithViewName = ObjectLocation & {
+  viewName: string;
+  displayName: string;
+};
 
 export class Normalizer {
   public readonly eventEmitter: EventEmitter<NormalizerEvent>;
@@ -34,6 +39,7 @@ export class Normalizer {
     private readonly objectStore: ObjectStore,
     private readonly logger: Logger,
     private readonly llm: LLM,
+    private readonly progressReporter?: NormalizationProgressReporter,
   ) {
     this.eventEmitter = new EventEmitter<NormalizerEvent>();
   }
@@ -44,8 +50,8 @@ export class Normalizer {
    * and writes outputs to the specified bucket with keys generated from the prefix.
    */
   async normalize(params: {
-    targets: ObjectLocation[];
-    inputs: ObjectLocation[];
+    targets: Array<ObjectLocation & { displayName?: string }>;
+    inputs: Array<ObjectLocation & { displayName?: string }>;
     outputObjectKeyPrefix: string;
     outputObjectBucket: string;
   }): Promise<Result<{ outputs: ObjectLocation[] }, string>> {
@@ -58,26 +64,33 @@ export class Normalizer {
 
     const inputs = params.inputs.map(
       (objLoc, index): ObjectLocationWithViewName => ({
-        ...objLoc,
+        key: objLoc.key,
+        bucket: objLoc.bucket,
         viewName: `input_${index}`,
+        displayName: objLoc.displayName ?? `Input file ${index + 1}`,
       }),
     );
     const targets = params.targets.map(
       (objLoc, index): ObjectLocationWithViewName => ({
-        ...objLoc,
+        key: objLoc.key,
+        bucket: objLoc.bucket,
         viewName: `target_${index}`,
+        displayName: objLoc.displayName ?? `Target file ${index + 1}`,
       }),
     );
     const exportFormat = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
     const exportExtension = getExtension(exportFormat);
     const outputKeySegments = params.outputObjectKeyPrefix.split('/').filter(Boolean);
     const outputs = params.targets.map(
-      (_, index): ObjectLocationWithViewName => ({
+      (objLoc, index): ObjectLocationWithViewName => ({
         key: objectKey(...outputKeySegments, `output_${index}.${exportExtension}`),
         bucket: params.outputObjectBucket,
         viewName: `output_${index}`,
+        displayName: objLoc.displayName ?? `Output file ${index + 1}`,
       }),
     );
+
+    this.progressReporter?.progress(NormalizationProgressMessages.readingFiles);
 
     const importedBatch = await this.importTabularData({
       sqlDb,
@@ -87,8 +100,11 @@ export class Normalizer {
 
     if (isErr(importedBatch.result)) {
       this.logger.error('Failed to import tabular data', { error: importedBatch.result.error });
+      this.progressReporter?.error(NormalizationProgressMessages.failed);
       return importedBatch.result;
     }
+
+    this.reportImportedFiles(inputs, targets, importedBatch);
 
     this.logger.debug('Normalizing objects', {
       inputCount: params.inputs.length,
@@ -101,6 +117,9 @@ export class Normalizer {
       logger: this.logger,
       llm: this.llm,
       eventEmitter: this.eventEmitter,
+      ...(this.progressReporter !== undefined
+        ? { progressReporter: this.progressReporter }
+        : {}),
       inputs,
       targets,
       outputs,
@@ -108,8 +127,11 @@ export class Normalizer {
     });
 
     if (isErr(viewCreationResult)) {
+      this.progressReporter?.error(NormalizationProgressMessages.failed);
       return Err(`Failed to create normalization views: ${viewCreationResult.error}`);
     }
+
+    this.progressReporter?.progress(NormalizationProgressMessages.generatingOutput);
 
     const exported = await this.exportTabularData({
       sqlDb,
@@ -119,10 +141,38 @@ export class Normalizer {
 
     if (isErr(exported.result)) {
       this.logger.error('Failed to export tabular data', { error: exported.result.error });
+      this.progressReporter?.error(NormalizationProgressMessages.failed);
       return Err(`Failed to export tabular data: ${exported.result.error}`);
     }
 
     return Ok({ outputs });
+  }
+
+  private reportImportedFiles(
+    inputs: ObjectLocationWithViewName[],
+    targets: ObjectLocationWithViewName[],
+    importedBatch: BatchImportResult,
+  ): void {
+    if (!this.progressReporter) {
+      return;
+    }
+
+    const displayNameByViewName = new Map<string, string>();
+    for (const file of [...inputs, ...targets]) {
+      displayNameByViewName.set(file.viewName, file.displayName);
+    }
+
+    for (const item of importedBatch.results) {
+      if (!isOk(item.result)) {
+        continue;
+      }
+
+      const displayName =
+        displayNameByViewName.get(item.request.viewName) ?? item.request.viewName;
+      this.progressReporter.progress(
+        NormalizationProgressMessages.loadedFile(displayName, item.result.value.rowCount),
+      );
+    }
   }
 
   /**
@@ -200,7 +250,13 @@ export function createNormalizer(params: {
   objectStore: ObjectStore;
   logger: Logger;
   llm: LLM;
+  progressReporter?: NormalizationProgressReporter;
 }): Normalizer {
   const logger = params.logger.child(Normalizer.name);
-  return new Normalizer(params.objectStore, logger, params.llm);
+  return new Normalizer(
+    params.objectStore,
+    logger,
+    params.llm,
+    params.progressReporter,
+  );
 }

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
-import type { LLM, Message, ToolCall, ToolDefinition, Usage } from './llm';
+import type { LLM, Message, StreamOptions, ToolCall, ToolCallMessage, ToolDefinition, Usage } from './llm';
+import type { StreamChunk } from './llm';
 import { parseQueryDatabaseToolCallsFromContent } from './parse-tool-calls-from-content';
 
 /**
@@ -168,6 +169,16 @@ export interface AgentHooks {
    * Called after executing a batch of tool calls
    */
   afterToolBatch?: (results: ToolResult[], state: AgentState) => void | Promise<void>;
+
+  /**
+   * Called for each incremental LLM text chunk during streaming
+   */
+  onReasoningDelta?: (delta: string) => void | Promise<void>;
+
+  /**
+   * Called before executing a batch of tool calls
+   */
+  onToolBatchStarted?: () => void | Promise<void>;
 }
 
 /**
@@ -376,12 +387,9 @@ export class AgenticLoop {
           budgetUsed: this.budgetUsed,
         });
 
-        // Call LLM with tools
-        const response = await this.llm.completions(this.conversationMessages, {
+        const lastMessage = await this.streamAssistantMessage(this.conversationMessages, {
           tools: this.tools,
         });
-
-        const lastMessage = response[response.length - 1];
 
         if (!lastMessage || lastMessage.role !== 'assistant') {
           this.logger.warn('Unexpected message role or missing message', {
@@ -393,10 +401,6 @@ export class AgenticLoop {
         }
 
         this.conversationMessages.push(lastMessage);
-
-        if (lastMessage.content) {
-          this.logger.info('Model reasoning', { content: lastMessage.content });
-        }
 
         // Check if there are tool calls (API-native or synthesized from text JSON)
         const apiToolCalls =
@@ -469,6 +473,55 @@ export class AgenticLoop {
     }
   }
 
+  private async streamAssistantMessage(
+    messages: Message[],
+    options: StreamOptions,
+  ): Promise<Message | null> {
+    let assistantMessage: ToolCallMessage | null = null;
+
+    for await (const chunk of this.llm.stream(messages, options)) {
+      assistantMessage = this.processStreamChunk(chunk, assistantMessage);
+    }
+
+    return assistantMessage;
+  }
+
+  private processStreamChunk(
+    chunk: StreamChunk,
+    assistantMessage: ToolCallMessage | null,
+  ): ToolCallMessage | null {
+    switch (chunk.type) {
+      case 'content':
+        void this.hooks?.onReasoningDelta?.(chunk.delta);
+        return assistantMessage;
+      case 'tool_call':
+        return {
+          role: 'assistant',
+          content: assistantMessage?.content ?? '',
+          toolCalls: [...(assistantMessage?.toolCalls ?? []), chunk.toolCall],
+        };
+      case 'done':
+        if (!assistantMessage) {
+          return {
+            role: 'assistant',
+            content: chunk.content,
+            ...(Array.isArray(chunk.toolCalls) && chunk.toolCalls.length > 0
+              ? { toolCalls: chunk.toolCalls }
+              : {}),
+          };
+        }
+        return {
+          ...assistantMessage,
+          content: chunk.content,
+          ...(Array.isArray(chunk.toolCalls) && chunk.toolCalls.length > 0
+            ? { toolCalls: chunk.toolCalls }
+            : {}),
+        };
+      default:
+        return assistantMessage;
+    }
+  }
+
   /**
    * Transition between phases
    */
@@ -492,6 +545,8 @@ export class AgenticLoop {
    */
   private async handleToolCalls(toolCalls: ToolCall[]): Promise<void> {
     this.transitionPhase('acting');
+
+    await this.hooks?.onToolBatchStarted?.();
 
     this.logger.debug('Executing tool calls', {
       stepNumber: this.stepNumber,
