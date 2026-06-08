@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
-import type { LLM, Message, StreamOptions, ToolCall, ToolCallMessage, ToolDefinition, Usage } from './llm';
+import type {
+  LLM,
+  Message,
+  StreamOptions,
+  ToolCall,
+  ToolCallMessage,
+  ToolDefinition,
+  Usage,
+} from './llm';
 import type { StreamChunk } from './llm';
 import { parseQueryDatabaseToolCallsFromContent } from './parse-tool-calls-from-content';
 
@@ -168,7 +176,11 @@ export interface AgentHooks {
   /**
    * Called after executing a batch of tool calls
    */
-  afterToolBatch?: (results: ToolResult[], state: AgentState) => void | Promise<void>;
+  afterToolBatch?: (
+    results: ToolResult[],
+    toolCalls: ToolCall[],
+    state: AgentState,
+  ) => void | Promise<void>;
 
   /**
    * Called for each incremental LLM text chunk during streaming
@@ -416,8 +428,7 @@ export class AgenticLoop {
             ? parseQueryDatabaseToolCallsFromContent(lastMessage.content)
             : [];
 
-        const toolCallsToRun =
-          apiToolCalls.length > 0 ? apiToolCalls : synthesizedToolCalls;
+        const toolCallsToRun = apiToolCalls.length > 0 ? apiToolCalls : synthesizedToolCalls;
 
         if (toolCallsToRun.length > 0) {
           await this.handleToolCalls(toolCallsToRun);
@@ -478,9 +489,20 @@ export class AgenticLoop {
     options: StreamOptions,
   ): Promise<Message | null> {
     let assistantMessage: ToolCallMessage | null = null;
+    let streamedReasoningChars = 0;
 
     for await (const chunk of this.llm.stream(messages, options)) {
-      assistantMessage = this.processStreamChunk(chunk, assistantMessage);
+      assistantMessage = this.processStreamChunk(chunk, assistantMessage, (delta) => {
+        streamedReasoningChars += delta.length;
+      });
+    }
+
+    if (
+      assistantMessage?.content &&
+      streamedReasoningChars === 0 &&
+      assistantMessage.content.length > 0
+    ) {
+      await this.hooks?.onReasoningDelta?.(assistantMessage.content);
     }
 
     return assistantMessage;
@@ -489,10 +511,16 @@ export class AgenticLoop {
   private processStreamChunk(
     chunk: StreamChunk,
     assistantMessage: ToolCallMessage | null,
+    onReasoningStreamed?: (delta: string) => void,
   ): ToolCallMessage | null {
     switch (chunk.type) {
       case 'content':
         void this.hooks?.onReasoningDelta?.(chunk.delta);
+        onReasoningStreamed?.(chunk.delta);
+        return assistantMessage;
+      case 'tool_argument_delta':
+        void this.hooks?.onReasoningDelta?.(chunk.delta);
+        onReasoningStreamed?.(chunk.delta);
         return assistantMessage;
       case 'tool_call':
         return {
@@ -606,7 +634,7 @@ export class AgenticLoop {
       });
     }
 
-    this.hooks?.afterToolBatch?.(toolResults, this.getState());
+    this.hooks?.afterToolBatch?.(toolResults, toolCalls, this.getState());
 
     // Transition back to reasoning phase
     this.transitionPhase('reasoning');

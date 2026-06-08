@@ -10,6 +10,8 @@ import { createGoalPrompt } from './create-goal-prompt';
 import { createQueryDatabaseTool } from './create-query-database-tool';
 import { createSystemPrompt } from './create-system-prompt';
 import { createUserPrompt } from './create-user-prompt';
+import { extractQueryFromToolArguments } from '~/src/workspace/normalization-log/extract-query-from-tool-arguments';
+import { formatQueryResultLog } from '~/src/workspace/normalization-log/format-query-result-log';
 import type { NormalizationProgressReporter } from '~/src/workspace/normalization-log/normalization-progress-reporter';
 import { NormalizationProgressMessages } from '~/src/workspace/normalization-log/normalization-progress-messages';
 import type { NormalizerEvent } from './normalizer-event';
@@ -98,13 +100,35 @@ export async function createNormalizationViews({
       onToolBatchStarted() {
         progressReporter?.progress(NormalizationProgressMessages.applying);
       },
-      afterToolBatch(results) {
-        for (const result of results) {
+      afterToolBatch(results, toolCalls) {
+        for (let index = 0; index < results.length; index++) {
+          const result = results[index]!;
           if (result.toolName !== 'query_database') continue;
+
+          const query = extractQueryFromToolArguments(toolCalls[index]?.arguments);
+
           if (result.error) {
             lastSqlError = result.error;
+            progressReporter?.queryResult({
+              message: result.error,
+              meta: {
+                resultType: 'error',
+                error: result.error,
+                ...(query !== undefined ? { query } : {}),
+              },
+            });
             continue;
           }
+
+          const formatted = formatQueryResultLog(result.content, query);
+          if (formatted) {
+            if (formatted.meta.resultType === 'error' && formatted.meta.error) {
+              lastSqlError = formatted.meta.error;
+            }
+            progressReporter?.queryResult(formatted);
+            continue;
+          }
+
           try {
             const parsed = JSON.parse(result.content) as { error?: string };
             if (parsed.error) {

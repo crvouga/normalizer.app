@@ -117,9 +117,7 @@ export class Normalizer {
       logger: this.logger,
       llm: this.llm,
       eventEmitter: this.eventEmitter,
-      ...(this.progressReporter !== undefined
-        ? { progressReporter: this.progressReporter }
-        : {}),
+      ...(this.progressReporter !== undefined ? { progressReporter: this.progressReporter } : {}),
       inputs,
       targets,
       outputs,
@@ -167,8 +165,7 @@ export class Normalizer {
         continue;
       }
 
-      const displayName =
-        displayNameByViewName.get(item.request.viewName) ?? item.request.viewName;
+      const displayName = displayNameByViewName.get(item.request.viewName) ?? item.request.viewName;
       this.progressReporter.progress(
         NormalizationProgressMessages.loadedFile(displayName, item.result.value.rowCount),
       );
@@ -253,10 +250,5 @@ export function createNormalizer(params: {
   progressReporter?: NormalizationProgressReporter;
 }): Normalizer {
   const logger = params.logger.child(Normalizer.name);
-  return new Normalizer(
-    params.objectStore,
-    logger,
-    params.llm,
-    params.progressReporter,
-  );
+  return new Normalizer(params.objectStore, logger, params.llm, params.progressReporter);
 }

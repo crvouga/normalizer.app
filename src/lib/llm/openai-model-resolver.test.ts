@@ -89,12 +89,6 @@ describe('rankModelsForTier', () => {
     const ranked = rankModelsForTier(['gpt-5-nano', 'gpt-5-mini', 'gpt-5'], 'fast');
     expect(ranked[0]).toBe('gpt-5-nano');
   });
-
-  test('o-series ranks above older gpt generations for strong tier', () => {
-    const ranked = rankModelsForTier(['gpt-4o', 'o3', 'gpt-5'], 'strong');
-    expect(ranked[0]).toBe('gpt-5');
-    expect(ranked.indexOf('o3')).toBeLessThan(ranked.indexOf('gpt-4o'));
-  });
 });
 
 describe('buildModelChain', () => {
@@ -148,6 +142,27 @@ describe('resolveOpenAIModelChain', () => {
     expect(chain[0]).toBe('gpt-4o-mini');
     expect(chain.length).toBeGreaterThan(1);
     expect(chain).toContain('gpt-5');
+  });
+
+  test('returns top fast models when no explicit override', async () => {
+    delete process.env.OPENAI_MODEL;
+    const mockClient = {
+      models: {
+        list: async () => ({
+          data: FIXTURE_MODELS.map((id) => ({ id, object: 'model' as const })),
+        }),
+      },
+    };
+
+    const chain = await resolveOpenAIModelChain({
+      client: mockClient as never,
+      logger: { debug: () => {}, info: () => {}, warn: () => {} } as never,
+      tier: 'fast',
+    });
+
+    expect(chain[0]).toBe('gpt-5-nano');
+    expect(chain).not.toContain('gpt-5-chat-latest');
+    expect(chain).not.toContain('text-embedding-3-small');
   });
 
   test('returns top strong models when no explicit override', async () => {

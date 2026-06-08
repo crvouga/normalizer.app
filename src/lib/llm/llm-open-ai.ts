@@ -374,7 +374,7 @@ export class LLMOpenAI extends LLM {
       }
 
       if (delta.tool_calls) {
-        this.handleToolCallDelta(delta.tool_calls, state);
+        yield* this.handleToolCallDelta(delta.tool_calls, state);
       }
 
       if (chunk.usage) {
@@ -399,12 +399,12 @@ export class LLMOpenAI extends LLM {
     yield { type: 'content', delta: content };
   }
 
-  private handleToolCallDelta(
+  private *handleToolCallDelta(
     toolCallDeltas: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[],
     state: {
       toolCallBuffers: Map<number, { id: string; name: string; arguments: string }>;
     },
-  ): void {
+  ): Generator<StreamChunk> {
     for (const toolCallDelta of toolCallDeltas) {
       if (toolCallDelta.index === undefined) {
         continue;
@@ -428,7 +428,9 @@ export class LLMOpenAI extends LLM {
       }
 
       if (toolCallDelta.function?.arguments) {
-        buffer.arguments += toolCallDelta.function.arguments;
+        const argumentDelta = toolCallDelta.function.arguments;
+        buffer.arguments += argumentDelta;
+        yield { type: 'tool_argument_delta', delta: argumentDelta };
       }
     }
   }

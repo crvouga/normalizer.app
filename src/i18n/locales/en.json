@@ -111,6 +111,10 @@
       "hide": "Hide logs",
       "waiting": "Waiting for normalization activity...",
       "reasoning": "Thinking...",
+      "query": "Query",
+      "queryResult": "Result",
+      "commandCompleted": "Command completed ({{count}} rows affected)",
+      "queryError": "Query failed: {{error}}",
       "progress": {
         "starting": "Starting normalization...",
         "readingFiles": "Reading your files...",

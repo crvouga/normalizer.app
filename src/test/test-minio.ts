@@ -1,9 +1,11 @@
-import { chmod, mkdir, stat } from 'node:fs/promises';
+import { chmod, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type { Subprocess } from 'bun';
 import { DEFAULT_TEST_S3_ENV } from './test-env-defaults';
+
+export const TEST_MINIO_ENDPOINT_FILE = path.join(process.cwd(), '.test-minio-endpoint');
 
 const MINIO_ACCESS_KEY = DEFAULT_TEST_S3_ENV.S3_ACCESS_KEY;
 const MINIO_SECRET_KEY = DEFAULT_TEST_S3_ENV.S3_SECRET_KEY;
@@ -241,11 +243,59 @@ export async function startTestMinio(): Promise<string> {
   endpoint = localEndpoint;
   applyS3Endpoint(localEndpoint);
 
-  process.on('beforeExit', () => {
-    void stopTestMinio();
-  });
-
   return localEndpoint;
+}
+
+export async function writeTestMinioEndpointFile(): Promise<void> {
+  const endpointUrl = await startTestMinio();
+  await writeFile(TEST_MINIO_ENDPOINT_FILE, endpointUrl, 'utf8');
+}
+
+export async function readTestMinioEndpointFile(): Promise<string | null> {
+  try {
+    const value = await readFile(TEST_MINIO_ENDPOINT_FILE, 'utf8');
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function removeTestMinioEndpointFile(): Promise<void> {
+  try {
+    await unlink(TEST_MINIO_ENDPOINT_FILE);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Connects to the shared test MinIO started by the test runner parent process.
+ */
+export async function connectToTestMinio(): Promise<string> {
+  if (endpoint) {
+    return endpoint;
+  }
+
+  const sharedEndpoint = await readTestMinioEndpointFile();
+  if (!sharedEndpoint) {
+    throw new Error(
+      'Test MinIO endpoint file not found. Run tests via `bun run test` instead of `bun test` directly.',
+    );
+  }
+
+  if (!(await isMinioHealthy(sharedEndpoint))) {
+    throw new Error(`Test MinIO at ${sharedEndpoint} is not reachable.`);
+  }
+
+  endpoint = sharedEndpoint;
+  applyS3Endpoint(sharedEndpoint);
+  return sharedEndpoint;
 }
 
 export function getTestMinioEndpoint(): string {

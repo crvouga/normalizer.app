@@ -164,7 +164,7 @@ async function performNormalization({
   startedByUserId: UserId;
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
-  const llm = await createLLMOpenAIAsync({ logger, tier: 'strong' });
+  const llm = await createLLMOpenAIAsync({ logger, tier: 'fast' });
 
   const normalizer = createNormalizer({
     objectStore,

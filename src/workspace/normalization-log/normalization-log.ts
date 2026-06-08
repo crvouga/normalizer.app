@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const logLevelSchema = z.enum(['error', 'warn', 'info', 'debug']);
-const logKindSchema = z.enum(['progress', 'reasoning', 'error']);
+const logKindSchema = z.enum(['progress', 'reasoning', 'error', 'query_result']);
 
 const schema = z.object({
   seq: z.number(),

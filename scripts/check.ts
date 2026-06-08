@@ -5,7 +5,7 @@ export {};
 const steps = [
   { name: 'Type Check', command: ['run', 'type-check:once'] },
   { name: 'Circular Dependency Check', command: ['run', 'circular'] },
-  { name: 'Test', command: ['test'] },
+  { name: 'Test', command: ['run', 'test'] },
   { name: 'E2E Tests', command: ['run', 'e2e'] },
 ] as const;
 

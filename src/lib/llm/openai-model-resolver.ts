@@ -183,8 +183,7 @@ export async function resolveOpenAIModelChain(params: {
 
   try {
     const available = await fetchAvailableChatModels(params.client, params.logger);
-    const eligible =
-      tier === 'strong' ? filterToolCallingCapableModels(available) : available;
+    const eligible = filterToolCallingCapableModels(available);
     const ranked = rankModelsForTier(eligible.length > 0 ? eligible : available, tier);
     const chain = buildModelChain({
       rankedModels: ranked,

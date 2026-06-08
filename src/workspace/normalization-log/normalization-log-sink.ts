@@ -3,13 +3,9 @@ import { AppNotification } from '~/src/shared/app-notification';
 import type { Db } from '~/src/shared/db';
 import type { NormalizationRunId } from '../normalization-run-id';
 import type { WorkspaceId } from '../workspace-id';
-import {
-  createNormalizationLogDb,
-  type NormalizationLogInsert,
-} from './normalization-log-db';
+import { createNormalizationLogDb, type NormalizationLogInsert } from './normalization-log-db';
 
-const PROGRESS_FLUSH_INTERVAL_MS = 200;
-const REASONING_FLUSH_INTERVAL_MS = 80;
+const REASONING_FLUSH_INTERVAL_MS = 50;
 const MAX_BUFFER_SIZE = 25;
 
 export type NormalizationLogSink = {
@@ -29,21 +25,9 @@ export function createNormalizationLogSink(params: {
 
   let progressBuffer: NormalizationLogInsert[] = [];
   let reasoningBuffer: NormalizationLogInsert[] = [];
-  let progressFlushTimer: ReturnType<typeof setTimeout> | null = null;
   let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
   let isClosed = false;
   let flushPromise: Promise<void> = Promise.resolve();
-
-  const scheduleProgressFlush = () => {
-    if (progressFlushTimer !== null || isClosed) {
-      return;
-    }
-
-    progressFlushTimer = setTimeout(() => {
-      progressFlushTimer = null;
-      void enqueueFlush('progress');
-    }, PROGRESS_FLUSH_INTERVAL_MS);
-  };
 
   const scheduleReasoningFlush = () => {
     if (reasoningFlushTimer !== null || isClosed) {
@@ -134,17 +118,7 @@ export function createNormalizationLogSink(params: {
     }
 
     progressBuffer.push(entry);
-
-    if (progressBuffer.length >= MAX_BUFFER_SIZE) {
-      if (progressFlushTimer !== null) {
-        clearTimeout(progressFlushTimer);
-        progressFlushTimer = null;
-      }
-      void enqueueFlush('progress');
-      return;
-    }
-
-    scheduleProgressFlush();
+    void enqueueFlush('progress');
   };
 
   return {
@@ -152,11 +126,6 @@ export function createNormalizationLogSink(params: {
 
     async flushAndClose() {
       isClosed = true;
-
-      if (progressFlushTimer !== null) {
-        clearTimeout(progressFlushTimer);
-        progressFlushTimer = null;
-      }
 
       if (reasoningFlushTimer !== null) {
         clearTimeout(reasoningFlushTimer);

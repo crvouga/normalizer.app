@@ -17,6 +17,8 @@ const logsInputSchema = z.object({
 
 const logsBatchSchema = z.array(NormalizationLog.schema);
 
+const POLL_INTERVAL_MS = 500;
+
 async function authorizeWorkspaceView(ctx: Context, workspaceId: WorkspaceId) {
   const permission = canViewWorkspace(workspaceId);
   const projectionDb = new WorkspaceProjectionDb(ctx.db, ctx.logger);
@@ -27,6 +29,12 @@ async function authorizeWorkspaceView(ctx: Context, workspaceId: WorkspaceId) {
   }
 
   await ctx.authorize(permission, viewWorkspacePolicy, { resourceOwnerId });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export const normalizationLogRouter = router({
@@ -62,13 +70,22 @@ export const normalizationLogRouter = router({
       const logDb = createNormalizationLogDb({ db: ctx.db });
       let lastSeq = 0;
 
-      const initialLogs = await logDb.listAfter({
-        workspaceId: input.workspaceId,
-        normalizationRunId: input.normalizationRunId,
-      });
+      const loadNewLogs = async () => {
+        const logs = await logDb.listAfter({
+          workspaceId: input.workspaceId,
+          normalizationRunId: input.normalizationRunId,
+          ...(lastSeq > 0 ? { afterSeq: lastSeq } : {}),
+        });
 
+        if (logs.length > 0) {
+          lastSeq = logs[logs.length - 1]!.seq;
+        }
+
+        return logs;
+      };
+
+      const initialLogs = await loadNewLogs();
       if (initialLogs.length > 0) {
-        lastSeq = initialLogs[initialLogs.length - 1]!.seq;
         yield initialLogs;
       }
 
@@ -79,27 +96,38 @@ export const normalizationLogRouter = router({
       });
 
       const appNotification = new AppNotification(ctx.db);
+      const notifications = appNotification.subscribe('normalization_log');
+      let pendingNotification: ReturnType<typeof notifications.next> | null = null;
 
       try {
-        const notifications = appNotification.subscribe('normalization_log');
-
-        for await (const notifiedWorkspaceId of notifications) {
-          if (notifiedWorkspaceId !== input.workspaceId) {
-            continue;
+        while (true) {
+          if (!pendingNotification) {
+            pendingNotification = notifications.next();
           }
 
-          const newLogs = await logDb.listAfter({
-            workspaceId: input.workspaceId,
-            normalizationRunId: input.normalizationRunId,
-            afterSeq: lastSeq,
-          });
+          const raced = await Promise.race([
+            pendingNotification.then((result) => {
+              pendingNotification = null;
+              return { kind: 'notify' as const, result };
+            }),
+            sleep(POLL_INTERVAL_MS).then(() => ({ kind: 'poll' as const })),
+          ]);
 
-          if (newLogs.length === 0) {
-            continue;
+          if (raced.kind === 'notify') {
+            if (raced.result.done) {
+              break;
+            }
+
+            const notifiedWorkspaceId = raced.result.value;
+            if (notifiedWorkspaceId !== input.workspaceId) {
+              continue;
+            }
           }
 
-          lastSeq = newLogs[newLogs.length - 1]!.seq;
-          yield newLogs;
+          const newLogs = await loadNewLogs();
+          if (newLogs.length > 0) {
+            yield newLogs;
+          }
         }
       } finally {
         ctx.logger.info('Normalization log subscription ended', {
