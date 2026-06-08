@@ -58,18 +58,23 @@ CI on push to `main`:
 
 1. Runs tests (Postgres service + ephemeral MinIO)
 2. Migrates production DB via Vault OIDC (`DATABASE_URL` from `secret/personal/prd`)
-3. `flyctl deploy` using [`fly.toml`](fly.toml)
+3. Provisions and deploys to Fly via [`scripts/fly-deploy.sh`](scripts/fly-deploy.sh):
+   - creates the Fly app if missing
+   - allocates public IPs
+   - syncs `VAULT_TOKEN` to Fly secrets
+   - requests the TLS cert for `normalizer.app`
+   - upserts Cloudflare A/AAAA records (DNS-only)
+   - deploys with `flyctl deploy --remote-only`
 
-### Manual Fly setup (one-time)
+### One-time secret-store setup
 
-```bash
-fly apps create normalizer-app
-./scripts/create-dev-token.sh   # in secret-store repo
-fly secrets set VAULT_TOKEN=hvs.xxx -a normalizer-app
-fly certs add normalizer.app -a normalizer-app
-```
+Add these keys to `secret/personal/prd` (no manual `flyctl` steps):
 
-Add the Fly DNS record in Cloudflare for `normalizer.app` (grey-cloud until cert validates).
+| Key | Purpose |
+| --- | ------- |
+| `FLY_API_TOKEN` | CI authentication with Fly.io |
+| `VAULT_TOKEN` | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
+| `CLOUDFLARE_API_TOKEN` | DNS edit access for the `normalizer.app` zone |
 
 ## Google OAuth (optional)
 

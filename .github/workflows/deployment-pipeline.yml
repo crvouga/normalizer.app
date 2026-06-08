@@ -215,7 +215,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Import Fly token from Vault
+      - name: Import deploy secrets from Vault
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ env.VAULT_ADDR }}
@@ -225,11 +225,15 @@ jobs:
           jwtGithubAudience: https://secret-store.chrisvouga.dev
           secrets: |
             secret/data/personal/prd FLY_API_TOKEN | FLY_API_TOKEN
+            secret/data/personal/prd VAULT_TOKEN | VAULT_TOKEN
+            secret/data/personal/prd CLOUDFLARE_API_TOKEN | CLOUDFLARE_API_TOKEN
 
       - name: Setup Fly
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Fly deploy
-        run: flyctl deploy --remote-only
+      - name: Provision and deploy to Fly
+        run: ./scripts/fly-deploy.sh
         env:
           FLY_API_TOKEN: ${{ env.FLY_API_TOKEN }}
+          VAULT_TOKEN: ${{ env.VAULT_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
