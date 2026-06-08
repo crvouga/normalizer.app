@@ -128,6 +128,15 @@ export class LLMOpenAI extends LLM {
         }
         return;
       } catch (error) {
+        if (isEndpointConfigurationError(error)) {
+          const errorMessage = formatEndpointConfigurationError(this.baseUrl);
+          this.logger.error('OpenAI stream error', {
+            error: errorMessage,
+            status: 404,
+            baseURL: this.baseUrl,
+          });
+          throw new Error(errorMessage);
+        }
         if (isModelNotAvailableError(error) && nextModel) {
           this.logger.warn('Model not available, trying fallback', { model, nextModel });
           failures.push(formatOpenAIError(model, error, this.baseUrl));
@@ -564,16 +573,44 @@ export class LLMOpenAI extends LLM {
   }
 }
 
+/**
+ * Normalize OPENAI_BASE_URL so the SDK hits /v1/chat/completions (not /chat/completions).
+ * Vault often stores https://api.openai.com without the /v1 suffix.
+ */
+export function resolveOpenAIBaseUrl(): string | undefined {
+  const raw = process.env.OPENAI_BASE_URL;
+  if (!raw) return undefined;
+  const trimmed = raw.replace(/\/+$/, '');
+  if (trimmed.endsWith('/v1')) return trimmed;
+  return `${trimmed}/v1`;
+}
+
+function isEndpointConfigurationError(error: unknown): boolean {
+  if (!(error instanceof OpenAI.APIError) || error.status !== 404) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('no body') || msg === '404' || msg === '404 status code';
+}
+
 function isModelNotAvailableError(error: unknown): boolean {
+  if (isEndpointConfigurationError(error)) return false;
   if (error instanceof OpenAI.APIError) {
-    if (error.status === 404) return true;
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes('model') &&
-      (msg.includes('not found') || msg.includes('does not exist') || msg.includes('invalid'))
-    );
+    if (error.status === 404) {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes('model') &&
+        (msg.includes('not found') || msg.includes('does not exist') || msg.includes('invalid'))
+      );
+    }
   }
   return false;
+}
+
+function formatEndpointConfigurationError(baseURL: string | undefined): string {
+  const url = baseURL ?? resolveOpenAIBaseUrl() ?? '(default)';
+  return (
+    `OpenAI API returned 404 — check OPENAI_BASE_URL. ` +
+    `The URL must include /v1 (e.g. https://api.openai.com/v1). Current: ${url}`
+  );
 }
 
 function formatOpenAIError(model: string, error: unknown, baseURL?: string): string {
@@ -592,10 +629,13 @@ export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel })
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 
+  const baseUrl = resolveOpenAIBaseUrl();
+
   return new LLMOpenAI({
     apiKey,
     logger: params.logger,
     ...(params.model !== undefined && { model: params.model }),
+    ...(baseUrl !== undefined && { baseUrl }),
   }) as LLM;
 }
 

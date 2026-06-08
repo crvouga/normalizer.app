@@ -16,6 +16,10 @@ type VaultKvResponse = {
  * No-op when VAULT_TOKEN is absent — local dev uses `vault run` instead.
  */
 export async function loadVaultSecrets(): Promise<void> {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   const token = process.env.VAULT_TOKEN;
   if (!token) {
     return;

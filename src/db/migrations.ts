@@ -2,6 +2,10 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import type { Logger } from '../lib/logger';
+import {
+  assertSafeDatabaseUrl,
+  isTestEnvironment,
+} from '../test/assert-safe-database-url';
 import { DB_SCHEMA_NAME } from './db-schema';
 
 /**
@@ -16,6 +20,10 @@ export async function runMigrations(logger: Logger): Promise<void> {
     if (!databaseUrl) {
       logger.error('❌ DATABASE_URL environment variable is not set');
       throw new Error('DATABASE_URL environment variable is not set');
+    }
+
+    if (isTestEnvironment()) {
+      assertSafeDatabaseUrl(databaseUrl);
     }
 
     logger.debug('Parsing DATABASE_URL...');

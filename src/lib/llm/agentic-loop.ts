@@ -634,11 +634,23 @@ export class AgenticLoop {
       // Execute tool
       try {
         const result = await tool.execute(validationResult.value);
+        let success = true;
+        let toolError: string | undefined;
+        try {
+          const parsed = JSON.parse(result) as { error?: string };
+          if (typeof parsed.error === 'string' && parsed.error.length > 0) {
+            success = false;
+            toolError = parsed.error;
+          }
+        } catch {
+          // Tool returned non-JSON output
+        }
         results.push({
           toolCallId: toolCall.id,
           toolName: toolCall.name,
-          success: true,
+          success,
           content: result,
+          error: toolError,
         });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

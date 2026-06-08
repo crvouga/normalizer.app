@@ -75,19 +75,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 10
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -123,19 +110,8 @@ jobs:
           secrets: |
             secret/data/personal/dev OPENAI_API_KEY | OPENAI_API_KEY
 
-      - name: Run database migrations
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-          S3_ENDPOINT: http://localhost:9000
-          S3_ACCESS_KEY: minioadmin
-          S3_SECRET_KEY: minioadmin
-          S3_BUCKET: test-bucket
-          S3_REGION: us-east-1
-        run: bun run db:migrate
-
       - name: Run tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           S3_ENDPOINT: http://localhost:9000
           S3_ACCESS_KEY: minioadmin
           S3_SECRET_KEY: minioadmin
@@ -150,19 +126,6 @@ jobs:
   test-e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -205,19 +168,8 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bunx playwright install chromium --with-deps
 
-      - name: Run database migrations
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-          S3_ENDPOINT: http://localhost:9000
-          S3_ACCESS_KEY: minioadmin
-          S3_SECRET_KEY: minioadmin
-          S3_BUCKET: test-bucket
-          S3_REGION: us-east-1
-        run: bun run db:migrate
-
       - name: Run E2E tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           S3_ENDPOINT: http://localhost:9000
           S3_ACCESS_KEY: minioadmin
           S3_SECRET_KEY: minioadmin

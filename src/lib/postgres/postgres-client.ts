@@ -241,7 +241,7 @@ export class PostgresClient {
     const calculatedBatchSize = Math.floor(maxParamsPerQuery / columns.length);
     const batchSize = Math.max(100, Math.min(calculatedBatchSize, 5000));
 
-    this.logger.info(
+    this.logger.debug(
       `Inserting ${rows.length} rows into ${schema}.${tableName} (batch size: ${batchSize})`,
     );
 
@@ -261,7 +261,7 @@ export class PostgresClient {
       return Err(`Transaction failed: ${transactionResult.error}`);
     }
 
-    this.logger.info(`Inserted ${transactionResult.value} rows into ${schema}.${tableName}`);
+    this.logger.debug(`Inserted ${transactionResult.value} rows into ${schema}.${tableName}`);
     return transactionResult;
   }
 

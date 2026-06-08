@@ -1,3 +1,17 @@
+import type { ColumnMetadata } from '../postgres/postgres-client';
+
+function formatTableSchemasForPrompt(tableSchemas: Record<string, ColumnMetadata[]>): string {
+  return Object.entries(tableSchemas)
+    .map(([tableName, columns]) => {
+      const columnList =
+        columns.length > 0
+          ? columns.map((c) => `  - ${c.column_name} (${c.data_type})`).join('\n')
+          : '  (no columns found)';
+      return `${tableName}:\n${columnList}`;
+    })
+    .join('\n\n');
+}
+
 /**
  * Generates the system prompt for normalization view creation
  */
@@ -5,8 +19,19 @@ export function createSystemPrompt(params: {
   inputViewNames: string[];
   targetViewNames: string[];
   outputViewName: string[];
+  tableSchemas?: Record<string, ColumnMetadata[]>;
 }): string {
+  const schemaSection = params.tableSchemas
+    ? `
+ACTUAL TABLE SCHEMAS (authoritative — use ONLY these column names in SQL; never invent columns):
+${formatTableSchemasForPrompt(params.tableSchemas)}
+
+If a target column has no matching input column, use a literal default (NULL, 0, or a constant) instead of referencing a non-existent input column.
+`
+    : '';
+
   return `You are a PostgreSQL expert. Create database objects (views, materialized views, tables, indexes, etc.) that transform input tables to match target table schemas BOTH STRUCTURALLY AND SEMANTICALLY.
+${schemaSection}
 
 CRITICAL: This is not just about matching column names - you must understand the SEMANTIC MEANING of the data and correctly transform input values to match the target schema's expected values.
 

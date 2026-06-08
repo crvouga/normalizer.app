@@ -1,10 +1,48 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { createLogger } from '../logger';
 import { LLM, type Message } from './llm';
-import { DEFAULT_MODEL, createLLMOpenAI, isOpenAIEnabled } from './llm-open-ai';
+import {
+  DEFAULT_MODEL,
+  createLLMOpenAI,
+  isOpenAIEnabled,
+  resolveOpenAIBaseUrl,
+} from './llm-open-ai';
 
-describe.if(isOpenAIEnabled())('LLM (OpenAI)', () => {
+describe('resolveOpenAIBaseUrl', () => {
+  const original = process.env.OPENAI_BASE_URL;
+
+  test('returns undefined when OPENAI_BASE_URL is unset', () => {
+    delete process.env.OPENAI_BASE_URL;
+    expect(resolveOpenAIBaseUrl()).toBeUndefined();
+  });
+
+  test('appends /v1 when missing', () => {
+    process.env.OPENAI_BASE_URL = 'https://api.openai.com';
+    expect(resolveOpenAIBaseUrl()).toBe('https://api.openai.com/v1');
+  });
+
+  test('preserves URL that already ends with /v1', () => {
+    process.env.OPENAI_BASE_URL = 'https://api.openai.com/v1';
+    expect(resolveOpenAIBaseUrl()).toBe('https://api.openai.com/v1');
+  });
+
+  test('strips trailing slashes before appending /v1', () => {
+    process.env.OPENAI_BASE_URL = 'https://api.openai.com///';
+    expect(resolveOpenAIBaseUrl()).toBe('https://api.openai.com/v1');
+  });
+
+  afterAll(() => {
+    if (original === undefined) {
+      delete process.env.OPENAI_BASE_URL;
+    } else {
+      process.env.OPENAI_BASE_URL = original;
+    }
+  });
+});
+
+if (isOpenAIEnabled()) {
+describe('LLM (OpenAI)', () => {
   const llm: LLM = createLLMOpenAI({
     logger: createLogger({ noop: true }),
     model: DEFAULT_MODEL,
@@ -80,3 +118,4 @@ describe.if(isOpenAIEnabled())('LLM (OpenAI)', () => {
     expect(typeof hasToolCall).toBe('boolean');
   }, 10000); // 10 second timeout
 });
+}

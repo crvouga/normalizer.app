@@ -9,7 +9,7 @@ import { getS3Config } from './s3-config';
 
 describe('S3 Client', () => {
   const logger = createLogger({ noop: true });
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Region } = getS3Config();
+  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Region, s3Bucket } = getS3Config();
   const objectStore: ObjectStore = new S3ObjectStore({
     s3Endpoint,
     s3AccessKeyId,
@@ -18,7 +18,7 @@ describe('S3 Client', () => {
     keyPrefix: 'normalizer-app',
     logger,
   });
-  const testBucket = 'test';
+  const testBucket = s3Bucket;
   beforeAll(async () => {
     await objectStore.ensureBucketExists(testBucket);
   });
@@ -27,7 +27,7 @@ describe('S3 Client', () => {
     const objectStore = await createObjectStore({ logger });
     const key = objectKey('test', `test-key-${Math.random()}`);
     const value = Buffer.from('Hello S3!');
-    const bucket = 'test';
+    const bucket = testBucket;
 
     const writeResult = await objectStore.write({ bucket, key, data: value });
     expect(writeResult.tag).toBe('ok');

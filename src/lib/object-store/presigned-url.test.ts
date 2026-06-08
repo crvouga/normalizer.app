@@ -32,17 +32,18 @@ describe('isLoopbackHost', () => {
 
 describe('generateServerPresignedUrl', () => {
   test('builds a /api/objects URL on the given server base', () => {
+    const key = k('artifacts/abc/file.csv');
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://localhost:8080',
       bucket: 'main',
-      key: k('artifacts/abc/file.csv'),
+      key,
       method: 'PUT',
       expiresIn: 3600,
     });
 
     const parsed = new URL(url);
     expect(parsed.origin).toBe('http://localhost:8080');
-    expect(parsed.pathname).toBe(`/api/objects/main/${encodeURIComponent('artifacts/abc/file.csv')}`);
+    expect(parsed.pathname).toBe(`/api/objects/main/${encodeURIComponent(key)}`);
     expect(parsed.searchParams.get('method')).toBe('PUT');
     expect(parsed.searchParams.get('expires')).toMatch(/^\d+$/);
     expect(parsed.searchParams.get('signature')).toMatch(/^[a-f0-9]{64}$/);

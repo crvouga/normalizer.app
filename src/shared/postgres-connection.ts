@@ -2,6 +2,10 @@ import postgres from 'postgres';
 import type { Logger } from '../lib/logger';
 import { DB_SCHEMA_NAME } from '../db/db-schema';
 import { ensureSchemaExists } from '../db/ensure-schema';
+import {
+  assertSafeDatabaseUrl,
+  isTestEnvironment,
+} from '../test/assert-safe-database-url';
 
 /**
  * Creates a postgres connection with proper configuration.
@@ -24,6 +28,10 @@ export const createPostgresConnection = async ({
   if (!databaseUrl) {
     logger.error('DATABASE_URL environment variable is not set');
     throw new Error('DATABASE_URL environment variable is not set');
+  }
+
+  if (isTestEnvironment()) {
+    assertSafeDatabaseUrl(databaseUrl);
   }
 
   // Log non-sensitive database config

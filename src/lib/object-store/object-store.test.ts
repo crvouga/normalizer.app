@@ -1269,7 +1269,7 @@ describe.each(implementations)(
       if (isOk(result)) {
         expect(result.value.objects).toHaveLength(3);
         const keys = result.value.objects.map((obj) => obj.key).sort();
-        expect(keys).toEqual(['dir/file3.txt', 'file1.txt', 'file2.txt']);
+        expect(keys).toEqual([k('dir/file3.txt'), k('file1.txt'), k('file2.txt')].sort());
 
         // Verify all objects have required metadata
         for (const obj of result.value.objects) {
@@ -1298,7 +1298,7 @@ describe.each(implementations)(
       if (isOk(result)) {
         expect(result.value.objects).toHaveLength(2);
         const keys = result.value.objects.map((obj) => obj.key).sort();
-        expect(keys).toEqual(['docs/guide.txt', 'docs/readme.txt']);
+        expect(keys).toEqual([k('docs/guide.txt'), k('docs/readme.txt')].sort());
       }
     });
 
@@ -1387,13 +1387,15 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         // Should return root.txt as object and docs/, images/ as common prefixes
-        const rootObjects = result.value.objects.filter((obj) => !obj.key.includes('/'));
+        const rootObjects = result.value.objects.filter(
+          (obj) => obj.key === k('root.txt'),
+        );
         expect(rootObjects.length).toBeGreaterThan(0);
 
         if (result.value.commonPrefixes) {
           expect(result.value.commonPrefixes.length).toBeGreaterThan(0);
-          expect(result.value.commonPrefixes).toContain('docs/');
-          expect(result.value.commonPrefixes).toContain('images/');
+          expect(result.value.commonPrefixes).toContain(k('docs/'));
+          expect(result.value.commonPrefixes).toContain(k('images/'));
         }
       }
     });
@@ -1410,8 +1412,8 @@ describe.each(implementations)(
       const result = await store.listObjects(testBucket);
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        const smallObj = result.value.objects.find((obj) => obj.key === 'small.txt');
-        const largeObj = result.value.objects.find((obj) => obj.key === 'large.txt');
+        const smallObj = result.value.objects.find((obj) => obj.key === k('small.txt'));
+        const largeObj = result.value.objects.find((obj) => obj.key === k('large.txt'));
 
         expect(smallObj).toBeDefined();
         expect(largeObj).toBeDefined();
@@ -1434,7 +1436,7 @@ describe.each(implementations)(
       const result = await store.listObjects(testBucket);
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        const obj = result.value.objects.find((o) => o.key === 'test.txt');
+        const obj = result.value.objects.find((o) => o.key === k('test.txt'));
         expect(obj).toBeDefined();
 
         if (obj) {
@@ -1471,7 +1473,7 @@ describe.each(implementations)(
 
       expect(objects).toHaveLength(3);
       const keys = objects.map((obj) => obj.key).sort();
-      expect(keys).toEqual(['file1.txt', 'file2.txt', 'file3.txt']);
+      expect(keys).toEqual([k('file1.txt'), k('file2.txt'), k('file3.txt')].sort());
 
       // Verify all objects have required metadata
       for (const obj of objects) {
@@ -1498,7 +1500,7 @@ describe.each(implementations)(
 
       expect(objects).toHaveLength(2);
       const keys = objects.map((obj) => obj.key).sort();
-      expect(keys).toEqual(['docs/file1.txt', 'docs/file2.txt']);
+      expect(keys).toEqual([k('docs/file1.txt'), k('docs/file2.txt')].sort());
     });
 
     test('listAllObjects: handles pagination automatically', async () => {
