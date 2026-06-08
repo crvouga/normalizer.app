@@ -12,11 +12,30 @@ primary_region = "sjc"
   VAULT_MOUNT = "secret"
   VAULT_PROJECT = "personal"
   VAULT_CONFIG = "prd"
+  # The web process must not run jobs in-process; the dedicated worker process
+  # group below handles normalization so heavy work can't starve the web loop.
+  DISABLE_IN_PROCESS_WORKER = "true"
 
+# Run the web server and the background worker on separate machines so that
+# CPU/memory-heavy normalization (PGlite WASM, tabular parsing, LLM calls)
+# never blocks the web server's event loop and trips its health check.
+[processes]
+  web = "bun run src/server.tsx"
+  worker = "bun run src/worker.tsx"
+
+# Lightweight web tier (no longer runs jobs in-process).
 [[vm]]
   memory = "512mb"
   cpu_kind = "shared"
   cpus = 1
+  processes = ["web"]
+
+# Heavy worker tier: dedicated CPU + extra RAM for PGlite/normalization.
+[[vm]]
+  memory = "4gb"
+  cpu_kind = "performance"
+  cpus = 2
+  processes = ["worker"]
 
 [http_service]
   internal_port = 8080
@@ -24,6 +43,7 @@ primary_region = "sjc"
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
+  processes = ["web"]
 
   [[http_service.checks]]
     method = "GET"

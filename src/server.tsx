@@ -120,7 +120,18 @@ async function main() {
 
   await ensureGraphileWorkerSetup({ db, logger });
 
-  const worker = await startGraphileWorker({ logger: logger.child('Worker'), db });
+  // In production the worker runs in its own Fly process group (see fly.toml /
+  // src/worker.tsx) so heavy normalization jobs can't starve the web event loop
+  // and trip the liveness health check. Locally (flag unset) we run it in-process
+  // for convenience.
+  const runInProcessWorker = process.env.DISABLE_IN_PROCESS_WORKER !== 'true';
+  const worker = runInProcessWorker
+    ? await startGraphileWorker({ logger: logger.child('Worker'), db })
+    : null;
+
+  if (!runInProcessWorker) {
+    logger.info('In-process worker disabled (DISABLE_IN_PROCESS_WORKER=true); running web only');
+  }
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 
@@ -227,7 +238,9 @@ async function main() {
 
   onShutdown(logger, async () => {
     stopHeartbeat();
-    await worker.stop();
+    if (worker) {
+      await worker.stop();
+    }
   });
 
   logger.info(`🚀 Server running at ${server.url}`);

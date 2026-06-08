@@ -226,8 +226,8 @@ wait_for_certificates() {
 }
 
 ensure_single_machine() {
-  log "Ensuring ${APP_NAME} runs a single machine"
-  flyctl scale count 1 -a "$APP_NAME" -y
+  log "Ensuring ${APP_NAME} runs a single machine per process group (web, worker)"
+  flyctl scale count web=1 worker=1 -a "$APP_NAME" -y
 }
 
 deploy_app() {
