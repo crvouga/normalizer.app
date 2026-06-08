@@ -53,15 +53,41 @@ async function isMinioHealthy(endpointUrl: string): Promise<boolean> {
   }
 }
 
-async function waitForMinioHealthy(endpointUrl: string, timeoutMs = 30_000): Promise<boolean> {
+async function waitForMinioHealthy(
+  endpointUrl: string,
+  timeoutMs = 30_000,
+  proc?: Subprocess | null,
+): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    if (proc) {
+      const exitCode = await Promise.race([
+        proc.exited,
+        Bun.sleep(0).then(() => null as number | null),
+      ]);
+      if (exitCode !== null) {
+        return false;
+      }
+    }
+
     if (await isMinioHealthy(endpointUrl)) {
       return true;
     }
     await Bun.sleep(250);
   }
   return false;
+}
+
+async function tryReuseSharedEndpoint(timeoutMs = 5_000): Promise<string | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const sharedEndpoint = await readTestMinioEndpointFile();
+    if (sharedEndpoint && (await isMinioHealthy(sharedEndpoint))) {
+      return sharedEndpoint;
+    }
+    await Bun.sleep(100);
+  }
+  return null;
 }
 
 async function isDockerAvailable(): Promise<boolean> {
@@ -96,6 +122,22 @@ function getMinioBinaryDownloadUrl(): string {
   throw new Error(`Unsupported platform for embedded MinIO: ${platform}-${arch}`);
 }
 
+async function clearMacOsQuarantine(binaryPath: string): Promise<void> {
+  if (process.platform !== 'darwin') {
+    return;
+  }
+
+  try {
+    const proc = Bun.spawn(['xattr', '-d', 'com.apple.quarantine', binaryPath], {
+      stdout: 'ignore',
+      stderr: 'ignore',
+    });
+    await proc.exited;
+  } catch {
+    // Binary may not have a quarantine attribute.
+  }
+}
+
 async function ensureMinioBinary(): Promise<string> {
   await mkdir(MINIO_CACHE_DIR, { recursive: true });
   const binaryPath = path.join(MINIO_CACHE_DIR, 'minio');
@@ -103,6 +145,7 @@ async function ensureMinioBinary(): Promise<string> {
   try {
     const info = await stat(binaryPath);
     if (info.isFile() && info.size > 0) {
+      await clearMacOsQuarantine(binaryPath);
       return binaryPath;
     }
   } catch {
@@ -118,6 +161,7 @@ async function ensureMinioBinary(): Promise<string> {
   const bytes = await response.arrayBuffer();
   await Bun.write(binaryPath, bytes);
   await chmod(binaryPath, 0o755);
+  await clearMacOsQuarantine(binaryPath);
   return binaryPath;
 }
 
@@ -184,8 +228,10 @@ async function startMinioWithBinary(port: number): Promise<void> {
         MINIO_ROOT_USER: MINIO_ACCESS_KEY,
         MINIO_ROOT_PASSWORD: MINIO_SECRET_KEY,
       },
-      stdout: 'pipe',
-      stderr: 'pipe',
+      // Do not pipe without draining — MinIO logs enough to fill the buffer and
+      // block, which makes the health check time out.
+      stdout: 'ignore',
+      stderr: 'ignore',
     },
   );
 
@@ -223,6 +269,13 @@ export async function startTestMinio(): Promise<string> {
     return configuredEndpoint;
   }
 
+  const sharedEndpoint = await tryReuseSharedEndpoint();
+  if (sharedEndpoint) {
+    endpoint = sharedEndpoint;
+    applyS3Endpoint(sharedEndpoint);
+    return sharedEndpoint;
+  }
+
   const port = await findAvailablePort();
   const localEndpoint = buildEndpoint(port);
 
@@ -231,11 +284,17 @@ export async function startTestMinio(): Promise<string> {
     await startMinioWithBinary(port);
   }
 
-  const healthy = await waitForMinioHealthy(localEndpoint);
+  const healthy = await waitForMinioHealthy(localEndpoint, 30_000, managedProcess);
   if (!healthy) {
+    const exitCode = managedProcess
+      ? await Promise.race([managedProcess.exited, Bun.sleep(0).then(() => null)])
+      : null;
     await stopTestMinio();
     throw new Error(
       `Failed to start local MinIO for tests on ${localEndpoint}. ` +
+        (exitCode !== null
+          ? `Process exited with code ${exitCode}. `
+          : 'Health check timed out. ') +
         'Start MinIO manually or ensure Docker is available.',
     );
   }

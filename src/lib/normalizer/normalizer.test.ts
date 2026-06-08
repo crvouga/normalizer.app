@@ -1,8 +1,10 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeAll, describe, expect, test } from 'bun:test';
+import type { ObjectStore } from '~/src/lib/object-store/object-store';
 import { createObjectStore } from '~/src/shared/s3';
 import { DEFAULT_MODEL, createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
 import { createLogger } from '../logger';
 import { createNormalizer } from './normalizer';
+import type { Normalizer } from './normalizer';
 import {
   compareCaseInsensitive,
   compareDates,
@@ -11,13 +13,20 @@ import {
   toInt,
 } from './test/test-normalizer';
 
-describe.if(isOpenAIEnabled() && false)('Normalizer', async () => {
+const shouldRunNormalizerTests = isOpenAIEnabled() && false;
+
+(shouldRunNormalizerTests ? describe : describe.skip)('Normalizer', () => {
   const logger = createLogger({ noop: true });
   const testBucket = 'test-normalizer';
-  const objectStore = await createObjectStore({ logger });
-  await objectStore.ensureBucketExists(testBucket);
-  const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
-  const normalizer = createNormalizer({ objectStore, logger, llm });
+  let objectStore: ObjectStore;
+  let normalizer: Normalizer;
+
+  beforeAll(async () => {
+    objectStore = await createObjectStore({ logger });
+    await objectStore.ensureBucketExists(testBucket);
+    const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
+    normalizer = createNormalizer({ objectStore, logger, llm });
+  });
 
   test(
     'should map course data with direct field mappings and preserve input values',

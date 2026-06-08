@@ -28,6 +28,7 @@
       "env": ["OPENAI_API_KEY", "NODE_ENV"]
     },
     "e2e": {
+      "dependsOn": ["test"],
       "inputs": ["src/**", "playwright.config.ts", "bunfig.toml", "tsconfig.json"],
       "outputs": ["playwright-report/**"],
       "passThroughEnv": [
