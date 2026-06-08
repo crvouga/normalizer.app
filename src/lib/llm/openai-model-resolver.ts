@@ -24,6 +24,9 @@ const EXCLUDED_SUBSTRINGS = [
   'sora',
 ];
 
+/** Models that respond with plain-text JSON instead of the tools/function-calling API. */
+const TOOL_CALLING_EXCLUDED_SUBSTRINGS = ['-chat-latest', '-chat-', 'chatgpt-'];
+
 type ModelCache = {
   models: string[];
   expiresAt: number;
@@ -47,6 +50,21 @@ export function isChatCapableModelId(modelId: string): boolean {
  */
 export function filterChatCapableModels(modelIds: string[]): string[] {
   return modelIds.filter(isChatCapableModelId);
+}
+
+/**
+ * Models suitable for agentic tool-calling (excludes ChatGPT-branded variants).
+ */
+export function isToolCallingCapableModelId(modelId: string): boolean {
+  if (!isChatCapableModelId(modelId)) {
+    return false;
+  }
+  const lower = modelId.toLowerCase();
+  return !TOOL_CALLING_EXCLUDED_SUBSTRINGS.some((s) => lower.includes(s));
+}
+
+export function filterToolCallingCapableModels(modelIds: string[]): string[] {
+  return modelIds.filter(isToolCallingCapableModelId);
 }
 
 /**
@@ -81,7 +99,7 @@ export function scoreModelForTier(modelId: string, tier: ModelTier): number {
     score -= 20;
   }
   if (lower.includes('-latest')) {
-    score += 10;
+    score += tier === 'fast' ? 10 : -40;
   }
 
   return score;
@@ -165,7 +183,9 @@ export async function resolveOpenAIModelChain(params: {
 
   try {
     const available = await fetchAvailableChatModels(params.client, params.logger);
-    const ranked = rankModelsForTier(available, tier);
+    const eligible =
+      tier === 'strong' ? filterToolCallingCapableModels(available) : available;
+    const ranked = rankModelsForTier(eligible.length > 0 ? eligible : available, tier);
     const chain = buildModelChain({
       rankedModels: ranked,
       ...(explicitModel !== undefined && { explicitModel }),

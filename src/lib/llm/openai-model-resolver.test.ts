@@ -3,13 +3,17 @@ import {
   buildModelChain,
   clearOpenAIModelCache,
   filterChatCapableModels,
+  filterToolCallingCapableModels,
   isChatCapableModelId,
+  isToolCallingCapableModelId,
   rankModelsForTier,
   resolveOpenAIModelChain,
 } from './openai-model-resolver';
 
 const FIXTURE_MODELS = [
   'gpt-5',
+  'gpt-5-chat-latest',
+  'gpt-5.1-chat-latest',
   'gpt-5-mini',
   'gpt-5-nano',
   'gpt-4.1',
@@ -39,6 +43,23 @@ describe('isChatCapableModelId', () => {
     expect(isChatCapableModelId('whisper-1')).toBe(false);
     expect(isChatCapableModelId('dall-e-3')).toBe(false);
     expect(isChatCapableModelId('gpt-4o-realtime-preview')).toBe(false);
+  });
+});
+
+describe('isToolCallingCapableModelId', () => {
+  test('excludes chat-latest variants', () => {
+    expect(isToolCallingCapableModelId('gpt-5')).toBe(true);
+    expect(isToolCallingCapableModelId('gpt-5-chat-latest')).toBe(false);
+    expect(isToolCallingCapableModelId('gpt-5.1-chat-latest')).toBe(false);
+  });
+});
+
+describe('filterToolCallingCapableModels', () => {
+  test('removes chat-latest models from fixture list', () => {
+    const filtered = filterToolCallingCapableModels(FIXTURE_MODELS);
+    expect(filtered).toContain('gpt-5');
+    expect(filtered).not.toContain('gpt-5-chat-latest');
+    expect(filtered).not.toContain('gpt-5.1-chat-latest');
   });
 });
 
@@ -148,6 +169,7 @@ describe('resolveOpenAIModelChain', () => {
     expect(chain[0]).toBe('gpt-5');
     expect(chain).not.toContain('text-embedding-3-small');
     expect(chain).not.toContain('gpt-5-nano');
+    expect(chain).not.toContain('gpt-5-chat-latest');
   });
 
   test('caches model list across calls', async () => {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Logger } from '../logger';
 import { Err, isErr, Ok, type Result } from '../result';
 import type { LLM, Message, ToolCall, ToolDefinition, Usage } from './llm';
+import { parseQueryDatabaseToolCallsFromContent } from './parse-tool-calls-from-content';
 
 /**
  * Agent execution phase
@@ -393,14 +394,25 @@ export class AgenticLoop {
 
         this.conversationMessages.push(lastMessage);
 
-        // Check if there are tool calls
-        const hasToolCalls =
+        // Check if there are tool calls (API-native or synthesized from text JSON)
+        const apiToolCalls =
           'toolCalls' in lastMessage &&
           lastMessage.toolCalls !== undefined &&
-          lastMessage.toolCalls.length > 0;
+          lastMessage.toolCalls.length > 0
+            ? lastMessage.toolCalls
+            : [];
 
-        if (hasToolCalls && lastMessage.toolCalls) {
-          await this.handleToolCalls(lastMessage.toolCalls);
+        const hasQueryDatabaseTool = this.tools.some((t) => t.name === 'query_database');
+        const synthesizedToolCalls =
+          apiToolCalls.length === 0 && hasQueryDatabaseTool && lastMessage.content
+            ? parseQueryDatabaseToolCallsFromContent(lastMessage.content)
+            : [];
+
+        const toolCallsToRun =
+          apiToolCalls.length > 0 ? apiToolCalls : synthesizedToolCalls;
+
+        if (toolCallsToRun.length > 0) {
+          await this.handleToolCalls(toolCallsToRun);
         } else {
           const shouldBreak = await this.handleNoToolCalls(lastMessage);
           if (shouldBreak) {
