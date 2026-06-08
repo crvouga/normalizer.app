@@ -227,4 +227,24 @@ describe('resolveOpenAIModelChain', () => {
 
     expect(chain).toEqual(['gpt-4o']);
   });
+
+  test('uses built-in fallback chain when API fails and no explicit model', async () => {
+    delete process.env.OPENAI_MODEL;
+    const mockClient = {
+      models: {
+        list: async () => {
+          throw new Error('401 OpenAI-Project header should match project for API key');
+        },
+      },
+    };
+
+    const chain = await resolveOpenAIModelChain({
+      client: mockClient as never,
+      logger: { debug: () => {}, info: () => {}, warn: () => {} } as never,
+      tier: 'strong',
+    });
+
+    expect(chain.length).toBeGreaterThan(0);
+    expect(chain).toContain('gpt-4o');
+  });
 });

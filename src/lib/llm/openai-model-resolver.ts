@@ -6,6 +6,16 @@ export type ModelTier = 'strong' | 'fast';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const CHAIN_LENGTH = 5;
 
+/**
+ * Known-good models used as a last resort when neither an explicit model nor
+ * the dynamic model list from the OpenAI API is available. Keeps normalization
+ * working through transient API/listing failures instead of failing the task.
+ */
+const DEFAULT_FALLBACK_MODELS: Record<ModelTier, string[]> = {
+  strong: ['gpt-4o', 'gpt-4o-mini'],
+  fast: ['gpt-4o-mini', 'gpt-4o'],
+};
+
 const CHAT_MODEL_PREFIXES = ['gpt-', 'o1', 'o3', 'o4', 'chatgpt-'];
 
 const EXCLUDED_SUBSTRINGS = [
@@ -214,7 +224,12 @@ export async function resolveOpenAIModelChain(params: {
       return [explicitModel];
     }
 
-    throw new Error(`Failed to resolve OpenAI model chain: ${message}`);
+    const fallback = DEFAULT_FALLBACK_MODELS[tier];
+    params.logger.warn('No explicit OPENAI_MODEL set; using built-in fallback model chain', {
+      tier,
+      fallback,
+    });
+    return [...fallback];
   }
 }
 

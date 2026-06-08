@@ -107,7 +107,7 @@ export class LLMOpenAI extends LLM {
     super();
     this.baseUrl = config.baseUrl;
     this.client = new OpenAI({
-      apiKey: config.apiKey.DANGEROUSLY_readValue(),
+      ...buildOpenAIClientOptions(config.apiKey.DANGEROUSLY_readValue()),
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
     this.modelChain = getModelChain(config.model, config.modelChain);
@@ -606,6 +606,25 @@ export function resolveOpenAIBaseUrl(): string | undefined {
   return `${trimmed}/v1`;
 }
 
+/**
+ * Builds OpenAI client options.
+ *
+ * Project-scoped keys (`sk-proj-`) already encode their project, and the SDK
+ * otherwise auto-reads `OPENAI_PROJECT_ID`/`OPENAI_ORG_ID` from the environment.
+ * Our secrets come from a shared vault bundle where those values may belong to a
+ * different project, which produces a `401 OpenAI-Project header should match
+ * project for API key`. Passing `null` explicitly suppresses those headers.
+ */
+function buildOpenAIClientOptions(apiKey: string): ConstructorParameters<typeof OpenAI>[0] {
+  const baseUrl = resolveOpenAIBaseUrl();
+  return {
+    apiKey,
+    project: null,
+    organization: null,
+    ...(baseUrl !== undefined && { baseURL: baseUrl }),
+  };
+}
+
 function isEndpointConfigurationError(error: unknown): boolean {
   if (!(error instanceof OpenAI.APIError) || error.status !== 404) return false;
   const msg = error.message.toLowerCase();
@@ -678,14 +697,9 @@ export async function createLLMOpenAIAsync(params: {
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 
-  const baseUrl = resolveOpenAIBaseUrl();
-
   let modelChain = params.modelChain;
   if (!modelChain || modelChain.length === 0) {
-    const client = new OpenAI({
-      apiKey: apiKey.DANGEROUSLY_readValue(),
-      ...(baseUrl !== undefined && { baseURL: baseUrl }),
-    });
+    const client = new OpenAI(buildOpenAIClientOptions(apiKey.DANGEROUSLY_readValue()));
     const resolved = await resolveOpenAIModelChain({
       client,
       logger: params.logger,
