@@ -12,7 +12,7 @@ permissions:
 
 env:
   BUN_VERSION: latest
-  VAULT_ADDR: https://secret-store.chrisvouga.dev
+  VAULT_ADDR: https://vault.chrisvouga.dev
   TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/prd TURBO_API | TURBO_API ;
             secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
@@ -71,7 +71,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/prd TURBO_API | TURBO_API ;
             secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
@@ -115,7 +115,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/dev OPENAI_API_KEY | OPENAI_API_KEY ;
             secret/data/personal/prd TURBO_API | TURBO_API ;
@@ -170,7 +170,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/prd TURBO_API | TURBO_API ;
             secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
@@ -241,7 +241,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/prd DATABASE_URL | DATABASE_URL
 
@@ -270,7 +270,7 @@ jobs:
           method: jwt
           path: jwt
           role: github-actions
-          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          jwtGithubAudience: https://vault.chrisvouga.dev
           secrets: |
             secret/data/personal/prd FLY_API_TOKEN | FLY_API_TOKEN ;
             secret/data/personal/prd VAULT_TOKEN | VAULT_TOKEN ;

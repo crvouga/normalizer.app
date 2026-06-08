@@ -55,7 +55,7 @@ vault run -- bunx turbo run test
 - **App**: one Fly.io machine (`normalizer-app`) serves `https://normalizer.app` and runs graphile-worker in-process
 - **Database**: shared Postgres; all tables live in schema `normalizer_app` (never `public`)
 - **Object storage**: Backblaze B2 (S3-compatible); all keys are prefixed `normalizer-app/`
-- **Secrets**: self-hosted OpenBao at `https://secret-store.chrisvouga.dev`
+- **Secrets**: self-hosted OpenBao at `https://vault.chrisvouga.dev`
 
 ## Secrets workflow
 

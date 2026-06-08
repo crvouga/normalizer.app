@@ -1,4 +1,4 @@
-const DEFAULT_VAULT_ADDR = 'https://secret-store.chrisvouga.dev';
+const DEFAULT_VAULT_ADDR = 'https://vault.chrisvouga.dev';
 const DEFAULT_VAULT_MOUNT = 'secret';
 const DEFAULT_VAULT_PROJECT = 'personal';
 const DEFAULT_VAULT_CONFIG = 'prd';
