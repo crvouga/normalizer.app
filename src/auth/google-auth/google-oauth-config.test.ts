@@ -41,10 +41,10 @@ const createCapturingLogger = (): {
     child: () => logger,
     error: () => {},
     warn: (message, meta) => {
-      warn.push({ message, meta });
+      warn.push(meta === undefined ? { message } : { message, meta });
     },
     info: (message, meta) => {
-      info.push({ message, meta });
+      info.push(meta === undefined ? { message } : { message, meta });
     },
     debug: () => {},
   };

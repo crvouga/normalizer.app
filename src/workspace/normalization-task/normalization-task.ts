@@ -20,6 +20,8 @@ import { WorkspaceId } from '../workspace-id';
 import type { WorkspaceProjection } from '../workspace-projection/workspace-projection';
 import { WorkspaceProjectionDb } from '../workspace-projection/workspace-projection-db';
 import type { WorkspaceProjectionEntry } from '../workspace-projection/workspace-projection-entry';
+import { createNormalizationLogSink } from '../normalization-log/normalization-log-sink';
+import { createStreamingLogger } from '../normalization-log/streaming-logger';
 import { toNormalizedFileName } from './normalized-file-name';
 
 /**
@@ -53,25 +55,37 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
       inputArtifactIds: inProgressEntry.inputArtifactIds,
     });
 
-    await db.transaction(async (tx: Tx) => {
-      const outputArtifactIds = await performNormalization({
-        tx,
-        logger,
-        sessionId,
-        inProgressEntry,
-        projection,
-        startedByUserId,
-      });
-
-      await recordNormalizationResult({
-        tx,
-        logger,
-        workspaceId: sessionId,
-        startedByUserId,
-        inProgressEntry,
-        outputArtifactIds,
-      });
+    const logSink = createNormalizationLogSink({
+      db,
+      logger,
+      workspaceId: sessionId,
+      normalizationRunId: inProgressEntry.normalizationRunId,
     });
+    const streamLogger = createStreamingLogger({ base: logger, sink: logSink });
+
+    try {
+      await db.transaction(async (tx: Tx) => {
+        const outputArtifactIds = await performNormalization({
+          tx,
+          logger: streamLogger,
+          sessionId,
+          inProgressEntry,
+          projection,
+          startedByUserId,
+        });
+
+        await recordNormalizationResult({
+          tx,
+          logger,
+          workspaceId: sessionId,
+          startedByUserId,
+          inProgressEntry,
+          outputArtifactIds,
+        });
+      });
+    } finally {
+      await logSink.flushAndClose();
+    }
   } catch (error) {
     logger.error('Normalization task failed', {
       sessionId,

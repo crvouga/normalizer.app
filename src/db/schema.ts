@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigserial, boolean, index, integer, jsonb, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
 import type { WorkspaceEventPersisted } from '../workspace/workspace-event/workspace-event-persisted';
@@ -110,3 +110,25 @@ export const keyValueStore = dbSchema.table('key_value_store', {
 });
 
 export type IKeyValueStore = typeof keyValueStore.$inferSelect;
+
+export const normalizationLogs = dbSchema.table(
+  'normalization_logs',
+  {
+    seq: bigserial('seq', { mode: 'number' }).primaryKey(),
+    workspace_id: text('workspace_id').notNull(),
+    normalization_run_id: text('normalization_run_id').notNull(),
+    level: text('level').notNull(),
+    scope: text('scope').notNull(),
+    message: text('message').notNull(),
+    meta: jsonb('meta').$type<Record<string, unknown>>(),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    workspaceIdIdx: index('normalization_logs_workspace_id_idx').on(table.workspace_id),
+    normalizationRunIdIdx: index('normalization_logs_normalization_run_id_idx').on(
+      table.normalization_run_id,
+    ),
+  }),
+);
+
+export type INormalizationLog = typeof normalizationLogs.$inferSelect;

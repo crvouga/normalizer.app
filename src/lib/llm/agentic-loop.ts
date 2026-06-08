@@ -394,6 +394,10 @@ export class AgenticLoop {
 
         this.conversationMessages.push(lastMessage);
 
+        if (lastMessage.content) {
+          this.logger.info('Model reasoning', { content: lastMessage.content });
+        }
+
         // Check if there are tool calls (API-native or synthesized from text JSON)
         const apiToolCalls =
           'toolCalls' in lastMessage &&

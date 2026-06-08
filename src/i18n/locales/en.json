@@ -105,6 +105,11 @@
     "outputArtifactsLabel": "Output Artifacts",
     "normalize": "Normalize",
     "normalizing": "Normalizing...",
+    "logs": {
+      "title": "Normalization logs",
+      "showAll": "Show all logs",
+      "hide": "Hide logs"
+    },
     "inProgress": "In Progress",
     "completed": "Completed",
     "failed": "Failed",

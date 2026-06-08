@@ -39,8 +39,9 @@ describe('normalizeEnvAliases', () => {
 
     normalizeEnvAliases();
 
-    expect(process.env.GOOGLE_CLIENT_ID).toBe('vault-client-id');
-    expect(process.env.GOOGLE_CLIENT_SECRET).toBe('vault-client-secret');
+    const env = snapshotGoogleEnv();
+    expect(env.GOOGLE_CLIENT_ID).toBe('vault-client-id');
+    expect(env.GOOGLE_CLIENT_SECRET).toBe('vault-client-secret');
   });
 
   test('does not overwrite pre-set GOOGLE_CLIENT_* values', () => {

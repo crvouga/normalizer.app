@@ -7,10 +7,15 @@ import { PostgresNotification } from '../lib/postgres-notification';
  * Application-specific notification types with type-safe payloads
  * Discriminated union for type-safe notification handling
  */
-export type Notification = {
-  type: 'workspace_projection_update';
-  payload: WorkspaceId;
-};
+export type Notification =
+  | {
+      type: 'workspace_projection_update';
+      payload: WorkspaceId;
+    }
+  | {
+      type: 'normalization_log';
+      payload: WorkspaceId;
+    };
 
 /**
  * Helper function for exhaustive checking in switch statements
@@ -44,7 +49,8 @@ export class AppNotification {
     payload: string,
   ): Extract<Notification, { type: T }>['payload'] {
     switch (type) {
-      case 'workspace_projection_update': {
+      case 'workspace_projection_update':
+      case 'normalization_log': {
         const parsed = WorkspaceId.schema.parse(payload);
         return parsed as Extract<Notification, { type: T }>['payload'];
       }
@@ -65,6 +71,10 @@ export class AppNotification {
     switch (notification.type) {
       case 'workspace_projection_update': {
         await this.pgNotify.notify('workspace_projection_update', notification.payload);
+        return true;
+      }
+      case 'normalization_log': {
+        await this.pgNotify.notify('normalization_log', notification.payload);
         return true;
       }
       default: {
