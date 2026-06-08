@@ -34,16 +34,16 @@ ${params.inputViewNames && params.inputViewNames.length > 0 ? `Available input t
 `
     : ''
 }${
-  isViewColumnTypeError(params.lastSqlError)
-    ? `
+        isViewColumnTypeError(params.lastSqlError)
+          ? `
 PostgreSQL cannot change column types with CREATE OR REPLACE VIEW. Drop the view first, then recreate with explicit casts:
 
   DROP VIEW IF EXISTS "${params.outputViewName}" CASCADE;
   CREATE VIEW "${params.outputViewName}" AS
     SELECT ... , column_name::numeric AS "NumericColumn", column_name::text AS "TextColumn" ...
 `
-    : ''
-}
+          : ''
+      }
 `
     : '';
 
