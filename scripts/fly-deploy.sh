@@ -134,7 +134,20 @@ ensure_ips() {
 sync_runtime_secrets() {
   local app_name=$1
   log "Syncing VAULT_TOKEN to Fly app ${app_name}"
-  flyctl secrets set "VAULT_TOKEN=${VAULT_TOKEN}" -a "$app_name" --stage
+  # A freshly created app can take a few seconds to propagate across Fly
+  # regions; the secrets API may briefly 404 with "app not found". Retry.
+  local attempts=6
+  for ((i = 1; i <= attempts; i++)); do
+    if flyctl secrets set "VAULT_TOKEN=${VAULT_TOKEN}" -a "$app_name" --stage; then
+      return 0
+    fi
+    if [[ "$i" -eq "$attempts" ]]; then
+      echo "Error: failed to set secrets on ${app_name} after ${attempts} attempts" >&2
+      return 1
+    fi
+    log "App ${app_name} not ready for secrets yet; retrying in 5s (attempt ${i}/${attempts})"
+    sleep 5
+  done
 }
 
 ensure_certificate() {
