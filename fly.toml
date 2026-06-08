@@ -7,11 +7,16 @@ primary_region = "sjc"
 [env]
   NODE_ENV = "production"
   PORT = "8080"
-  SERVER_BASE_URL = "https://normalizer.app"
+  SERVER_BASE_URL = "https://www.normalizer.app"
   VAULT_ADDR = "https://vault.chrisvouga.dev"
   VAULT_MOUNT = "secret"
   VAULT_PROJECT = "personal"
   VAULT_CONFIG = "prd"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
 
 [http_service]
   internal_port = 8080
@@ -22,7 +27,7 @@ primary_region = "sjc"
 
   [[http_service.checks]]
     method = "GET"
-    path = "/health"
+    path = "/health/live"
     interval = "30s"
-    timeout = "10s"
+    timeout = "5s"
     grace_period = "60s"

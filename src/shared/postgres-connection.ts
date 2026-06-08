@@ -55,9 +55,10 @@ export const createPostgresConnection = async ({
 
   logger.info('Creating new database connection...');
   const sql = postgres(dbUrlObj.toString(), {
-    connect_timeout: 10,
-    idle_timeout: 30,
+    connect_timeout: 15,
+    idle_timeout: 20,
     max_lifetime: 60 * 30,
+    max: 5,
     onnotice: () => {},
     connection: {
       search_path: schemaName,

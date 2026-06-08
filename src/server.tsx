@@ -153,11 +153,18 @@ async function main() {
 
       ...trpcEndpoints,
 
+      '/health/live'() {
+        // Liveness probe for Fly [[http_service.checks]]. Process-only —
+        // does not hit Neon/Postgres so a sleeping DB cannot trigger a
+        // machine-replacement loop during deploy or idle periods.
+        return Response.json(
+          { status: 'ok', uptime_s: Math.floor(process.uptime()) },
+          { status: 200, headers: { 'Cache-Control': 'no-store' } },
+        );
+      },
+
       async '/health'() {
-        // Cheap; intended for Fly's [[http_service.checks]]. Probes the
-        // database only -- if that's stale the whole machine is broken,
-        // so Fly should replace it instead of letting requests hang for
-        // minutes on a TCP keepalive timeout.
+        // Readiness probe: verifies the database connection is usable.
         const start = Date.now();
         const dbStatus = await checkDb(db);
         if (!dbStatus.ok) {

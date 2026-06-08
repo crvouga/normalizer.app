@@ -3,11 +3,15 @@ set -euo pipefail
 
 # Idempotent Fly provisioning + deploy for CI.
 # Requires: FLY_API_TOKEN, VAULT_TOKEN, CLOUDFLARE_API_TOKEN
-# Optional: FLY_ORG (default: personal), CLOUDFLARE_ZONE_ID (auto-resolved from domain)
+# Optional: FLY_ORG (default: personal), FLY_ZONE_DOMAIN (default: normalizer.app),
+#           FLY_PRIMARY_HOST (default: parsed from fly.toml SERVER_BASE_URL),
+#           CLOUDFLARE_ZONE_ID (auto-resolved from zone domain)
 
 APP_NAME="$(grep -E '^app = ' fly.toml | sed -E 's/^app = "(.*)"/\1/')"
 ORG="${FLY_ORG:-personal}"
-DOMAIN="${FLY_DOMAIN:-$(grep 'SERVER_BASE_URL' fly.toml | sed -E 's|.*"https?://([^"]+)".*|\1|')}"
+PRIMARY_HOST="${FLY_PRIMARY_HOST:-$(grep 'SERVER_BASE_URL' fly.toml | sed -E 's|.*"https?://([^"]+)".*|\1|')}"
+ZONE_DOMAIN="${FLY_ZONE_DOMAIN:-normalizer.app}"
+APEX_HOST="${ZONE_DOMAIN}"
 
 require_env() {
   local name=$1
@@ -48,13 +52,13 @@ cloudflare_zone_id() {
   fi
 
   local response
-  response="$(cf_api GET "/zones?name=${DOMAIN}&status=active")"
-  cf_assert_success "$response" "zone lookup for ${DOMAIN}"
+  response="$(cf_api GET "/zones?name=${ZONE_DOMAIN}&status=active")"
+  cf_assert_success "$response" "zone lookup for ${ZONE_DOMAIN}"
 
   local zone_id
   zone_id="$(echo "$response" | jq -r '.result[0].id // empty')"
   if [[ -z "$zone_id" ]]; then
-    echo "Error: no active Cloudflare zone found for ${DOMAIN}" >&2
+    echo "Error: no active Cloudflare zone found for ${ZONE_DOMAIN}" >&2
     exit 1
   fi
   echo "$zone_id"
@@ -76,7 +80,7 @@ upsert_dns_record() {
   existing_proxied="$(echo "$response" | jq -r '.result[0].proxied // false')"
 
   if [[ -n "$record_id" && "$existing_content" == "$content" && "$existing_proxied" == "$proxied" ]]; then
-    log "DNS ${type} ${name} already points to ${content}"
+    log "DNS ${type} ${name} already points to ${content} (proxied=${proxied})"
     return 0
   fi
 
@@ -89,10 +93,10 @@ upsert_dns_record() {
     '{type: $type, name: $name, content: $content, proxied: $proxied, ttl: 1}')"
 
   if [[ -n "$record_id" ]]; then
-    log "Updating DNS ${type} ${name} -> ${content}"
+    log "Updating DNS ${type} ${name} -> ${content} (proxied=${proxied})"
     response="$(cf_api PATCH "/zones/${zone_id}/dns_records/${record_id}" -d "$payload")"
   else
-    log "Creating DNS ${type} ${name} -> ${content}"
+    log "Creating DNS ${type} ${name} -> ${content} (proxied=${proxied})"
     response="$(cf_api POST "/zones/${zone_id}/dns_records" -d "$payload")"
   fi
   cf_assert_success "$response" "upsert ${type} ${name}"
@@ -130,13 +134,19 @@ sync_runtime_secrets() {
 }
 
 ensure_certificate() {
-  if flyctl certs list -a "$APP_NAME" --json | jq -e --arg host "$DOMAIN" '.[] | select(.hostname == $host)' >/dev/null; then
-    log "TLS certificate for ${DOMAIN} already requested"
+  local host=$1
+  if flyctl certs list -a "$APP_NAME" --json | jq -e --arg host "$host" '.[] | select(.hostname == $host)' >/dev/null; then
+    log "TLS certificate for ${host} already requested"
     return 0
   fi
 
-  log "Requesting TLS certificate for ${DOMAIN}"
-  flyctl certs add "$DOMAIN" -a "$APP_NAME"
+  log "Requesting TLS certificate for ${host}"
+  flyctl certs add "$host" -a "$APP_NAME"
+}
+
+ensure_certificates() {
+  ensure_certificate "$PRIMARY_HOST"
+  ensure_certificate "$APEX_HOST"
 }
 
 sync_cloudflare_dns() {
@@ -151,33 +161,78 @@ sync_cloudflare_dns() {
     exit 1
   fi
 
-  log "Syncing Cloudflare DNS for ${DOMAIN} (DNS-only, not proxied)"
-  upsert_dns_record "$zone_id" "A" "$DOMAIN" "$v4" false
-  upsert_dns_record "$zone_id" "AAAA" "$DOMAIN" "$v6" false
+  log "Syncing Cloudflare DNS: ${PRIMARY_HOST} -> Fly (DNS-only)"
+  upsert_dns_record "$zone_id" "A" "$PRIMARY_HOST" "$v4" false
+  upsert_dns_record "$zone_id" "AAAA" "$PRIMARY_HOST" "$v6" false
+
+  log "Syncing Cloudflare DNS: ${APEX_HOST} -> Fly (proxied, for apex redirect rule)"
+  upsert_dns_record "$zone_id" "A" "$APEX_HOST" "$v4" true
+  upsert_dns_record "$zone_id" "AAAA" "$APEX_HOST" "$v6" true
+}
+
+ensure_apex_redirect() {
+  local zone_id=$1
+  local response payload
+
+  log "Configuring Cloudflare redirect: ${APEX_HOST} -> https://${PRIMARY_HOST}"
+  payload="$(jq -n \
+    --arg desc "Redirect apex to www" \
+    --arg apex "$APEX_HOST" \
+    --arg www "https://${PRIMARY_HOST}" \
+    '{
+      rules: [{
+        description: $desc,
+        expression: ("(http.host eq \"" + $apex + "\")"),
+        action: "redirect",
+        action_parameters: {
+          from_value: {
+            status_code: 301,
+            target_url: {
+              expression: ("concat(\"" + $www + "\", http.request.uri.path)")
+            },
+            preserve_query_string: true
+          }
+        }
+      }]
+    }')"
+
+  response="$(cf_api PUT "/zones/${zone_id}/rulesets/phases/http_request_dynamic_redirect/entrypoint" -d "$payload")"
+  cf_assert_success "$response" "set apex redirect rule"
 }
 
 wait_for_certificate() {
+  local host=$1
   local attempts=18
   local status
 
-  log "Waiting up to ${attempts}0s for TLS certificate validation"
+  log "Waiting up to ${attempts}0s for TLS certificate on ${host}"
   for ((i = 1; i <= attempts; i++)); do
-    status="$(flyctl certs list -a "$APP_NAME" --json | jq -r --arg host "$DOMAIN" '.[] | select(.hostname == $host) | .status')"
+    status="$(flyctl certs list -a "$APP_NAME" --json | jq -r --arg host "$host" '.[] | select(.hostname == $host) | .status')"
     if [[ "$status" == "Ready" ]]; then
-      log "TLS certificate for ${DOMAIN} is ready"
+      log "TLS certificate for ${host} is ready"
       return 0
     fi
     if [[ "$i" -eq "$attempts" ]]; then
-      log "Certificate still '${status:-unknown}'; deploying anyway"
+      log "Certificate for ${host} still '${status:-unknown}'; deploying anyway"
       return 0
     fi
     sleep 10
   done
 }
 
+wait_for_certificates() {
+  wait_for_certificate "$PRIMARY_HOST"
+  wait_for_certificate "$APEX_HOST"
+}
+
+ensure_single_machine() {
+  log "Ensuring ${APP_NAME} runs a single machine"
+  flyctl scale count 1 -a "$APP_NAME" -y
+}
+
 deploy_app() {
   log "Deploying ${APP_NAME}"
-  flyctl deploy --remote-only -a "$APP_NAME"
+  flyctl deploy --remote-only -a "$APP_NAME" --ha=false
 }
 
 main() {
@@ -187,13 +242,15 @@ main() {
 
   export FLY_API_TOKEN
 
-  log "Provisioning Fly app ${APP_NAME} for ${DOMAIN}"
+  log "Provisioning Fly app ${APP_NAME} for ${PRIMARY_HOST} (apex ${APEX_HOST} redirects to www)"
   ensure_app
   ensure_ips
   sync_runtime_secrets
-  ensure_certificate
+  ensure_certificates
   sync_cloudflare_dns
-  wait_for_certificate
+  ensure_apex_redirect "$(cloudflare_zone_id)"
+  wait_for_certificates
+  ensure_single_machine
   deploy_app
   log "Deploy complete"
 }
