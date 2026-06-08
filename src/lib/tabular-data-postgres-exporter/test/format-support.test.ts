@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -46,7 +47,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'csv',
       });
 
@@ -65,7 +66,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
 
     test('export: CSV format preserves data types as strings', async () => {
@@ -92,7 +93,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'csv',
       });
 
@@ -108,7 +109,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
   });
 
@@ -137,7 +138,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'excel',
       });
 
@@ -153,7 +154,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
 
     test('export: XLSX file can be re-imported', async () => {
@@ -182,21 +183,21 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const exportResult = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'excel',
       });
 
       expect(isOk(exportResult)).toBe(true);
 
       // Verify file exists and is readable
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
   });
 
@@ -225,7 +226,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'parquet',
       });
 
@@ -241,7 +242,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
   });
 
@@ -270,7 +271,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'json',
       });
 
@@ -294,7 +295,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
 
     test('export: JSON format handles empty arrays', async () => {
@@ -317,7 +318,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const result = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'json',
       });
 
@@ -334,7 +335,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
   });
 
@@ -368,7 +369,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const exportResult = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(sourceTableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'csv',
       });
 
@@ -389,7 +390,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
 
     test('export then import: JSON maintains data integrity', async () => {
@@ -419,7 +420,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       const exportResult = await exporter.export({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(sourceTableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
         format: 'json',
       });
 
@@ -441,7 +442,7 @@ describe('TabularDataPostgresExporter - Format support', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     });
   });
 });

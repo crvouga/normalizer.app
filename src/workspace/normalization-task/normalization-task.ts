@@ -11,6 +11,7 @@ import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
 import type { Db, Tx } from '../../shared/db';
 import { createObjectStore } from '../../shared/s3';
+import { enforceKeyPrefix } from '../../lib/object-store/object-key';
 import { getS3Config } from '../../shared/s3-config';
 import type { UserId } from '../../users/user-id';
 import { WorkspaceEventEntity } from '../workspace-event/workspace-event-entity';
@@ -153,12 +154,12 @@ async function performNormalization({
   const normalizationRunId = inProgressEntry.normalizationRunId;
 
   const inputs = inputArtifacts.map((artifact) => ({
-    key: artifact.object_key,
+    key: enforceKeyPrefix(artifact.object_key),
     bucket: artifact.object_bucket,
   }));
 
   const targets = targetArtifacts.map((artifact) => ({
-    key: artifact.object_key,
+    key: enforceKeyPrefix(artifact.object_key),
     bucket: artifact.object_bucket,
   }));
 

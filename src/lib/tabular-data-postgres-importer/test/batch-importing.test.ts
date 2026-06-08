@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -50,9 +51,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2, tableName3);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, viewName: tableName1 },
-      { bucket: TEST_BUCKET, key: testKey2, viewName: tableName2 },
-      { bucket: TEST_BUCKET, key: testKey3, viewName: tableName3 },
+      { bucket: TEST_BUCKET, key: k(testKey1), viewName: tableName1 },
+      { bucket: TEST_BUCKET, key: k(testKey2), viewName: tableName2 },
+      { bucket: TEST_BUCKET, key: k(testKey3), viewName: tableName3 },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -80,9 +81,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey3 });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey1) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey3) });
   });
 
   test('importBatch: handles empty request array', async () => {
@@ -123,9 +124,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, viewName: tableName1 },
-      { bucket: TEST_BUCKET, key: nonExistentKey, viewName: tableName3 },
-      { bucket: TEST_BUCKET, key: testKey2, viewName: tableName2 },
+      { bucket: TEST_BUCKET, key: k(testKey1), viewName: tableName1 },
+      { bucket: TEST_BUCKET, key: k(nonExistentKey), viewName: tableName3 },
+      { bucket: TEST_BUCKET, key: k(testKey2), viewName: tableName2 },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -154,8 +155,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey1) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
   });
 
   test('importBatch: handles batch with different table options', async () => {
@@ -188,16 +189,16 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2, tableName3);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, viewName: tableName1 },
+      { bucket: TEST_BUCKET, key: k(testKey1), viewName: tableName1 },
       {
         bucket: TEST_BUCKET,
-        key: testKey2,
+        key: k(testKey2),
         viewName: tableName2,
         dropIfExists: true,
       },
       {
         bucket: TEST_BUCKET,
-        key: testKey3,
+        key: k(testKey3),
         viewName: tableName3,
         truncate: true,
       },
@@ -226,9 +227,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey3 });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey1) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey3) });
   });
 
   test('importBatch: includes correct request context in results', async () => {
@@ -247,7 +248,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     const request = {
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
       dropIfExists: true,
     };
@@ -267,7 +268,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     expect(isOk(itemResult.result)).toBe(true);
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('importBatch: handles batch with empty CSV files', async () => {
@@ -290,8 +291,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     testTables.push(tableName1, tableName2);
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, viewName: tableName1 },
-      { bucket: TEST_BUCKET, key: testKey2, viewName: tableName2 },
+      { bucket: TEST_BUCKET, key: k(testKey1), viewName: tableName1 },
+      { bucket: TEST_BUCKET, key: k(testKey2), viewName: tableName2 },
     ]);
 
     expect(batchResult.summary.successful).toBe(2);
@@ -316,8 +317,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey1) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
   });
 
   test('importBatch: processes large number of files efficiently', async () => {
@@ -346,7 +347,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
       requests.push({
         bucket: TEST_BUCKET,
-        key: testKey,
+        key: k(testKey),
         viewName: tableName,
       });
     }
@@ -369,7 +370,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     // Cleanup
     for (const testKey of testKeys) {
-      await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
     }
   });
 
@@ -377,9 +378,9 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     const { importer } = fixtures;
 
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: 'non-existent-1.csv', viewName: 'test_fail_1' },
-      { bucket: TEST_BUCKET, key: 'non-existent-2.csv', viewName: 'test_fail_2' },
-      { bucket: TEST_BUCKET, key: 'non-existent-3.csv', viewName: 'test_fail_3' },
+      { bucket: TEST_BUCKET, key: k('non-existent-1.csv'), viewName: 'test_fail_1' },
+      { bucket: TEST_BUCKET, key: k('non-existent-2.csv'), viewName: 'test_fail_2' },
+      { bucket: TEST_BUCKET, key: k('non-existent-3.csv'), viewName: 'test_fail_3' },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -423,8 +424,8 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
 
     const startTime = Date.now();
     const batchResult = await importer.importBatch([
-      { bucket: TEST_BUCKET, key: testKey1, viewName: tableName1 },
-      { bucket: TEST_BUCKET, key: testKey2, viewName: tableName2 },
+      { bucket: TEST_BUCKET, key: k(testKey1), viewName: tableName1 },
+      { bucket: TEST_BUCKET, key: k(testKey2), viewName: tableName2 },
     ]);
     const endTime = Date.now();
 
@@ -446,7 +447,7 @@ describe('TabularDataPostgresImporter - Batch importing', () => {
     expect(totalRowsFromResults).toBe(batchResult.summary.totalRowsImported);
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey1 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey1) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
   });
 });

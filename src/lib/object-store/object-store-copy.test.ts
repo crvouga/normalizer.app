@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { rmSync } from 'fs';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
@@ -84,7 +85,7 @@ describe.each(implementations)(
             allObjects.push(obj);
           }
           if (allObjects.length > 0) {
-            await store.deleteMany(allObjects.map((obj) => ({ bucket, key: obj.key })));
+            await store.deleteMany(allObjects.map((obj) => ({ bucket, key: k(obj.key) })));
           }
         } catch (error) {
           // Ignore cleanup errors - bucket might be empty or not exist
@@ -97,8 +98,8 @@ describe.each(implementations)(
       // Write test files to source
       const file1 = Buffer.from('file1 content');
       const file2 = Buffer.from('file2 content');
-      await sourceStore.write({ bucket: sourceBucket, key: 'file1.txt', data: file1 });
-      await sourceStore.write({ bucket: sourceBucket, key: 'file2.txt', data: file2 });
+      await sourceStore.write({ bucket: sourceBucket, key: k('file1.txt'), data: file1 });
+      await sourceStore.write({ bucket: sourceBucket, key: k('file2.txt'), data: file2 });
 
       // Copy entire bucket
       const result = await copyObjectStoreDirectory({
@@ -112,8 +113,8 @@ describe.each(implementations)(
         expect(result.value.copiedCount).toBe(2);
 
         // Verify files were copied
-        const read1 = await destStore.read({ bucket: destBucket, key: 'file1.txt' });
-        const read2 = await destStore.read({ bucket: destBucket, key: 'file2.txt' });
+        const read1 = await destStore.read({ bucket: destBucket, key: k('file1.txt') });
+        const read2 = await destStore.read({ bucket: destBucket, key: k('file2.txt') });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
         if (isOk(read1) && isOk(read2)) {
@@ -125,7 +126,7 @@ describe.each(implementations)(
 
     test('copy: single file', async () => {
       const fileData = Buffer.from('single file content');
-      await sourceStore.write({ bucket: sourceBucket, key: 'single.txt', data: fileData });
+      await sourceStore.write({ bucket: sourceBucket, key: k('single.txt'), data: fileData });
 
       const result = await copyObjectStoreDirectory({
         source: { objectStore: sourceStore, bucket: sourceBucket },
@@ -136,7 +137,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'single.txt' });
+        const read = await destStore.read({ bucket: destBucket, key: k('single.txt') });
         expect(isOk(read)).toBe(true);
         if (isOk(read)) {
           expect(read.value).toEqual(fileData);
@@ -147,17 +148,17 @@ describe.each(implementations)(
     test('copy: nested directory structure', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir1/file1.txt',
+        key: k('dir1/file1.txt'),
         data: Buffer.from('file1'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir1/file2.txt',
+        key: k('dir1/file2.txt'),
         data: Buffer.from('file2'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir2/subdir/file3.txt',
+        key: k('dir2/subdir/file3.txt'),
         data: Buffer.from('file3'),
       });
 
@@ -172,9 +173,9 @@ describe.each(implementations)(
         expect(result.value.copiedCount).toBe(3);
 
         // Verify all files were copied with correct structure
-        const read1 = await destStore.read({ bucket: destBucket, key: 'dir1/file1.txt' });
-        const read2 = await destStore.read({ bucket: destBucket, key: 'dir1/file2.txt' });
-        const read3 = await destStore.read({ bucket: destBucket, key: 'dir2/subdir/file3.txt' });
+        const read1 = await destStore.read({ bucket: destBucket, key: k('dir1/file1.txt') });
+        const read2 = await destStore.read({ bucket: destBucket, key: k('dir1/file2.txt') });
+        const read3 = await destStore.read({ bucket: destBucket, key: k('dir2/subdir/file3.txt') });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
         expect(isOk(read3)).toBe(true);
@@ -185,17 +186,17 @@ describe.each(implementations)(
     test('copy: with source prefix only (extract subset)', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir1/file1.txt',
+        key: k('dir1/file1.txt'),
         data: Buffer.from('file1'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir1/file2.txt',
+        key: k('dir1/file2.txt'),
         data: Buffer.from('file2'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir2/file3.txt',
+        key: k('dir2/file3.txt'),
         data: Buffer.from('file3'),
       });
 
@@ -210,9 +211,9 @@ describe.each(implementations)(
         expect(result.value.copiedCount).toBe(2);
 
         // Verify only dir1 files were copied, without the dir1 prefix
-        const read1 = await destStore.read({ bucket: destBucket, key: 'file1.txt' });
-        const read2 = await destStore.read({ bucket: destBucket, key: 'file2.txt' });
-        const exists3 = await destStore.exists({ bucket: destBucket, key: 'file3.txt' });
+        const read1 = await destStore.read({ bucket: destBucket, key: k('file1.txt') });
+        const read2 = await destStore.read({ bucket: destBucket, key: k('file2.txt') });
+        const exists3 = await destStore.exists({ bucket: destBucket, key: k('file3.txt') });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
         expect(isOk(exists3)).toBe(true);
@@ -225,12 +226,12 @@ describe.each(implementations)(
     test('copy: with destination prefix only (relocate to subdirectory)', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'file1.txt',
+        key: k('file1.txt'),
         data: Buffer.from('file1'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'file2.txt',
+        key: k('file2.txt'),
         data: Buffer.from('file2'),
       });
 
@@ -245,8 +246,8 @@ describe.each(implementations)(
         expect(result.value.copiedCount).toBe(2);
 
         // Verify files were copied to newdir prefix
-        const read1 = await destStore.read({ bucket: destBucket, key: 'newdir/file1.txt' });
-        const read2 = await destStore.read({ bucket: destBucket, key: 'newdir/file2.txt' });
+        const read1 = await destStore.read({ bucket: destBucket, key: k('newdir/file1.txt') });
+        const read2 = await destStore.read({ bucket: destBucket, key: k('newdir/file2.txt') });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
       }
@@ -255,12 +256,12 @@ describe.each(implementations)(
     test('copy: with both prefixes (full remapping)', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'olddir/file1.txt',
+        key: k('olddir/file1.txt'),
         data: Buffer.from('file1'),
       });
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'olddir/subdir/file2.txt',
+        key: k('olddir/subdir/file2.txt'),
         data: Buffer.from('file2'),
       });
 
@@ -275,8 +276,8 @@ describe.each(implementations)(
         expect(result.value.copiedCount).toBe(2);
 
         // Verify files were remapped from olddir/ to newdir/
-        const read1 = await destStore.read({ bucket: destBucket, key: 'newdir/file1.txt' });
-        const read2 = await destStore.read({ bucket: destBucket, key: 'newdir/subdir/file2.txt' });
+        const read1 = await destStore.read({ bucket: destBucket, key: k('newdir/file1.txt') });
+        const read2 = await destStore.read({ bucket: destBucket, key: k('newdir/subdir/file2.txt') });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
       }
@@ -285,7 +286,7 @@ describe.each(implementations)(
     test('copy: handle trailing slashes correctly', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'dir1/file1.txt',
+        key: k('dir1/file1.txt'),
         data: Buffer.from('file1'),
       });
 
@@ -299,12 +300,12 @@ describe.each(implementations)(
       expect(isOk(result1)).toBe(true);
       if (isOk(result1)) {
         expect(result1.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'dir2/file1.txt' });
+        const read = await destStore.read({ bucket: destBucket, key: k('dir2/file1.txt') });
         expect(isOk(read)).toBe(true);
       }
 
       // Clean up and test with trailing slash in destination
-      await destStore.delete({ bucket: destBucket, key: 'dir2/file1.txt' });
+      await destStore.delete({ bucket: destBucket, key: k('dir2/file1.txt') });
 
       const result2 = await copyObjectStoreDirectory({
         source: { objectStore: sourceStore, bucket: sourceBucket, prefix: 'dir1/' },
@@ -315,7 +316,7 @@ describe.each(implementations)(
       expect(isOk(result2)).toBe(true);
       if (isOk(result2)) {
         expect(result2.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'dir2/file1.txt' });
+        const read = await destStore.read({ bucket: destBucket, key: k('dir2/file1.txt') });
         expect(isOk(read)).toBe(true);
       }
     });
@@ -324,7 +325,7 @@ describe.each(implementations)(
     test('copy: within same ObjectStore instance', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'file1.txt',
+        key: k('file1.txt'),
         data: Buffer.from('file1'),
       });
 
@@ -337,7 +338,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value.copiedCount).toBe(1);
-        const read = await sourceStore.read({ bucket: destBucket, key: 'file1.txt' });
+        const read = await sourceStore.read({ bucket: destBucket, key: k('file1.txt') });
         expect(isOk(read)).toBe(true);
         if (isOk(read)) {
           expect(read.value.toString()).toBe('file1');
@@ -364,7 +365,7 @@ describe.each(implementations)(
     test('copy: fail fast on write failure', async () => {
       await sourceStore.write({
         bucket: sourceBucket,
-        key: 'file1.txt',
+        key: k('file1.txt'),
         data: Buffer.from('file1'),
       });
 
@@ -403,10 +404,10 @@ describe.each(implementations)(
       const newData = Buffer.from('new content');
 
       // Write file to source
-      await sourceStore.write({ bucket: sourceBucket, key: 'file.txt', data: newData });
+      await sourceStore.write({ bucket: sourceBucket, key: k('file.txt'), data: newData });
 
       // Write different file to destination
-      await destStore.write({ bucket: destBucket, key: 'file.txt', data: originalData });
+      await destStore.write({ bucket: destBucket, key: k('file.txt'), data: originalData });
 
       // Copy should overwrite
       const result = await copyObjectStoreDirectory({
@@ -418,7 +419,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'file.txt' });
+        const read = await destStore.read({ bucket: destBucket, key: k('file.txt') });
         expect(isOk(read)).toBe(true);
         if (isOk(read)) {
           expect(read.value).toEqual(newData); // Should be overwritten with new content
@@ -428,7 +429,7 @@ describe.each(implementations)(
 
     test('copy: preserve file content integrity', async () => {
       const binaryData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
-      await sourceStore.write({ bucket: sourceBucket, key: 'binary.bin', data: binaryData });
+      await sourceStore.write({ bucket: sourceBucket, key: k('binary.bin'), data: binaryData });
 
       const result = await copyObjectStoreDirectory({
         source: { objectStore: sourceStore, bucket: sourceBucket },
@@ -439,7 +440,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'binary.bin' });
+        const read = await destStore.read({ bucket: destBucket, key: k('binary.bin') });
         expect(isOk(read)).toBe(true);
         if (isOk(read)) {
           expect(read.value).toEqual(binaryData);
@@ -450,7 +451,7 @@ describe.each(implementations)(
 
     test('copy: large file', async () => {
       const largeData = Buffer.alloc(1024 * 1024, 0x42); // 1MB
-      await sourceStore.write({ bucket: sourceBucket, key: 'large.bin', data: largeData });
+      await sourceStore.write({ bucket: sourceBucket, key: k('large.bin'), data: largeData });
 
       const result = await copyObjectStoreDirectory({
         source: { objectStore: sourceStore, bucket: sourceBucket },
@@ -461,7 +462,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value.copiedCount).toBe(1);
-        const read = await destStore.read({ bucket: destBucket, key: 'large.bin' });
+        const read = await destStore.read({ bucket: destBucket, key: k('large.bin') });
         expect(isOk(read)).toBe(true);
         if (isOk(read)) {
           expect(read.value.length).toBe(1024 * 1024);
@@ -526,7 +527,7 @@ describe('copyObjectStoreDirectory (cross-store)', () => {
           allObjects.push(obj);
         }
         if (allObjects.length > 0) {
-          await store.deleteMany(allObjects.map((obj) => ({ bucket, key: obj.key })));
+          await store.deleteMany(allObjects.map((obj) => ({ bucket, key: k(obj.key) })));
         }
       } catch (error) {
         // Ignore cleanup errors
@@ -537,12 +538,12 @@ describe('copyObjectStoreDirectory (cross-store)', () => {
   test('copy: from S3 to Filesystem', async () => {
     await s3Store.write({
       bucket: sourceBucket,
-      key: 'file1.txt',
+      key: k('file1.txt'),
       data: Buffer.from('s3 content'),
     });
     await s3Store.write({
       bucket: sourceBucket,
-      key: 'dir/file2.txt',
+      key: k('dir/file2.txt'),
       data: Buffer.from('s3 nested'),
     });
 
@@ -555,8 +556,8 @@ describe('copyObjectStoreDirectory (cross-store)', () => {
     expect(isOk(result)).toBe(true);
     if (isOk(result)) {
       expect(result.value.copiedCount).toBe(2);
-      const read1 = await fsStore.read({ bucket: destBucket, key: 'file1.txt' });
-      const read2 = await fsStore.read({ bucket: destBucket, key: 'dir/file2.txt' });
+      const read1 = await fsStore.read({ bucket: destBucket, key: k('file1.txt') });
+      const read2 = await fsStore.read({ bucket: destBucket, key: k('dir/file2.txt') });
       expect(isOk(read1)).toBe(true);
       expect(isOk(read2)).toBe(true);
       if (isOk(read1) && isOk(read2)) {
@@ -571,12 +572,12 @@ describe('copyObjectStoreDirectory (cross-store)', () => {
     await fsStore.ensureBucketExists(fsSourceBucket);
     await fsStore.write({
       bucket: fsSourceBucket,
-      key: 'file1.txt',
+      key: k('file1.txt'),
       data: Buffer.from('fs content'),
     });
     await fsStore.write({
       bucket: fsSourceBucket,
-      key: 'dir/file2.txt',
+      key: k('dir/file2.txt'),
       data: Buffer.from('fs nested'),
     });
 
@@ -589,8 +590,8 @@ describe('copyObjectStoreDirectory (cross-store)', () => {
     expect(isOk(result)).toBe(true);
     if (isOk(result)) {
       expect(result.value.copiedCount).toBe(2);
-      const read1 = await s3Store.read({ bucket: sourceBucket, key: 'file1.txt' });
-      const read2 = await s3Store.read({ bucket: sourceBucket, key: 'dir/file2.txt' });
+      const read1 = await s3Store.read({ bucket: sourceBucket, key: k('file1.txt') });
+      const read2 = await s3Store.read({ bucket: sourceBucket, key: k('dir/file2.txt') });
       expect(isOk(read1)).toBe(true);
       expect(isOk(read2)).toBe(true);
       if (isOk(read1) && isOk(read2)) {

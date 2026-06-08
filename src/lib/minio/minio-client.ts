@@ -12,11 +12,13 @@ export class MinioClient {
     minioEndpoint,
     accessKey,
     secretKey,
+    region,
     logger,
   }: {
     minioEndpoint: string;
     accessKey: string;
     secretKey: string;
+    region?: string;
     logger: Logger;
   }) {
     const url = new URL(minioEndpoint);
@@ -30,6 +32,7 @@ export class MinioClient {
       useSSL: this.useSSL,
       accessKey,
       secretKey,
+      ...(region !== undefined ? { region } : {}),
     });
   }
 

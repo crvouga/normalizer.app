@@ -1,3 +1,5 @@
+import { loadVaultSecrets } from './lib/secrets/load-vault-secrets';
+import { normalizeEnvAliases } from './lib/secrets/normalize-env-aliases';
 import { serve } from 'bun';
 import { sql } from 'drizzle-orm';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
@@ -5,6 +7,8 @@ import clientHtml from './client.html';
 import { assertPortNotUsed } from './lib/assert-port-not-used';
 import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
 import { createLogger, type Logger } from './lib/logger';
+import { onShutdown } from './lib/process/on-shutdown';
+import { startGraphileWorker } from './lib/start-graphile-worker';
 import type { ObjectStore } from './lib/object-store/object-store';
 import { createObjectStoreEndpoints } from './lib/object-store/object-store-http-endpoints';
 import { isOk } from './lib/result';
@@ -91,6 +95,9 @@ function startDbHeartbeat(db: Db, logger: Logger): () => void {
 }
 
 async function main() {
+  await loadVaultSecrets();
+  normalizeEnvAliases();
+
   const logger = createLogger().child('Server');
 
   logger.info('Process info', {
@@ -109,6 +116,8 @@ async function main() {
   const db = await createDb({ logger });
 
   await ensureGraphileWorkerSetup({ db, logger });
+
+  const worker = await startGraphileWorker({ logger: logger.child('Worker'), db });
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 
@@ -206,8 +215,10 @@ async function main() {
     idleTimeout: 255,
   });
 
-  process.on('SIGTERM', stopHeartbeat);
-  process.on('SIGINT', stopHeartbeat);
+  onShutdown(logger, async () => {
+    stopHeartbeat();
+    await worker.stop();
+  });
 
   logger.info(`🚀 Server running at ${server.url}`);
 }

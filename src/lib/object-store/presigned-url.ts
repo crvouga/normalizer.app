@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { enforceKeyPrefix, type PrefixedObjectKey } from './object-key';
 
 /**
  * Secret used to sign server-proxied presigned URLs.
@@ -47,12 +48,13 @@ function generateSignature(
 export function generateServerPresignedUrl(params: {
   serverBaseUrl: string;
   bucket: string;
-  key: string;
+  key: PrefixedObjectKey;
   method: 'GET' | 'PUT';
   expiresIn: number;
   useHTTPS?: boolean | undefined;
 }): string {
-  const { serverBaseUrl, bucket, key, method, expiresIn, useHTTPS } = params;
+  const { serverBaseUrl, bucket, method, expiresIn, useHTTPS } = params;
+  const key = enforceKeyPrefix(params.key);
 
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
   const signature = generateSignature(bucket, key, method, expiresAt);
@@ -78,7 +80,8 @@ export function verifyServerPresignedSignature(params: {
   expiresAt: number;
   signature: string;
 }): boolean {
-  const { bucket, key, method, expiresAt, signature } = params;
+  const { bucket, method, expiresAt, signature } = params;
+  const key = enforceKeyPrefix(params.key);
 
   const expected = generateSignature(bucket, key, method, expiresAt);
 

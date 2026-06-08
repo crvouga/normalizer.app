@@ -1,3 +1,4 @@
+import { asTestKey } from '../../../shared/test-object-key';
 import { createObjectStore } from '../../../shared/s3';
 import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createLogger } from '../../logger';
@@ -37,7 +38,7 @@ export async function writeCsvToS3(
 ): Promise<void> {
   const result = await objectStore.write({
     bucket: TEST_BUCKET,
-    key,
+    key: asTestKey(key),
     data: Buffer.from(csvContent, 'utf-8'),
     contentType: getContentType('csv'),
   });

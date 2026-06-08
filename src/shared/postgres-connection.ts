@@ -1,17 +1,22 @@
 import postgres from 'postgres';
 import type { Logger } from '../lib/logger';
+import { DB_SCHEMA_NAME } from '../db/db-schema';
 
 /**
  * Creates a postgres connection with proper configuration.
  * Handles SSL setup for production databases and validates the connection.
+ * All queries are scoped to the app schema via search_path (public excluded).
  *
  * @param logger - Logger instance for logging connection details
+ * @param schemaName - Postgres schema to scope all queries to
  * @returns A configured postgres connection instance
  */
 export const createPostgresConnection = async ({
   logger,
+  schemaName = DB_SCHEMA_NAME,
 }: {
   logger: Logger;
+  schemaName?: string;
 }): Promise<ReturnType<typeof postgres>> => {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -27,6 +32,7 @@ export const createPostgresConnection = async ({
     port: dbUrlObj.port,
     database: dbUrlObj.pathname.slice(1),
     user: dbUrlObj.username,
+    schema: schemaName,
     // Omit password for security
   });
 
@@ -42,16 +48,33 @@ export const createPostgresConnection = async ({
   }
 
   logger.info('Creating new database connection...');
-  // Connection hardening, primarily for surviving Fly machine suspend/resume
-  // cycles where loopback TCP sockets between this app and the in-container
-  // Postgres can be left in a half-dead state. With these timeouts, stale
-  // pool connections are reaped quickly and replaced rather than hanging
-  // queries for minutes waiting on TCP keepalive.
   const sql = postgres(dbUrlObj.toString(), {
     connect_timeout: 10,
     idle_timeout: 30,
     max_lifetime: 60 * 30,
+    connection: {
+      search_path: schemaName,
+    },
   });
+
+  await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+
+  const schemas = await sql<{ current_schemas: string[] }[]>`
+    SELECT current_schemas(false) as current_schemas
+  `;
+  const activeSchemas = schemas[0]?.current_schemas ?? [];
+
+  if (!activeSchemas.includes(schemaName)) {
+    throw new Error(
+      `Database search_path misconfigured: expected schema "${schemaName}" in current_schemas(false), got [${activeSchemas.join(', ')}]`,
+    );
+  }
+
+  if (activeSchemas.includes('public')) {
+    throw new Error(
+      'Database search_path must not include public schema in a shared database',
+    );
+  }
 
   logger.info('Checking database health...');
   try {

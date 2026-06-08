@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -46,7 +47,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'csv',
     });
 
@@ -56,7 +57,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
       expect(result.value.fileSize).toBeGreaterThan(0);
 
       // Verify file exists
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -72,7 +73,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: successfully exports table to XLSX', async () => {
@@ -99,7 +100,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'excel',
     });
 
@@ -109,7 +110,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
       expect(result.value.fileSize).toBeGreaterThan(0);
 
       // Verify file exists
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -122,7 +123,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: successfully exports table to Parquet', async () => {
@@ -149,7 +150,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'parquet',
     });
 
@@ -162,7 +163,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
       expect(result.value.fileSize).toBeGreaterThan(0);
 
       // Verify file exists
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -170,7 +171,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: successfully exports table to JSON', async () => {
@@ -196,7 +197,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'json',
     });
 
@@ -206,7 +207,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
       expect(result.value.fileSize).toBeGreaterThan(0);
 
       // Verify file exists
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -222,7 +223,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: successfully exports with custom query to CSV', async () => {
@@ -250,7 +251,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT name, value FROM ${postgresClient.escapeIdentifier(tableName)} WHERE value::integer > 15 ORDER BY value`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'csv',
     });
 
@@ -268,7 +269,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: verifies exported data matches source', async () => {
@@ -297,7 +298,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
       format: 'csv',
     });
 
@@ -317,7 +318,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: verifies file exists in object store', async () => {
@@ -337,20 +338,20 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
 
     // Verify file exists
-    const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+    const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
     expect(isOk(existsResult)).toBe(true);
     if (isOk(existsResult)) {
       expect(existsResult.value).toBe(true);
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: verifies row count is correct', async () => {
@@ -379,7 +380,7 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -394,6 +395,6 @@ describe('TabularDataPostgresExporter - Basic functionality', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 });

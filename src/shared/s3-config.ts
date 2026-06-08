@@ -1,6 +1,14 @@
 import { parseAndValidateURL } from '../lib/url';
 
-export const getS3Config = () => {
+export type S3Config = {
+  s3Endpoint: string;
+  s3AccessKeyId: string;
+  s3SecretAccessKey: string;
+  s3Bucket: string;
+  s3Region: string;
+};
+
+export const getS3Config = (): S3Config => {
   const s3EndpointEnv = process.env.S3_ENDPOINT;
   if (!s3EndpointEnv) {
     throw new Error('S3_ENDPOINT environment variable is not set');
@@ -18,10 +26,15 @@ export const getS3Config = () => {
   if (!s3Bucket) {
     throw new Error('S3_BUCKET environment variable is not set');
   }
+  const s3Region = process.env.S3_REGION;
+  if (!s3Region) {
+    throw new Error('S3_REGION environment variable is not set');
+  }
   return {
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
     s3Bucket,
+    s3Region,
   };
 };

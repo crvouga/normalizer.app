@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { createLogger } from '../lib/logger';
+import { objectKey } from '../lib/object-store/object-key';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { S3ObjectStore } from '../lib/object-store/object-store-s3';
 import { isOk } from '../lib/result';
@@ -8,11 +9,13 @@ import { getS3Config } from './s3-config';
 
 describe('S3 Client', () => {
   const logger = createLogger({ noop: true });
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
+  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Region } = getS3Config();
   const objectStore: ObjectStore = new S3ObjectStore({
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
+    s3Region,
+    keyPrefix: 'normalizer-app',
     logger,
   });
   const testBucket = 'test';
@@ -22,7 +25,7 @@ describe('S3 Client', () => {
 
   test('should support put and get flow', async () => {
     const objectStore = await createObjectStore({ logger });
-    const key = `test-key-${Math.random()}`;
+    const key = objectKey('test', `test-key-${Math.random()}`);
     const value = Buffer.from('Hello S3!');
     const bucket = 'test';
 
@@ -39,23 +42,23 @@ describe('S3 Client', () => {
 
 describe('S3ObjectStore proxy presign', () => {
   const logger = createLogger({ noop: true });
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey } = getS3Config();
+  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Region } = getS3Config();
   const serverBaseUrl = 'http://localhost:8080';
 
   test('loopback S3_ENDPOINT + serverBaseUrl produces /api/objects URLs on the server origin', async () => {
-    // The dev/test S3_ENDPOINT in env-template.txt is loopback (localhost:9000),
-    // which is exactly the single-container Fly setup we're fixing.
     const store = new S3ObjectStore({
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
+      s3Region,
+      keyPrefix: 'normalizer-app',
       serverBaseUrl,
       logger,
     });
 
     const presign = await store.presign({
       bucket: 'main',
-      key: 'artifacts/abc/file.csv',
+      key: objectKey('artifacts', 'abc', 'file.csv'),
       method: 'PUT',
       expiresIn: 3600,
     });
@@ -68,8 +71,6 @@ describe('S3ObjectStore proxy presign', () => {
     expect(url.searchParams.get('method')).toBe('PUT');
     expect(url.searchParams.get('signature')).toMatch(/^[a-f0-9]{64}$/);
 
-    // getEndpointInfo should report the public origin so refreshArtifactData
-    // doesn't churn cached URLs across requests.
     const info = await store.getEndpointInfo();
     expect(isOk(info)).toBe(true);
     if (isOk(info)) {
@@ -83,6 +84,8 @@ describe('S3ObjectStore proxy presign', () => {
       s3Endpoint: 'https://s3.example.com',
       s3AccessKeyId,
       s3SecretAccessKey,
+      s3Region: 'us-west-004',
+      keyPrefix: 'normalizer-app',
       serverBaseUrl,
       logger,
     });
@@ -96,13 +99,11 @@ describe('S3ObjectStore proxy presign', () => {
 
     const presign = await store.presign({
       bucket: 'main',
-      key: 'k',
+      key: objectKey('test', 'file.csv'),
       method: 'GET',
       expiresIn: 60,
     });
     if (isOk(presign)) {
-      // Bun's S3 presign signs against the configured endpoint, never the
-      // app server, so the URL must not point at serverBaseUrl.
       expect(new URL(presign.value).origin).not.toBe(serverBaseUrl);
     }
   });
@@ -112,12 +113,14 @@ describe('S3ObjectStore proxy presign', () => {
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
+      s3Region,
+      keyPrefix: 'normalizer-app',
       logger,
     });
 
     const presign = await store.presign({
       bucket: 'main',
-      key: 'k',
+      key: objectKey('test', 'file.csv'),
       method: 'GET',
       expiresIn: 60,
     });

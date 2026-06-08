@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -42,7 +43,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // First import
     const result1 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result1)).toBe(true);
@@ -63,7 +64,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     await writeCsvToS3(objectStore, testKey2, csvContent2);
     const result2 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey2,
+      key: k(testKey2),
       viewName: tableName,
       dropIfExists: true,
     });
@@ -82,8 +83,8 @@ describe('TabularDataPostgresImporter - Table options', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey2 });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey2) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: truncate option clears table before insert', async () => {
@@ -103,7 +104,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // First import
     const result1 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result1)).toBe(true);
@@ -114,7 +115,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // Load again with truncate
     const result2 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
       truncate: true,
     });
@@ -131,7 +132,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: uses existing table when it already exists', async () => {
@@ -151,7 +152,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // First import
     const result1 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result1)).toBe(true);
@@ -160,7 +161,7 @@ describe('TabularDataPostgresImporter - Table options', () => {
     // Since we're using the same CSV, it should work
     const result2 = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result2)).toBe(true);
@@ -174,6 +175,6 @@ describe('TabularDataPostgresImporter - Table options', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 });

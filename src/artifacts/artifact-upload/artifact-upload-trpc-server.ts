@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { objectKey } from '../../lib/object-store/object-key';
 import { procedure, router } from '../../shared/trpc-server';
 import { getS3Config } from '../../shared/s3-config';
 import { ArtifactId } from '../artifact-id';
@@ -17,7 +18,7 @@ export const artifactUploadRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { artifactId } = input;
-      const s3Key = `artifacts/${artifactId}/${input.filename}`;
+      const s3Key = objectKey('artifacts', artifactId, input.filename);
       const { s3Bucket } = getS3Config();
 
       ctx.logger.info('Artifact upload start', {

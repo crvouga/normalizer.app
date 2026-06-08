@@ -1,5 +1,6 @@
 import type { LLM } from '~/src/lib/llm/llm';
 import type { Logger } from '~/src/lib/logger';
+import { objectKey } from '~/src/lib/object-store/object-key';
 import type { ObjectLocation } from '~/src/lib/object-store/object-location';
 import type { ObjectStore } from '~/src/lib/object-store/object-store';
 import { Err, isErr, Ok, type Result } from '~/src/lib/result';
@@ -69,9 +70,10 @@ export class Normalizer {
     );
     const exportFormat = getFormatFromKey(params.targets[0]?.key || params.inputs[0]?.key || '');
     const exportExtension = getExtension(exportFormat);
+    const outputKeySegments = params.outputObjectKeyPrefix.split('/').filter(Boolean);
     const outputs = params.targets.map(
       (_, index): ObjectLocationWithViewName => ({
-        key: `${params.outputObjectKeyPrefix}output_${index}.${exportExtension}`,
+        key: objectKey(...outputKeySegments, `output_${index}.${exportExtension}`),
         bucket: params.outputObjectBucket,
         viewName: `output_${index}`,
       }),

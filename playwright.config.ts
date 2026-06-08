@@ -48,6 +48,7 @@ export default defineConfig({
       S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || 'minioadmin',
       S3_SECRET_KEY: process.env.S3_SECRET_KEY || 'minioadmin',
       S3_BUCKET: process.env.S3_BUCKET || 'test-bucket',
+      S3_REGION: process.env.S3_REGION || 'us-east-1',
       S3_USE_SSL: process.env.S3_USE_SSL || 'false',
       NODE_ENV: 'test',
     },

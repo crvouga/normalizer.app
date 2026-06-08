@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { runMigrations } from 'graphile-worker';
 import { Pool } from 'pg';
 import { z } from 'zod';
+import { GRAPHILE_WORKER_SCHEMA_NAME } from '../db/db-schema';
 import type { Db, Tx } from '../shared/db';
 import type { Logger } from './logger';
 import { SecretString } from './secrets/secret-string';
@@ -45,7 +46,7 @@ export async function checkGraphileWorkerSetup(
 }> {
   try {
     const schemaCheck = await db.execute(
-      sql`SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = 'graphile_worker') as exists`,
+      sql`SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ${GRAPHILE_WORKER_SCHEMA_NAME}) as exists`,
     );
     const schemaExists = schemaCheck[0]?.exists === true;
 
@@ -54,7 +55,7 @@ export async function checkGraphileWorkerSetup(
         SELECT 1 
         FROM pg_proc p
         JOIN pg_namespace n ON p.pronamespace = n.oid
-        WHERE n.nspname = 'graphile_worker' 
+        WHERE n.nspname = ${GRAPHILE_WORKER_SCHEMA_NAME}
         AND p.proname = 'add_job'
       ) as exists`,
     );
@@ -118,7 +119,7 @@ export async function ensureGraphileWorkerSetup({
   const pool = new Pool({ connectionString: databaseUrl.DANGEROUSLY_readValue() });
 
   try {
-    await runMigrations({ pgPool: pool });
+    await runMigrations({ pgPool: pool, schema: GRAPHILE_WORKER_SCHEMA_NAME });
 
     logger.info('Graphile Worker schema initialized successfully');
 
@@ -182,7 +183,9 @@ export async function enqueueJob<
   const escapedPayloadJson = payloadJson.replace(/'/g, "''");
   try {
     await tx.execute(
-      sql.raw(`SELECT graphile_worker.add_job('${jobName}'::text, '${escapedPayloadJson}'::json)`),
+      sql.raw(
+        `SELECT ${GRAPHILE_WORKER_SCHEMA_NAME}.add_job('${jobName}'::text, '${escapedPayloadJson}'::json)`,
+      ),
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

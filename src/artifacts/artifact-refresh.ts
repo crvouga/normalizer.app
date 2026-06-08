@@ -1,3 +1,4 @@
+import { enforceKeyPrefix } from '../lib/object-store/object-key';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { isOk } from '../lib/result';
 import type { Artifact } from './artifact-type';
@@ -287,7 +288,8 @@ async function presignUrl(params: {
   expiresIn: number;
   useHTTPS: boolean;
 }): Promise<string | undefined> {
-  const { objectStore, bucket, key, method, expiresIn, useHTTPS } = params;
+  const { objectStore, bucket, method, expiresIn, useHTTPS } = params;
+  const key = enforceKeyPrefix(params.key);
   const res = await objectStore.presign({ bucket, key, method, expiresIn, useHTTPS });
   if (isOk(res)) {
     return res.value;

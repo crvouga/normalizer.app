@@ -1,5 +1,6 @@
 import { Csv, type CsvColumnSchema } from '../csv/csv';
 import type { Logger } from '../logger';
+import { enforceKeyPrefix } from '../object-store/object-key';
 import type { ObjectStore } from '../object-store/object-store';
 import {
   createPostgresClient,
@@ -156,7 +157,7 @@ export class TabularDataPostgresImporter {
       });
       const csvStreamResult = await this.objectStore.readStream({
         bucket: convertResult.bucket,
-        key: convertResult.key,
+        key: enforceKeyPrefix(convertResult.key),
       });
       if (isErr(csvStreamResult)) {
         return Err(`Failed to read converted CSV stream: ${csvStreamResult.error}`);

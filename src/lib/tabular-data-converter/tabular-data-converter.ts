@@ -1,3 +1,4 @@
+import { enforceKeyPrefix, objectKey, type PrefixedObjectKey } from '../object-store/object-key';
 import type { ObjectStore } from '../object-store/object-store';
 import type { Logger } from '../logger';
 import { FormatRegistry } from './format-registry';
@@ -10,7 +11,7 @@ import { isOk } from '../result';
 
 export interface ConvertResult {
   bucket: string;
-  key: string;
+  key: PrefixedObjectKey;
 }
 
 export class TabularDataConverter {
@@ -143,7 +144,11 @@ export class TabularDataConverter {
   /**
    * Generate a deterministic cache key based on source bucket, key, and target format
    */
-  private getCacheKey(sourceBucket: string, sourceKey: string, targetFormat: string): string {
+  private getCacheKey(
+    sourceBucket: string,
+    sourceKey: string,
+    targetFormat: string,
+  ): PrefixedObjectKey {
     // Create a hash of sourceBucket:sourceKey for deterministic caching
     const hashInput = `${sourceBucket}:${sourceKey}`;
     const hash = Bun.hash(hashInput).toString(16);
@@ -155,7 +160,7 @@ export class TabularDataConverter {
     }
     const extension = handler.getExtension();
 
-    return `file-conversions/${hash}/${targetFormat}.${extension}`;
+    return objectKey('file-conversions', hash, `${targetFormat}.${extension}`);
   }
 
   /**
@@ -163,7 +168,7 @@ export class TabularDataConverter {
    */
   private async checkCache(bucket: string, cacheKey: string): Promise<boolean> {
     try {
-      const result = await this.objectStore.exists({ bucket, key: cacheKey });
+      const result = await this.objectStore.exists({ bucket, key: enforceKeyPrefix(cacheKey) });
       if (isOk(result)) {
         return result.value;
       }
@@ -200,7 +205,7 @@ export class TabularDataConverter {
    */
   private async downloadFile(bucket: string, key: string): Promise<Buffer> {
     try {
-      const result = await this.objectStore.read({ bucket, key });
+      const result = await this.objectStore.read({ bucket, key: enforceKeyPrefix(key) });
       if (!isOk(result)) {
         throw new Error(`File not found: ${bucket}/${key}: ${result.error}`);
       }
@@ -227,7 +232,7 @@ export class TabularDataConverter {
     try {
       const result = await this.objectStore.write({
         bucket,
-        key,
+        key: enforceKeyPrefix(key),
         data: buffer,
         contentType,
       });

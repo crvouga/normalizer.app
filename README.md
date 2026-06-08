@@ -1,69 +1,80 @@
 # normalizer.app
 
-## Quick Start
+## Quick Start (local)
 
-### 1. Setup Environment Variables
+### 1. Install the vault CLI wrapper
 
-Copy the environment template to create your local configuration:
-
-```bash
-cp env-template.txt .env
-```
-
-This file contains all necessary configuration for local development, including:
-
-- Database connection settings
-- MinIO/S3 configuration
-- Optional Google OAuth credentials
-
-### 2. Start Docker Services
+One-time per machine — from the [secret-store](https://github.com/crvouga/secret-store) repo:
 
 ```bash
-bun docker
+./scripts/install-cli.sh
+vault login hvs.your-root-token   # or scoped dev token
 ```
 
-This starts PostgreSQL and MinIO services defined in `docker-compose.yml`.
+Requires the [OpenBao/Vault CLI](https://openbao.org/docs/install/) and `jq` on PATH.
 
-### 3. Run Migrations
+### 2. Configure this repo
 
 ```bash
-bun run db:migrate
+vault setup --project personal --config dev
 ```
 
-### 4. Start Development Server
+This writes [`.vault.yaml`](.vault.yaml) (coordinates only, safe to commit).
+
+### 3. Ensure secrets exist in the store
+
+Create `secret/personal/dev` with the keys listed in [`.env.example`](.env.example). See that file for required variable names.
+
+### 4. Run migrations and start the app
 
 ```bash
-bun run server
+bun install
+vault run -- bun run db:migrate
+vault run -- bun run server    # or: bun run dev
 ```
 
-The app will be available at `http://localhost:8080`.
+The HTTP server and background worker run in a single process at `http://localhost:8080`.
 
-## Environment Variables
+## Architecture
 
-All environment configuration is stored in `env-template.txt` as the single source of truth. Both local development and CI/CD pipelines use this template.
+- **App**: one Fly.io machine (`normalizer-app-server`) serves `https://normalizer.app` and runs graphile-worker in-process
+- **Database**: shared Postgres; all tables live in schema `normalizer_app` (never `public`)
+- **Object storage**: Backblaze B2 (S3-compatible); all keys are prefixed `normalizer-app/`
+- **Secrets**: self-hosted OpenBao at `https://secret-store.chrisvouga.dev`
 
-**Important**: The `.env` file is git-ignored. Always update `env-template.txt` when adding new environment variables so that all developers and CI have the same configuration.
+## Secrets workflow
 
-### Google OAuth (Optional)
+| Context | How secrets are loaded |
+| ------- | ---------------------- |
+| Local dev | `vault run -- <command>` reads `secret/personal/dev` |
+| CI | GitHub Actions OIDC → `hashicorp/vault-action` reads `secret/personal/prd` |
+| Fly runtime | `VAULT_TOKEN` + KV v2 HTTP read of `secret/personal/prd` at boot |
 
-Google OAuth authentication is optional. The app works perfectly without it, showing anonymous users by default.
+Never commit secret values. [`.env.example`](.env.example) lists names only.
 
-To enable Google Sign-In:
+## Deployment
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google+ API or Google Identity Services
-4. Create OAuth 2.0 credentials (Web application):
-   - **Authorized JavaScript origins**: `http://localhost:8080`, `https://yourdomain.com`
-   - **Authorized redirect URIs**: `http://localhost:8080/api/auth/google/callback`
-5. Add these environment variables to your `.env` file:
+CI on push to `main`:
+
+1. Runs tests (Postgres service + ephemeral MinIO)
+2. Migrates production DB via Vault OIDC (`DATABASE_URL` from `secret/personal/prd`)
+3. `flyctl deploy` using [`fly.toml`](fly.toml)
+
+### Manual Fly setup (one-time)
 
 ```bash
-# Google OAuth Credentials (optional)
-GOOGLE_CLIENT_ID=your_client_id_here
-GOOGLE_CLIENT_SECRET=your_client_secret_here
+fly apps create normalizer-app-server
+./scripts/create-dev-token.sh   # in secret-store repo
+fly secrets set VAULT_TOKEN=hvs.xxx -a normalizer-app-server
+fly certs add normalizer.app -a normalizer-app-server
 ```
 
-The redirect URI is automatically derived from your application's domain. Make sure to add all domains (dev, staging, production) to Google's Authorized redirect URIs list in the format: `https://yourdomain.com/api/auth/google/callback`
+Add the Fly DNS record in Cloudflare for `normalizer.app` (grey-cloud until cert validates).
 
-If these credentials are not configured, the app will gracefully degrade and show "Authentication not configured" in the user menu.
+## Google OAuth (optional)
+
+1. Create OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)
+2. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `secret/personal/dev` and `secret/personal/prd`
+3. Authorized redirect URI: `https://normalizer.app/api/auth/google/callback`
+
+Without OAuth credentials the app works with anonymous users.
