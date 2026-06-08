@@ -54,7 +54,9 @@ export async function createNormalizationViews({
   const goalPrompt = createGoalPrompt();
   const userPrompt = createUserPrompt();
 
-  logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
+  logger.debug('System prompt for normalization view creation', {
+    promptLength: systemPrompt.length,
+  });
 
   const agentLoop = createAgenticLoop({ llm, logger });
 

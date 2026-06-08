@@ -21,6 +21,23 @@ export type OpenAIModel = OpenAI.ChatModel;
 
 export const DEFAULT_MODEL: OpenAIModel = 'gpt-5-nano';
 
+const MODEL_FALLBACK_CHAIN: OpenAIModel[] = [
+  'gpt-5-nano',
+  'gpt-5-mini',
+  'gpt-4.1-nano',
+  'gpt-4o-mini',
+];
+
+/**
+ * Resolve the ordered model chain: OPENAI_MODEL env (if set) or preferred model first,
+ * then remaining fallbacks from MODEL_FALLBACK_CHAIN.
+ */
+export function getModelChain(preferredModel?: OpenAIModel): OpenAIModel[] {
+  const envModel = process.env.OPENAI_MODEL as OpenAIModel | undefined;
+  const primary = envModel ?? preferredModel ?? DEFAULT_MODEL;
+  return [primary, ...MODEL_FALLBACK_CHAIN.filter((m) => m !== primary)];
+}
+
 /**
  * Configuration for OpenAI LLM client
  */
@@ -30,9 +47,9 @@ export interface OpenAIConfig {
    */
   apiKey: SecretString;
   /**
-   * Model to use
+   * Preferred model (first in fallback chain unless OPENAI_MODEL env is set)
    */
-  model: OpenAIModel;
+  model?: OpenAIModel;
   /**
    * Base URL for OpenAI API (defaults to https://api.openai.com/v1)
    */
@@ -67,16 +84,18 @@ interface StreamState {
  */
 export class LLMOpenAI extends LLM {
   private client: OpenAI;
-  private model: OpenAIModel;
+  private modelChain: OpenAIModel[];
+  private baseUrl: string | undefined;
   private logger: Logger;
 
   constructor(config: OpenAIConfig) {
     super();
+    this.baseUrl = config.baseUrl;
     this.client = new OpenAI({
       apiKey: config.apiKey.DANGEROUSLY_readValue(),
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
-    this.model = config.model;
+    this.modelChain = getModelChain(config.model);
     this.logger = config.logger;
   }
 
@@ -90,15 +109,53 @@ export class LLMOpenAI extends LLM {
     options?: StreamOptions | (StreamOptions & { schema: T }),
   ): AsyncIterable<StreamChunk | StreamChunkWithSchema<z.infer<T>>> {
     const openAIMessages = messages.map(this.convertMessageToOpenAI);
+    const failures: string[] = [];
 
-    this.logger.debug('OpenAI API request (streaming)', {
-      model: this.model,
-      messageCount: openAIMessages.length,
-      hasSchema: options?.schema !== undefined,
-    });
+    for (let i = 0; i < this.modelChain.length; i++) {
+      const model = this.modelChain[i]!;
+      const nextModel = this.modelChain[i + 1];
 
+      this.logger.debug('OpenAI API request (streaming)', {
+        model,
+        messageCount: openAIMessages.length,
+        hasSchema: options?.schema !== undefined,
+      });
+
+      try {
+        yield* this.streamWithModel(model, openAIMessages, options);
+        if (i > 0) {
+          this.logger.info('Using OpenAI model', { model });
+        }
+        return;
+      } catch (error) {
+        if (isModelNotAvailableError(error) && nextModel) {
+          this.logger.warn('Model not available, trying fallback', { model, nextModel });
+          failures.push(formatOpenAIError(model, error, this.baseUrl));
+          continue;
+        }
+        if (isModelNotAvailableError(error)) {
+          failures.push(formatOpenAIError(model, error, this.baseUrl));
+          const tried = this.modelChain.join(', ');
+          const errorMessage = `OpenAI API error: all models unavailable. Tried: ${tried}. ${failures.join('; ')}`;
+          this.logger.error('OpenAI stream error', {
+            error: errorMessage,
+            status: error instanceof OpenAI.APIError ? error.status : undefined,
+            baseURL: this.baseUrl,
+          });
+          throw new Error(errorMessage);
+        }
+        throw error;
+      }
+    }
+  }
+
+  private async *streamWithModel<T extends z.ZodType<unknown>>(
+    model: OpenAIModel,
+    openAIMessages: OpenAIMessage[],
+    options?: StreamOptions | (StreamOptions & { schema: T }),
+  ): AsyncIterable<StreamChunk | StreamChunkWithSchema<z.infer<T>>> {
     try {
-      const requestParams = this.buildRequestParams(openAIMessages, options);
+      const requestParams = this.buildRequestParams(model, openAIMessages, options);
       const stream = await this.client.chat.completions.create(requestParams);
 
       const state: StreamState = {
@@ -125,7 +182,7 @@ export class LLMOpenAI extends LLM {
         // Fallback: retry without structured outputs, but request JSON format
         this.logger.warn(
           'Model does not support structured outputs, falling back to JSON format with manual validation',
-          { model: this.model },
+          { model },
         );
 
         // Add instruction to return JSON in the last user message
@@ -153,7 +210,7 @@ export class LLMOpenAI extends LLM {
 
         // Create options without schema to avoid structured outputs
         const { schema: _, ...fallbackOptions } = options;
-        const fallbackParams = this.buildRequestParams(fallbackMessages, fallbackOptions);
+        const fallbackParams = this.buildRequestParams(model, fallbackMessages, fallbackOptions);
         // Use JSON format instead of structured outputs
         fallbackParams.response_format = { type: 'json_object' };
 
@@ -187,11 +244,11 @@ export class LLMOpenAI extends LLM {
             // Final fallback: plain text with JSON instructions, no response_format
             this.logger.warn(
               'Model does not support json_object format, falling back to plain text with JSON prompt instructions',
-              { model: this.model },
+              { model },
             );
 
             // Remove response_format and rely on prompt instructions
-            const plainTextParams = this.buildRequestParams(fallbackMessages, fallbackOptions);
+            const plainTextParams = this.buildRequestParams(model, fallbackMessages, fallbackOptions);
             // Don't set response_format at all
 
             const stream = await this.client.chat.completions.create(plainTextParams);
@@ -217,25 +274,18 @@ export class LLMOpenAI extends LLM {
           }
         }
       } else {
-        // Re-throw other errors
-        const errorMessage =
-          error instanceof OpenAI.APIError
-            ? error.message
-            : error instanceof Error
-              ? error.message
-              : String(error);
-        this.logger.error('OpenAI stream error', { error: errorMessage });
-        throw new Error(errorMessage);
+        throw error;
       }
     }
   }
 
   private buildRequestParams(
+    model: OpenAIModel,
     messages: OpenAIMessage[],
     options?: StreamOptions | (StreamOptions & { schema: z.ZodType<unknown> }),
   ): OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming {
     const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
-      model: this.model,
+      model,
       messages,
       stream: true,
     };
@@ -514,7 +564,30 @@ export class LLMOpenAI extends LLM {
   }
 }
 
-export function createLLMOpenAI(params: { logger: Logger; model: OpenAIModel }): LLM {
+function isModelNotAvailableError(error: unknown): boolean {
+  if (error instanceof OpenAI.APIError) {
+    if (error.status === 404) return true;
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('model') &&
+      (msg.includes('not found') || msg.includes('does not exist') || msg.includes('invalid'))
+    );
+  }
+  return false;
+}
+
+function formatOpenAIError(model: string, error: unknown, baseURL?: string): string {
+  if (error instanceof OpenAI.APIError) {
+    const base = baseURL ? ` (baseURL: ${baseURL})` : '';
+    return `${model}: ${error.status ?? 'unknown'} ${error.message}${base}`;
+  }
+  if (error instanceof Error) {
+    return `${model}: ${error.message}`;
+  }
+  return `${model}: ${String(error)}`;
+}
+
+export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel }): LLM {
   const apiKey = SecretString.fromEnvVar('OPENAI_API_KEY');
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
@@ -522,7 +595,7 @@ export function createLLMOpenAI(params: { logger: Logger; model: OpenAIModel }):
   return new LLMOpenAI({
     apiKey,
     logger: params.logger,
-    model: params.model,
+    ...(params.model !== undefined && { model: params.model }),
   }) as LLM;
 }
 

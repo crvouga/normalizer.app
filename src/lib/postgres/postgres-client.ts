@@ -282,15 +282,8 @@ export class PostgresClient {
   }): Promise<Result<number, string>> {
     let totalInserted = 0;
 
-    this.logger.debug(
-      `Processing insert in batches for ${schema}.${tableName} (batch size: ${batchSize})`,
-    );
-
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
-      this.logger.debug(
-        `Inserting batch [${i + 1}, ${i + batch.length}] into ${schema}.${tableName}`,
-      );
       const insertResult = await this.insertBatchInTransaction({
         tx,
         tableName,
@@ -331,7 +324,11 @@ export class PostgresClient {
       batch,
       schema,
     });
-    this.logger.debug(`Executing batch insert query for ${schema}.${tableName}: ${query}`);
+    this.logger.debug('Executing batch insert', {
+      table: `${schema}.${tableName}`,
+      rowCount: batch.length,
+      paramCount: values.length,
+    });
     const insertResult = await tx.unsafe(query, values);
 
     if (!isOk(insertResult)) {
@@ -502,9 +499,6 @@ export class PostgresClient {
           );
           throw new Error(insertResult.error);
         }
-        this.logger.debug(
-          `Inserted another ${insertResult.value} rows into ${schema}.${tableName} from stream`,
-        );
         totalInserted += insertResult.value;
         batch = [];
       };

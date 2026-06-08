@@ -108,9 +108,6 @@ export class Normalizer {
     });
 
     if (isErr(viewCreationResult)) {
-      this.logger.error('Failed to create normalization views', {
-        error: viewCreationResult.error,
-      });
       return Err(`Failed to create normalization views: ${viewCreationResult.error}`);
     }
 
