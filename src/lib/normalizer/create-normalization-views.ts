@@ -68,6 +68,14 @@ export async function createNormalizationViews({
     promptLength: systemPrompt.length,
   });
 
+  for (const outputViewName of outputViewNames) {
+    const quotedName = `"${outputViewName.replace(/"/g, '""')}"`;
+    const dropResult = await sqlDb.unsafe(`DROP VIEW IF EXISTS ${quotedName} CASCADE`);
+    if (isErr(dropResult)) {
+      logger.warn('Failed to pre-drop output view', { outputViewName, error: dropResult.error });
+    }
+  }
+
   const agentLoop = createAgenticLoop({ llm, logger });
   let lastSqlError: string | undefined;
 

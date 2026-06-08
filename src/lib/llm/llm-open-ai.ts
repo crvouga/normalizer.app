@@ -4,6 +4,10 @@ import type { Logger } from '../logger';
 import { SecretString } from '../secrets/secret-string';
 import { zodToJsonSchema } from '../zod-to-json-schema';
 import {
+  resolveOpenAIModelChain,
+  type ModelTier,
+} from './openai-model-resolver';
+import {
   LLM,
   type Message,
   type StreamChunk,
@@ -19,9 +23,13 @@ import {
  */
 export type OpenAIModel = OpenAI.ChatModel;
 
+/** @deprecated Use createLLMOpenAIAsync with dynamic model resolution instead. */
 export const DEFAULT_MODEL: OpenAIModel = 'gpt-5-nano';
 
-const MODEL_FALLBACK_CHAIN: OpenAIModel[] = [
+/**
+ * Minimal static fallback when dynamic resolution is unavailable (e.g. sync factory, tests).
+ */
+const STATIC_FALLBACK_CHAIN: OpenAIModel[] = [
   'gpt-5-nano',
   'gpt-5-mini',
   'gpt-4.1-nano',
@@ -29,13 +37,16 @@ const MODEL_FALLBACK_CHAIN: OpenAIModel[] = [
 ];
 
 /**
- * Resolve the ordered model chain: OPENAI_MODEL env (if set) or preferred model first,
- * then remaining fallbacks from MODEL_FALLBACK_CHAIN.
+ * Resolve the ordered model chain for sync usage: OPENAI_MODEL env (if set) or preferred model first,
+ * then static fallbacks.
  */
-export function getModelChain(preferredModel?: OpenAIModel): OpenAIModel[] {
+export function getModelChain(preferredModel?: OpenAIModel, modelChain?: OpenAIModel[]): OpenAIModel[] {
+  if (modelChain && modelChain.length > 0) {
+    return modelChain;
+  }
   const envModel = process.env.OPENAI_MODEL as OpenAIModel | undefined;
   const primary = envModel ?? preferredModel ?? DEFAULT_MODEL;
-  return [primary, ...MODEL_FALLBACK_CHAIN.filter((m) => m !== primary)];
+  return [primary, ...STATIC_FALLBACK_CHAIN.filter((m) => m !== primary)];
 }
 
 /**
@@ -50,6 +61,10 @@ export interface OpenAIConfig {
    * Preferred model (first in fallback chain unless OPENAI_MODEL env is set)
    */
   model?: OpenAIModel;
+  /**
+   * Pre-resolved model chain (takes priority over model and static fallbacks)
+   */
+  modelChain?: OpenAIModel[];
   /**
    * Base URL for OpenAI API (defaults to https://api.openai.com/v1)
    */
@@ -95,7 +110,7 @@ export class LLMOpenAI extends LLM {
       apiKey: config.apiKey.DANGEROUSLY_readValue(),
       ...(config.baseUrl && { baseURL: config.baseUrl }),
     });
-    this.modelChain = getModelChain(config.model);
+    this.modelChain = getModelChain(config.model, config.modelChain);
     this.logger = config.logger;
   }
 
@@ -628,7 +643,11 @@ function formatOpenAIError(model: string, error: unknown, baseURL?: string): str
   return `${model}: ${String(error)}`;
 }
 
-export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel }): LLM {
+export function createLLMOpenAI(params: {
+  logger: Logger;
+  model?: OpenAIModel;
+  modelChain?: OpenAIModel[];
+}): LLM {
   const apiKey = SecretString.fromEnvVar('OPENAI_API_KEY');
 
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
@@ -639,8 +658,45 @@ export function createLLMOpenAI(params: { logger: Logger; model?: OpenAIModel })
     apiKey,
     logger: params.logger,
     ...(params.model !== undefined && { model: params.model }),
+    ...(params.modelChain !== undefined && { modelChain: params.modelChain }),
     ...(baseUrl !== undefined && { baseUrl }),
   }) as LLM;
+}
+
+/**
+ * Create an OpenAI LLM client with a dynamically resolved model chain from the API.
+ */
+export async function createLLMOpenAIAsync(params: {
+  logger: Logger;
+  tier?: ModelTier;
+  model?: OpenAIModel;
+  modelChain?: OpenAIModel[];
+}): Promise<LLM> {
+  const apiKey = SecretString.fromEnvVar('OPENAI_API_KEY');
+
+  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
+
+  const baseUrl = resolveOpenAIBaseUrl();
+
+  let modelChain = params.modelChain;
+  if (!modelChain || modelChain.length === 0) {
+    const client = new OpenAI({
+      apiKey: apiKey.DANGEROUSLY_readValue(),
+      ...(baseUrl !== undefined && { baseURL: baseUrl }),
+    });
+    const resolved = await resolveOpenAIModelChain({
+      client,
+      logger: params.logger,
+      ...(params.tier !== undefined && { tier: params.tier }),
+      ...(params.model !== undefined && { explicitModel: params.model }),
+    });
+    modelChain = resolved as OpenAIModel[];
+  }
+
+  return createLLMOpenAI({
+    logger: params.logger,
+    modelChain,
+  });
 }
 
 export function isOpenAIEnabled(): boolean {

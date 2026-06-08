@@ -18,4 +18,10 @@ export function normalizeEnvAliases(): void {
   if (!process.env.S3_BUCKET && process.env.B2_BUCKET) {
     process.env.S3_BUCKET = process.env.B2_BUCKET;
   }
+  if (!process.env.GOOGLE_CLIENT_ID && process.env.NORMALIZER_APP_GOOGLE_CLIENT_ID) {
+    process.env.GOOGLE_CLIENT_ID = process.env.NORMALIZER_APP_GOOGLE_CLIENT_ID;
+  }
+  if (!process.env.GOOGLE_CLIENT_SECRET && process.env.NORMALIZER_APP_GOOGLE_CLIENT_SECRET) {
+    process.env.GOOGLE_CLIENT_SECRET = process.env.NORMALIZER_APP_GOOGLE_CLIENT_SECRET;
+  }
 }

@@ -114,7 +114,7 @@ SEMANTIC MATCHING REQUIREMENTS:
 - Verify your transformations by comparing sample output data with target table data
 
 Use the query_database tool to inspect actual schemas AND DATA VALUES with SELECT queries. Then create the necessary database objects directly using CREATE statements executed via the query_database tool. You may need to create:
-- Regular views (CREATE OR REPLACE VIEW)
+- Regular views (CREATE OR REPLACE VIEW). IMPORTANT: CREATE OR REPLACE VIEW cannot change column types. If you need to change a column type, run DROP VIEW IF EXISTS first, then CREATE VIEW with explicit ::type casts matching the target schema column types.
 - Materialized views (CREATE MATERIALIZED VIEW) if performance requires it
 - Temporary tables (CREATE TEMP TABLE) if intermediate transformations are needed
 - Indexes (CREATE INDEX) if needed for performance

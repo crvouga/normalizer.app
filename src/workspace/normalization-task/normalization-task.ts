@@ -1,5 +1,5 @@
 import { enumerate } from '~/src/lib/array/enumerate';
-import { createLLMOpenAI, DEFAULT_MODEL } from '~/src/lib/llm/llm-open-ai';
+import { createLLMOpenAIAsync } from '~/src/lib/llm/llm-open-ai';
 import { isErr } from '~/src/lib/result';
 import type { TaskHandler } from '~/src/shared/graphile-worker';
 import { Artifact as ArtifactFactory } from '../../artifacts/artifact';
@@ -139,7 +139,7 @@ async function performNormalization({
   startedByUserId: UserId;
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
-  const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
+  const llm = await createLLMOpenAIAsync({ logger, tier: 'strong' });
 
   const normalizer = createNormalizer({
     objectStore,

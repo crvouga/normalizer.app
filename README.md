@@ -37,7 +37,7 @@ The HTTP server and background worker run in a single process at `http://localho
 
 ## Architecture
 
-- **App**: one Fly.io machine (`normalizer-app-server`) serves `https://normalizer.app` and runs graphile-worker in-process
+- **App**: one Fly.io machine (`normalizer-app`) serves `https://normalizer.app` and runs graphile-worker in-process
 - **Database**: shared Postgres; all tables live in schema `normalizer_app` (never `public`)
 - **Object storage**: Backblaze B2 (S3-compatible); all keys are prefixed `normalizer-app/`
 - **Secrets**: self-hosted OpenBao at `https://secret-store.chrisvouga.dev`
@@ -63,10 +63,10 @@ CI on push to `main`:
 ### Manual Fly setup (one-time)
 
 ```bash
-fly apps create normalizer-app-server
+fly apps create normalizer-app
 ./scripts/create-dev-token.sh   # in secret-store repo
-fly secrets set VAULT_TOKEN=hvs.xxx -a normalizer-app-server
-fly certs add normalizer.app -a normalizer-app-server
+fly secrets set VAULT_TOKEN=hvs.xxx -a normalizer-app
+fly certs add normalizer.app -a normalizer-app
 ```
 
 Add the Fly DNS record in Cloudflare for `normalizer.app` (grey-cloud until cert validates).
@@ -74,7 +74,10 @@ Add the Fly DNS record in Cloudflare for `normalizer.app` (grey-cloud until cert
 ## Google OAuth (optional)
 
 1. Create OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)
-2. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `secret/personal/dev` and `secret/personal/prd`
-3. Authorized redirect URI: `https://normalizer.app/api/auth/google/callback`
+2. Add `NORMALIZER_APP_GOOGLE_CLIENT_ID` and `NORMALIZER_APP_GOOGLE_CLIENT_SECRET` to `secret/personal/dev` and `secret/personal/prd`
+3. Authorized redirect URIs:
+   - Production: `https://normalizer.app/api/auth/google/callback`
+   - Local dev: `http://localhost:8080/api/auth/google/callback` (must match `SERVER_BASE_URL` in `.env`)
+4. If the app is in **Testing** mode on the OAuth consent screen, add your Google account under **Test users**
 
-Without OAuth credentials the app works with anonymous users.
+Without OAuth credentials the app works with anonymous users. The server logs a startup warning when credentials are missing, partial, or empty.

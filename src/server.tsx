@@ -3,6 +3,7 @@ import { normalizeEnvAliases } from './lib/secrets/normalize-env-aliases';
 import { serve } from 'bun';
 import { sql } from 'drizzle-orm';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
+import { warnGoogleOAuthConfig } from './auth/google-auth/google-oauth-config';
 import clientHtml from './client.html';
 import { assertPortNotUsed } from './lib/assert-port-not-used';
 import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
@@ -99,6 +100,8 @@ async function main() {
   normalizeEnvAliases();
 
   const logger = createLogger().child('Server');
+
+  warnGoogleOAuthConfig(logger);
 
   logger.info('Process info', {
     bun_version: Bun.version,

@@ -1,4 +1,4 @@
-app = "normalizer-app-server"
+app = "normalizer-app"
 primary_region = "sjc"
 
 [build]

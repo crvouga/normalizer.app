@@ -21,22 +21,27 @@ export function WorkspaceListItem({ projection, onClick, isSelected }: Workspace
     projection.targetArtifactIds.map((id: ArtifactId) => store.entities.artifacts.byId[id]),
   );
 
+  const sessionName = targetArtifacts
+    .map((artifact: Artifact | undefined) => artifact?.name ?? artifact?.filename)
+    .join(', ');
+
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}
-      className={`w-full rounded-lg border p-4 text-left transition-colors ${
+      className={`min-w-0 w-full rounded-lg border p-4 text-left transition-colors ${
         isSelected
           ? 'border-fuchsia-500 bg-fuchsia-50 hover:border-fuchsia-600 hover:bg-fuchsia-100 dark:border-fuchsia-400 dark:bg-fuchsia-950 dark:hover:border-fuchsia-300 dark:hover:bg-fuchsia-900'
           : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
       }`}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2 overflow-hidden">
         {/* Session ID */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
-            {targetArtifacts
-              .map((artifact: Artifact | undefined) => artifact?.name ?? artifact?.filename)
-              .join(', ')}
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+          <span
+            className="truncate text-sm font-medium text-slate-900 dark:text-slate-100"
+            title={sessionName || undefined}
+          >
+            {sessionName}
           </span>
         </div>
 
