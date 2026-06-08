@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { I18nText } from '~/src/i18n/types';
 import { useI18n } from '~/src/i18n/use-i18n';
 import { cn } from '~/src/lib/cn';
 import { Card, CardContent } from '~/src/ui/card';
@@ -58,6 +59,7 @@ function LogList(props: {
   logs: NormalizationLog[];
   expanded: boolean;
   scrollRef: React.RefObject<HTMLDivElement | null>;
+  emptyText: I18nText;
 }) {
   const visibleLogs = props.expanded
     ? props.logs
@@ -72,12 +74,7 @@ function LogList(props: {
       )}
     >
       {visibleLogs.length === 0 ? (
-        <Typography
-          variant="xs"
-          color="muted"
-          as="p"
-          text="Waiting for normalization activity..."
-        />
+        <Typography variant="xs" color="muted" as="p" text={props.emptyText} />
       ) : (
         visibleLogs.map((log) => <LogLine key={log.seq} log={log} compact={!props.expanded} />)
       )}
@@ -132,7 +129,12 @@ export const NormalizationLogFeed = (props: {
           />
         </button>
 
-        <LogList logs={logs} expanded={expanded} scrollRef={scrollRef} />
+        <LogList
+          logs={logs}
+          expanded={expanded}
+          scrollRef={scrollRef}
+          emptyText={t('workspace.logs.waiting')}
+        />
       </CardContent>
     </Card>
   );

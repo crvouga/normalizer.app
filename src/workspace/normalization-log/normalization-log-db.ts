@@ -1,5 +1,4 @@
 import { and, eq, gt } from 'drizzle-orm';
-import type { Logger } from '~/src/lib/logger';
 import type { Db, Tx } from '~/src/shared/db';
 import * as schema from '../../db/schema';
 import type { NormalizationRunId } from '../normalization-run-id';
@@ -14,10 +13,7 @@ export type NormalizationLogInsert = {
 };
 
 export class NormalizationLogDb {
-  constructor(
-    private readonly db: Tx | Db,
-    private readonly logger: Logger,
-  ) {}
+  constructor(private readonly db: Tx | Db) {}
 
   async insertBatch(input: {
     workspaceId: WorkspaceId;
@@ -80,6 +76,6 @@ export class NormalizationLogDb {
   }
 }
 
-export function createNormalizationLogDb(params: { db: Tx | Db; logger: Logger }): NormalizationLogDb {
-  return new NormalizationLogDb(params.db, params.logger);
+export function createNormalizationLogDb(params: { db: Tx | Db }): NormalizationLogDb {
+  return new NormalizationLogDb(params.db);
 }

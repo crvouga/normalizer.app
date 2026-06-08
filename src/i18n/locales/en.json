@@ -108,7 +108,8 @@
     "logs": {
       "title": "Normalization logs",
       "showAll": "Show all logs",
-      "hide": "Hide logs"
+      "hide": "Hide logs",
+      "waiting": "Waiting for normalization activity..."
     },
     "inProgress": "In Progress",
     "completed": "Completed",

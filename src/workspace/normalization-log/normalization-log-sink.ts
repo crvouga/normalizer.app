@@ -23,7 +23,7 @@ export function createNormalizationLogSink(params: {
   normalizationRunId: NormalizationRunId;
 }): NormalizationLogSink {
   const { db, logger, workspaceId, normalizationRunId } = params;
-  const logDb = createNormalizationLogDb({ db, logger: logger.child('NormalizationLogSink') });
+  const logDb = createNormalizationLogDb({ db });
   const appNotification = new AppNotification(db);
 
   let buffer: NormalizationLogInsert[] = [];

@@ -36,7 +36,7 @@ export const normalizationLogRouter = router({
     .query(async ({ input, ctx }) => {
       await authorizeWorkspaceView(ctx, input.workspaceId);
 
-      const logDb = createNormalizationLogDb({ db: ctx.db, logger: ctx.logger });
+      const logDb = createNormalizationLogDb({ db: ctx.db });
       return logDb.listAfter({
         workspaceId: input.workspaceId,
         normalizationRunId: input.normalizationRunId,
@@ -59,7 +59,7 @@ export const normalizationLogRouter = router({
     .subscription(async function* ({ input, ctx }) {
       await authorizeWorkspaceView(ctx, input.workspaceId);
 
-      const logDb = createNormalizationLogDb({ db: ctx.db, logger: ctx.logger });
+      const logDb = createNormalizationLogDb({ db: ctx.db });
       let lastSeq = 0;
 
       const initialLogs = await logDb.listAfter({

@@ -79,7 +79,7 @@ export class AppNotification {
       }
       default: {
         // Exhaustive check: ensures all notification types are handled
-        return assertNever(notification.type);
+        return assertNever(notification as never);
       }
     }
   }
