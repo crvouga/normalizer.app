@@ -1,6 +1,7 @@
 import postgres from 'postgres';
 import type { Logger } from '../lib/logger';
 import { DB_SCHEMA_NAME } from '../db/db-schema';
+import { ensureSchemaExists } from '../db/ensure-schema';
 
 /**
  * Creates a postgres connection with proper configuration.
@@ -52,21 +53,25 @@ export const createPostgresConnection = async ({
     connect_timeout: 10,
     idle_timeout: 30,
     max_lifetime: 60 * 30,
+    onnotice: () => {},
     connection: {
       search_path: schemaName,
     },
   });
 
-  await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+  await ensureSchemaExists(sql, schemaName);
+  await sql.unsafe(`SET search_path TO "${schemaName}"`);
 
-  const schemas = await sql<{ current_schemas: string[] }[]>`
-    SELECT current_schemas(false) as current_schemas
+  const searchPathRows = await sql<{ search_path: string }[]>`
+    SELECT current_setting('search_path') AS search_path
   `;
-  const activeSchemas = schemas[0]?.current_schemas ?? [];
+  const searchPath = searchPathRows[0]?.search_path ?? '';
+
+  const activeSchemas = searchPath.split(',').map((s: string) => s.trim().replace(/^"|"$/g, ''));
 
   if (!activeSchemas.includes(schemaName)) {
     throw new Error(
-      `Database search_path misconfigured: expected schema "${schemaName}" in current_schemas(false), got [${activeSchemas.join(', ')}]`,
+      `Database search_path misconfigured: expected schema "${schemaName}" in search_path, got "${searchPath}"`,
     );
   }
 

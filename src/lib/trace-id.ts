@@ -1,3 +1,5 @@
+import { randomUUID } from './random-uuid';
+
 export type TraceId = string & { readonly __brand: 'TraceId' };
 
 const TRACE_ID_HEADER = 'X-Trace-Id';
@@ -9,7 +11,7 @@ export const TRACE_ID_REGEXP = /^trace_[0-9a-f]{12}$/;
  * Example: trace1a2b3c4d
  */
 export const generateTraceId = (): TraceId => {
-  const uuid = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  const uuid = randomUUID().replace(/-/g, '').slice(0, 12);
   const traceId = `trace_${uuid}` as TraceId;
   if (!TRACE_ID_REGEXP.test(traceId)) {
     throw new Error(`Invalid trace ID: ${traceId}`);

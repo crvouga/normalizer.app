@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { I18nText, TranslationKey, InterpolationValues } from '../i18n/types';
 import { useI18n } from '../i18n/use-i18n';
+import { normalizePresignedUrlForBrowser } from '../lib/object-store/normalize-presigned-url-for-browser';
 
 export interface UseFileLoaderParams {
   downloadUrl: string;
@@ -62,7 +63,7 @@ export function useFileLoader({
       setError(null);
 
       try {
-        const url = normalizeProtocol(downloadUrl);
+        const url = normalizePresignedUrlForBrowser(downloadUrl);
         const file = await fetchFile(url, fileName, contentType, t);
         if (!isCancelled) {
           setLoadedFile(file);
@@ -94,22 +95,6 @@ export function useFileLoader({
 
 function shouldLoadFile(enabled: boolean, loadedFile: File | null): boolean {
   return enabled && !loadedFile;
-}
-
-/**
- * If the URL is remote and the protocol does not match the window's,
- * swap to the app's protocol to avoid mixed content errors.
- */
-function normalizeProtocol(url: string): string {
-  if (
-    typeof window !== 'undefined' &&
-    url.startsWith('http') &&
-    window.location.protocol &&
-    !url.startsWith(window.location.protocol)
-  ) {
-    return url.replace(/^https?:/, window.location.protocol);
-  }
-  return url;
 }
 
 /**

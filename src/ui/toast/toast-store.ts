@@ -1,3 +1,4 @@
+import { randomUUID } from '~/src/lib/random-uuid';
 import { Store } from '~/src/lib/store';
 import type { I18nText } from '../../i18n/types';
 import type { Toast, ToastOptions, ToastType } from './toast-types';
@@ -12,7 +13,7 @@ class ToastStore extends Store<ToastStoreState> {
   }
 
   addToast(type: ToastType, message: I18nText, options?: ToastOptions): string {
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const toast: Toast = {
       id,
       type,

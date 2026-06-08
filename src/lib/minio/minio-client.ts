@@ -1,4 +1,5 @@
 import * as Minio from 'minio';
+import { isLoopbackHost } from '../object-store/loopback-host';
 import { handleError, handleErrorAsWarn } from '../error';
 import type { Logger } from '../logger';
 import { Err, Ok, type Result } from '../result';
@@ -7,6 +8,7 @@ export class MinioClient {
   private minioClient: Minio.Client;
   private useSSL: boolean;
   private logger: Logger;
+  private readonly supportsBucketPolicy: boolean;
 
   constructor({
     minioEndpoint,
@@ -26,6 +28,7 @@ export class MinioClient {
     const port = url.port ? parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
     this.useSSL = url.protocol === 'https:';
     this.logger = logger.child(MinioClient.name);
+    this.supportsBucketPolicy = isLoopbackHost(minioEndpoint);
     this.minioClient = new Minio.Client({
       endPoint,
       port,
@@ -104,6 +107,11 @@ export class MinioClient {
   }
 
   async setBucketPolicy(bucket: string): Promise<Result<void, string>> {
+    if (!this.supportsBucketPolicy) {
+      this.logger.debug('Skipping bucket policy (remote S3 endpoint)', { bucket });
+      return Ok(undefined);
+    }
+
     this.logger.info('Setting bucket policy...', { bucket });
 
     try {

@@ -1,4 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS "normalizer_app";--> statement-breakpoint
 CREATE TYPE "normalizer_app"."artifact_status" AS ENUM('pending', 'uploaded');--> statement-breakpoint
 CREATE TYPE "normalizer_app"."artifact_uploaded_by" AS ENUM('system', 'user');--> statement-breakpoint
 CREATE TYPE "normalizer_app"."user_type" AS ENUM('anonymous', 'authenticated');--> statement-breakpoint

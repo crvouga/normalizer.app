@@ -43,12 +43,13 @@ export async function runMigrations(logger: Logger): Promise<void> {
 
     logger.info('Connecting to the database...');
     const sql = postgres(url.toString(), {
+      onnotice: () => {},
       connection: {
         search_path: DB_SCHEMA_NAME,
       },
     });
 
-    await sql.unsafe(`CREATE SCHEMA IF NOT EXISTS "${DB_SCHEMA_NAME}"`);
+    await sql.unsafe(`SET search_path TO "${DB_SCHEMA_NAME}"`);
 
     logger.debug('Instantiating drizzle ORM...');
     const db = drizzle(sql);
