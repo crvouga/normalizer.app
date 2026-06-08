@@ -126,10 +126,7 @@ export function buildModelChain(params: {
 /**
  * Fetch chat-capable model IDs from the OpenAI API (cached).
  */
-export async function fetchAvailableChatModels(
-  client: OpenAI,
-  logger: Logger,
-): Promise<string[]> {
+export async function fetchAvailableChatModels(client: OpenAI, logger: Logger): Promise<string[]> {
   const now = Date.now();
   if (modelCache && modelCache.expiresAt > now) {
     return modelCache.models;

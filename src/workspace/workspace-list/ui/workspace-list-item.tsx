@@ -28,7 +28,7 @@ export function WorkspaceListItem({ projection, onClick, isSelected }: Workspace
   return (
     <ButtonBase
       onClick={() => onClick(projection.id)}
-      className={`min-w-0 w-full rounded-lg border p-4 text-left transition-colors ${
+      className={`w-full min-w-0 rounded-lg border p-4 text-left transition-colors ${
         isSelected
           ? 'border-fuchsia-500 bg-fuchsia-50 hover:border-fuchsia-600 hover:bg-fuchsia-100 dark:border-fuchsia-400 dark:bg-fuchsia-950 dark:hover:border-fuchsia-300 dark:hover:bg-fuchsia-900'
           : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'

@@ -7,7 +7,12 @@ import {
   warnGoogleOAuthConfig,
 } from './google-oauth-config';
 
-const GOOGLE_ENV_KEYS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SERVER_BASE_URL', 'PORT'] as const;
+const GOOGLE_ENV_KEYS = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'SERVER_BASE_URL',
+  'PORT',
+] as const;
 
 const snapshotGoogleEnv = (): Record<string, string | undefined> => {
   return Object.fromEntries(GOOGLE_ENV_KEYS.map((key) => [key, process.env[key]]));

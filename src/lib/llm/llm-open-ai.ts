@@ -3,10 +3,7 @@ import type { z } from 'zod';
 import type { Logger } from '../logger';
 import { SecretString } from '../secrets/secret-string';
 import { zodToJsonSchema } from '../zod-to-json-schema';
-import {
-  resolveOpenAIModelChain,
-  type ModelTier,
-} from './openai-model-resolver';
+import { resolveOpenAIModelChain, type ModelTier } from './openai-model-resolver';
 import {
   LLM,
   type Message,
@@ -40,7 +37,10 @@ const STATIC_FALLBACK_CHAIN: OpenAIModel[] = [
  * Resolve the ordered model chain for sync usage: OPENAI_MODEL env (if set) or preferred model first,
  * then static fallbacks.
  */
-export function getModelChain(preferredModel?: OpenAIModel, modelChain?: OpenAIModel[]): OpenAIModel[] {
+export function getModelChain(
+  preferredModel?: OpenAIModel,
+  modelChain?: OpenAIModel[],
+): OpenAIModel[] {
   if (modelChain && modelChain.length > 0) {
     return modelChain;
   }
