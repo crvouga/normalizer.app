@@ -1,11 +1,13 @@
 import { scrubUnsafeTestEnv } from './assert-safe-database-url';
 import { applyDefaultTestEnv } from './test-env-defaults';
 import { startTestDatabase, writeTestDatabaseUrlFile } from './test-database';
+import { startTestMinio } from './test-minio';
 import { createTestServerEnv } from './test-server-env';
 
 scrubUnsafeTestEnv();
 applyDefaultTestEnv();
 await startTestDatabase();
+await startTestMinio();
 await writeTestDatabaseUrlFile();
 
 const port = process.env.PORT ?? '5001';

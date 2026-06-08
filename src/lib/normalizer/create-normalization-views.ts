@@ -124,7 +124,7 @@ export async function createNormalizationViews({
           shouldContinue: true,
           followUpMessage: createFollowUpPrompt({
             outputViewName,
-            lastSqlError,
+            ...(lastSqlError !== undefined ? { lastSqlError } : {}),
           }),
         };
       }

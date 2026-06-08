@@ -78,12 +78,7 @@ export class PostgresNotification {
       return;
     }
 
-    if (this.sqlConnection) {
-      await this.sqlConnection.listen(channel);
-      return;
-    }
-
-    // Fallback when no postgres Sql instance (send-only contexts)
+    // Register LISTEN without a callback handler
     await this.tx.execute(sql.raw(`LISTEN ${channel}`));
   }
 

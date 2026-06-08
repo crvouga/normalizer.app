@@ -650,7 +650,7 @@ export class AgenticLoop {
           toolName: toolCall.name,
           success,
           content: result,
-          error: toolError,
+          ...(toolError !== undefined ? { error: toolError } : {}),
         });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
