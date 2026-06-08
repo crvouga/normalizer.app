@@ -168,6 +168,7 @@ export async function createNormalizationViews({
           shouldContinue: true,
           followUpMessage: createFollowUpPrompt({
             outputViewName,
+            inputViewNames: inputTableNames,
             ...(lastSqlError !== undefined ? { lastSqlError } : {}),
           }),
         };

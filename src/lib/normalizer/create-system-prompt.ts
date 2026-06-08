@@ -78,6 +78,15 @@ IMPORTANT COLUMN NAME HANDLING:
 - Example: SELECT "ColumnName" AS "TargetColumnName" FROM input_0;
 - DO NOT assume column names are lowercase - always query information_schema.columns to get the actual names
 
+MANDATORY FROM CLAUSE (most common mistake):
+- Whenever a SELECT (including inside CREATE VIEW) references a table's columns (e.g. ${params.inputViewNames[0] ?? 'input_0'}."Column"), that table MUST appear in a FROM or JOIN clause.
+- A view that reads input data ALWAYS needs a FROM clause; omitting it causes "missing FROM-clause entry for table ...".
+- Correct shape:
+    CREATE OR REPLACE VIEW "${params.outputViewName[0] ?? 'output_0'}" AS
+    SELECT ${params.inputViewNames[0] ?? 'input_0'}."SomeColumn" AS "TargetColumn", NULL::text AS "UnmappedColumn"
+    FROM ${params.inputViewNames[0] ?? 'input_0'};
+- If you reference columns from more than one input table, JOIN them; do not reference a table that is not in FROM/JOIN.
+
 SEMANTIC MATCHING REQUIREMENTS:
 - Inspect actual data values in both input and target tables to understand the expected format and meaning
 - Map input columns to target columns based on SEMANTIC EQUIVALENCE, not just name similarity
