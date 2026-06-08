@@ -8,6 +8,8 @@ set -euo pipefail
 #           CLOUDFLARE_ZONE_ID (auto-resolved from zone domain)
 
 APP_NAME="$(grep -E '^app = ' fly.toml | sed -E 's/^app = "(.*)"/\1/')"
+WORKER_CONFIG="fly.worker.toml"
+WORKER_APP_NAME="$(grep -E '^app = ' "$WORKER_CONFIG" | sed -E 's/^app = "(.*)"/\1/')"
 ORG="${FLY_ORG:-personal}"
 PRIMARY_HOST="${FLY_PRIMARY_HOST:-$(grep 'SERVER_BASE_URL' fly.toml | sed -E 's|.*"https?://([^"]+)".*|\1|')}"
 ZONE_DOMAIN="${FLY_ZONE_DOMAIN:-normalizer.app}"
@@ -103,13 +105,14 @@ upsert_dns_record() {
 }
 
 ensure_app() {
-  if flyctl apps list --json | jq -e --arg name "$APP_NAME" '.[] | select(.Name == $name)' >/dev/null; then
-    log "Fly app ${APP_NAME} exists"
+  local app_name=$1
+  if flyctl apps list --json | jq -e --arg name "$app_name" '.[] | select(.Name == $name)' >/dev/null; then
+    log "Fly app ${app_name} exists"
     return 0
   fi
 
-  log "Creating Fly app ${APP_NAME} in org ${ORG}"
-  flyctl apps create "$APP_NAME" --org "$ORG"
+  log "Creating Fly app ${app_name} in org ${ORG}"
+  flyctl apps create "$app_name" --org "$ORG"
 }
 
 ensure_ips() {
@@ -129,8 +132,9 @@ ensure_ips() {
 }
 
 sync_runtime_secrets() {
-  log "Syncing VAULT_TOKEN to Fly app ${APP_NAME}"
-  flyctl secrets set "VAULT_TOKEN=${VAULT_TOKEN}" -a "$APP_NAME" --stage
+  local app_name=$1
+  log "Syncing VAULT_TOKEN to Fly app ${app_name}"
+  flyctl secrets set "VAULT_TOKEN=${VAULT_TOKEN}" -a "$app_name" --stage
 }
 
 ensure_certificate() {
@@ -226,13 +230,16 @@ wait_for_certificates() {
 }
 
 ensure_single_machine() {
-  log "Ensuring ${APP_NAME} runs a single machine per process group (web, worker)"
-  flyctl scale count web=1 worker=1 -a "$APP_NAME" -y
+  local app_name=$1
+  log "Ensuring ${app_name} runs a single machine"
+  flyctl scale count 1 -a "$app_name" -y
 }
 
 deploy_app() {
-  log "Deploying ${APP_NAME}"
-  flyctl deploy --remote-only -a "$APP_NAME" --ha=false
+  local app_name=$1
+  local config_file=${2:-fly.toml}
+  log "Deploying ${app_name} (${config_file})"
+  flyctl deploy --remote-only -a "$app_name" -c "$config_file" --ha=false
 }
 
 main() {
@@ -243,15 +250,26 @@ main() {
   export FLY_API_TOKEN
 
   log "Provisioning Fly app ${APP_NAME} for ${PRIMARY_HOST} (apex ${APEX_HOST} redirects to www)"
-  ensure_app
+  ensure_app "$APP_NAME"
   ensure_ips
-  sync_runtime_secrets
+  sync_runtime_secrets "$APP_NAME"
   ensure_certificates
   sync_cloudflare_dns
   ensure_apex_redirect "$(cloudflare_zone_id)"
   wait_for_certificates
-  ensure_single_machine
-  deploy_app
+  ensure_single_machine "$APP_NAME"
+  deploy_app "$APP_NAME" "fly.toml"
+  log "Web deploy complete"
+
+  log "Provisioning worker app ${WORKER_APP_NAME} (no public ingress)"
+  ensure_app "$WORKER_APP_NAME"
+  sync_runtime_secrets "$WORKER_APP_NAME"
+  # Deploy before scaling: a brand-new app has no release yet, and --ha=false
+  # creates exactly one machine on first deploy.
+  deploy_app "$WORKER_APP_NAME" "$WORKER_CONFIG"
+  ensure_single_machine "$WORKER_APP_NAME"
+  log "Worker deploy complete"
+
   log "Deploy complete"
 }
 
