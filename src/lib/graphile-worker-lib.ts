@@ -191,7 +191,7 @@ export async function enqueueJob<
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Failed to enqueue Graphile Worker job '${jobName}': ${errorMessage}. ` +
-        `Make sure Graphile Worker is initialized by running the worker at least once.`,
+        `Make sure Graphile Worker is initialized by starting the app at least once.`,
     );
   }
 }
