@@ -179,7 +179,9 @@ export class S3ObjectStore extends ObjectStore {
         }),
       );
 
-      this.logger.debug('Successfully wrote multiple objects to S3', { count: enforcedEntries.length });
+      this.logger.debug('Successfully wrote multiple objects to S3', {
+        count: enforcedEntries.length,
+      });
       return Ok(results);
     } catch (error) {
       return handleError(error, {

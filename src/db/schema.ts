@@ -1,11 +1,4 @@
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  text,
-  timestamp,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
 import type { WorkspaceEventPersisted } from '../workspace/workspace-event/workspace-event-persisted';

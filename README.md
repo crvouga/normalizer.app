@@ -44,11 +44,11 @@ The HTTP server and background worker run in a single process at `http://localho
 
 ## Secrets workflow
 
-| Context | How secrets are loaded |
-| ------- | ---------------------- |
-| Local dev | `vault run -- <command>` reads `secret/personal/dev` |
-| CI | GitHub Actions OIDC → `hashicorp/vault-action` reads `secret/personal/prd` |
-| Fly runtime | `VAULT_TOKEN` + KV v2 HTTP read of `secret/personal/prd` at boot |
+| Context     | How secrets are loaded                                                     |
+| ----------- | -------------------------------------------------------------------------- |
+| Local dev   | `vault run -- <command>` reads `secret/personal/dev`                       |
+| CI          | GitHub Actions OIDC → `hashicorp/vault-action` reads `secret/personal/prd` |
+| Fly runtime | `VAULT_TOKEN` + KV v2 HTTP read of `secret/personal/prd` at boot           |
 
 Never commit secret values. [`.env.example`](.env.example) lists names only.
 

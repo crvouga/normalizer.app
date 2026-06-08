@@ -257,7 +257,11 @@ export class LLMOpenAI extends LLM {
             );
 
             // Remove response_format and rely on prompt instructions
-            const plainTextParams = this.buildRequestParams(model, fallbackMessages, fallbackOptions);
+            const plainTextParams = this.buildRequestParams(
+              model,
+              fallbackMessages,
+              fallbackOptions,
+            );
             // Don't set response_format at all
 
             const stream = await this.client.chat.completions.create(plainTextParams);

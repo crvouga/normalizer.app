@@ -14,12 +14,7 @@ export { isLoopbackHost } from './loopback-host';
 const PRESIGNED_URL_SECRET =
   process.env.OBJECT_STORE_PRESIGNED_URL_SECRET || 'default-secret-key-change-in-production';
 
-function generateSignature(
-  bucket: string,
-  key: string,
-  method: string,
-  expiresAt: number,
-): string {
+function generateSignature(bucket: string, key: string, method: string, expiresAt: number): string {
   const message = `${method}:${bucket}:${key}:${expiresAt}`;
   return createHmac('sha256', PRESIGNED_URL_SECRET).update(message).digest('hex');
 }

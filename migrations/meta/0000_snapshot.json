@@ -226,12 +226,8 @@
           "tableFrom": "user_sessions",
           "tableTo": "users",
           "schemaTo": "normalizer_app",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -305,16 +301,12 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "users_google_id_unique": {
           "name": "users_google_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "google_id"
-          ]
+          "columns": ["google_id"]
         }
       },
       "policies": {},
@@ -419,26 +411,17 @@
     "normalizer_app.artifact_status": {
       "name": "artifact_status",
       "schema": "normalizer_app",
-      "values": [
-        "pending",
-        "uploaded"
-      ]
+      "values": ["pending", "uploaded"]
     },
     "normalizer_app.artifact_uploaded_by": {
       "name": "artifact_uploaded_by",
       "schema": "normalizer_app",
-      "values": [
-        "system",
-        "user"
-      ]
+      "values": ["system", "user"]
     },
     "normalizer_app.user_type": {
       "name": "user_type",
       "schema": "normalizer_app",
-      "values": [
-        "anonymous",
-        "authenticated"
-      ]
+      "values": ["anonymous", "authenticated"]
     }
   },
   "schemas": {},

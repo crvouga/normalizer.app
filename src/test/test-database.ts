@@ -41,10 +41,7 @@ export async function startTestDatabase(): Promise<string> {
   }
 
   const port = await findAvailablePort();
-  const databaseDir = path.join(
-    os.tmpdir(),
-    `normalizer-test-pg-${process.pid}-${Date.now()}`,
-  );
+  const databaseDir = path.join(os.tmpdir(), `normalizer-test-pg-${process.pid}-${Date.now()}`);
 
   const pg = new EmbeddedPostgres({
     databaseDir,

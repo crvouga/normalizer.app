@@ -80,7 +80,9 @@ describe.each(implementations)(
           allObjects.push(obj);
         }
         if (allObjects.length > 0) {
-          await store.deleteMany(allObjects.map((obj) => ({ bucket: testBucket, key: k(obj.key) })));
+          await store.deleteMany(
+            allObjects.map((obj) => ({ bucket: testBucket, key: k(obj.key) })),
+          );
         }
       } catch (error) {
         // Ignore cleanup errors - bucket might be empty or not exist
@@ -1387,9 +1389,7 @@ describe.each(implementations)(
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         // Should return root.txt as object and docs/, images/ as common prefixes
-        const rootObjects = result.value.objects.filter(
-          (obj) => obj.key === k('root.txt'),
-        );
+        const rootObjects = result.value.objects.filter((obj) => obj.key === k('root.txt'));
         expect(rootObjects.length).toBeGreaterThan(0);
 
         if (result.value.commonPrefixes) {

@@ -2,10 +2,7 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import type { Logger } from '../lib/logger';
-import {
-  assertSafeDatabaseUrl,
-  isTestEnvironment,
-} from '../test/assert-safe-database-url';
+import { assertSafeDatabaseUrl, isTestEnvironment } from '../test/assert-safe-database-url';
 import { DB_SCHEMA_NAME } from './db-schema';
 
 /**

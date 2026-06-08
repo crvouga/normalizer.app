@@ -7,7 +7,9 @@ const PASSTHROUGH_ENV_KEYS = ['PATH', 'HOME', 'USER', 'TMPDIR', 'LANG', 'LC_ALL'
  * Builds a minimal, safe environment for spawning the app server in tests.
  * Never forwards VAULT_TOKEN or a shell-provided DATABASE_URL.
  */
-export function createTestServerEnv(overrides: Record<string, string> = {}): Record<string, string> {
+export function createTestServerEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
   const env: Record<string, string> = {
     NODE_ENV: 'test',
     DATABASE_URL: getTestDatabaseUrl(),

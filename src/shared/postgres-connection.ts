@@ -2,10 +2,7 @@ import postgres from 'postgres';
 import type { Logger } from '../lib/logger';
 import { DB_SCHEMA_NAME } from '../db/db-schema';
 import { ensureSchemaExists } from '../db/ensure-schema';
-import {
-  assertSafeDatabaseUrl,
-  isTestEnvironment,
-} from '../test/assert-safe-database-url';
+import { assertSafeDatabaseUrl, isTestEnvironment } from '../test/assert-safe-database-url';
 
 /**
  * Creates a postgres connection with proper configuration.
@@ -84,9 +81,7 @@ export const createPostgresConnection = async ({
   }
 
   if (activeSchemas.includes('public')) {
-    throw new Error(
-      'Database search_path must not include public schema in a shared database',
-    );
+    throw new Error('Database search_path must not include public schema in a shared database');
   }
 
   logger.info('Checking database health...');

@@ -277,7 +277,10 @@ describe.each(implementations)(
 
         // Verify files were remapped from olddir/ to newdir/
         const read1 = await destStore.read({ bucket: destBucket, key: k('newdir/file1.txt') });
-        const read2 = await destStore.read({ bucket: destBucket, key: k('newdir/subdir/file2.txt') });
+        const read2 = await destStore.read({
+          bucket: destBucket,
+          key: k('newdir/subdir/file2.txt'),
+        });
         expect(isOk(read1)).toBe(true);
         expect(isOk(read2)).toBe(true);
       }

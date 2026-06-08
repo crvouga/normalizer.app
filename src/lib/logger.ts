@@ -91,11 +91,7 @@ const buildChildConfig = (
   };
 };
 
-const makeLogFn = (
-  level: LogLevel,
-  write: (message: string) => void,
-  name: string | undefined,
-) => {
+const makeLogFn = (level: LogLevel, write: (message: string) => void, name: string | undefined) => {
   return (message: string, meta?: Record<string, unknown>) => {
     if (!shouldLog(level)) return;
     write(formatMessage(level, name, message, meta));
