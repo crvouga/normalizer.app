@@ -224,8 +224,8 @@ jobs:
           role: github-actions
           jwtGithubAudience: https://secret-store.chrisvouga.dev
           secrets: |
-            secret/data/personal/prd FLY_API_TOKEN | FLY_API_TOKEN
-            secret/data/personal/prd VAULT_TOKEN | VAULT_TOKEN
+            secret/data/personal/prd FLY_API_TOKEN | FLY_API_TOKEN ;
+            secret/data/personal/prd VAULT_TOKEN | VAULT_TOKEN ;
             secret/data/personal/prd CLOUDFLARE_API_TOKEN | CLOUDFLARE_API_TOKEN
 
       - name: Setup Fly
