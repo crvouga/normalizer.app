@@ -35,6 +35,7 @@ VAULT_TOKEN
 # caches
 .eslintcache
 .cache
+.turbo
 *.tsbuildinfo
 
 # IntelliJ based IDEs

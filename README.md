@@ -35,6 +35,21 @@ vault run -- bun run server    # or: bun run dev
 
 The HTTP server and background worker run in a single process at `http://localhost:8080`.
 
+### 5. Run checks (with remote cache)
+
+Checks run through [Turborepo](https://turbo.build) with a self-hosted remote cache. Turbo creds (`TURBO_API`, `TURBO_TOKEN`, `TURBO_TEAM`) are loaded from Vault:
+
+```bash
+vault run -- bun run check
+```
+
+Individual tasks can also be run directly:
+
+```bash
+vault run -- bunx turbo run type-check:once
+vault run -- bunx turbo run test
+```
+
 ## Architecture
 
 - **App**: one Fly.io machine (`normalizer-app`) serves `https://normalizer.app` and runs graphile-worker in-process
@@ -54,9 +69,9 @@ Never commit secret values. [`.env.example`](.env.example) lists names only.
 
 ## Deployment
 
-CI on push to `main`:
+CI on push to `main` or manual **Run workflow** dispatch:
 
-1. Runs tests (Postgres service + ephemeral MinIO)
+1. Runs checks via Turborepo with self-hosted remote caching (type-check, circular deps, unit tests, e2e)
 2. Migrates production DB via Vault OIDC (`DATABASE_URL` from `secret/personal/prd`)
 3. Provisions and deploys to Fly via [`scripts/fly-deploy.sh`](scripts/fly-deploy.sh):
    - creates the Fly app if missing
@@ -72,6 +87,9 @@ Add these keys to `secret/personal/prd` (no manual `flyctl` steps):
 
 | Key | Purpose |
 | --- | ------- |
+| `TURBO_API` | Self-hosted Turborepo remote cache server URL |
+| `TURBO_TOKEN` | Auth token for the remote cache |
+| `TURBO_TEAM` | Team slug for the remote cache |
 | `FLY_API_TOKEN` | CI authentication with Fly.io |
 | `VAULT_TOKEN` | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
 | `CLOUDFLARE_API_TOKEN` | DNS edit access for the `normalizer.app` zone |

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -12,6 +13,7 @@ permissions:
 env:
   BUN_VERSION: latest
   VAULT_ADDR: https://secret-store.chrisvouga.dev
+  TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
   type-check:
@@ -30,8 +32,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
+
       - name: Type check
-        run: bun run type-check:once
+        run: bunx turbo run type-check:once
 
   circular-deps:
     name: Circular Dependency Check
@@ -49,8 +64,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
+
       - name: Check for circular dependencies
-        run: bun run circular
+        run: bunx turbo run circular
 
   test:
     name: Test
@@ -89,7 +117,10 @@ jobs:
           role: github-actions
           jwtGithubAudience: https://secret-store.chrisvouga.dev
           secrets: |
-            secret/data/personal/dev OPENAI_API_KEY | OPENAI_API_KEY
+            secret/data/personal/dev OPENAI_API_KEY | OPENAI_API_KEY ;
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
 
       - name: Run tests
         env:
@@ -98,7 +129,7 @@ jobs:
           S3_SECRET_KEY: minioadmin
           S3_BUCKET: test-bucket
           S3_REGION: us-east-1
-        run: bun run test
+        run: bunx turbo run test
 
       - name: Stop MinIO
         if: always()
@@ -132,6 +163,19 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://secret-store.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
+
       - name: Get Playwright version
         id: playwright-version
         run: echo "version=$(bun pm ls @playwright/test | grep @playwright/test | awk '{print $2}')" >> $GITHUB_OUTPUT
@@ -156,7 +200,7 @@ jobs:
           S3_SECRET_KEY: minioadmin
           S3_BUCKET: test-bucket
           S3_REGION: us-east-1
-        run: bun run e2e
+        run: bunx turbo run e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -174,7 +218,9 @@ jobs:
     name: Migrate Production Database
     runs-on: ubuntu-latest
     needs: [type-check, circular-deps, test, test-e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -209,7 +255,9 @@ jobs:
     name: Deploy to Fly
     runs-on: ubuntu-latest
     needs: [migrate-production]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
