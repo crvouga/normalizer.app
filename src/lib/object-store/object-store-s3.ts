@@ -7,7 +7,7 @@ import { parseAndValidateURL } from '../url';
 import { enforceKeyPrefix } from './object-key';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
-import { generateServerPresignedUrl, isLoopbackHost } from './presigned-url';
+import { generateServerPresignedUrl } from './presigned-url';
 
 /**
  * S3 implementation of ObjectStore using Bun's S3Client and MinioClient.
@@ -372,11 +372,11 @@ export class S3ObjectStore extends ObjectStore {
   }
 
   /**
-   * True when MinIO is loopback-only and the app server should proxy presigned
-   * URLs through `/api/objects/...` so external clients can reach them.
+   * True when presigned URLs should go through the app server's `/api/objects/...`
+   * proxy so browsers upload/download same-origin (avoids remote S3 CORS setup).
    */
   private shouldProxyPresign(): boolean {
-    return this.serverBaseUrl !== undefined && isLoopbackHost(this.s3Endpoint);
+    return this.serverBaseUrl !== undefined;
   }
 
   async presignMany(

@@ -79,7 +79,7 @@ describe('S3ObjectStore proxy presign', () => {
     }
   });
 
-  test('non-loopback endpoint keeps direct S3 presign behavior', async () => {
+  test('non-loopback endpoint with serverBaseUrl proxies through the app server', async () => {
     const store = new S3ObjectStore({
       s3Endpoint: 'https://s3.example.com',
       s3AccessKeyId,
@@ -93,8 +93,8 @@ describe('S3ObjectStore proxy presign', () => {
     const info = await store.getEndpointInfo();
     expect(isOk(info)).toBe(true);
     if (isOk(info)) {
-      expect(info.value.baseUrl).toBe('https://s3.example.com');
-      expect(info.value.useHTTPS).toBe(true);
+      expect(info.value.baseUrl).toBe(serverBaseUrl);
+      expect(info.value.useHTTPS).toBe(false);
     }
 
     const presign = await store.presign({
@@ -104,7 +104,9 @@ describe('S3ObjectStore proxy presign', () => {
       expiresIn: 60,
     });
     if (isOk(presign)) {
-      expect(new URL(presign.value).origin).not.toBe(serverBaseUrl);
+      const url = new URL(presign.value);
+      expect(url.origin).toBe(serverBaseUrl);
+      expect(url.pathname.startsWith('/api/objects/')).toBe(true);
     }
   });
 
