@@ -23,7 +23,12 @@ interface TableCellProps {
   dense?: boolean;
 }
 
-const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title, dense = false }) => {
+const TableCell: React.FC<TableCellProps> = ({
+  children,
+  isHeader = false,
+  title,
+  dense = false,
+}) => {
   // If children is a React element (not a string), render it directly
   if (
     React.isValidElement(children) ||

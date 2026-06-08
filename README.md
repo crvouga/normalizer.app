@@ -85,14 +85,14 @@ CI on push to `main` or manual **Run workflow** dispatch:
 
 Add these keys to `secret/personal/prd` (no manual `flyctl` steps):
 
-| Key | Purpose |
-| --- | ------- |
-| `TURBO_API` | Self-hosted Turborepo remote cache server URL |
-| `TURBO_TOKEN` | Auth token for the remote cache |
-| `TURBO_TEAM` | Team slug for the remote cache |
-| `FLY_API_TOKEN` | CI authentication with Fly.io |
-| `VAULT_TOKEN` | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
-| `CLOUDFLARE_API_TOKEN` | DNS edit access for the `normalizer.app` zone |
+| Key                    | Purpose                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURBO_API`            | Self-hosted Turborepo remote cache server URL                                                                                                |
+| `TURBO_TOKEN`          | Auth token for the remote cache                                                                                                              |
+| `TURBO_TEAM`           | Team slug for the remote cache                                                                                                               |
+| `FLY_API_TOKEN`        | CI authentication with Fly.io                                                                                                                |
+| `VAULT_TOKEN`          | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
+| `CLOUDFLARE_API_TOKEN` | DNS edit access for the `normalizer.app` zone                                                                                                |
 
 ## Google OAuth (optional)
 

@@ -15,11 +15,7 @@ function QueryHeader(props: { query?: string; queryLabel: I18nText; compact?: bo
   return (
     <div className="flex flex-col gap-0.5">
       <Typography variant="xs" color="muted" weight="medium" as="p" text={props.queryLabel} />
-      <SqlCodeBlock
-        sql={props.query}
-        dense
-        {...(props.compact ? { compact: true } : {})}
-      />
+      <SqlCodeBlock sql={props.query} dense {...(props.compact ? { compact: true } : {})} />
     </div>
   );
 }
