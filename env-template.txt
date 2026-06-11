@@ -1,4 +1,6 @@
 NODE_ENV=development
+PORT=8080
+SERVER_BASE_URL=http://localhost:8080
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 
 # MinIO/S3 Configuration
@@ -19,3 +21,6 @@ MINIO_SERVER_URL=http://localhost:9000
 
 # OpenAI API Key
 # OPENAI_API_KEY=
+
+# Presigned object-store URL signing (production — set via Vault on chrisvouga.dev)
+# OBJECT_STORE_PRESIGNED_URL_SECRET=

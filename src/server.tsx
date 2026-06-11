@@ -60,11 +60,7 @@ async function checkObjectStore(objectStore: ObjectStore): Promise<ComponentStat
   }
 }
 
-/**
- * Continuously pings the database so a stale loopback connection is logged
- * (and counted as unhealthy by /health) even when the server is idle. This
- * is the early-warning system for the Fly suspend/resume class of bug.
- */
+/** Continuously pings the database so stale connections surface in logs and /health. */
 function startDbHeartbeat(db: Db, logger: Logger): () => void {
   let lastOk: boolean | null = null;
   const tick = async () => {
@@ -99,9 +95,6 @@ async function main() {
     node_env: process.env.NODE_ENV ?? 'development',
     server_base_url: process.env.SERVER_BASE_URL ?? '(unset, falling back to localhost)',
     port: process.env.PORT ?? '8080',
-    fly_app: process.env.FLY_APP_NAME,
-    fly_region: process.env.FLY_REGION,
-    fly_machine_id: process.env.FLY_MACHINE_ID,
   });
 
   await generateSparklesSvg({ logger });
@@ -142,10 +135,6 @@ async function main() {
       ...trpcEndpoints,
 
       async '/health'() {
-        // Cheap; intended for Fly's [[http_service.checks]]. Probes the
-        // database only -- if that's stale the whole machine is broken,
-        // so Fly should replace it instead of letting requests hang for
-        // minutes on a TCP keepalive timeout.
         const start = Date.now();
         const dbStatus = await checkDb(db);
         if (!dbStatus.ok) {
@@ -186,7 +175,6 @@ async function main() {
               bun_version: Bun.version,
               pid: process.pid,
               node_env: process.env.NODE_ENV ?? null,
-              fly_machine_id: process.env.FLY_MACHINE_ID ?? null,
             },
             components: {
               db: dbStatus,

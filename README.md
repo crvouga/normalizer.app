@@ -67,3 +67,11 @@ GOOGLE_CLIENT_SECRET=your_client_secret_here
 The redirect URI is automatically derived from your application's domain. Make sure to add all domains (dev, staging, production) to Google's Authorized redirect URIs list in the format: `https://yourdomain.com/api/auth/google/callback`
 
 If these credentials are not configured, the app will gracefully degrade and show "Authentication not configured" in the user menu.
+
+## Deployment
+
+Production runs on [chrisvouga.dev](https://github.com/crvouga/chrisvouga.dev): the server and worker are stateless containers; Postgres and S3 are external with credentials in Vault.
+
+- **Publish images**: push to `main` runs [`.github/workflows/publish-image.yml`](.github/workflows/publish-image.yml) (builds `ghcr.io/crvouga/chrisvouga-normalizer` and `chrisvouga-normalizer-worker`).
+- **CI**: [`.github/workflows/deployment-pipeline.yml`](.github/workflows/deployment-pipeline.yml) (tests + production DB migrations via GitHub `DATABASE_URL` secret).
+- **Public URL**: `https://normalizer.chrisvouga.dev` (`normalizer.app` redirects there).

@@ -1,0 +1,36 @@
+name: Publish image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - infra/**
+      - src/**
+      - package.json
+      - bun.lock
+      - bunfig.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  normalizer:
+    uses: crvouga/chrisvouga.dev/.github/workflows/reusable-publish-image.yml@main
+    secrets:
+      DEPLOY_DISPATCH_TOKEN: ${{ secrets.DEPLOY_DISPATCH_TOKEN }}
+    with:
+      service_id: normalizer
+      dockerfile: infra/server.Dockerfile
+      context: .
+
+  normalizer_worker:
+    uses: crvouga/chrisvouga.dev/.github/workflows/reusable-publish-image.yml@main
+    secrets:
+      DEPLOY_DISPATCH_TOKEN: ${{ secrets.DEPLOY_DISPATCH_TOKEN }}
+    with:
+      service_id: normalizer-worker
+      dockerfile: infra/worker.Dockerfile
+      context: .
