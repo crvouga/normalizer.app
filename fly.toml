@@ -2,7 +2,7 @@ app = "normalizer-app"
 primary_region = "sjc"
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "infra/server.Dockerfile"
 
 [env]
   NODE_ENV = "production"
