@@ -1,0 +1,1 @@
+ALTER TABLE "normalizer_app"."normalization_logs" ADD COLUMN "kind" text DEFAULT 'progress' NOT NULL;

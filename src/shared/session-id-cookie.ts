@@ -8,14 +8,17 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 // Uses 'Strict' for maximum security - session ID is passed through OAuth state during OAuth flow
 // This prevents the cookie from being sent on any cross-site request, including OAuth redirects
 // The session ID is stored in the OAuth state (server-side) and retrieved in the callback
-const SESSION_COOKIE_OPTIONS: CookieOptions = {
-  httpOnly: true, // Prevent JS access
-  secure: true, // Always require HTTPS
-  path: '/', // Whole origin
-  sameSite: 'Strict', // Never send cross-origin - session ID passed through OAuth state instead
-  maxAge: COOKIE_MAX_AGE,
-  // No domain: restricts to current host
-};
+function sessionCookieOptions(): CookieOptions {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    // Browsers omit Secure cookies on http:// dev servers; allow local HTTP in non-production.
+    secure: isProduction,
+    path: '/',
+    sameSite: 'Strict',
+    maxAge: COOKIE_MAX_AGE,
+  };
+}
 
 /**
  * Get session ID from request cookies, or generate a new one
@@ -40,6 +43,6 @@ export function setSessionCookie(
   sessionId: SessionId,
 ): Response {
   // Always overwrite - do not allow fixation via not-set
-  const result = setCookie(response, SESSION_COOKIE_NAME, sessionId, SESSION_COOKIE_OPTIONS);
+  const result = setCookie(response, SESSION_COOKIE_NAME, sessionId, sessionCookieOptions());
   return result;
 }

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { rmSync } from 'fs';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
@@ -79,7 +80,9 @@ describe.each(implementations)(
           allObjects.push(obj);
         }
         if (allObjects.length > 0) {
-          await store.deleteMany(allObjects.map((obj) => ({ bucket: testBucket, key: obj.key })));
+          await store.deleteMany(
+            allObjects.map((obj) => ({ bucket: testBucket, key: k(obj.key) })),
+          );
         }
       } catch (error) {
         // Ignore cleanup errors - bucket might be empty or not exist
@@ -88,7 +91,7 @@ describe.each(implementations)(
 
     // READ TESTS
     test('read: returns error for non-existent object', async () => {
-      const result = await store.read({ bucket: testBucket, key: 'non-existent-key' });
+      const result = await store.read({ bucket: testBucket, key: k('non-existent-key') });
       expect(isOk(result)).toBe(false);
       if (!isOk(result)) {
         expect(result.error).toBeDefined();
@@ -100,12 +103,12 @@ describe.each(implementations)(
       const testData = Buffer.from('Hello, World!');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(testData);
@@ -117,12 +120,12 @@ describe.each(implementations)(
       const testData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(testData);
@@ -134,12 +137,12 @@ describe.each(implementations)(
       const testData = Buffer.alloc(0);
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'emptyKey',
+        key: k('emptyKey'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'emptyKey' });
+      const readResult = await store.read({ bucket: testBucket, key: k('emptyKey') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(testData);
@@ -151,12 +154,12 @@ describe.each(implementations)(
       const testData = Buffer.alloc(1024 * 1024, 0x42); // 1MB of 0x42
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value.length).toBe(1024 * 1024);
@@ -167,7 +170,7 @@ describe.each(implementations)(
 
     // READSTREAM TESTS
     test('readStream: returns error for non-existent object', async () => {
-      const result = await store.readStream({ bucket: testBucket, key: 'non-existent-key' });
+      const result = await store.readStream({ bucket: testBucket, key: k('non-existent-key') });
       expect(isOk(result)).toBe(false);
       if (!isOk(result)) {
         expect(result.error).toBeDefined();
@@ -179,12 +182,12 @@ describe.each(implementations)(
       const testData = Buffer.from('Hello, World!');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      const streamResult = await store.readStream({ bucket: testBucket, key: k('key1') });
       expect(isOk(streamResult)).toBe(true);
       if (isOk(streamResult)) {
         const stream = streamResult.value;
@@ -211,12 +214,12 @@ describe.each(implementations)(
       const testData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      const streamResult = await store.readStream({ bucket: testBucket, key: k('key1') });
       expect(isOk(streamResult)).toBe(true);
       if (isOk(streamResult)) {
         const stream = streamResult.value;
@@ -243,12 +246,12 @@ describe.each(implementations)(
       const testData = Buffer.alloc(0);
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'emptyKey',
+        key: k('emptyKey'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const streamResult = await store.readStream({ bucket: testBucket, key: 'emptyKey' });
+      const streamResult = await store.readStream({ bucket: testBucket, key: k('emptyKey') });
       expect(isOk(streamResult)).toBe(true);
       if (isOk(streamResult)) {
         const stream = streamResult.value;
@@ -275,12 +278,12 @@ describe.each(implementations)(
       const testData = Buffer.alloc(1024 * 1024, 0x42); // 1MB of 0x42
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      const streamResult = await store.readStream({ bucket: testBucket, key: k('key1') });
       expect(isOk(streamResult)).toBe(true);
       if (isOk(streamResult)) {
         const stream = streamResult.value;
@@ -309,17 +312,17 @@ describe.each(implementations)(
       const testData = Buffer.from('test data for comparison');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
       // Read using read method
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
 
       // Read using readStream method
-      const streamResult = await store.readStream({ bucket: testBucket, key: 'key1' });
+      const streamResult = await store.readStream({ bucket: testBucket, key: k('key1') });
       expect(isOk(streamResult)).toBe(true);
 
       if (isOk(readResult) && isOk(streamResult)) {
@@ -348,12 +351,12 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const result = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(result)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(testData);
@@ -364,7 +367,7 @@ describe.each(implementations)(
       const initialData = Buffer.from('initial');
       const writeResult1 = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: initialData,
       });
       expect(isOk(writeResult1)).toBe(true);
@@ -372,12 +375,12 @@ describe.each(implementations)(
       const updatedData = Buffer.from('updated');
       const writeResult2 = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: updatedData,
       });
       expect(isOk(writeResult2)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(updatedData);
@@ -389,13 +392,13 @@ describe.each(implementations)(
       const testData = Buffer.from('{"key": "value"}');
       const result = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
         contentType: getContentType('json'),
       });
       expect(isOk(result)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value).toEqual(testData);
@@ -406,12 +409,12 @@ describe.each(implementations)(
       const testData = Buffer.alloc(0);
       const result = await store.write({
         bucket: testBucket,
-        key: 'emptyKey',
+        key: k('emptyKey'),
         data: testData,
       });
       expect(isOk(result)).toBe(true);
 
-      const readResult = await store.read({ bucket: testBucket, key: 'emptyKey' });
+      const readResult = await store.read({ bucket: testBucket, key: k('emptyKey') });
       expect(isOk(readResult)).toBe(true);
       if (isOk(readResult)) {
         expect(readResult.value.length).toBe(0);
@@ -429,14 +432,15 @@ describe.each(implementations)(
       ];
 
       for (const key of specialKeys) {
+        const prefixedKey = k(key);
         const writeResult = await store.write({
           bucket: testBucket,
-          key,
+          key: prefixedKey,
           data: testData,
         });
         expect(isOk(writeResult)).toBe(true);
 
-        const readResult = await store.read({ bucket: testBucket, key });
+        const readResult = await store.read({ bucket: testBucket, key: prefixedKey });
         expect(isOk(readResult)).toBe(true);
         if (isOk(readResult)) {
           expect(readResult.value).toEqual(testData);
@@ -446,7 +450,7 @@ describe.each(implementations)(
 
     // EXISTS TESTS
     test('exists: returns false for non-existent object', async () => {
-      const result = await store.exists({ bucket: testBucket, key: 'non-existent-key' });
+      const result = await store.exists({ bucket: testBucket, key: k('non-existent-key') });
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toBe(false);
@@ -457,12 +461,12 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const existsResult = await store.exists({ bucket: testBucket, key: 'key1' });
+      const existsResult = await store.exists({ bucket: testBucket, key: k('key1') });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -473,15 +477,15 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const deleteResult = await store.delete({ bucket: testBucket, key: 'key1' });
+      const deleteResult = await store.delete({ bucket: testBucket, key: k('key1') });
       expect(isOk(deleteResult)).toBe(true);
 
-      const existsResult = await store.exists({ bucket: testBucket, key: 'key1' });
+      const existsResult = await store.exists({ bucket: testBucket, key: k('key1') });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(false);
@@ -493,15 +497,15 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
-      const deleteResult = await store.delete({ bucket: testBucket, key: 'key1' });
+      const deleteResult = await store.delete({ bucket: testBucket, key: k('key1') });
       expect(isOk(deleteResult)).toBe(true);
 
-      const existsResult = await store.exists({ bucket: testBucket, key: 'key1' });
+      const existsResult = await store.exists({ bucket: testBucket, key: k('key1') });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(false);
@@ -509,7 +513,7 @@ describe.each(implementations)(
     });
 
     test('delete: succeeds when deleting non-existent object', async () => {
-      const result = await store.delete({ bucket: testBucket, key: 'non-existent-key' });
+      const result = await store.delete({ bucket: testBucket, key: k('non-existent-key') });
       expect(isOk(result)).toBe(true);
     });
 
@@ -518,16 +522,16 @@ describe.each(implementations)(
       const testData2 = Buffer.from('data2');
       const testData3 = Buffer.from('data3');
 
-      await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
-      await store.write({ bucket: testBucket, key: 'key3', data: testData3 });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData1 });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData2 });
+      await store.write({ bucket: testBucket, key: k('key3'), data: testData3 });
 
-      const deleteResult = await store.delete({ bucket: testBucket, key: 'key1' });
+      const deleteResult = await store.delete({ bucket: testBucket, key: k('key1') });
       expect(isOk(deleteResult)).toBe(true);
 
-      const exists1 = await store.exists({ bucket: testBucket, key: 'key1' });
-      const exists2 = await store.exists({ bucket: testBucket, key: 'key2' });
-      const exists3 = await store.exists({ bucket: testBucket, key: 'key3' });
+      const exists1 = await store.exists({ bucket: testBucket, key: k('key1') });
+      const exists2 = await store.exists({ bucket: testBucket, key: k('key2') });
+      const exists3 = await store.exists({ bucket: testBucket, key: k('key3') });
 
       if (isOk(exists1)) expect(exists1.value).toBe(false);
       if (isOk(exists2)) expect(exists2.value).toBe(true);
@@ -540,20 +544,20 @@ describe.each(implementations)(
       const testData1 = Buffer.from('initial data');
       const writeResult1 = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData1,
       });
       expect(isOk(writeResult1)).toBe(true);
 
       // Verify it exists
-      const existsResult1 = await store.exists({ bucket: testBucket, key: 'key1' });
+      const existsResult1 = await store.exists({ bucket: testBucket, key: k('key1') });
       expect(isOk(existsResult1)).toBe(true);
       if (isOk(existsResult1)) {
         expect(existsResult1.value).toBe(true);
       }
 
       // Read it
-      const readResult1 = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult1 = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult1)).toBe(true);
       if (isOk(readResult1)) {
         expect(readResult1.value).toEqual(testData1);
@@ -563,31 +567,31 @@ describe.each(implementations)(
       const testData2 = Buffer.from('updated data');
       const writeResult2 = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData2,
       });
       expect(isOk(writeResult2)).toBe(true);
 
       // Read updated data
-      const readResult2 = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult2 = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult2)).toBe(true);
       if (isOk(readResult2)) {
         expect(readResult2.value).toEqual(testData2);
       }
 
       // Delete it
-      const deleteResult = await store.delete({ bucket: testBucket, key: 'key1' });
+      const deleteResult = await store.delete({ bucket: testBucket, key: k('key1') });
       expect(isOk(deleteResult)).toBe(true);
 
       // Verify it no longer exists
-      const existsResult2 = await store.exists({ bucket: testBucket, key: 'key1' });
+      const existsResult2 = await store.exists({ bucket: testBucket, key: k('key1') });
       expect(isOk(existsResult2)).toBe(true);
       if (isOk(existsResult2)) {
         expect(existsResult2.value).toBe(false);
       }
 
       // Verify read fails
-      const readResult3 = await store.read({ bucket: testBucket, key: 'key1' });
+      const readResult3 = await store.read({ bucket: testBucket, key: k('key1') });
       expect(isOk(readResult3)).toBe(false);
     });
 
@@ -607,14 +611,14 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const writeResult = await store.write({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         data: testData,
       });
       expect(isOk(writeResult)).toBe(true);
 
       const presignResult = await store.presign({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         method: 'GET',
         expiresIn: 3600,
       });
@@ -629,7 +633,7 @@ describe.each(implementations)(
     test('presign: generates presigned PUT URL', async () => {
       const presignResult = await store.presign({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         method: 'PUT',
         expiresIn: 3600,
       });
@@ -644,7 +648,7 @@ describe.each(implementations)(
     test('presign: useHTTPS converts http:// to https:// when true', async () => {
       const presignResult = await store.presign({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         method: 'GET',
         expiresIn: 3600,
         useHTTPS: true,
@@ -661,7 +665,7 @@ describe.each(implementations)(
     test('presign: useHTTPS does not affect URL when false or undefined', async () => {
       const presignResultWithoutFlag = await store.presign({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         method: 'GET',
         expiresIn: 3600,
       });
@@ -669,7 +673,7 @@ describe.each(implementations)(
 
       const presignResultWithFalse = await store.presign({
         bucket: testBucket,
-        key: 'key1',
+        key: k('key1'),
         method: 'GET',
         expiresIn: 3600,
         useHTTPS: false,
@@ -697,14 +701,14 @@ describe.each(implementations)(
       const testData2 = Buffer.from('data2');
       const testData3 = Buffer.from('data3');
 
-      await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
-      await store.write({ bucket: testBucket, key: 'key3', data: testData3 });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData1 });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData2 });
+      await store.write({ bucket: testBucket, key: k('key3'), data: testData3 });
 
       const result = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -714,22 +718,22 @@ describe.each(implementations)(
         expect(result.value[1]?.data).toEqual(testData2);
         expect(result.value[2]?.data).toEqual(testData3);
         expect(result.value[0]?.bucket).toBe(testBucket);
-        expect(result.value[0]?.key).toBe('key1');
+        expect(String(result.value[0]?.key)).toBe(String(k('key1')));
         expect(result.value[1]?.bucket).toBe(testBucket);
-        expect(result.value[1]?.key).toBe('key2');
+        expect(String(result.value[1]?.key)).toBe(String(k('key2')));
         expect(result.value[2]?.bucket).toBe(testBucket);
-        expect(result.value[2]?.key).toBe('key3');
+        expect(String(result.value[2]?.key)).toBe(String(k('key3')));
       }
     });
 
     test('readMany: returns null data for non-existent objects', async () => {
       const testData = Buffer.from('data1');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
 
       const result = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'non-existent-key' },
-        { bucket: testBucket, key: 'non-existent' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('non-existent-key') },
+        { bucket: testBucket, key: k('non-existent') },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -746,26 +750,26 @@ describe.each(implementations)(
       const testData2 = Buffer.from('data2');
       const testData3 = Buffer.from('data3');
 
-      await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
-      await store.write({ bucket: testBucket, key: 'key3', data: testData3 });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData1 });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData2 });
+      await store.write({ bucket: testBucket, key: k('key3'), data: testData3 });
 
       // Request in different order
       const result = await store.readMany([
-        { bucket: testBucket, key: 'key3' },
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key3') },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toHaveLength(3);
         // Results should be in the same order as input
-        expect(result.value[0]?.key).toBe('key3');
+        expect(String(result.value[0]?.key)).toBe(String(k('key3')));
         expect(result.value[0]?.data).toEqual(testData3);
-        expect(result.value[1]?.key).toBe('key1');
+        expect(String(result.value[1]?.key)).toBe(String(k('key1')));
         expect(result.value[1]?.data).toEqual(testData1);
-        expect(result.value[2]?.key).toBe('key2');
+        expect(String(result.value[2]?.key)).toBe(String(k('key2')));
         expect(result.value[2]?.data).toEqual(testData2);
       }
     });
@@ -774,12 +778,12 @@ describe.each(implementations)(
       const testData1 = Buffer.from([0x00, 0x01, 0x02]);
       const testData2 = Buffer.from([0xff, 0xfe, 0xfd]);
 
-      await store.write({ bucket: testBucket, key: 'key1', data: testData1 });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData2 });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData1 });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData2 });
 
       const result = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -806,24 +810,24 @@ describe.each(implementations)(
       const testData3 = Buffer.from('data3');
 
       const result = await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: testData1 },
-        { bucket: testBucket, key: 'key2', data: testData2 },
-        { bucket: testBucket, key: 'key3', data: testData3 },
+        { bucket: testBucket, key: k('key1'), data: testData1 },
+        { bucket: testBucket, key: k('key2'), data: testData2 },
+        { bucket: testBucket, key: k('key3'), data: testData3 },
       ]);
 
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toHaveLength(3);
-        expect(result.value[0]).toEqual({ bucket: testBucket, key: 'key1' });
-        expect(result.value[1]).toEqual({ bucket: testBucket, key: 'key2' });
-        expect(result.value[2]).toEqual({ bucket: testBucket, key: 'key3' });
+        expect(result.value[0]).toEqual({ bucket: testBucket, key: k('key1') });
+        expect(result.value[1]).toEqual({ bucket: testBucket, key: k('key2') });
+        expect(result.value[2]).toEqual({ bucket: testBucket, key: k('key3') });
       }
 
       // Verify all objects were written
       const readResult = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(readResult)).toBe(true);
@@ -840,18 +844,18 @@ describe.each(implementations)(
       const testData3 = Buffer.from('data3');
 
       const result = await store.writeMany([
-        { bucket: testBucket, key: 'key3', data: testData3 },
-        { bucket: testBucket, key: 'key1', data: testData1 },
-        { bucket: testBucket, key: 'key2', data: testData2 },
+        { bucket: testBucket, key: k('key3'), data: testData3 },
+        { bucket: testBucket, key: k('key1'), data: testData1 },
+        { bucket: testBucket, key: k('key2'), data: testData2 },
       ]);
 
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toHaveLength(3);
         // Results should be in the same order as input
-        expect(result.value[0]).toEqual({ bucket: testBucket, key: 'key3' });
-        expect(result.value[1]).toEqual({ bucket: testBucket, key: 'key1' });
-        expect(result.value[2]).toEqual({ bucket: testBucket, key: 'key2' });
+        expect(result.value[0]).toEqual({ bucket: testBucket, key: k('key3') });
+        expect(result.value[1]).toEqual({ bucket: testBucket, key: k('key1') });
+        expect(result.value[2]).toEqual({ bucket: testBucket, key: k('key2') });
       }
     });
 
@@ -861,11 +865,11 @@ describe.each(implementations)(
       const binaryData = Buffer.from([0x00, 0x01, 0x02]);
 
       const result = await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: jsonData, contentType: getContentType('json') },
-        { bucket: testBucket, key: 'key2', data: textData, contentType: 'text/plain' },
+        { bucket: testBucket, key: k('key1'), data: jsonData, contentType: getContentType('json') },
+        { bucket: testBucket, key: k('key2'), data: textData, contentType: 'text/plain' },
         {
           bucket: testBucket,
-          key: 'key3',
+          key: k('key3'),
           data: binaryData,
           contentType: 'application/octet-stream',
         },
@@ -878,9 +882,9 @@ describe.each(implementations)(
 
       // Verify all objects were written correctly
       const readResult = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(readResult)).toBe(true);
@@ -896,24 +900,24 @@ describe.each(implementations)(
       const initialData2 = Buffer.from('initial2');
 
       await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: initialData1 },
-        { bucket: testBucket, key: 'key2', data: initialData2 },
+        { bucket: testBucket, key: k('key1'), data: initialData1 },
+        { bucket: testBucket, key: k('key2'), data: initialData2 },
       ]);
 
       const updatedData1 = Buffer.from('updated1');
       const updatedData2 = Buffer.from('updated2');
 
       const result = await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: updatedData1 },
-        { bucket: testBucket, key: 'key2', data: updatedData2 },
+        { bucket: testBucket, key: k('key1'), data: updatedData1 },
+        { bucket: testBucket, key: k('key2'), data: updatedData2 },
       ]);
 
       expect(isOk(result)).toBe(true);
 
       // Verify objects were overwritten
       const readResult = await store.readMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(readResult)).toBe(true);
@@ -934,14 +938,14 @@ describe.each(implementations)(
 
     test('existsMany: checks existence of multiple objects', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData });
 
       const result = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'non-existent-key' },
-        { bucket: testBucket, key: 'non-existent' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('non-existent-key') },
+        { bucket: testBucket, key: k('non-existent') },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -952,47 +956,47 @@ describe.each(implementations)(
         expect(result.value[2]?.exists).toBe(false);
         expect(result.value[3]?.exists).toBe(false);
         expect(result.value[0]?.bucket).toBe(testBucket);
-        expect(result.value[0]?.key).toBe('key1');
+        expect(String(result.value[0]?.key)).toBe(String(k('key1')));
         expect(result.value[1]?.bucket).toBe(testBucket);
-        expect(result.value[1]?.key).toBe('key2');
+        expect(String(result.value[1]?.key)).toBe(String(k('key2')));
       }
     });
 
     test('existsMany: preserves order of input locations', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData });
 
       const result = await store.existsMany([
-        { bucket: testBucket, key: 'non-existent' },
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'non-existent-key' },
+        { bucket: testBucket, key: k('non-existent') },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('non-existent-key') },
       ]);
 
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toHaveLength(4);
         // Results should be in the same order as input
-        expect(result.value[0]?.key).toBe('non-existent');
+        expect(String(result.value[0]?.key)).toBe(String(k('non-existent')));
         expect(result.value[0]?.exists).toBe(false);
-        expect(result.value[1]?.key).toBe('key1');
+        expect(String(result.value[1]?.key)).toBe(String(k('key1')));
         expect(result.value[1]?.exists).toBe(true);
-        expect(result.value[2]?.key).toBe('key2');
+        expect(String(result.value[2]?.key)).toBe(String(k('key2')));
         expect(result.value[2]?.exists).toBe(true);
-        expect(result.value[3]?.key).toBe('non-existent-key');
+        expect(String(result.value[3]?.key)).toBe(String(k('non-existent-key')));
         expect(result.value[3]?.exists).toBe(false);
       }
     });
 
     test('existsMany: returns false after deletion', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData });
 
       const existsBefore = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(existsBefore)).toBe(true);
@@ -1002,13 +1006,13 @@ describe.each(implementations)(
       }
 
       await store.deleteMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       const existsAfter = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(existsAfter)).toBe(true);
@@ -1030,24 +1034,24 @@ describe.each(implementations)(
       const testData3 = Buffer.from('data3');
 
       await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: testData1 },
-        { bucket: testBucket, key: 'key2', data: testData2 },
-        { bucket: testBucket, key: 'key3', data: testData3 },
+        { bucket: testBucket, key: k('key1'), data: testData1 },
+        { bucket: testBucket, key: k('key2'), data: testData2 },
+        { bucket: testBucket, key: k('key3'), data: testData3 },
       ]);
 
       const deleteResult = await store.deleteMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(deleteResult)).toBe(true);
 
       // Verify all objects were deleted
       const existsResult = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(existsResult)).toBe(true);
@@ -1060,30 +1064,30 @@ describe.each(implementations)(
 
     test('deleteMany: succeeds when deleting non-existent objects', async () => {
       const result = await store.deleteMany([
-        { bucket: testBucket, key: 'non-existent-key' },
-        { bucket: testBucket, key: 'non-existent' },
+        { bucket: testBucket, key: k('non-existent-key') },
+        { bucket: testBucket, key: k('non-existent') },
       ]);
       expect(isOk(result)).toBe(true);
     });
 
     test('deleteMany: handles mix of existing and non-existent objects', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData });
 
       const deleteResult = await store.deleteMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'non-existent-key' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'non-existent' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('non-existent-key') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('non-existent') },
       ]);
 
       expect(isOk(deleteResult)).toBe(true);
 
       // Verify existing objects were deleted
       const existsResult = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
       ]);
 
       expect(isOk(existsResult)).toBe(true);
@@ -1099,19 +1103,19 @@ describe.each(implementations)(
       const testData3 = Buffer.from('data3');
 
       await store.writeMany([
-        { bucket: testBucket, key: 'key1', data: testData1 },
-        { bucket: testBucket, key: 'key2', data: testData2 },
-        { bucket: testBucket, key: 'key3', data: testData3 },
+        { bucket: testBucket, key: k('key1'), data: testData1 },
+        { bucket: testBucket, key: k('key2'), data: testData2 },
+        { bucket: testBucket, key: k('key3'), data: testData3 },
       ]);
 
-      const deleteResult = await store.deleteMany([{ bucket: testBucket, key: 'key1' }]);
+      const deleteResult = await store.deleteMany([{ bucket: testBucket, key: k('key1') }]);
 
       expect(isOk(deleteResult)).toBe(true);
 
       const existsResult = await store.existsMany([
-        { bucket: testBucket, key: 'key1' },
-        { bucket: testBucket, key: 'key2' },
-        { bucket: testBucket, key: 'key3' },
+        { bucket: testBucket, key: k('key1') },
+        { bucket: testBucket, key: k('key2') },
+        { bucket: testBucket, key: k('key3') },
       ]);
 
       expect(isOk(existsResult)).toBe(true);
@@ -1133,12 +1137,12 @@ describe.each(implementations)(
 
     test('presignMany: generates presigned URLs for multiple objects', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'key1', data: testData });
-      await store.write({ bucket: testBucket, key: 'key2', data: testData });
+      await store.write({ bucket: testBucket, key: k('key1'), data: testData });
+      await store.write({ bucket: testBucket, key: k('key2'), data: testData });
 
       const result = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600 },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -1148,37 +1152,37 @@ describe.each(implementations)(
         expect(typeof result.value[0]?.url).toBe('string');
         expect(result.value[0]?.url).toMatch(/^https?:\/\/.+/);
         expect(result.value[0]?.bucket).toBe(testBucket);
-        expect(result.value[0]?.key).toBe('key1');
+        expect(String(result.value[0]?.key)).toBe(String(k('key1')));
         expect(result.value[1]?.url).toBeDefined();
         expect(typeof result.value[1]?.url).toBe('string');
         expect(result.value[1]?.url).toMatch(/^https?:\/\/.+/);
         expect(result.value[1]?.bucket).toBe(testBucket);
-        expect(result.value[1]?.key).toBe('key2');
+        expect(String(result.value[1]?.key)).toBe(String(k('key2')));
       }
     });
 
     test('presignMany: preserves order of input entries', async () => {
       const result = await store.presignMany([
-        { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key3'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600 },
       ]);
 
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         expect(result.value).toHaveLength(3);
         // Results should be in the same order as input
-        expect(result.value[0]?.key).toBe('key3');
-        expect(result.value[1]?.key).toBe('key1');
-        expect(result.value[2]?.key).toBe('key2');
+        expect(String(result.value[0]?.key)).toBe(String(k('key3')));
+        expect(String(result.value[1]?.key)).toBe(String(k('key1')));
+        expect(String(result.value[2]?.key)).toBe(String(k('key2')));
       }
     });
 
     test('presignMany: handles mix of GET and PUT methods', async () => {
       const result = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key2', method: 'PUT', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key2'), method: 'PUT', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key3'), method: 'GET', expiresIn: 3600 },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -1192,8 +1196,8 @@ describe.each(implementations)(
 
     test('presignMany: useHTTPS converts http:// to https:// when true', async () => {
       const result = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600, useHTTPS: true },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600, useHTTPS: true },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600, useHTTPS: true },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600, useHTTPS: true },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -1206,13 +1210,13 @@ describe.each(implementations)(
 
     test('presignMany: useHTTPS does not affect URL when false or undefined', async () => {
       const resultWithoutFlag = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600 },
       ]);
 
       const resultWithFalse = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 3600, useHTTPS: false },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600, useHTTPS: false },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 3600, useHTTPS: false },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600, useHTTPS: false },
       ]);
 
       expect(isOk(resultWithoutFlag)).toBe(true);
@@ -1229,9 +1233,9 @@ describe.each(implementations)(
 
     test('presignMany: handles different expiration times', async () => {
       const result = await store.presignMany([
-        { bucket: testBucket, key: 'key1', method: 'GET', expiresIn: 60 },
-        { bucket: testBucket, key: 'key2', method: 'GET', expiresIn: 3600 },
-        { bucket: testBucket, key: 'key3', method: 'GET', expiresIn: 86400 },
+        { bucket: testBucket, key: k('key1'), method: 'GET', expiresIn: 60 },
+        { bucket: testBucket, key: k('key2'), method: 'GET', expiresIn: 3600 },
+        { bucket: testBucket, key: k('key3'), method: 'GET', expiresIn: 86400 },
       ]);
 
       expect(isOk(result)).toBe(true);
@@ -1257,9 +1261,9 @@ describe.each(implementations)(
     test('listObjects: lists all objects without prefix', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'file1.txt', data: testData },
-        { bucket: testBucket, key: 'file2.txt', data: testData },
-        { bucket: testBucket, key: 'dir/file3.txt', data: testData },
+        { bucket: testBucket, key: k('file1.txt'), data: testData },
+        { bucket: testBucket, key: k('file2.txt'), data: testData },
+        { bucket: testBucket, key: k('dir/file3.txt'), data: testData },
       ]);
 
       const result = await store.listObjects(testBucket);
@@ -1267,7 +1271,7 @@ describe.each(implementations)(
       if (isOk(result)) {
         expect(result.value.objects).toHaveLength(3);
         const keys = result.value.objects.map((obj) => obj.key).sort();
-        expect(keys).toEqual(['dir/file3.txt', 'file1.txt', 'file2.txt']);
+        expect(keys).toEqual([k('dir/file3.txt'), k('file1.txt'), k('file2.txt')].sort());
 
         // Verify all objects have required metadata
         for (const obj of result.value.objects) {
@@ -1285,10 +1289,10 @@ describe.each(implementations)(
     test('listObjects: lists objects with prefix filter', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'docs/readme.txt', data: testData },
-        { bucket: testBucket, key: 'docs/guide.txt', data: testData },
-        { bucket: testBucket, key: 'images/logo.png', data: testData },
-        { bucket: testBucket, key: 'config.json', data: testData },
+        { bucket: testBucket, key: k('docs/readme.txt'), data: testData },
+        { bucket: testBucket, key: k('docs/guide.txt'), data: testData },
+        { bucket: testBucket, key: k('images/logo.png'), data: testData },
+        { bucket: testBucket, key: k('config.json'), data: testData },
       ]);
 
       const result = await store.listObjects(testBucket, { prefix: 'docs/' });
@@ -1296,13 +1300,13 @@ describe.each(implementations)(
       if (isOk(result)) {
         expect(result.value.objects).toHaveLength(2);
         const keys = result.value.objects.map((obj) => obj.key).sort();
-        expect(keys).toEqual(['docs/guide.txt', 'docs/readme.txt']);
+        expect(keys).toEqual([k('docs/guide.txt'), k('docs/readme.txt')].sort());
       }
     });
 
     test('listObjects: returns empty array for non-matching prefix', async () => {
       const testData = Buffer.from('test data');
-      await store.write({ bucket: testBucket, key: 'file.txt', data: testData });
+      await store.write({ bucket: testBucket, key: k('file.txt'), data: testData });
 
       const result = await store.listObjects(testBucket, { prefix: 'nonexistent/' });
       expect(isOk(result)).toBe(true);
@@ -1315,11 +1319,11 @@ describe.each(implementations)(
     test('listObjects: respects maxKeys parameter', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'file1.txt', data: testData },
-        { bucket: testBucket, key: 'file2.txt', data: testData },
-        { bucket: testBucket, key: 'file3.txt', data: testData },
-        { bucket: testBucket, key: 'file4.txt', data: testData },
-        { bucket: testBucket, key: 'file5.txt', data: testData },
+        { bucket: testBucket, key: k('file1.txt'), data: testData },
+        { bucket: testBucket, key: k('file2.txt'), data: testData },
+        { bucket: testBucket, key: k('file3.txt'), data: testData },
+        { bucket: testBucket, key: k('file4.txt'), data: testData },
+        { bucket: testBucket, key: k('file5.txt'), data: testData },
       ]);
 
       const result = await store.listObjects(testBucket, { maxKeys: 3 });
@@ -1337,11 +1341,11 @@ describe.each(implementations)(
     test('listObjects: handles pagination with continuationToken', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'file1.txt', data: testData },
-        { bucket: testBucket, key: 'file2.txt', data: testData },
-        { bucket: testBucket, key: 'file3.txt', data: testData },
-        { bucket: testBucket, key: 'file4.txt', data: testData },
-        { bucket: testBucket, key: 'file5.txt', data: testData },
+        { bucket: testBucket, key: k('file1.txt'), data: testData },
+        { bucket: testBucket, key: k('file2.txt'), data: testData },
+        { bucket: testBucket, key: k('file3.txt'), data: testData },
+        { bucket: testBucket, key: k('file4.txt'), data: testData },
+        { bucket: testBucket, key: k('file5.txt'), data: testData },
       ]);
 
       // Get first page
@@ -1374,24 +1378,24 @@ describe.each(implementations)(
     test('listObjects: delimiter returns common prefixes', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'root.txt', data: testData },
-        { bucket: testBucket, key: 'docs/file1.txt', data: testData },
-        { bucket: testBucket, key: 'docs/file2.txt', data: testData },
-        { bucket: testBucket, key: 'images/logo.png', data: testData },
-        { bucket: testBucket, key: 'images/banner.png', data: testData },
+        { bucket: testBucket, key: k('root.txt'), data: testData },
+        { bucket: testBucket, key: k('docs/file1.txt'), data: testData },
+        { bucket: testBucket, key: k('docs/file2.txt'), data: testData },
+        { bucket: testBucket, key: k('images/logo.png'), data: testData },
+        { bucket: testBucket, key: k('images/banner.png'), data: testData },
       ]);
 
       const result = await store.listObjects(testBucket, { delimiter: '/' });
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
         // Should return root.txt as object and docs/, images/ as common prefixes
-        const rootObjects = result.value.objects.filter((obj) => !obj.key.includes('/'));
+        const rootObjects = result.value.objects.filter((obj) => obj.key === k('root.txt'));
         expect(rootObjects.length).toBeGreaterThan(0);
 
         if (result.value.commonPrefixes) {
           expect(result.value.commonPrefixes.length).toBeGreaterThan(0);
-          expect(result.value.commonPrefixes).toContain('docs/');
-          expect(result.value.commonPrefixes).toContain('images/');
+          expect(result.value.commonPrefixes).toContain(k('docs/'));
+          expect(result.value.commonPrefixes).toContain(k('images/'));
         }
       }
     });
@@ -1401,15 +1405,15 @@ describe.each(implementations)(
       const largeData = Buffer.alloc(1024 * 10); // 10KB
 
       await store.writeMany([
-        { bucket: testBucket, key: 'small.txt', data: smallData },
-        { bucket: testBucket, key: 'large.txt', data: largeData },
+        { bucket: testBucket, key: k('small.txt'), data: smallData },
+        { bucket: testBucket, key: k('large.txt'), data: largeData },
       ]);
 
       const result = await store.listObjects(testBucket);
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        const smallObj = result.value.objects.find((obj) => obj.key === 'small.txt');
-        const largeObj = result.value.objects.find((obj) => obj.key === 'large.txt');
+        const smallObj = result.value.objects.find((obj) => obj.key === k('small.txt'));
+        const largeObj = result.value.objects.find((obj) => obj.key === k('large.txt'));
 
         expect(smallObj).toBeDefined();
         expect(largeObj).toBeDefined();
@@ -1425,14 +1429,14 @@ describe.each(implementations)(
       const testData = Buffer.from('test data');
       const beforeWrite = new Date();
 
-      await store.write({ bucket: testBucket, key: 'test.txt', data: testData });
+      await store.write({ bucket: testBucket, key: k('test.txt'), data: testData });
 
       const afterWrite = new Date();
 
       const result = await store.listObjects(testBucket);
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        const obj = result.value.objects.find((o) => o.key === 'test.txt');
+        const obj = result.value.objects.find((o) => o.key === k('test.txt'));
         expect(obj).toBeDefined();
 
         if (obj) {
@@ -1456,9 +1460,9 @@ describe.each(implementations)(
     test('listAllObjects: iterates through all objects without prefix', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'file1.txt', data: testData },
-        { bucket: testBucket, key: 'file2.txt', data: testData },
-        { bucket: testBucket, key: 'file3.txt', data: testData },
+        { bucket: testBucket, key: k('file1.txt'), data: testData },
+        { bucket: testBucket, key: k('file2.txt'), data: testData },
+        { bucket: testBucket, key: k('file3.txt'), data: testData },
       ]);
 
       const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
@@ -1469,7 +1473,7 @@ describe.each(implementations)(
 
       expect(objects).toHaveLength(3);
       const keys = objects.map((obj) => obj.key).sort();
-      expect(keys).toEqual(['file1.txt', 'file2.txt', 'file3.txt']);
+      expect(keys).toEqual([k('file1.txt'), k('file2.txt'), k('file3.txt')].sort());
 
       // Verify all objects have required metadata
       for (const obj of objects) {
@@ -1482,10 +1486,10 @@ describe.each(implementations)(
     test('listAllObjects: iterates through objects with prefix filter', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'docs/file1.txt', data: testData },
-        { bucket: testBucket, key: 'docs/file2.txt', data: testData },
-        { bucket: testBucket, key: 'images/logo.png', data: testData },
-        { bucket: testBucket, key: 'config.json', data: testData },
+        { bucket: testBucket, key: k('docs/file1.txt'), data: testData },
+        { bucket: testBucket, key: k('docs/file2.txt'), data: testData },
+        { bucket: testBucket, key: k('images/logo.png'), data: testData },
+        { bucket: testBucket, key: k('config.json'), data: testData },
       ]);
 
       const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
@@ -1496,7 +1500,7 @@ describe.each(implementations)(
 
       expect(objects).toHaveLength(2);
       const keys = objects.map((obj) => obj.key).sort();
-      expect(keys).toEqual(['docs/file1.txt', 'docs/file2.txt']);
+      expect(keys).toEqual([k('docs/file1.txt'), k('docs/file2.txt')].sort());
     });
 
     test('listAllObjects: handles pagination automatically', async () => {
@@ -1507,7 +1511,7 @@ describe.each(implementations)(
       for (let i = 1; i <= fileCount; i++) {
         writes.push({
           bucket: testBucket,
-          key: `file${i.toString().padStart(2, '0')}.txt`,
+          key: k(`file${i.toString().padStart(2, '0')}.txt`),
           data: testData,
         });
       }
@@ -1532,9 +1536,9 @@ describe.each(implementations)(
     test('listAllObjects: can be broken early', async () => {
       const testData = Buffer.from('test data');
       await store.writeMany([
-        { bucket: testBucket, key: 'file1.txt', data: testData },
-        { bucket: testBucket, key: 'file2.txt', data: testData },
-        { bucket: testBucket, key: 'file3.txt', data: testData },
+        { bucket: testBucket, key: k('file1.txt'), data: testData },
+        { bucket: testBucket, key: k('file2.txt'), data: testData },
+        { bucket: testBucket, key: k('file3.txt'), data: testData },
       ]);
 
       const objects: Array<{ key: string; size: number; lastModified: Date }> = [];
@@ -1573,19 +1577,19 @@ describe.each(implementations)(
       const testData = Buffer.from('original data');
       await store.write({
         bucket: testBucket,
-        key: 'source.txt',
+        key: k('source.txt'),
         data: testData,
       });
 
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: 'source.txt' },
-        { bucket: testBucket, key: 'copy.txt' },
+        { bucket: testBucket, key: k('source.txt') },
+        { bucket: testBucket, key: k('copy.txt') },
       );
       expect(isOk(copyResult)).toBe(true);
 
       // Verify both source and destination exist
-      const sourceExists = await store.exists({ bucket: testBucket, key: 'source.txt' });
-      const destExists = await store.exists({ bucket: testBucket, key: 'copy.txt' });
+      const sourceExists = await store.exists({ bucket: testBucket, key: k('source.txt') });
+      const destExists = await store.exists({ bucket: testBucket, key: k('copy.txt') });
 
       expect(isOk(sourceExists)).toBe(true);
       expect(isOk(destExists)).toBe(true);
@@ -1596,7 +1600,7 @@ describe.each(implementations)(
       }
 
       // Verify destination has same data as source
-      const destRead = await store.read({ bucket: testBucket, key: 'copy.txt' });
+      const destRead = await store.read({ bucket: testBucket, key: k('copy.txt') });
       expect(isOk(destRead)).toBe(true);
       if (isOk(destRead)) {
         expect(destRead.value).toEqual(testData);
@@ -1607,17 +1611,17 @@ describe.each(implementations)(
       const testData = Buffer.from('original data');
       await store.write({
         bucket: testBucket,
-        key: 'source.txt',
+        key: k('source.txt'),
         data: testData,
       });
 
       await store.copyObject(
-        { bucket: testBucket, key: 'source.txt' },
-        { bucket: testBucket, key: 'copy.txt' },
+        { bucket: testBucket, key: k('source.txt') },
+        { bucket: testBucket, key: k('copy.txt') },
       );
 
       // Verify source still has original data
-      const sourceRead = await store.read({ bucket: testBucket, key: 'source.txt' });
+      const sourceRead = await store.read({ bucket: testBucket, key: k('source.txt') });
       expect(isOk(sourceRead)).toBe(true);
       if (isOk(sourceRead)) {
         expect(sourceRead.value).toEqual(testData);
@@ -1628,17 +1632,17 @@ describe.each(implementations)(
       const sourceData = Buffer.from('source data');
       const oldDestData = Buffer.from('old destination data');
 
-      await store.write({ bucket: testBucket, key: 'source.txt', data: sourceData });
-      await store.write({ bucket: testBucket, key: 'dest.txt', data: oldDestData });
+      await store.write({ bucket: testBucket, key: k('source.txt'), data: sourceData });
+      await store.write({ bucket: testBucket, key: k('dest.txt'), data: oldDestData });
 
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: 'source.txt' },
-        { bucket: testBucket, key: 'dest.txt' },
+        { bucket: testBucket, key: k('source.txt') },
+        { bucket: testBucket, key: k('dest.txt') },
       );
       expect(isOk(copyResult)).toBe(true);
 
       // Verify destination now has source data
-      const destRead = await store.read({ bucket: testBucket, key: 'dest.txt' });
+      const destRead = await store.read({ bucket: testBucket, key: k('dest.txt') });
       expect(isOk(destRead)).toBe(true);
       if (isOk(destRead)) {
         expect(destRead.value).toEqual(sourceData);
@@ -1648,8 +1652,8 @@ describe.each(implementations)(
 
     test('copyObject: returns error for non-existent source', async () => {
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: 'non-existent.txt' },
-        { bucket: testBucket, key: 'dest.txt' },
+        { bucket: testBucket, key: k('non-existent.txt') },
+        { bucket: testBucket, key: k('dest.txt') },
       );
       expect(isOk(copyResult)).toBe(false);
       if (!isOk(copyResult)) {
@@ -1662,18 +1666,18 @@ describe.each(implementations)(
       const binaryData = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
       await store.write({
         bucket: testBucket,
-        key: 'binary.bin',
+        key: k('binary.bin'),
         data: binaryData,
       });
 
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: 'binary.bin' },
-        { bucket: testBucket, key: 'binary-copy.bin' },
+        { bucket: testBucket, key: k('binary.bin') },
+        { bucket: testBucket, key: k('binary-copy.bin') },
       );
       expect(isOk(copyResult)).toBe(true);
 
       // Verify copy has exact same binary data
-      const copyRead = await store.read({ bucket: testBucket, key: 'binary-copy.bin' });
+      const copyRead = await store.read({ bucket: testBucket, key: k('binary-copy.bin') });
       expect(isOk(copyRead)).toBe(true);
       if (isOk(copyRead)) {
         expect(copyRead.value).toEqual(binaryData);
@@ -1685,17 +1689,17 @@ describe.each(implementations)(
       const emptyData = Buffer.alloc(0);
       await store.write({
         bucket: testBucket,
-        key: 'empty.txt',
+        key: k('empty.txt'),
         data: emptyData,
       });
 
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: 'empty.txt' },
-        { bucket: testBucket, key: 'empty-copy.txt' },
+        { bucket: testBucket, key: k('empty.txt') },
+        { bucket: testBucket, key: k('empty-copy.txt') },
       );
       expect(isOk(copyResult)).toBe(true);
 
-      const copyRead = await store.read({ bucket: testBucket, key: 'empty-copy.txt' });
+      const copyRead = await store.read({ bucket: testBucket, key: k('empty-copy.txt') });
       expect(isOk(copyRead)).toBe(true);
       if (isOk(copyRead)) {
         expect(copyRead.value.length).toBe(0);
@@ -1708,19 +1712,19 @@ describe.each(implementations)(
 
       await store.write({
         bucket: testBucket,
-        key: specialKey,
+        key: k(specialKey),
         data: testData,
       });
 
       const copyResult = await store.copyObject(
-        { bucket: testBucket, key: specialKey },
-        { bucket: testBucket, key: 'path/to/copy with spaces.txt' },
+        { bucket: testBucket, key: k(specialKey) },
+        { bucket: testBucket, key: k('path/to/copy with spaces.txt') },
       );
       expect(isOk(copyResult)).toBe(true);
 
       const copyRead = await store.read({
         bucket: testBucket,
-        key: 'path/to/copy with spaces.txt',
+        key: k('path/to/copy with spaces.txt'),
       });
       expect(isOk(copyRead)).toBe(true);
       if (isOk(copyRead)) {

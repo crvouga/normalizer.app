@@ -16,6 +16,26 @@ const colors = {
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
+const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+};
+
+const parseLogLevel = (value: string | undefined): LogLevel => {
+  if (value === 'error' || value === 'warn' || value === 'info' || value === 'debug') {
+    return value;
+  }
+  return 'info';
+};
+
+const configuredLogLevel = parseLogLevel(process.env.LOG_LEVEL);
+
+const shouldLog = (level: LogLevel): boolean => {
+  return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[configuredLogLevel];
+};
+
 const toLogLevelDisplay = (level: LogLevel): string => {
   switch (level) {
     case 'error':
@@ -71,6 +91,13 @@ const buildChildConfig = (
   };
 };
 
+const makeLogFn = (level: LogLevel, write: (message: string) => void, name: string | undefined) => {
+  return (message: string, meta?: Record<string, unknown>) => {
+    if (!shouldLog(level)) return;
+    write(formatMessage(level, name, message, meta));
+  };
+};
+
 export const createLogger = (config?: { noop?: boolean; name?: string }): Logger => {
   if (config?.noop) {
     return {
@@ -83,17 +110,9 @@ export const createLogger = (config?: { noop?: boolean; name?: string }): Logger
   }
   return {
     child: (name: string) => createLogger(buildChildConfig(config, name)),
-    error: (message: string, meta?: Record<string, unknown>) => {
-      console.error(formatMessage('error', config?.name, message, meta));
-    },
-    warn: (message: string, meta?: Record<string, unknown>) => {
-      console.warn(formatMessage('warn', config?.name, message, meta));
-    },
-    info: (message: string, meta?: Record<string, unknown>) => {
-      console.info(formatMessage('info', config?.name, message, meta));
-    },
-    debug: (message: string, meta?: Record<string, unknown>) => {
-      console.debug(formatMessage('debug', config?.name, message, meta));
-    },
+    error: makeLogFn('error', console.error, config?.name),
+    warn: makeLogFn('warn', console.warn, config?.name),
+    info: makeLogFn('info', console.info, config?.name),
+    debug: makeLogFn('debug', console.debug, config?.name),
   };
 };

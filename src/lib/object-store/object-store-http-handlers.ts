@@ -1,6 +1,7 @@
 import type { ObjectStore } from './object-store';
 import type { Logger } from '../logger';
 import { isOk } from '../result';
+import { enforceKeyPrefix } from './object-key';
 import { verifyServerPresignedSignature } from './presigned-url';
 
 /**
@@ -75,8 +76,8 @@ export class ObjectStoreHttpHandlers {
         return new Response('Invalid presigned URL: signature mismatch', { status: 403 });
       }
 
-      // Read the object from the store
-      const result = await this.objectStore.read({ bucket, key });
+      const prefixedKey = enforceKeyPrefix(key);
+      const result = await this.objectStore.read({ bucket, key: prefixedKey });
 
       if (!isOk(result)) {
         this.logger.warn('Object not found in store', {
@@ -189,10 +190,10 @@ export class ObjectStoreHttpHandlers {
       // Get content type from request headers
       const contentType = req.headers.get('content-type') || 'application/octet-stream';
 
-      // Write the object to the store
+      const prefixedKey = enforceKeyPrefix(key);
       const result = await this.objectStore.write({
         bucket,
-        key,
+        key: prefixedKey,
         data,
         contentType,
       });

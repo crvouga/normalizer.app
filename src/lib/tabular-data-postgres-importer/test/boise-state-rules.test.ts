@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { readFileSync } from 'fs';
 import {
   BOISE_RULES_FILE_NAME,
@@ -56,7 +57,7 @@ describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
       // Import using optimized streaming path
       const result = await importer.import({
         bucket: TEST_BUCKET,
-        key: testKey,
+        key: k(testKey),
         viewName: tableName,
       });
       expect(isOk(result)).toBe(true);
@@ -99,7 +100,7 @@ describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
       }
 
       // Cleanup
-      await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
     },
     { timeout: TIMEOUT },
   );

@@ -1,5 +1,7 @@
+import type { PrefixedObjectKey } from './object-key';
+
 export type ObjectLocation = {
-  key: string;
+  key: PrefixedObjectKey;
   bucket: string;
 };
 
@@ -14,7 +16,7 @@ const decode = (encoded: string): ObjectLocation | null => {
   if (!bucket || !key) {
     return null;
   }
-  return { bucket, key };
+  return { bucket, key: key as PrefixedObjectKey };
 };
 
 export const ObjectLocation = {

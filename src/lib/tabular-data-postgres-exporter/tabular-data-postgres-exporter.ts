@@ -1,5 +1,6 @@
 import { Csv } from '../csv/csv';
 import type { Logger } from '../logger';
+import { enforceKeyPrefix, objectKey } from '../object-store/object-key';
 import type { ObjectStore } from '../object-store/object-store';
 import { combineUntilError, Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
@@ -182,7 +183,10 @@ export class TabularDataPostgresExporter {
           }
 
           // Write CSV to temporary location for conversion
-          const tempKey = `temp-export-${Date.now()}-${Math.random().toString(36).substring(7)}.csv`;
+          const tempKey = objectKey(
+            'temp-export',
+            `${Date.now()}-${Math.random().toString(36).substring(7)}.csv`,
+          );
           const tempBucket = request.bucket;
 
           const writeResult = await this.objectStore.write({
@@ -249,7 +253,7 @@ export class TabularDataPostgresExporter {
 
       const writeResult = await this.objectStore.write({
         bucket: request.bucket,
-        key: request.key,
+        key: enforceKeyPrefix(request.key),
         data: finalData,
         contentType,
       });

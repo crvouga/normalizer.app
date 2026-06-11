@@ -6,6 +6,7 @@
   "main": "src/server.tsx",
   "module": "src/server.tsx",
   "scripts": {
+    "check": "turbo run format:check type-check:once circular test e2e",
     "check:graphile-worker": "bun run src/lib/check-graphile-worker.ts",
     "cir-deps": "bun run circular",
     "circular": "madge --circular --extensions ts,tsx src",
@@ -17,30 +18,23 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:up": "bun run db:migrate",
-    "docker": "bun docker:down && bun docker:up",
-    "docker:destroy": "docker-compose down -v --remove-orphans",
-    "docker:dev": "COMPOSE_BAKE=true docker-compose up --build",
-    "docker:down": "docker-compose down --remove-orphans",
-    "docker:logs": "docker-compose logs -f server",
-    "docker:prune": "docker system prune -a",
-    "docker:restart": "docker-compose restart",
-    "docker:stop": "docker stop $(docker ps -q)",
-    "docker:up": "COMPOSE_BAKE=true docker-compose up --build -d",
+    "dev": "vault run -- bun run server",
+    "dev:migrate": "vault run -- bun run db:migrate",
     "e2e": "playwright test",
     "e2e:debug": "playwright test --debug",
     "e2e:ui": "playwright test --ui",
     "format": "bun x sort-package-json && bun x prettier --write .",
     "format:check": "bun x prettier --check .",
+    "gh": "open https://github.com/crvouga/normalizer.app/actions",
     "kp": "bun x kill-port 8080",
     "s3:up": "bun run src/db/s3-migrations.ts",
     "server": "bun run --watch src/server.tsx",
     "tc": "bun type-check",
-    "test": "bun test",
+    "test": "bun run scripts/run-tests.ts",
     "test-files:pull": "bun run src/test-files/script-pull.ts",
     "test-files:push": "bun run src/test-files/script-push.ts",
-    "type-check": "tsc --noEmit --watch",
-    "type-check:once": "tsc --noEmit",
-    "worker": "bun run src/worker.tsx"
+    "type-check": "bunx tsc --noEmit --watch",
+    "type-check:once": "bunx tsc --noEmit"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
@@ -59,6 +53,7 @@
     "postgres": "^3.4.7",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-syntax-highlighter": "^16.1.1",
     "tailwindcss": "^4.1.17",
     "xlsx": "^0.18.5",
     "zod": "^3.25.76"
@@ -68,12 +63,20 @@
     "@types/bun": "latest",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "drizzle-kit": "^0.30.6",
+    "embedded-postgres": "17.10.0-beta.17",
     "madge": "^8.0.0",
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "sort-package-json": "^3.5.1"
+    "sort-package-json": "^3.5.1",
+    "turbo": "^2.9.16",
+    "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
+  "packageManager": "bun@1.3.14",
+  "trustedDependencies": [
+    "@embedded-postgres/darwin-arm64",
+    "@embedded-postgres/linux-x64"
+  ]
 }

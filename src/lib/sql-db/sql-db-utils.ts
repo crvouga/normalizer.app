@@ -6,6 +6,17 @@ import { z } from 'zod';
 export const paramsSchema = z.array(z.unknown());
 
 /**
+ * Truncate query strings for logging when they have many parameters or are very long.
+ */
+export function truncateQueryForLog(query: string, paramCount: number): string {
+  if (paramCount > 100 || query.length > 500) {
+    const preview = query.substring(0, 100);
+    return `${preview}... [truncated, ${query.length} chars, ${paramCount} params]`;
+  }
+  return query;
+}
+
+/**
  * Helper to extract row count from execute result
  * For INSERT/UPDATE/DELETE with RETURNING, postgres returns the rows
  * For INSERT/UPDATE/DELETE without RETURNING, postgres returns empty array

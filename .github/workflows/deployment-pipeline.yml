@@ -4,30 +4,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 env:
   BUN_VERSION: latest
+  VAULT_ADDR: https://vault.chrisvouga.dev
+  TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
-  format:
-    name: Format Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: ${{ env.BUN_VERSION }}
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Check formatting
-        run: bun run format:check
-
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
@@ -44,8 +32,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
+
       - name: Type check
-        run: bun run type-check:once
+        run: bunx turbo run type-check:once
 
   circular-deps:
     name: Circular Dependency Check
@@ -63,8 +64,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
+
       - name: Check for circular dependencies
-        run: bun run circular
+        run: bunx turbo run circular
 
   test:
     name: Test
@@ -79,57 +93,47 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Setup environment from template
+      - name: Start MinIO
         run: |
-          cp env-template.txt .env
-          # Override with test-specific bucket name
-          sed -i 's/S3_BUCKET=main/S3_BUCKET=test-bucket/' .env
-          echo "✅ Environment file created from template"
-          cat .env
+          docker run -d --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
 
-      - name: Start services with docker-compose
-        run: docker compose up -d
-
-      - name: Wait for services to be ready
+      - name: Wait for MinIO
         run: |
-          source .env
-          echo "Waiting for PostgreSQL..."
-          timeout 30 bash -c 'until docker compose exec -T db pg_isready -U postgres; do sleep 1; done'
-          echo "✅ PostgreSQL is ready"
-
-          echo "Waiting for MinIO..."
-          MINIO_PORT=$(echo $S3_ENDPOINT | grep -oP ':\K[0-9]+')
-          timeout 30 bash -c "until curl -f ${S3_ENDPOINT}/minio/health/live 2>/dev/null; do sleep 1; done"
-          echo "✅ MinIO is ready"
-
-      - name: Clean node_modules
-        run: rm -rf node_modules || true
+          timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live; do sleep 1; done'
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run database migrations
-        run: |
-          set -a
-          source .env
-          set +a
-          bun run db:migrate
-
-      - name: Migration success
-        run: echo "✅ Database migrations completed successfully"
+      - name: Import secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/dev OPENAI_API_KEY | OPENAI_API_KEY ;
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
 
       - name: Run tests
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          set -a
-          source .env
-          set +a
-          bun test
+          S3_ENDPOINT: http://localhost:9000
+          S3_ACCESS_KEY: minioadmin
+          S3_SECRET_KEY: minioadmin
+          S3_BUCKET: test-bucket
+          S3_REGION: us-east-1
+        run: bunx turbo run test
 
-      - name: Stop services
+      - name: Stop MinIO
         if: always()
-        run: docker compose down -v
+        run: docker rm -f minio || true
 
   test-e2e:
     name: E2E Tests
@@ -144,33 +148,33 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Setup environment from template
+      - name: Start MinIO
         run: |
-          cp env-template.txt .env
-          # Override with test-specific bucket name
-          sed -i 's/S3_BUCKET=main/S3_BUCKET=test-bucket/' .env
-          echo "✅ Environment file created from template"
-          cat .env
+          docker run -d --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
 
-      - name: Start services with docker-compose
-        run: docker compose up -d
-
-      - name: Wait for services to be ready
+      - name: Wait for MinIO
         run: |
-          source .env
-          echo "Waiting for PostgreSQL..."
-          timeout 30 bash -c 'until docker compose exec -T db pg_isready -U postgres; do sleep 1; done'
-          echo "✅ PostgreSQL is ready"
-
-          echo "Waiting for MinIO..."
-          timeout 30 bash -c "until curl -f ${S3_ENDPOINT}/minio/health/live 2>/dev/null; do sleep 1; done"
-          echo "✅ MinIO is ready"
-
-      - name: Clean node_modules
-        run: rm -rf node_modules || true
+          timeout 30 bash -c 'until curl -f http://localhost:9000/minio/health/live; do sleep 1; done'
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Import Turbo secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd TURBO_API | TURBO_API ;
+            secret/data/personal/prd TURBO_TOKEN | TURBO_TOKEN ;
+            secret/data/personal/prd TURBO_TEAM | TURBO_TEAM
 
       - name: Get Playwright version
         id: playwright-version
@@ -189,19 +193,14 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bunx playwright install chromium --with-deps
 
-      - name: Run database migrations
-        run: |
-          set -a
-          source .env
-          set +a
-          bun run db:migrate
-
       - name: Run E2E tests
-        run: |
-          set -a
-          source .env
-          set +a
-          bun run e2e
+        env:
+          S3_ENDPOINT: http://localhost:9000
+          S3_ACCESS_KEY: minioadmin
+          S3_SECRET_KEY: minioadmin
+          S3_BUCKET: test-bucket
+          S3_REGION: us-east-1
+        run: bunx turbo run e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -211,15 +210,17 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: Stop services
+      - name: Stop MinIO
         if: always()
-        run: docker compose down -v
+        run: docker rm -f minio || true
 
   migrate-production:
     name: Migrate Production Database
     runs-on: ubuntu-latest
-    needs: [format, type-check, circular-deps, test, test-e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [type-check, circular-deps, test, test-e2e]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -233,21 +234,54 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Validate DATABASE_URL secret
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "❌ ERROR: DATABASE_URL secret is not set"
-            echo "Please add DATABASE_URL to your GitHub repository secrets"
-            exit 1
-          fi
-          echo "✅ DATABASE_URL secret is configured"
+      - name: Import production secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd DATABASE_URL | DATABASE_URL
 
       - name: Run production database migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: bun run db:migrate
 
       - name: Production migration success
-        run: echo "🚀 Production database migrations completed successfully"
+        run: echo "Production database migrations completed successfully"
+
+  deploy:
+    name: Deploy to Fly
+    runs-on: ubuntu-latest
+    needs: [migrate-production]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Import deploy secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ env.VAULT_ADDR }}
+          method: jwt
+          path: jwt
+          role: github-actions
+          jwtGithubAudience: https://vault.chrisvouga.dev
+          secrets: |
+            secret/data/personal/prd FLY_API_TOKEN | FLY_API_TOKEN ;
+            secret/data/personal/prd VAULT_TOKEN | VAULT_TOKEN ;
+            secret/data/personal/prd CLOUDFLARE_API_TOKEN | CLOUDFLARE_API_TOKEN
+
+      - name: Setup Fly
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Provision and deploy to Fly
+        run: ./scripts/fly-deploy.sh
+        env:
+          FLY_API_TOKEN: ${{ env.FLY_API_TOKEN }}
+          VAULT_TOKEN: ${{ env.VAULT_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}

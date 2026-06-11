@@ -1,3 +1,5 @@
+import { loadVaultSecrets } from '../lib/secrets/load-vault-secrets';
+import { normalizeEnvAliases } from '../lib/secrets/normalize-env-aliases';
 import { createLogger } from '../lib/logger';
 import { runMigrations } from './migrations';
 
@@ -6,6 +8,9 @@ import { runMigrations } from './migrations';
  * Usage: bun run src/db/run-migrations.ts
  */
 const main = async () => {
+  await loadVaultSecrets();
+  normalizeEnvAliases();
+
   const logger = createLogger();
 
   try {

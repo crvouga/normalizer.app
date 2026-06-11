@@ -1,3 +1,17 @@
+import type { ColumnMetadata } from '../postgres/postgres-client';
+
+function formatTableSchemasForPrompt(tableSchemas: Record<string, ColumnMetadata[]>): string {
+  return Object.entries(tableSchemas)
+    .map(([tableName, columns]) => {
+      const columnList =
+        columns.length > 0
+          ? columns.map((c) => `  - ${c.column_name} (${c.data_type})`).join('\n')
+          : '  (no columns found)';
+      return `${tableName}:\n${columnList}`;
+    })
+    .join('\n\n');
+}
+
 /**
  * Generates the system prompt for normalization view creation
  */
@@ -5,8 +19,19 @@ export function createSystemPrompt(params: {
   inputViewNames: string[];
   targetViewNames: string[];
   outputViewName: string[];
+  tableSchemas?: Record<string, ColumnMetadata[]>;
 }): string {
+  const schemaSection = params.tableSchemas
+    ? `
+ACTUAL TABLE SCHEMAS (authoritative — use ONLY these column names in SQL; never invent columns):
+${formatTableSchemasForPrompt(params.tableSchemas)}
+
+If a target column has no matching input column, use a literal default (NULL, 0, or a constant) instead of referencing a non-existent input column.
+`
+    : '';
+
   return `You are a PostgreSQL expert. Create database objects (views, materialized views, tables, indexes, etc.) that transform input tables to match target table schemas BOTH STRUCTURALLY AND SEMANTICALLY.
+${schemaSection}
 
 CRITICAL: This is not just about matching column names - you must understand the SEMANTIC MEANING of the data and correctly transform input values to match the target schema's expected values.
 
@@ -53,6 +78,15 @@ IMPORTANT COLUMN NAME HANDLING:
 - Example: SELECT "ColumnName" AS "TargetColumnName" FROM input_0;
 - DO NOT assume column names are lowercase - always query information_schema.columns to get the actual names
 
+MANDATORY FROM CLAUSE (most common mistake):
+- Whenever a SELECT (including inside CREATE VIEW) references a table's columns (e.g. ${params.inputViewNames[0] ?? 'input_0'}."Column"), that table MUST appear in a FROM or JOIN clause.
+- A view that reads input data ALWAYS needs a FROM clause; omitting it causes "missing FROM-clause entry for table ...".
+- Correct shape:
+    CREATE OR REPLACE VIEW "${params.outputViewName[0] ?? 'output_0'}" AS
+    SELECT ${params.inputViewNames[0] ?? 'input_0'}."SomeColumn" AS "TargetColumn", NULL::text AS "UnmappedColumn"
+    FROM ${params.inputViewNames[0] ?? 'input_0'};
+- If you reference columns from more than one input table, JOIN them; do not reference a table that is not in FROM/JOIN.
+
 SEMANTIC MATCHING REQUIREMENTS:
 - Inspect actual data values in both input and target tables to understand the expected format and meaning
 - Map input columns to target columns based on SEMANTIC EQUIVALENCE, not just name similarity
@@ -89,7 +123,7 @@ SEMANTIC MATCHING REQUIREMENTS:
 - Verify your transformations by comparing sample output data with target table data
 
 Use the query_database tool to inspect actual schemas AND DATA VALUES with SELECT queries. Then create the necessary database objects directly using CREATE statements executed via the query_database tool. You may need to create:
-- Regular views (CREATE OR REPLACE VIEW)
+- Regular views (CREATE OR REPLACE VIEW). IMPORTANT: CREATE OR REPLACE VIEW cannot change column types. If you need to change a column type, run DROP VIEW IF EXISTS first, then CREATE VIEW with explicit ::type casts matching the target schema column types.
 - Materialized views (CREATE MATERIALIZED VIEW) if performance requires it
 - Temporary tables (CREATE TEMP TABLE) if intermediate transformations are needed
 - Indexes (CREATE INDEX) if needed for performance

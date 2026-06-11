@@ -66,30 +66,25 @@ describe('PostgresNotification', () => {
     const channel = 'test_notify_channel';
     const testPayload = 'test-payload-123';
 
-    // Set up a promise to track when the callback is called
     let receivedPayload: string | null = null;
     let callbackCalled = false;
-    const callbackPromise = new Promise<string>((resolve) => {
-      const callback = (payload: string) => {
-        receivedPayload = payload;
-        callbackCalled = true;
-        resolve(payload);
-      };
-      // Start listening with callback
-      notification.listen(channel, callback);
+    let resolveReceived!: (payload: string) => void;
+    const receivedPromise = new Promise<string>((resolve) => {
+      resolveReceived = resolve;
     });
 
-    // Wait a bit to ensure listener is set up
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await notification.listen(channel, (payload) => {
+      receivedPayload = payload;
+      callbackCalled = true;
+      resolveReceived(payload);
+    });
 
-    // Send notification
     await notification.notify(channel, testPayload);
 
-    // Wait for callback to be called (with timeout)
     const received = await Promise.race([
-      callbackPromise,
+      receivedPromise,
       new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error('Callback not called within timeout')), 2000),
+        setTimeout(() => reject(new Error('Callback not called within timeout')), 5000),
       ),
     ]);
 

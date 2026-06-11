@@ -39,7 +39,9 @@
     "esModuleInterop": false,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+
+    "types": ["bun"]
   },
   "include": ["**/*.ts", "**/*.tsx", "prettier.config.mjs"],
   "exclude": ["node_modules"]

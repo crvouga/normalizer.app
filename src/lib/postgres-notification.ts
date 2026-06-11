@@ -46,10 +46,9 @@ export class PostgresNotification {
    */
   async listen(channel: string, callback?: (payload: string) => void): Promise<void> {
     validateChannelName(channel);
-    // Channel name is validated and safe to use as a literal identifier
-    await this.tx.execute(sql.raw(`LISTEN ${channel}`));
 
-    // If a callback is provided, use postgres package's built-in listen method
+    // If a callback is provided, use postgres.js dedicated LISTEN connection.
+    // Must await so NOTIFY is not sent before the listener is ready.
     if (callback) {
       if (!this.sqlConnection) {
         throw new Error(
@@ -64,23 +63,23 @@ export class PostgresNotification {
       }
       this.callbacks.get(channel)!.add(callback);
 
-      // Use postgres package's built-in listen method
-      // The callback will be called when notifications arrive
-      this.sqlConnection.listen(channel, (payload: string) => {
+      await this.sqlConnection.listen(channel, (payload: string) => {
         const callbacks = this.callbacks.get(channel);
         if (callbacks) {
-          // Invoke all callbacks for this channel
           for (const cb of callbacks) {
             try {
               cb(payload);
             } catch (error) {
-              // Log error but don't break other callbacks
               console.error(`Error in notification callback for channel ${channel}:`, error);
             }
           }
         }
       });
+      return;
     }
+
+    // Register LISTEN without a callback handler
+    await this.tx.execute(sql.raw(`LISTEN ${channel}`));
   }
 
   /**

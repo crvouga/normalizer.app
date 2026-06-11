@@ -12,15 +12,23 @@ interface TabularFilePreviewTableProps {
   maxRows?: number;
   maxColumns?: number;
   isLoading?: boolean;
+  dense?: boolean;
+  readOnly?: boolean;
 }
 
 interface TableCellProps {
   children: React.ReactNode;
   isHeader?: boolean;
   title?: string | undefined;
+  dense?: boolean;
 }
 
-const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title }) => {
+const TableCell: React.FC<TableCellProps> = ({
+  children,
+  isHeader = false,
+  title,
+  dense = false,
+}) => {
   // If children is a React element (not a string), render it directly
   if (
     React.isValidElement(children) ||
@@ -30,7 +38,10 @@ const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title
       children !== undefined)
   ) {
     return (
-      <div className="block max-w-[200px] truncate" title={title}>
+      <div
+        className={cn('block truncate', dense ? 'max-w-[120px]' : 'max-w-[200px]')}
+        title={title}
+      >
         {children}
       </div>
     );
@@ -38,14 +49,15 @@ const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title
 
   // Convert string/number to I18nText for Typography
   const text = toI18nText(String(children ?? ''));
+  const variant = dense ? 'xs' : 'sm';
 
   if (isHeader) {
     return (
       <Typography
-        variant="sm"
+        variant={variant}
         weight="medium"
         color="muted"
-        className="block max-w-[200px] truncate"
+        className={cn('block truncate', dense ? 'max-w-[120px]' : 'max-w-[200px]')}
         title={title}
         text={text}
       />
@@ -53,9 +65,9 @@ const TableCell: React.FC<TableCellProps> = ({ children, isHeader = false, title
   }
   return (
     <Typography
-      variant="sm"
+      variant={variant}
       color="primary"
-      className="block max-w-[200px] truncate"
+      className={cn('block truncate', dense ? 'max-w-[120px]' : 'max-w-[200px]')}
       title={title}
       text={text}
     />
@@ -68,6 +80,8 @@ interface TableStructureProps {
   showFooter: boolean;
   footerContent?: React.ReactNode;
   className?: string | undefined;
+  dense?: boolean;
+  readOnly?: boolean;
 }
 
 const TableStructure: React.FC<TableStructureProps> = ({
@@ -76,7 +90,13 @@ const TableStructure: React.FC<TableStructureProps> = ({
   showFooter,
   footerContent,
   className,
+  dense = false,
+  readOnly = false,
 }) => {
+  const cellClass = dense ? 'min-w-[80px] px-2.5 py-1.5' : 'min-w-[200px] p-3';
+  const rowClass = readOnly
+    ? 'border-b border-slate-200 dark:border-slate-700'
+    : 'border-b border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700';
   return (
     <div className={cn('flex flex-col', className)}>
       <div className="overflow-x-auto">
@@ -84,8 +104,12 @@ const TableStructure: React.FC<TableStructureProps> = ({
           <thead>
             <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
               {headers.map((header, index) => (
-                <th key={index} className="min-w-[200px] p-3 text-left whitespace-nowrap">
-                  <TableCell isHeader title={typeof header === 'string' ? header : undefined}>
+                <th key={index} className={cn(cellClass, 'text-left whitespace-nowrap')}>
+                  <TableCell
+                    isHeader
+                    dense={dense}
+                    title={typeof header === 'string' ? header : undefined}
+                  >
                     {typeof header === 'string' ? header : header}
                   </TableCell>
                 </th>
@@ -94,16 +118,16 @@ const TableStructure: React.FC<TableStructureProps> = ({
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className="border-b border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700"
-              >
+              <tr key={rowIndex} className={rowClass}>
                 {headers.map((header, colIndex) => {
                   const headerKey = typeof header === 'string' ? header : `col-${colIndex}`;
                   const cellValue = row[headerKey];
                   return (
-                    <td key={colIndex} className="min-w-[200px] p-3 whitespace-nowrap">
-                      <TableCell title={typeof cellValue === 'string' ? cellValue : undefined}>
+                    <td key={colIndex} className={cn(cellClass, 'whitespace-nowrap')}>
+                      <TableCell
+                        dense={dense}
+                        title={typeof cellValue === 'string' ? cellValue : undefined}
+                      >
                         {typeof cellValue === 'string' ||
                         typeof cellValue === 'number' ||
                         React.isValidElement(cellValue)
@@ -119,7 +143,12 @@ const TableStructure: React.FC<TableStructureProps> = ({
         </table>
       </div>
       {showFooter && (
-        <div className="flex h-10 items-center justify-between border-t border-slate-200 bg-slate-100 px-4 dark:border-slate-700 dark:bg-slate-800">
+        <div
+          className={cn(
+            'flex items-center justify-between border-t border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800',
+            dense ? 'h-8 px-3' : 'h-10 px-4',
+          )}
+        >
           {footerContent}
         </div>
       )}
@@ -133,6 +162,8 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
   maxRows = 10,
   maxColumns = 10,
   isLoading = false,
+  dense = false,
+  readOnly = false,
 }) => {
   const { t } = useI18n();
 
@@ -165,6 +196,8 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
           <span className="inline-block h-3 w-32 animate-pulse rounded bg-slate-300 dark:bg-slate-600" />
         }
         className={className}
+        dense={dense}
+        readOnly={readOnly}
       />
     );
   }
@@ -202,17 +235,21 @@ export const TabularFilePreviewTable: React.FC<TabularFilePreviewTableProps> = (
                   )
             }
           />
-          <CopyToClipboardButton
-            text={() => convertTableToCSV(data)}
-            disabled={!data || data.length === 0}
-            successMessage={t('tabularFilePreview.copyToClipboard')}
-            ariaLabel={String(t('tabularFilePreview.copyToClipboard'))}
-            title={String(t('tabularFilePreview.copyToClipboard'))}
-            className="ml-auto flex items-center gap-1.5 rounded p-1.5 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-          />
+          {readOnly ? null : (
+            <CopyToClipboardButton
+              text={() => convertTableToCSV(data)}
+              disabled={!data || data.length === 0}
+              successMessage={t('tabularFilePreview.copyToClipboard')}
+              ariaLabel={String(t('tabularFilePreview.copyToClipboard'))}
+              title={String(t('tabularFilePreview.copyToClipboard'))}
+              className="ml-auto flex items-center gap-1.5 rounded p-1.5 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            />
+          )}
         </>
       }
       className={className}
+      dense={dense}
+      readOnly={readOnly}
     />
   );
 };

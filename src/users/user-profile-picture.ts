@@ -1,16 +1,12 @@
 import type { ObjectStore } from '../lib/object-store/object-store';
+import { objectKey } from '../lib/object-store/object-key';
 import type { Logger } from '../lib/logger';
 import type { UserId } from './user-id';
 import { isOk } from '../lib/result';
 import { getS3Config } from '../shared/s3-config';
 
-const PROFILE_PICTURES_PREFIX = 'profile-pictures';
-
-/**
- * Generate S3 key for a user's profile picture
- */
-function getProfilePictureS3Key(userId: UserId, extension: string = 'jpg'): string {
-  return `${PROFILE_PICTURES_PREFIX}/${userId}.${extension}`;
+function getProfilePictureS3Key(userId: UserId, extension: string = 'jpg') {
+  return objectKey('profile-pictures', `${userId}.${extension}`);
 }
 
 /**

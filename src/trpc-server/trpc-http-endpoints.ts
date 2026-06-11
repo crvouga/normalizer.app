@@ -19,6 +19,7 @@ export function createTrpcEndpoints({ db, objectStore, logger }: CreateTrpcEndpo
     const traceId = getOrGenerateTraceId(req);
     const requestLogger = logger.child(traceId);
     requestLogger.info(`Received ${method} request`, { url: req.url });
+    let contextSessionId: SessionId | undefined;
     const res = await fetchRequestHandler({
       endpoint: '/api/trpc',
       req,
@@ -30,11 +31,11 @@ export function createTrpcEndpoints({ db, objectStore, logger }: CreateTrpcEndpo
           logger: requestLogger,
           req,
         });
+        contextSessionId = context.sessionId;
         return context;
       },
     });
-    const existingSessionId = getSessionId(req);
-    const sessionId = existingSessionId ?? SessionId.generate();
+    const sessionId = contextSessionId ?? getSessionId(req) ?? SessionId.generate();
     const finalRes = setTraceIdHeader(setSessionCookie(req, res, sessionId), traceId);
     requestLogger.info(`Sent response`, {
       status: finalRes.status,

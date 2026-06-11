@@ -1,7 +1,10 @@
 import { describe, expect, test, beforeAll, afterEach, afterAll } from 'bun:test';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import type postgres from 'postgres';
 import { ArtifactId } from '../artifacts/artifact-id';
+import { createLogger } from '../lib/logger';
+import { createPostgresConnection } from '../shared/postgres-connection';
+import { getTestDatabaseUrl } from '../test/test-database';
 import { UserId } from '../users/user-id';
 import { NormalizationRunId } from '../workspace/normalization-run-id';
 import { WorkspaceEvent } from '../workspace/workspace-event/workspace-event';
@@ -13,13 +16,13 @@ import * as schema from './schema';
 import { migrateWorkspaceEvents } from './migrate-workspace-events';
 
 describe('migrate-workspace-events', () => {
-  const databaseUrl =
-    process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
+  const logger = createLogger({ noop: true });
+  const databaseUrl = getTestDatabaseUrl();
   let postgresConnection: ReturnType<typeof postgres> | null = null;
   let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
   beforeAll(async () => {
-    postgresConnection = postgres(databaseUrl);
+    postgresConnection = await createPostgresConnection({ logger });
     db = drizzle(postgresConnection, { schema });
   });
 

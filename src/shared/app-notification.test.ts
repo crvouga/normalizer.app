@@ -42,32 +42,28 @@ describe('AppNotification', () => {
     const appNotification = new AppNotification(db);
     const sessionId = WorkspaceId.generate();
 
-    // Set up a promise to track when the callback is called
     let receivedPayload: WorkspaceId | null = null;
     let callbackCalled = false;
-    const callbackPromise = new Promise<WorkspaceId>((resolve) => {
-      const callback = (payload: WorkspaceId) => {
-        receivedPayload = payload;
-        callbackCalled = true;
-        resolve(payload);
-      };
-      appNotification.listen('workspace_projection_update', callback);
+    let resolveReceived!: (payload: WorkspaceId) => void;
+    const receivedPromise = new Promise<WorkspaceId>((resolve) => {
+      resolveReceived = resolve;
     });
 
-    // Wait a bit to ensure listener is set up
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await appNotification.listen('workspace_projection_update', (payload) => {
+      receivedPayload = payload;
+      callbackCalled = true;
+      resolveReceived(payload);
+    });
 
-    // Send notification using AppNotification
     await appNotification.notify({
       type: 'workspace_projection_update',
       payload: sessionId,
     });
 
-    // Wait for callback to be called (with timeout)
     const received = await Promise.race([
-      callbackPromise,
+      receivedPromise,
       new Promise<WorkspaceId>((_, reject) =>
-        setTimeout(() => reject(new Error('Callback not called within timeout')), 2000),
+        setTimeout(() => reject(new Error('Callback not called within timeout')), 5000),
       ),
     ]);
 

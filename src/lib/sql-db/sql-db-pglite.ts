@@ -4,7 +4,7 @@ import { handleError } from '../error';
 import type { Logger } from '../logger';
 import { Ok, type Result } from '../result';
 import type { SqlDb, SqlTransaction } from './sql-db';
-import { addReturningIfNeeded, paramsSchema } from './sql-db-utils';
+import { addReturningIfNeeded, paramsSchema, truncateQueryForLog } from './sql-db-utils';
 
 /**
  * Helper to extract rows from PGLite result
@@ -30,19 +30,6 @@ function extractRows(result: unknown): unknown[] {
     }
   }
   return [];
-}
-
-/**
- * Helper to truncate query string for logging when it has many parameters
- * Prevents logging massive queries that can cause performance issues
- */
-function truncateQueryForLog(query: string, paramCount: number): string {
-  // Truncate queries with many parameters or very long queries
-  if (paramCount > 100 || query.length > 500) {
-    const preview = query.substring(0, 100);
-    return `${preview}... [truncated, ${query.length} chars, ${paramCount} params]`;
-  }
-  return query;
 }
 
 /**

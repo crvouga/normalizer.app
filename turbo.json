@@ -1,0 +1,45 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "remoteCache": { "enabled": true },
+  "tasks": {
+    "type-check:once": {
+      "inputs": ["src/**/*.{ts,tsx}", "scripts/**", "tsconfig.json"],
+      "outputs": []
+    },
+    "circular": {
+      "inputs": ["src/**/*.{ts,tsx}"],
+      "outputs": []
+    },
+    "format:check": {
+      "inputs": ["**/*.{ts,tsx,json,md,css,mjs}", "prettier.config.mjs"],
+      "outputs": []
+    },
+    "test": {
+      "inputs": ["src/**", "scripts/**", "bunfig.toml", "tsconfig.json"],
+      "outputs": [],
+      "passThroughEnv": [
+        "S3_ENDPOINT",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "S3_BUCKET",
+        "S3_REGION",
+        "DATABASE_URL"
+      ],
+      "env": ["OPENAI_API_KEY", "NODE_ENV"]
+    },
+    "e2e": {
+      "dependsOn": ["test"],
+      "inputs": ["src/**", "playwright.config.ts", "bunfig.toml", "tsconfig.json"],
+      "outputs": ["playwright-report/**"],
+      "passThroughEnv": [
+        "S3_ENDPOINT",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "S3_BUCKET",
+        "S3_REGION",
+        "DATABASE_URL"
+      ],
+      "env": ["CI", "OPENAI_API_KEY", "NODE_ENV"]
+    }
+  }
+}

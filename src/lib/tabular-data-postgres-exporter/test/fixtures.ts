@@ -1,3 +1,4 @@
+import { asTestKey } from '../../../shared/test-object-key';
 import { createObjectStore } from '../../../shared/s3';
 import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createLogger } from '../../logger';
@@ -76,7 +77,7 @@ export async function readExportedFile(
   bucket: string,
   key: string,
 ): Promise<Buffer> {
-  const result = await objectStore.read({ bucket, key });
+  const result = await objectStore.read({ bucket, key: asTestKey(key) });
   if (!isOk(result)) {
     throw new Error(`Failed to read exported file: ${result.error}`);
   }

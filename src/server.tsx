@@ -1,10 +1,15 @@
+import { loadVaultSecrets } from './lib/secrets/load-vault-secrets';
+import { normalizeEnvAliases } from './lib/secrets/normalize-env-aliases';
 import { serve } from 'bun';
 import { sql } from 'drizzle-orm';
 import { createGoogleAuthEndpoints } from './auth/google-auth/google-auth-http-server/google-auth-http-server-endpoints';
+import { warnGoogleOAuthConfig } from './auth/google-auth/google-oauth-config';
 import clientHtml from './client.html';
 import { assertPortNotUsed } from './lib/assert-port-not-used';
 import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
 import { createLogger, type Logger } from './lib/logger';
+import { onShutdown } from './lib/process/on-shutdown';
+import { startGraphileWorker } from './lib/start-graphile-worker';
 import type { ObjectStore } from './lib/object-store/object-store';
 import { createObjectStoreEndpoints } from './lib/object-store/object-store-http-endpoints';
 import { isOk } from './lib/result';
@@ -87,7 +92,12 @@ function startDbHeartbeat(db: Db, logger: Logger): () => void {
 }
 
 async function main() {
+  await loadVaultSecrets();
+  normalizeEnvAliases();
+
   const logger = createLogger().child('Server');
+
+  warnGoogleOAuthConfig(logger);
 
   logger.info('Process info', {
     bun_version: Bun.version,
@@ -102,6 +112,19 @@ async function main() {
   const db = await createDb({ logger });
 
   await ensureGraphileWorkerSetup({ db, logger });
+
+  // In production the worker runs in its own Fly process group (see fly.toml /
+  // src/worker.tsx) so heavy normalization jobs can't starve the web event loop
+  // and trip the liveness health check. Locally (flag unset) we run it in-process
+  // for convenience.
+  const runInProcessWorker = process.env.DISABLE_IN_PROCESS_WORKER !== 'true';
+  const worker = runInProcessWorker
+    ? await startGraphileWorker({ logger: logger.child('Worker'), db })
+    : null;
+
+  if (!runInProcessWorker) {
+    logger.info('In-process worker disabled (DISABLE_IN_PROCESS_WORKER=true); running web only');
+  }
 
   const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 
@@ -134,7 +157,18 @@ async function main() {
 
       ...trpcEndpoints,
 
+      '/health/live'() {
+        // Liveness probe for Fly [[http_service.checks]]. Process-only —
+        // does not hit Neon/Postgres so a sleeping DB cannot trigger a
+        // machine-replacement loop during deploy or idle periods.
+        return Response.json(
+          { status: 'ok', uptime_s: Math.floor(process.uptime()) },
+          { status: 200, headers: { 'Cache-Control': 'no-store' } },
+        );
+      },
+
       async '/health'() {
+        // Readiness probe: verifies the database connection is usable.
         const start = Date.now();
         const dbStatus = await checkDb(db);
         if (!dbStatus.ok) {
@@ -194,8 +228,12 @@ async function main() {
     idleTimeout: 255,
   });
 
-  process.on('SIGTERM', stopHeartbeat);
-  process.on('SIGINT', stopHeartbeat);
+  onShutdown(logger, async () => {
+    stopHeartbeat();
+    if (worker) {
+      await worker.stop();
+    }
+  });
 
   logger.info(`🚀 Server running at ${server.url}`);
 }

@@ -4,7 +4,7 @@ import { ButtonBase } from './button-base';
 import { toI18nText } from '../i18n/types';
 
 export const SidebarRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <aside className="flex h-full w-sm shrink-0 flex-col border-r border-slate-200 bg-slate-100 text-slate-900 select-none dark:border-slate-800 dark:bg-slate-800 dark:text-white">
+  <aside className="flex h-full w-sm min-w-0 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-slate-100 text-slate-900 select-none dark:border-slate-800 dark:bg-slate-800 dark:text-white">
     {children}
   </aside>
 );

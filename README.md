@@ -1,77 +1,106 @@
 # normalizer.app
 
-## Quick Start
+## Quick Start (local)
 
-### 1. Setup Environment Variables
+### 1. Install the vault CLI wrapper
 
-Copy the environment template to create your local configuration:
-
-```bash
-cp env-template.txt .env
-```
-
-This file contains all necessary configuration for local development, including:
-
-- Database connection settings
-- MinIO/S3 configuration
-- Optional Google OAuth credentials
-
-### 2. Start Docker Services
+One-time per machine — from the [secret-store](https://github.com/crvouga/secret-store) repo:
 
 ```bash
-bun docker
+./scripts/install-cli.sh
+vault login hvs.your-root-token   # or scoped dev token
 ```
 
-This starts PostgreSQL and MinIO services defined in `docker-compose.yml`.
+Requires the [OpenBao/Vault CLI](https://openbao.org/docs/install/) and `jq` on PATH.
 
-### 3. Run Migrations
+### 2. Configure this repo
 
 ```bash
-bun run db:migrate
+vault setup --project personal --config dev
 ```
 
-### 4. Start Development Server
+This writes [`.vault.yaml`](.vault.yaml) (coordinates only, safe to commit).
+
+### 3. Ensure secrets exist in the store
+
+Create `secret/personal/dev` with the keys listed in [`.env.example`](.env.example). See that file for required variable names.
+
+### 4. Run migrations and start the app
 
 ```bash
-bun run server
+bun install
+vault run -- bun run db:migrate
+vault run -- bun run server    # or: bun run dev
 ```
 
-The app will be available at `http://localhost:8080`.
+The HTTP server and background worker run in a single process at `http://localhost:8080`.
 
-## Environment Variables
+### 5. Run checks (with remote cache)
 
-All environment configuration is stored in `env-template.txt` as the single source of truth. Both local development and CI/CD pipelines use this template.
-
-**Important**: The `.env` file is git-ignored. Always update `env-template.txt` when adding new environment variables so that all developers and CI have the same configuration.
-
-### Google OAuth (Optional)
-
-Google OAuth authentication is optional. The app works perfectly without it, showing anonymous users by default.
-
-To enable Google Sign-In:
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google+ API or Google Identity Services
-4. Create OAuth 2.0 credentials (Web application):
-   - **Authorized JavaScript origins**: `http://localhost:8080`, `https://yourdomain.com`
-   - **Authorized redirect URIs**: `http://localhost:8080/api/auth/google/callback`
-5. Add these environment variables to your `.env` file:
+Checks run through [Turborepo](https://turbo.build) with a self-hosted remote cache. Turbo creds (`TURBO_API`, `TURBO_TOKEN`, `TURBO_TEAM`) are loaded from Vault:
 
 ```bash
-# Google OAuth Credentials (optional)
-GOOGLE_CLIENT_ID=your_client_id_here
-GOOGLE_CLIENT_SECRET=your_client_secret_here
+vault run -- bun run check
 ```
 
-The redirect URI is automatically derived from your application's domain. Make sure to add all domains (dev, staging, production) to Google's Authorized redirect URIs list in the format: `https://yourdomain.com/api/auth/google/callback`
+Individual tasks can also be run directly:
 
-If these credentials are not configured, the app will gracefully degrade and show "Authentication not configured" in the user menu.
+```bash
+vault run -- bunx turbo run type-check:once
+vault run -- bunx turbo run test
+```
+
+## Architecture
+
+- **App**: one Fly.io machine (`normalizer-app`) serves `https://www.normalizer.app` and runs graphile-worker in-process; `normalizer.app` redirects to www via Cloudflare
+- **Database**: shared Postgres; all tables live in schema `normalizer_app` (never `public`)
+- **Object storage**: Backblaze B2 (S3-compatible); all keys are prefixed `normalizer-app/`
+- **Secrets**: self-hosted OpenBao at `https://vault.chrisvouga.dev`
+
+## Secrets workflow
+
+| Context     | How secrets are loaded                                                     |
+| ----------- | -------------------------------------------------------------------------- |
+| Local dev   | `vault run -- <command>` reads `secret/personal/dev`                       |
+| CI          | GitHub Actions OIDC → `hashicorp/vault-action` reads `secret/personal/prd` |
+| Fly runtime | `VAULT_TOKEN` + KV v2 HTTP read of `secret/personal/prd` at boot           |
+
+Never commit secret values. [`.env.example`](.env.example) lists names only.
 
 ## Deployment
 
-Production runs on [chrisvouga.dev](https://github.com/crvouga/chrisvouga.dev): the server and worker are stateless containers; Postgres and S3 are external with credentials in Vault.
+CI on push to `main` or manual **Run workflow** dispatch:
 
-- **Publish images**: push to `main` runs [`.github/workflows/publish-image.yml`](.github/workflows/publish-image.yml) (builds `ghcr.io/crvouga/chrisvouga-normalizer` and `chrisvouga-normalizer-worker`).
-- **CI**: [`.github/workflows/deployment-pipeline.yml`](.github/workflows/deployment-pipeline.yml) (tests + production DB migrations via GitHub `DATABASE_URL` secret).
-- **Public URL**: `https://normalizer.chrisvouga.dev` (`normalizer.app` redirects there).
+1. Runs checks via Turborepo with self-hosted remote caching (type-check, circular deps, unit tests, e2e)
+2. Migrates production DB via Vault OIDC (`DATABASE_URL` from `secret/personal/prd`)
+3. Provisions and deploys to Fly via [`scripts/fly-deploy.sh`](scripts/fly-deploy.sh):
+   - creates the Fly app if missing
+   - allocates public IPs
+   - syncs `VAULT_TOKEN` to Fly secrets
+   - requests TLS certs for `www.normalizer.app` and `normalizer.app`
+   - upserts Cloudflare DNS: `www` points to Fly (DNS-only); apex is proxied with a 301 redirect to www
+   - deploys with `flyctl deploy --remote-only`
+
+### One-time secret-store setup
+
+Add these keys to `secret/personal/prd` (no manual `flyctl` steps):
+
+| Key                    | Purpose                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURBO_API`            | Self-hosted Turborepo remote cache server URL                                                                                                |
+| `TURBO_TOKEN`          | Auth token for the remote cache                                                                                                              |
+| `TURBO_TEAM`           | Team slug for the remote cache                                                                                                               |
+| `FLY_API_TOKEN`        | CI authentication with Fly.io                                                                                                                |
+| `VAULT_TOKEN`          | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
+| `CLOUDFLARE_API_TOKEN` | DNS + redirect rule edit access for the `normalizer.app` zone                                                                                |
+
+## Google OAuth (optional)
+
+1. Create OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)
+2. Add `NORMALIZER_APP_GOOGLE_CLIENT_ID` and `NORMALIZER_APP_GOOGLE_CLIENT_SECRET` to `secret/personal/dev` and `secret/personal/prd`
+3. Authorized redirect URIs:
+   - Production: `https://www.normalizer.app/api/auth/google/callback`
+   - Local dev: `http://localhost:8080/api/auth/google/callback` (must match `SERVER_BASE_URL` in `.env`)
+4. If the app is in **Testing** mode on the OAuth consent screen, add your Google account under **Test users**
+
+Without OAuth credentials the app works with anonymous users. The server logs a startup warning when credentials are missing, partial, or empty.

@@ -14,6 +14,7 @@ import type { Logger } from '../logger';
 import { Err, Ok, type Result } from '../result';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
+import { enforceKeyPrefix, OBJECT_KEY_PREFIX } from './object-key';
 import { generateServerPresignedUrl } from './presigned-url';
 
 /**
@@ -26,20 +27,24 @@ import { generateServerPresignedUrl } from './presigned-url';
 export class FilesystemObjectStore extends ObjectStore {
   private readonly basePath: string;
   private readonly serverBaseUrl: string;
+  private readonly keyPrefix: string;
   private readonly logger: Logger;
 
   constructor({
     basePath,
     serverBaseUrl,
+    keyPrefix = OBJECT_KEY_PREFIX,
     logger,
   }: {
     basePath: string;
     serverBaseUrl: string;
+    keyPrefix?: string;
     logger: Logger;
   }) {
     super();
     this.basePath = resolve(basePath);
     this.serverBaseUrl = serverBaseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.keyPrefix = keyPrefix;
     this.logger = logger.child(FilesystemObjectStore.name);
 
     // Ensure base directory exists
@@ -72,6 +77,13 @@ export class FilesystemObjectStore extends ObjectStore {
     if (!existsSync(dirPath)) {
       mkdirSync(dirPath, { recursive: true });
     }
+  }
+
+  private enforceListPrefix(prefix?: string): string {
+    if (!prefix) {
+      return `${this.keyPrefix}/`;
+    }
+    return enforceKeyPrefix(prefix, this.keyPrefix);
   }
 
   async readMany(
@@ -582,7 +594,7 @@ export class FilesystemObjectStore extends ObjectStore {
         });
       }
 
-      const prefix = options?.prefix ?? '';
+      const prefix = this.enforceListPrefix(options?.prefix);
       const delimiter = options?.delimiter;
       const maxKeys = options?.maxKeys ?? 1000;
       const continuationToken = options?.continuationToken;

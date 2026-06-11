@@ -1,5 +1,5 @@
 import { enumerate } from '~/src/lib/array/enumerate';
-import { createLLMOpenAI, DEFAULT_MODEL } from '~/src/lib/llm/llm-open-ai';
+import { createLLMOpenAIAsync } from '~/src/lib/llm/llm-open-ai';
 import { isErr } from '~/src/lib/result';
 import type { TaskHandler } from '~/src/shared/graphile-worker';
 import { Artifact as ArtifactFactory } from '../../artifacts/artifact';
@@ -11,6 +11,7 @@ import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
 import type { Db, Tx } from '../../shared/db';
 import { createObjectStore } from '../../shared/s3';
+import { enforceKeyPrefix } from '../../lib/object-store/object-key';
 import { getS3Config } from '../../shared/s3-config';
 import type { UserId } from '../../users/user-id';
 import { WorkspaceEventEntity } from '../workspace-event/workspace-event-entity';
@@ -19,6 +20,10 @@ import { WorkspaceId } from '../workspace-id';
 import type { WorkspaceProjection } from '../workspace-projection/workspace-projection';
 import { WorkspaceProjectionDb } from '../workspace-projection/workspace-projection-db';
 import type { WorkspaceProjectionEntry } from '../workspace-projection/workspace-projection-entry';
+import { createNormalizationLogSink } from '../normalization-log/normalization-log-sink';
+import { NormalizationProgressMessages } from '../normalization-log/normalization-progress-messages';
+import { createNormalizationProgressReporter } from '../normalization-log/normalization-progress-reporter';
+import type { NormalizationProgressReporter } from '../normalization-log/normalization-progress-reporter';
 import { toNormalizedFileName } from './normalized-file-name';
 
 /**
@@ -52,25 +57,44 @@ export const normalizationTask: TaskHandler<'normalization'> = async (ctx, paylo
       inputArtifactIds: inProgressEntry.inputArtifactIds,
     });
 
-    await db.transaction(async (tx: Tx) => {
-      const outputArtifactIds = await performNormalization({
-        tx,
-        logger,
-        sessionId,
-        inProgressEntry,
-        projection,
-        startedByUserId,
-      });
-
-      await recordNormalizationResult({
-        tx,
-        logger,
-        workspaceId: sessionId,
-        startedByUserId,
-        inProgressEntry,
-        outputArtifactIds,
-      });
+    const logSink = createNormalizationLogSink({
+      db,
+      logger,
+      workspaceId: sessionId,
+      normalizationRunId: inProgressEntry.normalizationRunId,
     });
+    const progressReporter = createNormalizationProgressReporter({ sink: logSink });
+    progressReporter.progress(NormalizationProgressMessages.starting);
+
+    try {
+      await db.transaction(async (tx: Tx) => {
+        const outputArtifactIds = await performNormalization({
+          tx,
+          logger,
+          progressReporter,
+          sessionId,
+          inProgressEntry,
+          projection,
+          startedByUserId,
+        });
+
+        progressReporter.progress(NormalizationProgressMessages.complete);
+
+        await recordNormalizationResult({
+          tx,
+          logger,
+          workspaceId: sessionId,
+          startedByUserId,
+          inProgressEntry,
+          outputArtifactIds,
+        });
+      });
+    } catch (taskError) {
+      progressReporter.error(NormalizationProgressMessages.failed);
+      throw taskError;
+    } finally {
+      await logSink.flushAndClose();
+    }
   } catch (error) {
     logger.error('Normalization task failed', {
       sessionId,
@@ -125,6 +149,7 @@ async function loadNormalizationData({
 async function performNormalization({
   tx,
   logger,
+  progressReporter,
   sessionId,
   inProgressEntry,
   projection,
@@ -132,18 +157,20 @@ async function performNormalization({
 }: {
   tx: Tx;
   logger: Logger;
+  progressReporter: NormalizationProgressReporter;
   sessionId: WorkspaceId;
   inProgressEntry: WorkspaceProjectionEntry;
   projection: WorkspaceProjection;
   startedByUserId: UserId;
 }): Promise<ArtifactId[]> {
   const objectStore = await createObjectStore({ logger });
-  const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
+  const llm = await createLLMOpenAIAsync({ logger, tier: 'fast' });
 
   const normalizer = createNormalizer({
     objectStore,
     logger,
     llm,
+    progressReporter,
   });
 
   const artifactDb = new ArtifactDb(tx, logger);
@@ -153,13 +180,15 @@ async function performNormalization({
   const normalizationRunId = inProgressEntry.normalizationRunId;
 
   const inputs = inputArtifacts.map((artifact) => ({
-    key: artifact.object_key,
+    key: enforceKeyPrefix(artifact.object_key),
     bucket: artifact.object_bucket,
+    displayName: artifact.name || artifact.filename,
   }));
 
   const targets = targetArtifacts.map((artifact) => ({
-    key: artifact.object_key,
+    key: enforceKeyPrefix(artifact.object_key),
     bucket: artifact.object_bucket,
+    displayName: artifact.name || artifact.filename,
   }));
 
   const normalizeResult = await normalizer.normalize({
@@ -175,6 +204,7 @@ async function performNormalization({
       normalizationRunId,
       error: normalizeResult.error,
     });
+    progressReporter.error(NormalizationProgressMessages.failed);
     throw new Error(`Normalization failed: ${normalizeResult.error}`);
   }
 

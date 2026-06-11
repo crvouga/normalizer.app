@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { z } from 'zod';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
@@ -50,7 +51,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -77,7 +78,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: handles nullable columns', async () => {
@@ -97,7 +98,7 @@ describe('TabularDataPostgresImporter - Data types', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -121,6 +122,6 @@ describe('TabularDataPostgresImporter - Data types', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 });

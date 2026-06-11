@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import * as XLSX from 'xlsx';
 import { createObjectStore } from '../../shared/s3';
 import { createLogger } from '../logger';
@@ -32,7 +33,7 @@ describe('FileConverter', async () => {
     // Upload file first
     const writeResult = await objectStore.write({
       bucket: sourceBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: excelBuffer,
       contentType: getContentType('excel'),
     });
@@ -66,7 +67,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-excel-${Date.now()}.xlsx`;
     const writeResult1 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: excelBuffer,
       contentType: getContentType('excel'),
     });
@@ -101,7 +102,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-csv-${Date.now()}.csv`;
     const writeResult2 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -146,7 +147,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-cache-${Date.now()}.csv`;
     const writeResult3 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -173,7 +174,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-same-format-${Date.now()}.csv`;
     const writeResult4 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -207,7 +208,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-bucket-${Date.now()}.csv`;
     const writeResult5 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -227,7 +228,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-unsupported-format-${Date.now()}.csv`;
     const writeResult6 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -247,7 +248,7 @@ describe('FileConverter', async () => {
     const sourceKey = `preserve-original-${Date.now()}.csv`;
     const writeResult7 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: fileBuffer,
       contentType: getContentType('csv'),
     });
@@ -274,7 +275,7 @@ describe('FileConverter', async () => {
     const strangeFilename = `fiłę n@me_${Date.now()}.csv`;
     const writeResult8 = await objectStore.write({
       bucket: testBucket,
-      key: strangeFilename,
+      key: k(strangeFilename),
       data: Buffer.from(csvContent),
       contentType: getContentType('csv'),
     });
@@ -296,7 +297,7 @@ describe('FileConverter', async () => {
       // Add more formats if those handlers exist in the registry
     ];
     for (const { ext, content, target, targetExt } of formats) {
-      const key = `multi-format-${Date.now()}.${ext}`;
+      const key = k(`multi-format-${Date.now()}.${ext}`);
       const writeResult9 = await objectStore.write({
         bucket: testBucket,
         key,
@@ -322,7 +323,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-nonexistent-dest-${Date.now()}.csv`;
     const writeResult10 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -347,7 +348,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-json-${Date.now()}.json`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: jsonBuffer,
       contentType: getContentType('json'),
     });
@@ -384,7 +385,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-csv-to-json-${Date.now()}.csv`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: csvBuffer,
       contentType: getContentType('csv'),
     });
@@ -421,7 +422,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-json-to-excel-${Date.now()}.json`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: jsonBuffer,
       contentType: getContentType('json'),
     });
@@ -472,7 +473,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-excel-to-json-${Date.now()}.xlsx`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: excelBuffer,
       contentType: getContentType('excel'),
     });
@@ -509,7 +510,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-empty-json-${Date.now()}.json`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: jsonBuffer,
       contentType: getContentType('json'),
     });
@@ -540,7 +541,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-varying-keys-${Date.now()}.json`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: jsonBuffer,
       contentType: getContentType('json'),
     });
@@ -592,7 +593,7 @@ describe('FileConverter', async () => {
     const sourceKey1 = `test-valid-json-${Date.now()}.json`;
     const writeResult1 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey1,
+      key: k(sourceKey1),
       data: validBuffer,
       contentType: getContentType('json'),
     });
@@ -610,7 +611,7 @@ describe('FileConverter', async () => {
     const sourceKey2 = `test-invalid-json-${Date.now()}.json`;
     const writeResult2 = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey2,
+      key: k(sourceKey2),
       data: invalidBuffer,
       contentType: getContentType('json'),
     });
@@ -635,7 +636,7 @@ describe('FileConverter', async () => {
     const sourceKey = `test-special-chars-${Date.now()}.json`;
     const writeResult = await objectStore.write({
       bucket: testBucket,
-      key: sourceKey,
+      key: k(sourceKey),
       data: jsonBuffer,
       contentType: getContentType('json'),
     });

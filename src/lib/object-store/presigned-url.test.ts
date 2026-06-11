@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import {
   generateServerPresignedUrl,
   isLoopbackHost,
@@ -31,17 +32,18 @@ describe('isLoopbackHost', () => {
 
 describe('generateServerPresignedUrl', () => {
   test('builds a /api/objects URL on the given server base', () => {
+    const key = k('artifacts/abc/file.csv');
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://localhost:8080',
       bucket: 'main',
-      key: 'artifacts/abc/file.csv',
+      key,
       method: 'PUT',
       expiresIn: 3600,
     });
 
     const parsed = new URL(url);
     expect(parsed.origin).toBe('http://localhost:8080');
-    expect(parsed.pathname).toBe(`/api/objects/main/${encodeURIComponent('artifacts/abc/file.csv')}`);
+    expect(parsed.pathname).toBe(`/api/objects/main/${encodeURIComponent(key)}`);
     expect(parsed.searchParams.get('method')).toBe('PUT');
     expect(parsed.searchParams.get('expires')).toMatch(/^\d+$/);
     expect(parsed.searchParams.get('signature')).toMatch(/^[a-f0-9]{64}$/);
@@ -51,7 +53,7 @@ describe('generateServerPresignedUrl', () => {
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://localhost:8080/',
       bucket: 'main',
-      key: 'k',
+      key: k('k'),
       method: 'GET',
       expiresIn: 60,
     });
@@ -62,7 +64,7 @@ describe('generateServerPresignedUrl', () => {
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://normalizer.chrisvouga.dev',
       bucket: 'main',
-      key: 'k',
+      key: k('k'),
       method: 'GET',
       expiresIn: 60,
       useHTTPS: true,
@@ -76,7 +78,7 @@ describe('verifyServerPresignedSignature', () => {
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://localhost:8080',
       bucket: 'main',
-      key: 'artifacts/abc/file.csv',
+      key: k('artifacts/abc/file.csv'),
       method: 'PUT',
       expiresIn: 3600,
     });
@@ -87,7 +89,7 @@ describe('verifyServerPresignedSignature', () => {
     expect(
       verifyServerPresignedSignature({
         bucket: 'main',
-        key: 'artifacts/abc/file.csv',
+        key: k('artifacts/abc/file.csv'),
         method: 'PUT',
         expiresAt,
         signature,
@@ -99,7 +101,7 @@ describe('verifyServerPresignedSignature', () => {
     const url = generateServerPresignedUrl({
       serverBaseUrl: 'http://localhost:8080',
       bucket: 'main',
-      key: 'k',
+      key: k('k'),
       method: 'PUT',
       expiresIn: 60,
     });
@@ -107,10 +109,10 @@ describe('verifyServerPresignedSignature', () => {
     const expiresAt = parseInt(parsed.searchParams.get('expires')!, 10);
     const signature = parsed.searchParams.get('signature')!;
 
-    const base = { bucket: 'main', key: 'k', method: 'PUT', expiresAt, signature };
+    const base = { bucket: 'main', key: k('k'), method: 'PUT', expiresAt, signature };
 
     expect(verifyServerPresignedSignature({ ...base, bucket: 'other' })).toBe(false);
-    expect(verifyServerPresignedSignature({ ...base, key: 'other' })).toBe(false);
+    expect(verifyServerPresignedSignature({ ...base, key: k('other') })).toBe(false);
     expect(verifyServerPresignedSignature({ ...base, method: 'GET' })).toBe(false);
     expect(verifyServerPresignedSignature({ ...base, expiresAt: expiresAt + 1 })).toBe(false);
   });
@@ -119,7 +121,7 @@ describe('verifyServerPresignedSignature', () => {
     expect(
       verifyServerPresignedSignature({
         bucket: 'main',
-        key: 'k',
+        key: k('k'),
         method: 'PUT',
         expiresAt: 1,
         signature: 'not-a-valid-hex-signature',
@@ -129,7 +131,7 @@ describe('verifyServerPresignedSignature', () => {
     expect(
       verifyServerPresignedSignature({
         bucket: 'main',
-        key: 'k',
+        key: k('k'),
         method: 'PUT',
         expiresAt: 1,
         signature: '',

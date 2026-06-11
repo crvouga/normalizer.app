@@ -27,8 +27,8 @@ export function WorkspaceListLoaded({
   loadMoreRef,
 }: WorkspaceListLoadedProps) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex flex-col gap-2 p-4">
+    <div className="flex h-full min-w-0 flex-col overflow-y-auto">
+      <div className="flex min-w-0 flex-col gap-2 p-4">
         {sessions.map((session: WorkspaceProjection) => (
           <WorkspaceListItem
             key={session.id}

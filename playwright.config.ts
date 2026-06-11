@@ -9,7 +9,9 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: 0,
   workers: isCI ? 2 : Math.max(4, os.cpus().length),
-  reporter: isCI ? [['github'], ['list']] : [['list']], // Use GitHub Actions reporter in CI, otherwise just list
+  reporter: isCI ? [['github'], ['list']] : [['list']],
+  globalSetup: './src/test/playwright-global-setup.ts',
+  globalTeardown: './src/test/playwright-global-teardown.ts',
 
   use: {
     baseURL: 'http://localhost:5001',
@@ -36,20 +38,19 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'bun run src/server.tsx',
+    command: 'bun run src/test/playwright-web-server.ts',
     url: 'http://localhost:5001',
-    reuseExistingServer: true,
-    timeout: 30 * 1000,
+    reuseExistingServer: !isCI,
+    timeout: 60 * 1000,
     env: {
       PORT: '5001',
-      DATABASE_URL:
-        process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres',
-      S3_ENDPOINT: process.env.S3_ENDPOINT || 'http://localhost:9010',
+      NODE_ENV: 'test',
+      S3_ENDPOINT: process.env.S3_ENDPOINT || 'http://localhost:9000',
       S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || 'minioadmin',
       S3_SECRET_KEY: process.env.S3_SECRET_KEY || 'minioadmin',
       S3_BUCKET: process.env.S3_BUCKET || 'test-bucket',
+      S3_REGION: process.env.S3_REGION || 'us-east-1',
       S3_USE_SSL: process.env.S3_USE_SSL || 'false',
-      NODE_ENV: 'test',
     },
   },
 });

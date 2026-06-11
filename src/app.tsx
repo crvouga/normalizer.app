@@ -46,7 +46,7 @@ function AppSidebar() {
           onClick={() => currentScreen.setCurrentScreen({ type: 'start-workspace' })}
         />
       </div>
-      <div className="w-full flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <WorkspaceProjectionList
           userId={user.id}
           onSessionClick={handleSessionClick}

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { ArtifactDb } from '~/src/artifacts/artifact-db';
 import { ArtifactId } from '~/src/artifacts/artifact-id';
 import * as schema from '~/src/db/schema';
@@ -71,7 +72,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       const inputWriteResult = unwrap(
         await objectStore.write({
           bucket: testBucket,
-          key: inputKey,
+          key: k(inputKey),
           data: intoJsonBuffer(inputFile),
           contentType: 'application/json',
         }),
@@ -80,7 +81,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       const targetWriteResult = unwrap(
         await objectStore.write({
           bucket: testBucket,
-          key: targetKey,
+          key: k(targetKey),
           data: intoJsonBuffer(targetFile),
           contentType: 'application/json',
         }),
@@ -231,14 +232,14 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       }
 
       // Clean up S3 files
-      await objectStore.delete({ bucket: testBucket, key: inputKey });
-      await objectStore.delete({ bucket: testBucket, key: targetKey });
+      await objectStore.delete({ bucket: testBucket, key: k(inputKey) });
+      await objectStore.delete({ bucket: testBucket, key: k(targetKey) });
 
       // Clean up output artifact
       if (outputArtifact.object_key) {
         await objectStore.delete({
           bucket: outputArtifact.object_bucket,
-          key: outputArtifact.object_key,
+          key: k(outputArtifact.object_key),
         });
       }
     },

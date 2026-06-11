@@ -1,6 +1,7 @@
 import { Err, Ok, type Result } from '../result';
-import type { ObjectStore } from './object-store';
 import type { Logger } from '../logger';
+import { enforceKeyPrefix, OBJECT_KEY_PREFIX, type PrefixedObjectKey } from './object-key';
+import type { ObjectStore } from './object-store';
 
 /**
  * Normalizes a prefix by ensuring it doesn't have a leading slash but has a trailing slash if non-empty.
@@ -30,11 +31,21 @@ function normalizePrefix(prefix: string | undefined): string {
  * - key: "file.txt", sourcePrefix: "", destPrefix: "dir/" -> "dir/file.txt"
  * - key: "dir1/sub/file.txt", sourcePrefix: "dir1/", destPrefix: "" -> "sub/file.txt"
  */
-function remapKey(key: string, sourcePrefix: string, destPrefix: string): string {
+function stripAppKeyPrefix(key: string): string {
+  const prefixWithSlash = `${OBJECT_KEY_PREFIX}/`;
+  if (key.startsWith(prefixWithSlash)) {
+    return key.slice(prefixWithSlash.length);
+  }
+  return key;
+}
+
+function remapKey(key: string, sourcePrefix: string, destPrefix: string): PrefixedObjectKey {
+  const logicalKey = stripAppKeyPrefix(key);
+
   // Remove source prefix if present
-  let remappedKey = key;
-  if (sourcePrefix && key.startsWith(sourcePrefix)) {
-    remappedKey = key.slice(sourcePrefix.length);
+  let remappedKey = logicalKey;
+  if (sourcePrefix && logicalKey.startsWith(sourcePrefix)) {
+    remappedKey = logicalKey.slice(sourcePrefix.length);
   }
 
   // Add destination prefix
@@ -42,7 +53,7 @@ function remapKey(key: string, sourcePrefix: string, destPrefix: string): string
     remappedKey = destPrefix + remappedKey;
   }
 
-  return remappedKey;
+  return enforceKeyPrefix(remappedKey);
 }
 
 /**
@@ -124,7 +135,7 @@ export async function copyObjectStoreDirectory(params: {
       // Read from source
       const readResult = await source.objectStore.read({
         bucket: source.bucket,
-        key: obj.key,
+        key: enforceKeyPrefix(obj.key),
       });
 
       if (readResult.tag === 'err') {

@@ -9,7 +9,8 @@ test.describe('Server E2E Tests', () => {
     expect(response.status()).toBe(200);
 
     const data = await response.json();
-    expect(data).toEqual({ status: 'ok' });
+    expect(data.status).toBe('ok');
+    expect(data.components?.db?.ok).toBe(true);
   });
 
   test('should serve the main application page', async ({ page }) => {

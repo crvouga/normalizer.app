@@ -92,6 +92,13 @@ export type StreamChunk =
     }
   | {
       /**
+       * Tool argument delta - incremental JSON fragment while a tool call is being built
+       */
+      type: 'tool_argument_delta';
+      delta: string;
+    }
+  | {
+      /**
        * Tool call - emitted when a tool call is complete
        */
       type: 'tool_call';
@@ -129,6 +136,13 @@ export type StreamChunkWithSchema<T> =
        * Content delta - incremental text chunk
        */
       type: 'content';
+      delta: string;
+    }
+  | {
+      /**
+       * Tool argument delta - incremental JSON fragment while a tool call is being built
+       */
+      type: 'tool_argument_delta';
       delta: string;
     }
   | {

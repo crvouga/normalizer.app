@@ -32,8 +32,10 @@
   "cSpell.words": [
     "agentic",
     "Anytown",
+    "Backblaze",
     "chrisvouga",
     "cloc",
+    "flyctl",
     "Graphile",
     "healthcheck",
     "HMAC",
@@ -52,6 +54,7 @@
     "presigning",
     "spreadsheetml",
     "sslmode",
-    "stringifying"
+    "stringifying",
+    "superfly"
   ]
 }

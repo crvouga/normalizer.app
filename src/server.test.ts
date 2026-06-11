@@ -1,23 +1,19 @@
 import { describe, expect, test } from 'bun:test';
+import { createTestServerEnv } from './test/test-server-env';
 
 describe('Server', () => {
   test('should start server and respond to health check', async () => {
-    // Start server in background with custom port
     const port = 3456;
 
-    const serverProcess = Bun.spawn(['bun', 'run', 'src/server.tsx'], {
+    const serverProcess = Bun.spawn([process.execPath, 'run', 'src/server.tsx'], {
       stdout: 'inherit',
       stderr: 'inherit',
-      env: {
-        ...process.env,
-        PORT: port.toString(),
-      },
+      env: createTestServerEnv({ PORT: port.toString() }),
     });
 
-    // Wait for server to start by polling health endpoint
     let isServerUp = false;
     const startTime = Date.now();
-    const timeout = 8080; // 5 second timeout
+    const timeout = 8080;
 
     while (!isServerUp && Date.now() - startTime < timeout) {
       try {
@@ -26,7 +22,7 @@ describe('Server', () => {
           isServerUp = true;
           break;
         }
-      } catch (error) {
+      } catch {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
@@ -37,14 +33,13 @@ describe('Server', () => {
     }
 
     try {
-      // Make health check request
       const response = await fetch(`http://localhost:${port}/health`);
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data).toEqual({ status: 'ok' });
+      expect(data.status).toBe('ok');
+      expect(data.components?.db?.ok).toBe(true);
     } finally {
-      // Cleanup: kill server process
       serverProcess.kill();
       await serverProcess.exited;
     }

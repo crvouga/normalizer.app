@@ -1,5 +1,6 @@
 import { expect } from 'bun:test';
 import { type Logger } from '../../logger';
+import { testObjectKey } from '../../../shared/test-object-key';
 import type { ObjectStore } from '../../object-store/object-store';
 import { unwrap } from '../../result';
 import { Normalizer } from '../normalizer';
@@ -33,7 +34,7 @@ export async function testNormalizer<TInput, TTarget>(params: {
   const targetWriteResult = unwrap(
     await objectStore.write({
       bucket: testBucket,
-      key: `files/target-${testId}.json`,
+      key: testObjectKey('files', `target-${testId}.json`),
       data: intoJsonBuffer(targetFile),
       contentType: 'application/json',
     }),
@@ -46,7 +47,7 @@ export async function testNormalizer<TInput, TTarget>(params: {
   const inputWriteResult = unwrap(
     await objectStore.write({
       bucket: testBucket,
-      key: `files/input-${testId}.json`,
+      key: testObjectKey('files', `input-${testId}.json`),
       data: intoJsonBuffer(inputFile),
       contentType: 'application/json',
     }),

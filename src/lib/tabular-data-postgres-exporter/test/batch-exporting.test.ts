@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import {
   TEST_BUCKET,
@@ -73,17 +74,17 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-1.csv',
+        key: k('test-batch-1.csv'),
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-2.csv',
+        key: k('test-batch-2.csv'),
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName3)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-3.csv',
+        key: k('test-batch-3.csv'),
       },
     ]);
 
@@ -104,28 +105,28 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     }
 
     // Verify all files exist
-    const exists1 = await objectStore.exists({ bucket: TEST_BUCKET, key: 'test-batch-1.csv' });
+    const exists1 = await objectStore.exists({ bucket: TEST_BUCKET, key: k('test-batch-1.csv') });
     expect(isOk(exists1)).toBe(true);
     if (isOk(exists1)) {
       expect(exists1.value).toBe(true);
     }
 
-    const exists2 = await objectStore.exists({ bucket: TEST_BUCKET, key: 'test-batch-2.csv' });
+    const exists2 = await objectStore.exists({ bucket: TEST_BUCKET, key: k('test-batch-2.csv') });
     expect(isOk(exists2)).toBe(true);
     if (isOk(exists2)) {
       expect(exists2.value).toBe(true);
     }
 
-    const exists3 = await objectStore.exists({ bucket: TEST_BUCKET, key: 'test-batch-3.csv' });
+    const exists3 = await objectStore.exists({ bucket: TEST_BUCKET, key: k('test-batch-3.csv') });
     expect(isOk(exists3)).toBe(true);
     if (isOk(exists3)) {
       expect(exists3.value).toBe(true);
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-1.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-2.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-3.csv' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-1.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-2.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-3.csv') });
   });
 
   test('exportBatch: handles empty request array', async () => {
@@ -179,17 +180,17 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-mix-1.csv',
+        key: k('test-batch-mix-1.csv'),
       },
       {
         query: 'SELECT * FROM non_existent_table',
         bucket: TEST_BUCKET,
-        key: 'test-batch-mix-fail.csv',
+        key: k('test-batch-mix-fail.csv'),
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-mix-2.csv',
+        key: k('test-batch-mix-2.csv'),
       },
     ]);
 
@@ -219,8 +220,8 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-mix-1.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-mix-2.csv' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-mix-1.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-mix-2.csv') });
   });
 
   test('exportBatch: handles batch with different output formats', async () => {
@@ -274,19 +275,19 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-format-1.csv',
+        key: k('test-batch-format-1.csv'),
         format: 'csv',
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-format-2.xlsx',
+        key: k('test-batch-format-2.xlsx'),
         format: 'excel',
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName3)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-format-3.json',
+        key: k('test-batch-format-3.json'),
         format: 'json',
       },
     ]);
@@ -297,7 +298,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     // Verify all files exist
     const exists1 = await objectStore.exists({
       bucket: TEST_BUCKET,
-      key: 'test-batch-format-1.csv',
+      key: k('test-batch-format-1.csv'),
     });
     expect(isOk(exists1)).toBe(true);
     if (isOk(exists1)) {
@@ -306,7 +307,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
 
     const exists2 = await objectStore.exists({
       bucket: TEST_BUCKET,
-      key: 'test-batch-format-2.xlsx',
+      key: k('test-batch-format-2.xlsx'),
     });
     expect(isOk(exists2)).toBe(true);
     if (isOk(exists2)) {
@@ -315,7 +316,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
 
     const exists3 = await objectStore.exists({
       bucket: TEST_BUCKET,
-      key: 'test-batch-format-3.json',
+      key: k('test-batch-format-3.json'),
     });
     expect(isOk(exists3)).toBe(true);
     if (isOk(exists3)) {
@@ -323,9 +324,9 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-format-1.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-format-2.xlsx' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-format-3.json' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-format-1.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-format-2.xlsx') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-format-3.json') });
   });
 
   test('exportBatch: handles batch with tables and queries mixed', async () => {
@@ -353,12 +354,12 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-mixed-table.csv',
+        key: k('test-batch-mixed-table.csv'),
       },
       {
         query: `SELECT name, value FROM ${postgresClient.escapeIdentifier(tableName)} WHERE value::integer > 15`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-mixed-query.csv',
+        key: k('test-batch-mixed-query.csv'),
       },
     ]);
 
@@ -378,8 +379,8 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-mixed-table.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-mixed-query.csv' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-mixed-table.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-mixed-query.csv') });
   });
 
   test('exportBatch: processes large number of exports efficiently', async () => {
@@ -416,7 +417,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       requests.push({
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
         bucket: TEST_BUCKET,
-        key: exportKey,
+        key: k(exportKey),
       });
     }
 
@@ -429,7 +430,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
 
     // Verify all files exist
     for (const exportKey of exportKeys) {
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
       if (isOk(existsResult)) {
         expect(existsResult.value).toBe(true);
@@ -438,7 +439,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
 
     // Cleanup
     for (const exportKey of exportKeys) {
-      await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+      await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
     }
   });
 
@@ -446,9 +447,9 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     const { exporter } = fixtures;
 
     const batchResult = await exporter.exportBatch([
-      { query: 'SELECT * FROM non_existent_1', bucket: TEST_BUCKET, key: 'test-fail-1.csv' },
-      { query: 'SELECT * FROM non_existent_2', bucket: TEST_BUCKET, key: 'test-fail-2.csv' },
-      { query: 'SELECT * FROM non_existent_3', bucket: TEST_BUCKET, key: 'test-fail-3.csv' },
+      { query: 'SELECT * FROM non_existent_1', bucket: TEST_BUCKET, key: k('test-fail-1.csv') },
+      { query: 'SELECT * FROM non_existent_2', bucket: TEST_BUCKET, key: k('test-fail-2.csv') },
+      { query: 'SELECT * FROM non_existent_3', bucket: TEST_BUCKET, key: k('test-fail-3.csv') },
     ]);
 
     expect(batchResult.summary.total).toBe(3);
@@ -506,12 +507,12 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName1)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-stats-1.csv',
+        key: k('test-batch-stats-1.csv'),
       },
       {
         query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName2)}`,
         bucket: TEST_BUCKET,
-        key: 'test-batch-stats-2.csv',
+        key: k('test-batch-stats-2.csv'),
       },
     ]);
     const endTime = Date.now();
@@ -538,8 +539,8 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     expect(totalSizeFromResults).toBe(batchResult.summary.totalFileSize);
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-stats-1.csv' });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-stats-2.csv' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-stats-1.csv') });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-stats-2.csv') });
   });
 
   test('exportBatch: includes correct request context in results', async () => {
@@ -564,7 +565,7 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     const request = {
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: 'test-batch-context.csv',
+      key: k('test-batch-context.csv'),
       format: 'csv' as const,
     };
 
@@ -583,6 +584,6 @@ describe('TabularDataPostgresExporter - Batch exporting', () => {
     expect(isOk(itemResult.result)).toBe(true);
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: 'test-batch-context.csv' });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k('test-batch-context.csv') });
   });
 });

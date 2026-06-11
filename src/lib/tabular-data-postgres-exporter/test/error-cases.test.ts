@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import {
   TEST_BUCKET,
@@ -25,7 +26,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: 'SELECT * FROM non_existent_table',
       bucket: TEST_BUCKET,
-      key: 'test-error.csv',
+      key: k('test-error.csv'),
     });
     expect(isOk(result)).toBe(false);
 
@@ -42,7 +43,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: 'INSERT INTO test VALUES (1)',
       bucket: TEST_BUCKET,
-      key: 'test-error.csv',
+      key: k('test-error.csv'),
     });
     expect(isOk(result)).toBe(false);
 
@@ -72,7 +73,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -81,12 +82,12 @@ describe('TabularDataPostgresExporter - Error cases', () => {
       expect(result.value.fileSize).toBeGreaterThanOrEqual(0);
 
       // Verify file exists (may be empty or just headers)
-      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: exportKey });
+      const existsResult = await objectStore.exists({ bucket: TEST_BUCKET, key: k(exportKey) });
       expect(isOk(existsResult)).toBe(true);
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: returns error for unsupported format', async () => {
@@ -105,7 +106,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: 'test-unsupported.pdf',
+      key: k('test-unsupported.pdf'),
       format: 'pdf' as any,
     });
 
@@ -123,7 +124,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: 'UPDATE test SET col1 = 1',
       bucket: TEST_BUCKET,
-      key: 'test-error.csv',
+      key: k('test-error.csv'),
     });
     expect(isOk(result)).toBe(false);
 
@@ -139,7 +140,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: 'SELECT * FROM non_existent_table WHERE invalid syntax',
       bucket: TEST_BUCKET,
-      key: 'test-error.csv',
+      key: k('test-error.csv'),
     });
     expect(isOk(result)).toBe(false);
 
@@ -166,7 +167,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: '',
-      key: 'test.csv',
+      key: k('test.csv'),
     });
 
     expect(isOk(result)).toBe(false);
@@ -187,7 +188,7 @@ describe('TabularDataPostgresExporter - Error cases', () => {
     const result = await exporter.export({
       query: 'SELECT * FROM non_existent_no_cols',
       bucket: TEST_BUCKET,
-      key: 'test-error.csv',
+      key: k('test-error.csv'),
     });
 
     expect(isOk(result)).toBe(false);

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -33,7 +34,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -59,7 +60,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: handles CSV with only headers (no data rows)', async () => {
@@ -75,7 +76,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -90,7 +91,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: sanitizes table and column names with special characters', async () => {
@@ -125,7 +126,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -163,7 +164,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: handles table names starting with numbers', async () => {
@@ -179,7 +180,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -194,7 +195,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: truncates long table names to 63 characters', async () => {
@@ -210,7 +211,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: longTableName,
     });
     expect(isOk(result)).toBe(true);
@@ -224,7 +225,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 
   test('import: handles CSV with multiple unnamed columns', async () => {
@@ -243,7 +244,7 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: tableName,
     });
     expect(isOk(result)).toBe(true);
@@ -271,6 +272,6 @@ describe('TabularDataPostgresImporter - Edge cases', () => {
       }
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 });

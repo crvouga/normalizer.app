@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -49,7 +50,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -65,7 +66,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles table with NULL values', async () => {
@@ -93,7 +94,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -115,7 +116,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles table with empty strings', async () => {
@@ -142,7 +143,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -162,7 +163,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles table with large text fields', async () => {
@@ -189,7 +190,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -204,7 +205,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles table with many columns', async () => {
@@ -231,7 +232,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -248,7 +249,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles custom query with WHERE clause', async () => {
@@ -275,7 +276,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT id, value FROM ${postgresClient.escapeIdentifier(tableName)} WHERE value::integer > 15`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -291,7 +292,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles custom query with ORDER BY', async () => {
@@ -318,7 +319,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT id, name FROM ${postgresClient.escapeIdentifier(tableName)} ORDER BY id`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -336,7 +337,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles query that returns 0 rows', async () => {
@@ -362,7 +363,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT id, value FROM ${postgresClient.escapeIdentifier(tableName)} WHERE value::integer > 100`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -372,7 +373,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 
   test('export: handles table with quoted values in CSV', async () => {
@@ -398,7 +399,7 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     const result = await exporter.export({
       query: `SELECT * FROM ${postgresClient.escapeIdentifier(tableName)}`,
       bucket: TEST_BUCKET,
-      key: exportKey,
+      key: k(exportKey),
     });
 
     expect(isOk(result)).toBe(true);
@@ -414,6 +415,6 @@ describe('TabularDataPostgresExporter - Edge cases', () => {
     }
 
     // Cleanup
-    await objectStore.delete({ bucket: TEST_BUCKET, key: exportKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(exportKey) });
   });
 });

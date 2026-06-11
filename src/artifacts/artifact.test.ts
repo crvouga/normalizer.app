@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { createLogger } from '../lib/logger';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { isOk } from '../lib/result';
@@ -27,7 +28,7 @@ describe('Artifact.refreshData', async () => {
     const artifactForTest: Artifact = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: object_key,
+      object_key: k(object_key),
     };
 
     // Ensure upload and download URLs are initially missing
@@ -74,7 +75,7 @@ describe('Artifact.refreshData', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: object_key,
+      object_key: k(object_key),
     };
     const firstPop = await refreshArtifactData({
       artifacts: [artifactForTest],
@@ -120,7 +121,7 @@ describe('Artifact.refreshData', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: object_key,
+      object_key: k(object_key),
       upload_url: 'http://should-be-replaced',
       download_url: 'http://should-be-replaced',
       upload_url_expires_at: pastDate,
@@ -166,7 +167,7 @@ describe('Artifact.refreshData', async () => {
     const artifactForTest = {
       ...artifact,
       object_bucket: testBucket,
-      object_key: object_key,
+      object_key: k(object_key),
     };
 
     const { artifacts: result } = await refreshArtifactData({

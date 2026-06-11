@@ -1,22 +1,14 @@
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-} from 'drizzle-orm/pg-core';
+import { bigserial, boolean, index, integer, jsonb, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import type { WorkspaceProjection } from '../workspace/workspace-projection/workspace-projection';
 import type { WorkspaceEventPersisted } from '../workspace/workspace-event/workspace-event-persisted';
+import { dbSchema } from './db-schema';
 
-export const artifactStatusEnum = pgEnum('artifact_status', ['pending', 'uploaded']);
-export const artifactUploadedByEnum = pgEnum('artifact_uploaded_by', ['system', 'user']);
-export const userTypeEnum = pgEnum('user_type', ['anonymous', 'authenticated']);
+export const artifactStatusEnum = dbSchema.enum('artifact_status', ['pending', 'uploaded']);
+export const artifactUploadedByEnum = dbSchema.enum('artifact_uploaded_by', ['system', 'user']);
+export const userTypeEnum = dbSchema.enum('user_type', ['anonymous', 'authenticated']);
 
-export const artifacts = pgTable('artifacts', {
+export const artifacts = dbSchema.table('artifacts', {
   id: text('id').primaryKey(),
   filename: text('filename').notNull(),
   content_type: text('content_type').notNull(),
@@ -55,7 +47,7 @@ export const artifacts = pgTable('artifacts', {
 
 export type IArtifact = typeof artifacts.$inferSelect;
 
-export const users = pgTable('users', {
+export const users = dbSchema.table('users', {
   id: text('id').primaryKey(),
   type: userTypeEnum('type').notNull(),
   name: text('name'),
@@ -68,7 +60,7 @@ export const users = pgTable('users', {
 
 export type IUser = typeof users.$inferSelect;
 
-export const userSessions = pgTable('user_sessions', {
+export const userSessions = dbSchema.table('user_sessions', {
   id: text('id').primaryKey(),
   session_id: text('session_id').notNull(),
   user_id: text('user_id')
@@ -87,7 +79,7 @@ export const userSessionsRelations = relations(userSessions, ({ one }) => ({
   }),
 }));
 
-export const workspaceEvents = pgTable(
+export const workspaceEvents = dbSchema.table(
   'workspace_events',
   {
     id: text('id').primaryKey(),
@@ -102,7 +94,7 @@ export const workspaceEvents = pgTable(
 
 export type IWorkspaceEvent = typeof workspaceEvents.$inferSelect;
 
-export const workspaceProjections = pgTable('workspace_projections', {
+export const workspaceProjections = dbSchema.table('workspace_projections', {
   workspace_id: text('workspace_id').primaryKey(),
   projection: jsonb('projection').notNull().$type<WorkspaceProjection>(),
   created_at: timestamp('created_at').notNull().defaultNow(),
@@ -111,10 +103,33 @@ export const workspaceProjections = pgTable('workspace_projections', {
 
 export type IWorkspaceProjection = typeof workspaceProjections.$inferSelect;
 
-export const keyValueStore = pgTable('key_value_store', {
+export const keyValueStore = dbSchema.table('key_value_store', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export type IKeyValueStore = typeof keyValueStore.$inferSelect;
+
+export const normalizationLogs = dbSchema.table(
+  'normalization_logs',
+  {
+    seq: bigserial('seq', { mode: 'number' }).primaryKey(),
+    workspace_id: text('workspace_id').notNull(),
+    normalization_run_id: text('normalization_run_id').notNull(),
+    kind: text('kind').notNull().default('progress'),
+    level: text('level').notNull(),
+    scope: text('scope').notNull(),
+    message: text('message').notNull(),
+    meta: jsonb('meta').$type<Record<string, unknown>>(),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    workspaceIdIdx: index('normalization_logs_workspace_id_idx').on(table.workspace_id),
+    normalizationRunIdIdx: index('normalization_logs_normalization_run_id_idx').on(
+      table.normalization_run_id,
+    ),
+  }),
+);
+
+export type INormalizationLog = typeof normalizationLogs.$inferSelect;

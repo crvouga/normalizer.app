@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { asTestKey as k } from '~/src/shared/test-object-key';
 import { isOk } from '../../result';
 import { Csv } from '../../csv/csv';
 import {
@@ -25,7 +26,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: 'non-existent-file.csv',
+      key: k('non-existent-file.csv'),
       viewName: 'test_error',
     });
     expect(isOk(result)).toBe(false);
@@ -45,7 +46,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     await writeCsvToS3(objectStore, emptyKey, '');
     const emptyResult = await importer.import({
       bucket: TEST_BUCKET,
-      key: emptyKey,
+      key: k(emptyKey),
       viewName: 'test_error',
     });
     expect(isOk(emptyResult)).toBe(false);
@@ -64,7 +65,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
     );
     const headerResult = await importer.import({
       bucket: TEST_BUCKET,
-      key: headerOnlyKey,
+      key: k(headerOnlyKey),
       viewName: 'test_header_only',
     });
     expect(isOk(headerResult)).toBe(true);
@@ -72,8 +73,8 @@ describe('TabularDataPostgresImporter - Error cases', () => {
       expect(headerResult.value.rowCount).toBe(0);
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: emptyKey });
-    await objectStore.delete({ bucket: TEST_BUCKET, key: headerOnlyKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(emptyKey) });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(headerOnlyKey) });
   });
 
   test('import: returns error for CSV with no columns', async () => {
@@ -86,7 +87,7 @@ describe('TabularDataPostgresImporter - Error cases', () => {
 
     const result = await importer.import({
       bucket: TEST_BUCKET,
-      key: testKey,
+      key: k(testKey),
       viewName: 'test_error',
     });
     expect(isOk(result)).toBe(false);
@@ -97,6 +98,6 @@ describe('TabularDataPostgresImporter - Error cases', () => {
       expect(result.error).toContain('Failed to import tabular data');
     }
 
-    await objectStore.delete({ bucket: TEST_BUCKET, key: testKey });
+    await objectStore.delete({ bucket: TEST_BUCKET, key: k(testKey) });
   });
 });

@@ -6,6 +6,7 @@ import type { Db } from '../../shared/db';
 import {
   getGoogleClientId,
   getGoogleClientSecret,
+  getGoogleOAuthRedirectUri,
   isGoogleAuthEnabled,
 } from './google-oauth-config';
 import { GoogleOAuthStateService } from './google-oauth-state-service';
@@ -50,7 +51,7 @@ export class GoogleOAuthService {
    * @param sessionId - Optional session ID to store in OAuth state (used when cookies are Strict)
    */
   async generateAuthUrl(
-    req: Request,
+    _req: Request,
     sessionId?: string | null,
   ): Promise<Result<{ url: string; state: string }, string>> {
     if (!isGoogleAuthEnabled()) {
@@ -58,9 +59,8 @@ export class GoogleOAuthService {
       return Err('Google OAuth is not configured');
     }
 
-    // Extract redirect URI from request origin
-    const requestUrl = new URL(req.url);
-    const redirectUri = `${requestUrl.origin}/api/auth/google/callback`;
+    // Use SERVER_BASE_URL so redirect URI matches Google Cloud Console registration
+    const redirectUri = getGoogleOAuthRedirectUri();
 
     const googleClientId = getGoogleClientId();
     const googleClientSecret = getGoogleClientSecret();
@@ -137,12 +137,16 @@ export class GoogleOAuthService {
       return Err('OAuth state expired');
     }
 
+    const googleClientId = getGoogleClientId();
+    const googleClientSecret = getGoogleClientSecret();
+
+    if (!googleClientId || !googleClientSecret) {
+      this.logger.error('Google OAuth is not configured');
+      return Err('Google OAuth is not configured');
+    }
+
     // Create Google client with the SAME redirect URI used during authorization
-    const google = new Google(
-      process.env.GOOGLE_CLIENT_ID!,
-      process.env.GOOGLE_CLIENT_SECRET!,
-      stored.redirectUri,
-    );
+    const google = new Google(googleClientId, googleClientSecret, stored.redirectUri);
 
     // Extract session ID before cleaning up state
     const sessionId = stored.sessionId;

@@ -4,9 +4,10 @@ import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
 import { Err, Ok, type Result } from '../result';
 import { parseAndValidateURL } from '../url';
+import { enforceKeyPrefix } from './object-key';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
-import { generateServerPresignedUrl, isLoopbackHost } from './presigned-url';
+import { generateServerPresignedUrl } from './presigned-url';
 
 /**
  * S3 implementation of ObjectStore using Bun's S3Client and MinioClient.
@@ -22,6 +23,7 @@ export class S3ObjectStore extends ObjectStore {
   private readonly s3Client: S3Client;
   private readonly minioClient: MinioClient;
   private readonly s3Endpoint: string;
+  private readonly keyPrefix: string;
   private readonly serverBaseUrl: string | undefined;
   private readonly logger: Logger;
 
@@ -29,19 +31,23 @@ export class S3ObjectStore extends ObjectStore {
     s3Endpoint,
     s3AccessKeyId,
     s3SecretAccessKey,
+    s3Region,
+    keyPrefix,
     serverBaseUrl,
     logger,
   }: {
     s3Endpoint: string;
     s3AccessKeyId: string;
     s3SecretAccessKey: string;
+    s3Region: string;
+    keyPrefix: string;
     serverBaseUrl?: string | undefined;
     logger: Logger;
   }) {
     super();
-    // Use parseAndValidateURL to validate and normalize the s3Endpoint
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
+    this.keyPrefix = keyPrefix;
     this.serverBaseUrl = serverBaseUrl?.replace(/\/$/, '');
     this.logger = logger.child(S3ObjectStore.name);
 
@@ -49,18 +55,40 @@ export class S3ObjectStore extends ObjectStore {
       endpoint: validatedEndpoint,
       accessKeyId: s3AccessKeyId,
       secretAccessKey: s3SecretAccessKey,
+      region: s3Region,
     });
 
     this.logger.debug('Initialized Bun S3Client', {
       s3Endpoint: validatedEndpoint,
+      s3Region,
+      keyPrefix,
     });
 
     this.minioClient = new MinioClient({
       minioEndpoint: validatedEndpoint,
       accessKey: s3AccessKeyId,
       secretKey: s3SecretAccessKey,
+      region: s3Region,
       logger: this.logger,
     });
+  }
+
+  private enforceLocation(location: ObjectLocation): ObjectLocation {
+    return {
+      bucket: location.bucket,
+      key: enforceKeyPrefix(location.key, this.keyPrefix),
+    };
+  }
+
+  private enforceLocations(locations: ObjectLocation[]): ObjectLocation[] {
+    return locations.map((location) => this.enforceLocation(location));
+  }
+
+  private enforceListPrefix(prefix?: string): string {
+    if (!prefix) {
+      return `${this.keyPrefix}/`;
+    }
+    return enforceKeyPrefix(prefix, this.keyPrefix);
   }
 
   async readMany(
@@ -70,12 +98,13 @@ export class S3ObjectStore extends ObjectStore {
       return Ok([]);
     }
 
-    this.logger.debug('Reading multiple objects from S3', { count: locations.length });
+    const enforcedLocations = this.enforceLocations(locations);
+
+    this.logger.debug('Reading multiple objects from S3', { count: enforcedLocations.length });
 
     try {
-      // Process all reads in parallel, preserving order
       const results = await Promise.all(
-        locations.map(async (location) => {
+        enforcedLocations.map(async (location) => {
           try {
             const file = this.s3Client.file(location.key, { bucket: location.bucket });
             const doesExist = await file.exists();
@@ -95,20 +124,21 @@ export class S3ObjectStore extends ObjectStore {
             });
             return { ...location, data };
           } catch (error) {
-            // If any read fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to read ${ObjectLocation.encode(location)}: ${errorMessage}`);
           }
         }),
       );
 
-      this.logger.debug('Successfully read multiple objects from S3', { count: locations.length });
+      this.logger.debug('Successfully read multiple objects from S3', {
+        count: enforcedLocations.length,
+      });
       return Ok(results);
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to read multiple objects from S3',
-        context: { count: locations.length },
+        context: { count: enforcedLocations.length },
         errorPrefix: 'Failed to read objects',
       });
     }
@@ -121,12 +151,17 @@ export class S3ObjectStore extends ObjectStore {
       return Ok([]);
     }
 
-    this.logger.debug('Writing multiple objects to S3', { count: entries.length });
+    const enforcedEntries = entries.map((entry) => ({
+      ...this.enforceLocation(entry),
+      data: entry.data,
+      contentType: entry.contentType,
+    }));
+
+    this.logger.debug('Writing multiple objects to S3', { count: enforcedEntries.length });
 
     try {
-      // Process all writes in parallel, preserving order
       const results = await Promise.all(
-        entries.map(async (entry) => {
+        enforcedEntries.map(async (entry) => {
           const { bucket, key, data, contentType } = entry;
           try {
             await this.s3Client.file(key, { bucket }).write(data, {
@@ -144,13 +179,15 @@ export class S3ObjectStore extends ObjectStore {
         }),
       );
 
-      this.logger.debug('Successfully wrote multiple objects to S3', { count: entries.length });
+      this.logger.debug('Successfully wrote multiple objects to S3', {
+        count: enforcedEntries.length,
+      });
       return Ok(results);
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to write multiple objects to S3',
-        context: { count: entries.length },
+        context: { count: enforcedEntries.length },
         errorPrefix: 'Failed to write objects',
       });
     }
@@ -163,12 +200,15 @@ export class S3ObjectStore extends ObjectStore {
       return Ok([]);
     }
 
-    this.logger.debug('Checking existence of multiple objects in S3', { count: locations.length });
+    const enforcedLocations = this.enforceLocations(locations);
+
+    this.logger.debug('Checking existence of multiple objects in S3', {
+      count: enforcedLocations.length,
+    });
 
     try {
-      // Process all existence checks in parallel, preserving order
       const results = await Promise.all(
-        locations.map(async (location) => {
+        enforcedLocations.map(async (location) => {
           try {
             const file = this.s3Client.file(location.key, { bucket: location.bucket });
             const exists = await file.exists();
@@ -189,14 +229,14 @@ export class S3ObjectStore extends ObjectStore {
       );
 
       this.logger.debug('Successfully checked existence of multiple objects in S3', {
-        count: locations.length,
+        count: enforcedLocations.length,
       });
       return Ok(results);
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to check existence of multiple objects in S3',
-        context: { count: locations.length },
+        context: { count: enforcedLocations.length },
         errorPrefix: 'Failed to check if objects exist',
       });
     }
@@ -207,12 +247,13 @@ export class S3ObjectStore extends ObjectStore {
       return Ok(undefined);
     }
 
-    this.logger.debug('Deleting multiple objects from S3', { count: locations.length });
+    const enforcedLocations = this.enforceLocations(locations);
+
+    this.logger.debug('Deleting multiple objects from S3', { count: enforcedLocations.length });
 
     try {
-      // Process all deletes in parallel
       await Promise.all(
-        locations.map(async (location) => {
+        enforcedLocations.map(async (location) => {
           try {
             const file = this.s3Client.file(location.key, { bucket: location.bucket });
 
@@ -274,14 +315,14 @@ export class S3ObjectStore extends ObjectStore {
       );
 
       this.logger.debug('Successfully deleted multiple objects from S3', {
-        count: locations.length,
+        count: enforcedLocations.length,
       });
       return Ok(undefined);
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to delete multiple objects from S3',
-        context: { count: locations.length },
+        context: { count: enforcedLocations.length },
         errorPrefix: 'Failed to delete objects',
       });
     }
@@ -333,11 +374,11 @@ export class S3ObjectStore extends ObjectStore {
   }
 
   /**
-   * True when MinIO is loopback-only and the app server should proxy presigned
-   * URLs through `/api/objects/...` so external clients can reach them.
+   * True when presigned URLs should go through the app server's `/api/objects/...`
+   * proxy so browsers upload/download same-origin (avoids remote S3 CORS setup).
    */
   private shouldProxyPresign(): boolean {
-    return this.serverBaseUrl !== undefined && isLoopbackHost(this.s3Endpoint);
+    return this.serverBaseUrl !== undefined;
   }
 
   async presignMany(
@@ -349,16 +390,22 @@ export class S3ObjectStore extends ObjectStore {
       return Ok([]);
     }
 
+    const enforcedEntries = entries.map((entry) => ({
+      ...this.enforceLocation(entry),
+      method: entry.method,
+      expiresIn: entry.expiresIn,
+      useHTTPS: entry.useHTTPS,
+    }));
+
     const proxyPresign = this.shouldProxyPresign();
     this.logger.debug('Generating multiple presigned URLs', {
-      count: entries.length,
+      count: enforcedEntries.length,
       proxyPresign,
     });
 
     try {
-      // Process all presign operations in parallel, preserving order
       const results = await Promise.all(
-        entries.map(async (entry) => {
+        enforcedEntries.map(async (entry) => {
           const { bucket, key, method, expiresIn, useHTTPS } = entry;
           try {
             let url: string;
@@ -413,7 +460,7 @@ export class S3ObjectStore extends ObjectStore {
       );
 
       this.logger.debug('Successfully generated multiple presigned URLs', {
-        count: entries.length,
+        count: enforcedEntries.length,
       });
       return Ok(results);
     } catch (error) {
@@ -421,7 +468,7 @@ export class S3ObjectStore extends ObjectStore {
         logger: this.logger,
         logMessage: 'Failed to generate multiple presigned URLs',
         context: {
-          count: entries.length,
+          count: enforcedEntries.length,
           s3Endpoint: this.s3Endpoint,
         },
         defaultMessage: 'Unknown error during presigned URL generation',
@@ -471,20 +518,22 @@ export class S3ObjectStore extends ObjectStore {
   }
 
   async readStream(params: ObjectLocation): Promise<Result<ReadableStream<Buffer>, string>> {
+    const location = this.enforceLocation(params);
+
     this.logger.debug('Reading object stream from S3', {
-      bucket: params.bucket,
-      key: params.key,
+      bucket: location.bucket,
+      key: location.key,
     });
 
     try {
-      const file = this.s3Client.file(params.key, { bucket: params.bucket });
+      const file = this.s3Client.file(location.key, { bucket: location.bucket });
       const doesExist = await file.exists();
       if (!doesExist) {
         this.logger.debug('Object not found in S3', {
-          bucket: params.bucket,
-          key: params.key,
+          bucket: location.bucket,
+          key: location.key,
         });
-        return Err(`Object not found: ${ObjectLocation.encode(params)}`);
+        return Err(`Object not found: ${ObjectLocation.encode(location)}`);
       }
 
       // Bun's S3Client file.stream() returns a ReadableStream
@@ -513,15 +562,15 @@ export class S3ObjectStore extends ObjectStore {
       });
 
       this.logger.debug('Successfully created stream for object from S3', {
-        bucket: params.bucket,
-        key: params.key,
+        bucket: location.bucket,
+        key: location.key,
       });
       return Ok(bufferStream);
     } catch (error) {
       return handleError(error, {
         logger: this.logger,
         logMessage: 'Failed to read object stream from S3',
-        context: { bucket: params.bucket, key: params.key },
+        context: { bucket: location.bucket, key: location.key },
         errorPrefix: 'Failed to read object stream',
       });
     }
@@ -553,7 +602,7 @@ export class S3ObjectStore extends ObjectStore {
     this.logger.debug('Listing objects in S3 bucket', { bucket, options });
 
     try {
-      const prefix = options?.prefix ?? '';
+      const prefix = this.enforceListPrefix(options?.prefix);
       const maxKeys = options?.maxKeys ?? 1000;
       const delimiter = options?.delimiter;
       const startAfter = options?.continuationToken;
@@ -658,34 +707,39 @@ export class S3ObjectStore extends ObjectStore {
     source: ObjectLocation,
     destination: ObjectLocation,
   ): Promise<Result<void, string>> {
+    const enforcedSource = this.enforceLocation(source);
+    const enforcedDestination = this.enforceLocation(destination);
+
     this.logger.debug('Copying object in S3', {
-      sourceBucket: source.bucket,
-      sourceKey: source.key,
-      destBucket: destination.bucket,
-      destKey: destination.key,
+      sourceBucket: enforcedSource.bucket,
+      sourceKey: enforcedSource.key,
+      destBucket: enforcedDestination.bucket,
+      destKey: enforcedDestination.key,
     });
 
     try {
-      // Check if source exists
-      const file = this.s3Client.file(source.key, { bucket: source.bucket });
+      const file = this.s3Client.file(enforcedSource.key, { bucket: enforcedSource.bucket });
       const doesExist = await file.exists();
       if (!doesExist) {
         this.logger.debug('Source object not found in S3', {
           bucket: source.bucket,
           key: source.key,
         });
-        return Err(`Object not found: ${ObjectLocation.encode(source)}`);
+        return Err(`Object not found: ${ObjectLocation.encode(enforcedSource)}`);
       }
 
-      // Use minio client's copyObject method
-      const copySource = `${source.bucket}/${source.key}`;
-      await this.minioClient.client.copyObject(destination.bucket, destination.key, copySource);
+      const copySource = `${enforcedSource.bucket}/${enforcedSource.key}`;
+      await this.minioClient.client.copyObject(
+        enforcedDestination.bucket,
+        enforcedDestination.key,
+        copySource,
+      );
 
       this.logger.debug('Successfully copied object in S3', {
-        sourceBucket: source.bucket,
-        sourceKey: source.key,
-        destBucket: destination.bucket,
-        destKey: destination.key,
+        sourceBucket: enforcedSource.bucket,
+        sourceKey: enforcedSource.key,
+        destBucket: enforcedDestination.bucket,
+        destKey: enforcedDestination.key,
       });
       return Ok(undefined);
     } catch (error) {
@@ -693,10 +747,10 @@ export class S3ObjectStore extends ObjectStore {
         logger: this.logger,
         logMessage: 'Failed to copy object in S3',
         context: {
-          sourceBucket: source.bucket,
-          sourceKey: source.key,
-          destBucket: destination.bucket,
-          destKey: destination.key,
+          sourceBucket: enforcedSource.bucket,
+          sourceKey: enforcedSource.key,
+          destBucket: enforcedDestination.bucket,
+          destKey: enforcedDestination.key,
         },
         errorPrefix: 'Failed to copy object',
       });

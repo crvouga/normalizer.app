@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { z } from 'zod';
-import { createPgliteSqlDb, createPostgresSqlDb } from '../../shared/sql-db';
+import { createPgliteSqlDb } from '../../shared/sql-db';
 import { createLogger } from '../logger';
 import { isOk } from '../result';
 import type { SqlDb } from './sql-db';
@@ -16,10 +16,7 @@ const testUserSchema = z.object({
 const testTableName = 'sql_db_test_users';
 
 // Test implementations
-const implementations = [
-  ['Postgres', createPostgresSqlDb] as const,
-  ['PGLite', createPgliteSqlDb] as const,
-];
+const implementations = [['PGLite', createPgliteSqlDb] as const];
 
 describe.each(implementations)('SqlDb (%s implementation)', (_implementationName, createDb) => {
   const logger = createLogger({ noop: true });

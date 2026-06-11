@@ -5,6 +5,7 @@ import { useEntityStore } from '../../store/entity-store';
 import { trpcClient } from '../../shared/trpc-client';
 import { showErrorToast, showSuccessToast } from '../../ui/toast';
 import { useI18n } from '../../i18n/use-i18n';
+import { normalizePresignedUrlForBrowser } from '../../lib/object-store/normalize-presigned-url-for-browser';
 import { Artifact } from '../artifact';
 import { ArtifactId } from '../artifact-id';
 
@@ -56,10 +57,7 @@ export function useArtifactUpload({
 
       entityStore.addEntity('artifacts', beforeArtifact);
 
-      const uploadUrl = new URL(before.upload_url);
-      uploadUrl.protocol = window.location.protocol;
-
-      const response = await fetch(uploadUrl.toString(), {
+      const response = await fetch(normalizePresignedUrlForBrowser(before.upload_url), {
         method: 'PUT',
         body: file,
         headers: {

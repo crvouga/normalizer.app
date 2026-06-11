@@ -1,43 +1,47 @@
-import { run } from 'graphile-worker';
+import { loadVaultSecrets } from './lib/secrets/load-vault-secrets';
+import { normalizeEnvAliases } from './lib/secrets/normalize-env-aliases';
+import { ensureGraphileWorkerSetup } from './lib/graphile-worker-lib';
 import { createLogger } from './lib/logger';
 import { onShutdown } from './lib/process/on-shutdown';
-import { SecretString } from './lib/secrets/secret-string';
-import { normalizationTask } from './workspace/normalization-task/normalization-task';
+import { startGraphileWorker } from './lib/start-graphile-worker';
 import { createDb } from './shared/db';
-import { createTaskList } from './shared/graphile-worker';
 
-const main = async () => {
+/**
+ * Standalone Graphile Worker entrypoint.
+ *
+ * Runs in its own Fly process group / machine so that CPU- and memory-heavy
+ * normalization jobs (PGlite WASM, tabular parsing, LLM calls) never starve
+ * the web server's event loop and trip its liveness health check.
+ */
+async function main() {
+  await loadVaultSecrets();
+  normalizeEnvAliases();
+
   const logger = createLogger().child('Worker');
 
-  logger.info('Starting Graphile Worker...');
-
-  const databaseUrl = SecretString.assertEnvVar('DATABASE_URL');
+  logger.info('Process info', {
+    bun_version: Bun.version,
+    pid: process.pid,
+    node_env: process.env.NODE_ENV ?? 'development',
+    fly_app: process.env.FLY_APP_NAME,
+    fly_region: process.env.FLY_REGION,
+    fly_machine_id: process.env.FLY_MACHINE_ID,
+  });
 
   const db = await createDb({ logger });
 
-  const taskList = createTaskList(
-    { logger, db },
-    {
-      normalization: normalizationTask,
-    },
-  );
+  await ensureGraphileWorkerSetup({ db, logger });
 
-  const runner = await run({
-    connectionString: databaseUrl.DANGEROUSLY_readValue(),
-    concurrency: 5,
-    taskList,
-  });
-
-  logger.info('Graphile Worker started');
+  const worker = await startGraphileWorker({ logger, db });
 
   onShutdown(logger, async () => {
-    logger.info('Shutting down worker, resetting ongoing jobs to pending...');
-
-    await runner.stop();
+    await worker.stop();
   });
 
-  await runner.promise;
-};
+  logger.info('Worker process ready and waiting for jobs');
+
+  await worker.promise;
+}
 
 main().catch((error) => {
   console.error('Failed to start worker:', error);

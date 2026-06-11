@@ -1,20 +1,25 @@
 import type { Logger } from '../lib/logger';
 import type { ObjectStore } from '../lib/object-store/object-store';
+import { OBJECT_KEY_PREFIX } from '../lib/object-store/object-key';
 import { S3ObjectStore } from '../lib/object-store/object-store-s3';
 import { getS3Config } from './s3-config';
 
 export async function createObjectStore({
   logger,
   serverBaseUrl,
+  keyPrefix = OBJECT_KEY_PREFIX,
 }: {
   logger: Logger;
   serverBaseUrl?: string;
+  keyPrefix?: string;
 }): Promise<ObjectStore> {
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket } = getS3Config();
+  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Bucket, s3Region } = getS3Config();
 
   logger.info('Initializing S3 object store...', {
     endpoint: s3Endpoint,
     bucket: s3Bucket,
+    region: s3Region,
+    keyPrefix,
     serverBaseUrl,
   });
 
@@ -23,6 +28,8 @@ export async function createObjectStore({
       s3Endpoint,
       s3AccessKeyId,
       s3SecretAccessKey,
+      s3Region,
+      keyPrefix,
       serverBaseUrl,
       logger,
     });

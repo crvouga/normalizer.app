@@ -2,14 +2,18 @@ import type { EventEmitter } from '../event-emitter/event-emitter';
 import { createAgenticLoop } from '../llm/agentic-loop';
 import type { LLM } from '../llm/llm';
 import type { Logger } from '../logger';
-import { createPostgresClient } from '../postgres/postgres-client';
-import { Err, isErr, Ok, type Result } from '../result';
+import { createPostgresClient, type ColumnMetadata } from '../postgres/postgres-client';
+import { Err, isErr, isOk, Ok, type Result } from '../result';
 import type { SqlDb } from '../sql-db/sql-db';
 import { createFollowUpPrompt } from './create-follow-up-prompt';
 import { createGoalPrompt } from './create-goal-prompt';
 import { createQueryDatabaseTool } from './create-query-database-tool';
 import { createSystemPrompt } from './create-system-prompt';
 import { createUserPrompt } from './create-user-prompt';
+import { extractQueryFromToolArguments } from '~/src/workspace/normalization-log/extract-query-from-tool-arguments';
+import { formatQueryResultLog } from '~/src/workspace/normalization-log/format-query-result-log';
+import type { NormalizationProgressReporter } from '~/src/workspace/normalization-log/normalization-progress-reporter';
+import { NormalizationProgressMessages } from '~/src/workspace/normalization-log/normalization-progress-messages';
 import type { NormalizerEvent } from './normalizer-event';
 
 /**
@@ -24,6 +28,7 @@ export async function createNormalizationViews({
   llm,
   sqlDb,
   logger,
+  progressReporter,
 }: {
   inputs: Array<{ viewName: string }>;
   targets: Array<{ viewName: string }>;
@@ -32,6 +37,7 @@ export async function createNormalizationViews({
   sqlDb: SqlDb;
   logger: Logger;
   eventEmitter: EventEmitter<NormalizerEvent>;
+  progressReporter?: NormalizationProgressReporter;
 }): Promise<Result<null, string>> {
   logger.info('Starting normalization view creation', {
     inputCount: inputs.length,
@@ -46,22 +52,93 @@ export async function createNormalizationViews({
   const outputViewNames = outputs.map((output) => output.viewName);
   const postgresClient = createPostgresClient({ db: sqlDb, logger });
   const queryDatabaseTool = createQueryDatabaseTool({ sqlDb, logger });
+
+  const tableSchemas: Record<string, ColumnMetadata[]> = {};
+  for (const tableName of [...inputTableNames, ...targetTableNames]) {
+    const schemaResult = await postgresClient.getTableSchema(tableName);
+    if (isOk(schemaResult)) {
+      tableSchemas[tableName] = schemaResult.value;
+    }
+  }
+
   const systemPrompt = createSystemPrompt({
     inputViewNames: inputTableNames,
     targetViewNames: targetTableNames,
     outputViewName: outputViewNames,
+    tableSchemas,
   });
   const goalPrompt = createGoalPrompt();
   const userPrompt = createUserPrompt();
 
-  logger.debug('System prompt for normalization view creation', { prompt: systemPrompt });
+  logger.debug('System prompt for normalization view creation', {
+    promptLength: systemPrompt.length,
+  });
+
+  for (const outputViewName of outputViewNames) {
+    const quotedName = `"${outputViewName.replace(/"/g, '""')}"`;
+    const dropResult = await sqlDb.unsafe(`DROP VIEW IF EXISTS ${quotedName} CASCADE`);
+    if (isErr(dropResult)) {
+      logger.warn('Failed to pre-drop output view', { outputViewName, error: dropResult.error });
+    }
+  }
+
+  progressReporter?.progress(NormalizationProgressMessages.analyzing);
 
   const agentLoop = createAgenticLoop({ llm, logger });
+  let lastSqlError: string | undefined;
 
   const ran = await agentLoop.run({
     tools: [queryDatabaseTool],
+    maxIterations: 20,
     goal: {
       description: goalPrompt,
+    },
+    hooks: {
+      onReasoningDelta(delta) {
+        progressReporter?.reasoning(delta);
+      },
+      onToolBatchStarted() {
+        progressReporter?.progress(NormalizationProgressMessages.applying);
+      },
+      afterToolBatch(results, toolCalls) {
+        for (let index = 0; index < results.length; index++) {
+          const result = results[index]!;
+          if (result.toolName !== 'query_database') continue;
+
+          const query = extractQueryFromToolArguments(toolCalls[index]?.arguments);
+
+          if (result.error) {
+            lastSqlError = result.error;
+            progressReporter?.queryResult({
+              message: result.error,
+              meta: {
+                resultType: 'error',
+                error: result.error,
+                ...(query !== undefined ? { query } : {}),
+              },
+            });
+            continue;
+          }
+
+          const formatted = formatQueryResultLog(result.content, query);
+          if (formatted) {
+            if (formatted.meta.resultType === 'error' && formatted.meta.error) {
+              lastSqlError = formatted.meta.error;
+            }
+            progressReporter?.queryResult(formatted);
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(result.content) as { error?: string };
+            if (parsed.error) {
+              lastSqlError = parsed.error;
+            }
+          } catch {
+            // ignore non-JSON tool output
+          }
+        }
+      },
     },
     initialMessages: [
       {
@@ -78,14 +155,21 @@ export async function createNormalizationViews({
 
       if (isErr(checked)) {
         const error = checked.error;
+        const outputViewName =
+          error.type === 'not-created' || error.type === 'errored'
+            ? error.viewName
+            : outputViewNames[0]!;
         logger.debug('Some output views do not exist yet or errored, continuing agentic loop', {
           error,
           stepNumber,
+          lastSqlError,
         });
         return {
           shouldContinue: true,
           followUpMessage: createFollowUpPrompt({
-            outputViewName: error.viewName,
+            outputViewName,
+            inputViewNames: inputTableNames,
+            ...(lastSqlError !== undefined ? { lastSqlError } : {}),
           }),
         };
       }
