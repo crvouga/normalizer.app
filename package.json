@@ -25,7 +25,7 @@
     "e2e:ui": "playwright test --ui",
     "format": "bun x sort-package-json && bun x prettier --write .",
     "format:check": "bun x prettier --check .",
-    "gh": "open https://github.com/crvouga/normalizer.app-1/actions",
+    "gh": "open https://github.com/crvouga/normalizer.app/actions",
     "kp": "bun x kill-port 8080",
     "s3:up": "bun run src/db/s3-migrations.ts",
     "server": "bun run --watch src/server.tsx",
