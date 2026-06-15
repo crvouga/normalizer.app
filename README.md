@@ -52,7 +52,7 @@ vault run -- bunx turbo run test
 
 ## Architecture
 
-- **App**: one Fly.io machine (`normalizer-app`) serves `https://www.normalizer.app` and runs graphile-worker in-process; `normalizer.app` redirects to www via Cloudflare
+- **App**: Docker containers on the chrisvouga.dev origin stack — `normalizer.chrisvouga.dev` (web) and a separate worker container; `normalizer.app` / `www.normalizer.app` redirect via Cloudflare
 - **Database**: shared Postgres; all tables live in schema `normalizer_app` (never `public`)
 - **Object storage**: Backblaze B2 (S3-compatible); all keys are prefixed `normalizer-app/`
 - **Secrets**: self-hosted OpenBao at `https://vault.chrisvouga.dev`
@@ -63,36 +63,27 @@ vault run -- bunx turbo run test
 | ----------- | -------------------------------------------------------------------------- |
 | Local dev   | `vault run -- <command>` reads `secret/personal/dev`                       |
 | CI          | GitHub Actions OIDC → `hashicorp/vault-action` reads `secret/personal/prd` |
-| Fly runtime | `VAULT_TOKEN` + KV v2 HTTP read of `secret/personal/prd` at boot           |
+| Production  | Infra syncs env from Vault to the origin droplet at deploy time            |
 
 Never commit secret values. [`.env.example`](.env.example) lists names only.
 
 ## Deployment
 
-CI on push to `main` or manual **Run workflow** dispatch:
+Push to `main` triggers **Publish image** (builds `normalizer` + `normalizer-worker` images) and dispatches infra **Deploy Pipeline**.
 
-1. Runs checks via Turborepo with self-hosted remote caching (type-check, circular deps, unit tests, e2e)
-2. Migrates production DB via Vault OIDC (`DATABASE_URL` from `secret/personal/prd`)
-3. Provisions and deploys to Fly via [`scripts/fly-deploy.sh`](scripts/fly-deploy.sh):
-   - creates the Fly app if missing
-   - allocates public IPs
-   - syncs `VAULT_TOKEN` to Fly secrets
-   - requests TLS certs for `www.normalizer.app` and `normalizer.app`
-   - upserts Cloudflare DNS: `www` points to Fly (DNS-only); apex is proxied with a 301 redirect to www
-   - deploys with `flyctl deploy --remote-only`
+**Deployment Pipeline** in this repo runs checks and production DB migrations only.
 
 ### One-time secret-store setup
 
-Add these keys to `secret/personal/prd` (no manual `flyctl` steps):
+Add these keys to `secret/personal/prd`:
 
-| Key                    | Purpose                                                                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TURBO_API`            | Self-hosted Turborepo remote cache server URL                                                                                                |
-| `TURBO_TOKEN`          | Auth token for the remote cache                                                                                                              |
-| `TURBO_TEAM`           | Team slug for the remote cache                                                                                                               |
-| `FLY_API_TOKEN`        | CI authentication with Fly.io                                                                                                                |
-| `VAULT_TOKEN`          | Long-lived token for the Fly app to read `secret/personal/prd` at boot (create via `./scripts/create-dev-token.sh` in the secret-store repo) |
-| `CLOUDFLARE_API_TOKEN` | DNS + redirect rule edit access for the `normalizer.app` zone                                                                                |
+| Key                    | Purpose                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `TURBO_API`            | Self-hosted Turborepo remote cache server URL                                  |
+| `TURBO_TOKEN`          | Auth token for the remote cache                                              |
+| `TURBO_TEAM`           | Team slug for the remote cache                                               |
+| `VAULT_TOKEN`          | Long-lived token for runtime secret loading (if not using infra env sync)    |
+| `CLOUDFLARE_API_TOKEN` | DNS + redirect rule edit access for the `normalizer.app` zone                |
 
 ## Google OAuth (optional)
 

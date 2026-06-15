@@ -9,9 +9,8 @@ import { createDb } from './shared/db';
 /**
  * Standalone Graphile Worker entrypoint.
  *
- * Runs in its own Fly process group / machine so that CPU- and memory-heavy
- * normalization jobs (PGlite WASM, tabular parsing, LLM calls) never starve
- * the web server's event loop and trip its liveness health check.
+ * Runs in a separate container so CPU- and memory-heavy normalization jobs
+ * (PGlite WASM, tabular parsing, LLM calls) never starve the web server.
  */
 async function main() {
   await loadVaultSecrets();
@@ -23,9 +22,7 @@ async function main() {
     bun_version: Bun.version,
     pid: process.pid,
     node_env: process.env.NODE_ENV ?? 'development',
-    fly_app: process.env.FLY_APP_NAME,
-    fly_region: process.env.FLY_REGION,
-    fly_machine_id: process.env.FLY_MACHINE_ID,
+    hostname: process.env.HOSTNAME,
   });
 
   const db = await createDb({ logger });

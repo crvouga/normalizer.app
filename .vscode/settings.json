@@ -35,7 +35,6 @@
     "Backblaze",
     "chrisvouga",
     "cloc",
-    "flyctl",
     "Graphile",
     "healthcheck",
     "HMAC",
@@ -54,7 +53,6 @@
     "presigning",
     "spreadsheetml",
     "sslmode",
-    "stringifying",
-    "superfly"
+    "stringifying"
   ]
 }
