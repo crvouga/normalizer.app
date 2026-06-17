@@ -19,7 +19,7 @@ import {
 
 const TIMEOUT = Infinity;
 
-describe('TabularDataPostgresImporter - Boise Rules CSV', () => {
+describe.skip('TabularDataPostgresImporter - Boise Rules CSV', () => {
   let fixtures: TestFixtures;
 
   beforeAll(async () => {

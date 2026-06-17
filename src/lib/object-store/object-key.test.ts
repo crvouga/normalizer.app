@@ -5,6 +5,7 @@ import {
   fullStoreKeyPrefix,
   objectKey,
   OBJECT_KEY_PREFIX,
+  stripStoreKeyPrefix,
   validateStoreNamespace,
 } from './object-key';
 
@@ -71,5 +72,25 @@ describe('applyStoreKeyPrefix', () => {
     expect(String(applyStoreKeyPrefix(logical, 'test-ns'))).toBe(
       `${OBJECT_KEY_PREFIX}/test-ns/artifacts/file.csv`,
     );
+  });
+});
+
+describe('stripStoreKeyPrefix', () => {
+  test('removes store namespace from physical keys', () => {
+    const physical = `${OBJECT_KEY_PREFIX}/prd/artifacts/file.csv`;
+    expect(String(stripStoreKeyPrefix(physical, 'prd'))).toBe(
+      `${OBJECT_KEY_PREFIX}/artifacts/file.csv`,
+    );
+  });
+
+  test('is idempotent on logical keys', () => {
+    const logical = `${OBJECT_KEY_PREFIX}/artifacts/file.csv`;
+    expect(String(stripStoreKeyPrefix(logical, 'prd'))).toBe(logical);
+  });
+
+  test('round-trips with applyStoreKeyPrefix', () => {
+    const logical = `${OBJECT_KEY_PREFIX}/artifacts/file.csv`;
+    const physical = applyStoreKeyPrefix(logical, 'test-ns');
+    expect(String(stripStoreKeyPrefix(physical, 'test-ns'))).toBe(logical);
   });
 });

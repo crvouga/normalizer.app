@@ -4,7 +4,7 @@ import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
 import { Err, Ok, type Result } from '../result';
 import { parseAndValidateURL } from '../url';
-import { applyStoreKeyPrefix, fullStoreKeyPrefix } from './object-key';
+import { applyStoreKeyPrefix, fullStoreKeyPrefix, stripStoreKeyPrefix } from './object-key';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
 import { generateServerPresignedUrl } from './presigned-url';
@@ -91,6 +91,10 @@ export class S3ObjectStore extends ObjectStore {
     return applyStoreKeyPrefix(prefix, this.storeNamespace);
   }
 
+  private toLogicalKey(key: string): string {
+    return stripStoreKeyPrefix(key, this.storeNamespace);
+  }
+
   async readMany(
     locations: ObjectLocation[],
   ): Promise<Result<Array<ObjectLocation & { data: Buffer | null }>, string>> {
@@ -104,7 +108,8 @@ export class S3ObjectStore extends ObjectStore {
 
     try {
       const results = await Promise.all(
-        enforcedLocations.map(async (location) => {
+        enforcedLocations.map(async (location, index) => {
+          const inputLocation = locations[index]!;
           try {
             const file = this.s3Client.file(location.key, { bucket: location.bucket });
             const doesExist = await file.exists();
@@ -113,7 +118,7 @@ export class S3ObjectStore extends ObjectStore {
                 bucket: location.bucket,
                 key: location.key,
               });
-              return { ...location, data: null };
+              return { ...inputLocation, data: null };
             }
 
             const arrayBuffer = await file.arrayBuffer();
@@ -122,7 +127,7 @@ export class S3ObjectStore extends ObjectStore {
               bucket: location.bucket,
               key: location.key,
             });
-            return { ...location, data };
+            return { ...inputLocation, data };
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to read ${ObjectLocation.encode(location)}: ${errorMessage}`);
@@ -161,14 +166,15 @@ export class S3ObjectStore extends ObjectStore {
 
     try {
       const results = await Promise.all(
-        enforcedEntries.map(async (entry) => {
+        enforcedEntries.map(async (entry, index) => {
+          const inputEntry = entries[index]!;
           const { bucket, key, data, contentType } = entry;
           try {
             await this.s3Client.file(key, { bucket }).write(data, {
               type: contentType ?? '',
             });
             this.logger.debug('Successfully wrote object to S3', { bucket, key, contentType });
-            return { bucket, key };
+            return { bucket: inputEntry.bucket, key: inputEntry.key };
           } catch (error) {
             // If any write fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -208,7 +214,8 @@ export class S3ObjectStore extends ObjectStore {
 
     try {
       const results = await Promise.all(
-        enforcedLocations.map(async (location) => {
+        enforcedLocations.map(async (location, index) => {
+          const inputLocation = locations[index]!;
           try {
             const file = this.s3Client.file(location.key, { bucket: location.bucket });
             const exists = await file.exists();
@@ -217,7 +224,7 @@ export class S3ObjectStore extends ObjectStore {
               key: location.key,
               exists,
             });
-            return { ...location, exists };
+            return { ...inputLocation, exists };
           } catch (error) {
             // If any check fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -405,7 +412,8 @@ export class S3ObjectStore extends ObjectStore {
 
     try {
       const results = await Promise.all(
-        enforcedEntries.map(async (entry) => {
+        enforcedEntries.map(async (entry, index) => {
+          const inputEntry = entries[index]!;
           const { bucket, key, method, expiresIn, useHTTPS } = entry;
           try {
             let url: string;
@@ -448,7 +456,7 @@ export class S3ObjectStore extends ObjectStore {
               useHTTPS,
               proxyPresign,
             });
-            return { bucket, key, url };
+            return { bucket: inputEntry.bucket, key: inputEntry.key, url };
           } catch (error) {
             // If any presign fails, return error for the entire batch
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -665,13 +673,14 @@ export class S3ObjectStore extends ObjectStore {
 
           if (obj.prefix) {
             // This is a common prefix (directory-like)
-            if (delimiter && !commonPrefixes.includes(obj.prefix)) {
-              commonPrefixes.push(obj.prefix);
+            const logicalPrefix = this.toLogicalKey(obj.prefix);
+            if (delimiter && !commonPrefixes.includes(logicalPrefix)) {
+              commonPrefixes.push(logicalPrefix);
             }
           } else if (obj.name) {
             // This is an object
             objects.push({
-              key: obj.name,
+              key: this.toLogicalKey(obj.name),
               size: obj.size ?? 0,
               lastModified: obj.lastModified ? new Date(obj.lastModified) : new Date(),
             });

@@ -93,3 +93,20 @@ export function applyStoreKeyPrefix(key: string, storeNamespace: string): Prefix
 
   return toPrefixedKey(`${OBJECT_KEY_PREFIX}/${storeNamespace}/${afterApp}`);
 }
+
+/**
+ * Strip a store namespace from a physical key, producing the logical key
+ * exposed at the ObjectStore API boundary. Idempotent when the namespace is absent.
+ */
+export function stripStoreKeyPrefix(key: string, storeNamespace: string): PrefixedObjectKey {
+  validateStoreNamespace(storeNamespace);
+  const logicalKey = enforceKeyPrefix(key);
+  const afterApp = logicalKey.slice(PREFIX_WITH_SLASH.length);
+  const namespacePrefix = `${storeNamespace}/`;
+
+  if (afterApp.startsWith(namespacePrefix)) {
+    return toPrefixedKey(`${OBJECT_KEY_PREFIX}/${afterApp.slice(namespacePrefix.length)}`);
+  }
+
+  return logicalKey;
+}

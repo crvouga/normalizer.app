@@ -55,9 +55,18 @@ describe.each(implementations)(
     let destStore: ObjectStore;
 
     beforeAll(async () => {
-      sourceStore = await createStore(logger);
-      destStore = await createStore(logger);
-      if (implementationName !== 'S3') {
+      if (implementationName === 'S3') {
+        sourceStore = await createObjectStore({
+          logger,
+          keyPrefix: 'test-object-store-copy-src',
+        });
+        destStore = await createObjectStore({
+          logger,
+          keyPrefix: 'test-object-store-copy-dst',
+        });
+      } else {
+        sourceStore = await createStore(logger);
+        destStore = await createStore(logger);
         await sourceStore.ensureBucketExists(sourceBucket);
         await destStore.ensureBucketExists(destBucket);
       }
