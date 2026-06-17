@@ -1,5 +1,6 @@
 import { asTestKey } from '../../../shared/test-object-key';
 import { createObjectStore } from '../../../shared/s3';
+import { getS3Config } from '../../../shared/s3-config';
 import { createPgliteSqlDb } from '../../../shared/sql-db';
 import { createLogger } from '../../logger';
 import type { ObjectStore } from '../../object-store/object-store';
@@ -8,7 +9,7 @@ import { isOk } from '../../result';
 import type { SqlDb } from '../../sql-db/sql-db';
 import { TabularDataPostgresExporter } from '../tabular-data-postgres-exporter';
 
-export const TEST_BUCKET = 'test-bucket';
+export const TEST_BUCKET = getS3Config().s3Bucket;
 export const MOCK_SERVER_BASE_URL = 'http://localhost:8080';
 
 export interface TestFixtures {
@@ -90,8 +91,11 @@ export async function readExportedFile(
 export async function setupFixtures(): Promise<TestFixtures> {
   const logger = createLogger({ noop: true });
   const db = await createPgliteSqlDb({ logger });
-  const objectStore = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
-  await objectStore.ensureBucketExists(TEST_BUCKET);
+  const objectStore = await createObjectStore({
+    logger,
+    serverBaseUrl: MOCK_SERVER_BASE_URL,
+    keyPrefix: 'test-tabular-exporter',
+  });
   const exporter = new TabularDataPostgresExporter(db, logger, objectStore);
   const postgresClient = createPostgresClient({ db, logger });
   const testTables: string[] = [];

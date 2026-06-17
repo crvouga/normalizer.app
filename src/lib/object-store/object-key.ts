@@ -24,6 +24,21 @@ function toPrefixedKey(key: string): PrefixedObjectKey {
 }
 
 /**
+ * Validate a store namespace segment (single path component, no separators).
+ */
+export function validateStoreNamespace(namespace: string): void {
+  validateSegment(namespace);
+}
+
+/**
+ * Full physical key prefix for a store namespace: `normalizer-app/<namespace>`.
+ */
+export function fullStoreKeyPrefix(storeNamespace: string): string {
+  validateStoreNamespace(storeNamespace);
+  return `${OBJECT_KEY_PREFIX}/${storeNamespace}`;
+}
+
+/**
  * Build a prefixed object key from path segments.
  * Idempotent when the first segment is already the app prefix.
  */
@@ -50,12 +65,7 @@ export function objectKey(...segments: string[]): PrefixedObjectKey {
 /**
  * Enforce the app key prefix at runtime. Prepends when missing; throws on escape.
  */
-export function enforceKeyPrefix(
-  key: string,
-  prefix: string = OBJECT_KEY_PREFIX,
-): PrefixedObjectKey {
-  const prefixWithSlash = `${prefix}/`;
-
+export function enforceKeyPrefix(key: string): PrefixedObjectKey {
   if (key.startsWith('..') || key.startsWith('/') || key.startsWith('\\')) {
     throw new Error(`Object key must not start with a path separator or traversal: ${key}`);
   }
@@ -63,6 +73,23 @@ export function enforceKeyPrefix(
     throw new Error(`Object key must not contain path traversal: ${key}`);
   }
 
-  const normalized = key.startsWith(prefixWithSlash) ? key : `${prefixWithSlash}${key}`;
+  const normalized = key.startsWith(PREFIX_WITH_SLASH) ? key : `${PREFIX_WITH_SLASH}${key}`;
   return toPrefixedKey(normalized);
+}
+
+/**
+ * Apply a store namespace to a logical key, producing a physical key:
+ * `normalizer-app/<storeNamespace>/<rest>`.
+ * Idempotent when the namespace is already present.
+ */
+export function applyStoreKeyPrefix(key: string, storeNamespace: string): PrefixedObjectKey {
+  validateStoreNamespace(storeNamespace);
+  const logicalKey = enforceKeyPrefix(key);
+  const afterApp = logicalKey.slice(PREFIX_WITH_SLASH.length);
+
+  if (afterApp === storeNamespace || afterApp.startsWith(`${storeNamespace}/`)) {
+    return logicalKey;
+  }
+
+  return toPrefixedKey(`${OBJECT_KEY_PREFIX}/${storeNamespace}/${afterApp}`);
 }

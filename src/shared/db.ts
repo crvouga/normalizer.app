@@ -68,6 +68,14 @@ export const cleanupDb = async (logger: Logger): Promise<void> => {
     try {
       logger.info('Closing database connection...');
       if (globalPostgres) {
+        const poolState = (
+          globalPostgres as ReturnType<typeof postgres> & {
+            __poolState?: { keepWarm: boolean };
+          }
+        ).__poolState;
+        if (poolState) {
+          poolState.keepWarm = false;
+        }
         await globalPostgres.end();
       }
       globalPostgres = null;

@@ -1,33 +1,22 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { createLogger } from '../lib/logger';
 import { objectKey } from '../lib/object-store/object-key';
-import type { ObjectStore } from '../lib/object-store/object-store';
 import { S3ObjectStore } from '../lib/object-store/object-store-s3';
 import { isOk } from '../lib/result';
 import { createObjectStore } from './s3';
 import { getS3Config } from './s3-config';
 
+const TEST_KEY_PREFIX = 'test-s3';
+
 describe('S3 Client', () => {
   const logger = createLogger({ noop: true });
-  const { s3Endpoint, s3AccessKeyId, s3SecretAccessKey, s3Region, s3Bucket } = getS3Config();
-  const objectStore: ObjectStore = new S3ObjectStore({
-    s3Endpoint,
-    s3AccessKeyId,
-    s3SecretAccessKey,
-    s3Region,
-    keyPrefix: 'normalizer-app',
-    logger,
-  });
-  const testBucket = s3Bucket;
-  beforeAll(async () => {
-    await objectStore.ensureBucketExists(testBucket);
-  });
+  const { s3Bucket } = getS3Config();
 
   test('should support put and get flow', async () => {
-    const objectStore = await createObjectStore({ logger });
+    const objectStore = await createObjectStore({ logger, keyPrefix: TEST_KEY_PREFIX });
     const key = objectKey('test', `test-key-${Math.random()}`);
     const value = Buffer.from('Hello S3!');
-    const bucket = testBucket;
+    const bucket = s3Bucket;
 
     const writeResult = await objectStore.write({ bucket, key, data: value });
     expect(writeResult.tag).toBe('ok');
@@ -51,7 +40,7 @@ describe('S3ObjectStore proxy presign', () => {
       s3AccessKeyId,
       s3SecretAccessKey,
       s3Region,
-      keyPrefix: 'normalizer-app',
+      storeNamespace: TEST_KEY_PREFIX,
       serverBaseUrl,
       logger,
     });
@@ -85,7 +74,7 @@ describe('S3ObjectStore proxy presign', () => {
       s3AccessKeyId,
       s3SecretAccessKey,
       s3Region: 'us-west-004',
-      keyPrefix: 'normalizer-app',
+      storeNamespace: TEST_KEY_PREFIX,
       serverBaseUrl,
       logger,
     });
@@ -116,7 +105,7 @@ describe('S3ObjectStore proxy presign', () => {
       s3AccessKeyId,
       s3SecretAccessKey,
       s3Region,
-      keyPrefix: 'normalizer-app',
+      storeNamespace: TEST_KEY_PREFIX,
       logger,
     });
 

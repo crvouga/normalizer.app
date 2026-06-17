@@ -4,15 +4,18 @@ import { createLogger } from '../lib/logger';
 import type { ObjectStore } from '../lib/object-store/object-store';
 import { isOk } from '../lib/result';
 import { createObjectStore } from '../shared/s3';
+import { getS3Config } from '../shared/s3-config';
 import { Artifact, Artifact as ArtifactModule } from './artifact';
 import { ArtifactId } from './artifact-id';
 import { refreshArtifactData } from './artifact-refresh';
 
 describe('Artifact.refreshData', async () => {
   const logger = createLogger({ noop: true });
-  const testBucket = 'test';
-  const objectStore: ObjectStore = await createObjectStore({ logger });
-  await objectStore.ensureBucketExists(testBucket);
+  const { s3Bucket: testBucket } = getS3Config();
+  const objectStore: ObjectStore = await createObjectStore({
+    logger,
+    keyPrefix: 'test-artifact',
+  });
 
   test('should generate valid presigned upload and download URLs', async () => {
     const artifactId = ArtifactId.generate();

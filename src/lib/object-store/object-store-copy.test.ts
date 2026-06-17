@@ -3,6 +3,7 @@ import { asTestKey as k } from '~/src/shared/test-object-key';
 import { rmSync } from 'fs';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
+import { getS3Config } from '~/src/shared/s3-config';
 import { createLogger, type Logger } from '../logger';
 import { isOk } from '../result';
 import type { ObjectStore } from './object-store';
@@ -16,9 +17,7 @@ const implementations = [
   [
     'S3',
     async (logger: Logger): Promise<ObjectStore> => {
-      const store = await createObjectStore({ logger });
-      await store.ensureBucketExists('test');
-      return store;
+      return createObjectStore({ logger, keyPrefix: 'test-object-store-copy' });
     },
   ] as const,
   [
@@ -47,18 +46,21 @@ const implementations = [
 
 describe.each(implementations)(
   'copyObjectStoreDirectory (%s implementation)',
-  async (_implementationName, createStore) => {
+  async (implementationName, createStore) => {
     const logger = createLogger({ noop: true });
-    const sourceBucket = 'test-source';
-    const destBucket = 'test-dest';
+    const s3Bucket = getS3Config().s3Bucket;
+    const sourceBucket = implementationName === 'S3' ? s3Bucket : 'test-source';
+    const destBucket = implementationName === 'S3' ? s3Bucket : 'test-dest';
     let sourceStore: ObjectStore;
     let destStore: ObjectStore;
 
     beforeAll(async () => {
       sourceStore = await createStore(logger);
       destStore = await createStore(logger);
-      await sourceStore.ensureBucketExists(sourceBucket);
-      await destStore.ensureBucketExists(destBucket);
+      if (implementationName !== 'S3') {
+        await sourceStore.ensureBucketExists(sourceBucket);
+        await destStore.ensureBucketExists(destBucket);
+      }
     });
 
     afterAll(async () => {
@@ -480,15 +482,18 @@ describe.each(implementations)(
 // Cross-store tests (S3 to Filesystem and vice versa)
 describe('copyObjectStoreDirectory (cross-store)', () => {
   const logger = createLogger({ noop: true });
-  const sourceBucket = 'test-cross-source';
+  const { s3Bucket: sourceBucket } = getS3Config();
   const destBucket = 'test-cross-dest';
   let s3Store: ObjectStore;
   let fsStore: ObjectStore;
   let fsBasePath: string | undefined;
 
   beforeAll(async () => {
-    s3Store = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
-    await s3Store.ensureBucketExists(sourceBucket);
+    s3Store = await createObjectStore({
+      logger,
+      serverBaseUrl: MOCK_SERVER_BASE_URL,
+      keyPrefix: 'test-object-store-copy-cross',
+    });
 
     const { mkdtemp } = await import('fs/promises');
     const { join } = await import('path');

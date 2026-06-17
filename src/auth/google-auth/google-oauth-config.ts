@@ -1,4 +1,5 @@
 import type { Logger } from '../../lib/logger';
+import { isLoopbackHost } from '../../lib/object-store/loopback-host';
 
 export type GoogleOAuthConfigStatus = 'enabled' | 'missing' | 'partial' | 'empty';
 
@@ -30,15 +31,7 @@ export function isGoogleAuthEnabled(): boolean {
 
 const GOOGLE_OAUTH_CALLBACK_PATH = '/api/auth/google/callback';
 
-/**
- * Base URL for OAuth redirects. Uses SERVER_BASE_URL when set, otherwise
- * http://localhost:{PORT}. Normalizes 0.0.0.0 to localhost — Google OAuth
- * only accepts localhost or 127.0.0.1 as loopback redirect hosts.
- */
-export function getServerBaseUrl(): string {
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-  const raw = process.env.SERVER_BASE_URL?.trim() || `http://localhost:${port}`;
-
+function normalizeOrigin(raw: string): string {
   try {
     const url = new URL(raw);
     if (url.hostname === '0.0.0.0') {
@@ -50,8 +43,54 @@ export function getServerBaseUrl(): string {
   }
 }
 
-export function getGoogleOAuthRedirectUri(): string {
-  return `${getServerBaseUrl()}${GOOGLE_OAUTH_CALLBACK_PATH}`;
+function getRequestOrigin(req: Request): string | null {
+  const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const host = forwardedHost ?? req.headers.get('host')?.trim();
+
+  if (host) {
+    const proto =
+      forwardedProto ??
+      (process.env.NODE_ENV === 'production' && !isLoopbackHost(host) ? 'https' : 'http');
+    return normalizeOrigin(`${proto}://${host}`);
+  }
+
+  try {
+    const url = new URL(req.url);
+    if (!isLoopbackHost(url.hostname)) {
+      return url.origin;
+    }
+  } catch {
+    // ignore invalid request URL
+  }
+
+  return null;
+}
+
+/**
+ * Base URL for OAuth redirects. Prefers SERVER_BASE_URL when set; otherwise derives
+ * the public origin from proxy headers (Fly sets X-Forwarded-Proto/Host). Falls back
+ * to http://localhost:{PORT} for local dev only.
+ */
+export function getServerBaseUrl(req?: Request): string {
+  const fromEnv = process.env.SERVER_BASE_URL?.trim();
+  if (fromEnv) {
+    return normalizeOrigin(fromEnv);
+  }
+
+  if (req) {
+    const fromRequest = getRequestOrigin(req);
+    if (fromRequest) {
+      return fromRequest;
+    }
+  }
+
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+  return `http://localhost:${port}`;
+}
+
+export function getGoogleOAuthRedirectUri(req?: Request): string {
+  return `${getServerBaseUrl(req)}${GOOGLE_OAUTH_CALLBACK_PATH}`;
 }
 
 export function getGoogleOAuthConfigStatus(): GoogleOAuthConfigStatus {

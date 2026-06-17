@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { asTestKey as k } from '~/src/shared/test-object-key';
 import * as XLSX from 'xlsx';
 import { createObjectStore } from '../../shared/s3';
+import { getS3Config } from '../../shared/s3-config';
 import { createLogger } from '../logger';
 import type { ObjectStore } from '../object-store/object-store';
 import { isOk } from '../result';
@@ -10,9 +11,11 @@ import { TabularDataConverter } from './tabular-data-converter';
 
 describe('FileConverter', async () => {
   const logger = createLogger({ noop: true });
-  const testBucket = 'test-file-converter';
-  const objectStore: ObjectStore = await createObjectStore({ logger });
-  await objectStore.ensureBucketExists(testBucket);
+  const { s3Bucket: testBucket } = getS3Config();
+  const objectStore: ObjectStore = await createObjectStore({
+    logger,
+    keyPrefix: 'test-tabular-converter',
+  });
   const tabularDataConverter: TabularDataConverter = new TabularDataConverter({
     objectStore,
     logger,

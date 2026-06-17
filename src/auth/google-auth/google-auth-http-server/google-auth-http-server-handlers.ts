@@ -5,7 +5,7 @@ import { isErr } from '../../../lib/result';
 import type { Db } from '../../../shared/db';
 import { SessionId } from '../../../shared/session-id';
 import { getSessionId, setSessionCookie } from '../../../shared/session-id-cookie';
-import { isGoogleAuthEnabled } from '../google-oauth-config';
+import { isGoogleAuthEnabled, getServerBaseUrl } from '../google-oauth-config';
 import { GoogleOAuthService } from '../google-oauth-service';
 import { GoogleAuthUserService } from './google-auth-http-server-user-service';
 
@@ -52,7 +52,7 @@ export class GoogleAuthHttpServerHandlers {
 
     if (isErr(generateAuthUrlResult)) {
       logger.error('Error generating Google auth URL:', { error: generateAuthUrlResult.error });
-      return this.createErrorRedirect('config_error');
+      return this.createErrorRedirect('config_error', req);
     }
 
     const { url, state } = generateAuthUrlResult.value;
@@ -80,7 +80,7 @@ export class GoogleAuthHttpServerHandlers {
     // Return 404 if Google Auth is not configured
     if (!isGoogleAuthEnabled()) {
       logger.warn('Google OAuth callback accessed but not configured');
-      return this.createErrorRedirect('not_configured');
+      return this.createErrorRedirect('not_configured', req);
     }
 
     const url = new URL(req.url);
@@ -92,14 +92,14 @@ export class GoogleAuthHttpServerHandlers {
     // Handle OAuth errors from Google
     if (error) {
       logger.warn(`OAuth error from Google: ${error}`);
-      return this.createErrorRedirect(error);
+      return this.createErrorRedirect(error, req);
     }
 
     // Validate required parameters
     const paramsError = this.validateOAuthParams(code, state);
     if (paramsError) {
       logger.warn('Missing code or state in OAuth callback');
-      return this.createErrorRedirect(paramsError);
+      return this.createErrorRedirect(paramsError, req);
     }
 
     // At this point, code and state are guaranteed to be non-null due to validation
@@ -110,7 +110,7 @@ export class GoogleAuthHttpServerHandlers {
     const stateError = this.validateOAuthState(validatedState, storedState ?? null);
     if (stateError) {
       logger.warn('OAuth state mismatch - potential CSRF attack');
-      return this.createErrorRedirect(stateError);
+      return this.createErrorRedirect(stateError, req);
     }
 
     // Exchange code for tokens and get session ID from OAuth state
@@ -124,7 +124,7 @@ export class GoogleAuthHttpServerHandlers {
 
     if (isErr(validateCallbackResult)) {
       logger.error('Google OAuth callback error:', { error: validateCallbackResult.error });
-      return this.createErrorRedirect('oauth_failed');
+      return this.createErrorRedirect('oauth_failed', req);
     }
 
     const { accessToken, sessionId: stateSessionId } = validateCallbackResult.value;
@@ -134,7 +134,7 @@ export class GoogleAuthHttpServerHandlers {
 
     if (isErr(getUserInfoResult)) {
       logger.error('Google OAuth callback error:', { error: getUserInfoResult.error });
-      return this.createErrorRedirect('oauth_failed');
+      return this.createErrorRedirect('oauth_failed', req);
     }
 
     const googleUser = getUserInfoResult.value;
@@ -150,7 +150,7 @@ export class GoogleAuthHttpServerHandlers {
 
     // Redirect to app with success and set session cookie
     // Since this is a same-site navigation, the Strict cookie will be set correctly
-    const successResponse = this.createSuccessRedirect();
+    const successResponse = this.createSuccessRedirect(req);
     return setSessionCookie(req, successResponse, sessionId);
   }
 
@@ -201,15 +201,15 @@ export class GoogleAuthHttpServerHandlers {
   /**
    * Create error redirect response
    */
-  private createErrorRedirect(error: string): Response {
-    return Response.redirect(`/?auth_error=${error}`);
+  private createErrorRedirect(error: string, req: Request): Response {
+    return Response.redirect(`${getServerBaseUrl(req)}/?auth_error=${error}`);
   }
 
   /**
    * Create success redirect response
    */
-  private createSuccessRedirect(): Response {
-    return Response.redirect('/?auth_success=true');
+  private createSuccessRedirect(req: Request): Response {
+    return Response.redirect(`${getServerBaseUrl(req)}/?auth_success=true`);
   }
 
   /**

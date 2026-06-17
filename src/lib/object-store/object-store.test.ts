@@ -3,6 +3,7 @@ import { asTestKey as k } from '~/src/shared/test-object-key';
 import { rmSync } from 'fs';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
+import { getS3Config } from '~/src/shared/s3-config';
 import { createLogger, type Logger } from '../logger';
 import { isOk } from '../result';
 import { getContentType } from '../tabular-data-format';
@@ -18,9 +19,11 @@ const implementations = [
   [
     'S3',
     async (logger: Logger): Promise<ObjectStore> => {
-      const store = await createObjectStore({ logger, serverBaseUrl: MOCK_SERVER_BASE_URL });
-      await store.ensureBucketExists('test');
-      return store;
+      return createObjectStore({
+        logger,
+        serverBaseUrl: MOCK_SERVER_BASE_URL,
+        keyPrefix: 'test-object-store',
+      });
     },
   ] as const,
   [
@@ -51,13 +54,14 @@ const implementations = [
 
 describe.each(implementations)(
   'ObjectStore (%s implementation)',
-  async (_implementationName, createStore) => {
+  async (implementationName, createStore) => {
     const logger = createLogger({ noop: true });
-    const testBucket = 'test';
+    let testBucket: string;
     let store: ObjectStore;
 
     beforeAll(async () => {
       store = await createStore(logger);
+      testBucket = implementationName === 'S3' ? getS3Config().s3Bucket : 'test';
     });
 
     afterAll(async () => {

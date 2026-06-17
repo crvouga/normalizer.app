@@ -83,7 +83,7 @@ export class FilesystemObjectStore extends ObjectStore {
     if (!prefix) {
       return `${this.keyPrefix}/`;
     }
-    return enforceKeyPrefix(prefix, this.keyPrefix);
+    return enforceKeyPrefix(prefix);
   }
 
   async readMany(

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import type { ObjectStore } from '~/src/lib/object-store/object-store';
 import { createObjectStore } from '~/src/shared/s3';
+import { getS3Config } from '~/src/shared/s3-config';
 import { DEFAULT_MODEL, createLLMOpenAI, isOpenAIEnabled } from '../llm/llm-open-ai';
 import { createLogger } from '../logger';
 import { createNormalizer } from './normalizer';
@@ -17,13 +18,12 @@ const shouldRunNormalizerTests = isOpenAIEnabled() && false;
 
 (shouldRunNormalizerTests ? describe : describe.skip)('Normalizer', () => {
   const logger = createLogger({ noop: true });
-  const testBucket = 'test-normalizer';
+  const { s3Bucket: testBucket } = getS3Config();
   let objectStore: ObjectStore;
   let normalizer: Normalizer;
 
   beforeAll(async () => {
-    objectStore = await createObjectStore({ logger });
-    await objectStore.ensureBucketExists(testBucket);
+    objectStore = await createObjectStore({ logger, keyPrefix: 'test-normalizer' });
     const llm = createLLMOpenAI({ logger, model: DEFAULT_MODEL });
     normalizer = createNormalizer({ objectStore, logger, llm });
   });

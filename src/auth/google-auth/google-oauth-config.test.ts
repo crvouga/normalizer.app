@@ -12,6 +12,7 @@ const GOOGLE_ENV_KEYS = [
   'GOOGLE_CLIENT_SECRET',
   'SERVER_BASE_URL',
   'PORT',
+  'NODE_ENV',
 ] as const;
 
 const snapshotGoogleEnv = (): Record<string, string | undefined> => {
@@ -120,6 +121,21 @@ describe('getServerBaseUrl', () => {
 
     expect(getServerBaseUrl()).toBe('http://localhost:8080');
   });
+
+  test('derives origin from forwarded headers when SERVER_BASE_URL is unset', () => {
+    envSnapshot = snapshotGoogleEnv();
+    delete process.env.SERVER_BASE_URL;
+    process.env.NODE_ENV = 'production';
+
+    const req = new Request('http://127.0.0.1:8080/api/auth/google/callback', {
+      headers: {
+        host: 'normalizer.chrisvouga.dev',
+        'x-forwarded-proto': 'https',
+      },
+    });
+
+    expect(getServerBaseUrl(req)).toBe('https://normalizer.chrisvouga.dev');
+  });
 });
 
 describe('getGoogleOAuthRedirectUri', () => {
@@ -134,6 +150,23 @@ describe('getGoogleOAuthRedirectUri', () => {
     process.env.SERVER_BASE_URL = 'http://localhost:8080';
 
     expect(getGoogleOAuthRedirectUri()).toBe('http://localhost:8080/api/auth/google/callback');
+  });
+
+  test('uses request origin when SERVER_BASE_URL is unset', () => {
+    envSnapshot = snapshotGoogleEnv();
+    delete process.env.SERVER_BASE_URL;
+    process.env.NODE_ENV = 'production';
+
+    const req = new Request('http://127.0.0.1:8080/api/auth/google/start', {
+      headers: {
+        host: 'normalizer.chrisvouga.dev',
+        'x-forwarded-proto': 'https',
+      },
+    });
+
+    expect(getGoogleOAuthRedirectUri(req)).toBe(
+      'https://normalizer.chrisvouga.dev/api/auth/google/callback',
+    );
   });
 });
 

@@ -15,15 +15,18 @@ import type { WorkspaceProjectionEntry } from '~/src/workspace/workspace-project
 import type { WorkspaceEventEntity } from '~/src/workspace/workspace-event/workspace-event-entity';
 import { createDb } from '~/src/shared/db';
 import { createObjectStore } from '~/src/shared/s3';
+import { getS3Config } from '~/src/shared/s3-config';
 import { UserId } from '~/src/users/user-id';
 import { normalizationTask } from './normalization-task';
 
+const TEST_KEY_PREFIX = 'test-normalization-task';
+
 describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
   const logger = createLogger({ noop: true });
-  const testBucket = 'test-normalization-task';
+  const { s3Bucket } = getS3Config();
+  process.env.S3_KEY_PREFIX = TEST_KEY_PREFIX;
   const db = await createDb({ logger });
-  const objectStore = await createObjectStore({ logger });
-  await objectStore.ensureBucketExists(testBucket);
+  const objectStore = await createObjectStore({ logger, keyPrefix: TEST_KEY_PREFIX });
 
   test(
     'should normalize input artifacts against target artifacts and create output artifacts',
@@ -71,7 +74,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       // Write files to S3
       const inputWriteResult = unwrap(
         await objectStore.write({
-          bucket: testBucket,
+          bucket: s3Bucket,
           key: k(inputKey),
           data: intoJsonBuffer(inputFile),
           contentType: 'application/json',
@@ -80,7 +83,7 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
 
       const targetWriteResult = unwrap(
         await objectStore.write({
-          bucket: testBucket,
+          bucket: s3Bucket,
           key: k(targetKey),
           data: intoJsonBuffer(targetFile),
           contentType: 'application/json',
@@ -232,8 +235,8 @@ describe.if(isOpenAIEnabled() && false)('NormalizationTask', async () => {
       }
 
       // Clean up S3 files
-      await objectStore.delete({ bucket: testBucket, key: k(inputKey) });
-      await objectStore.delete({ bucket: testBucket, key: k(targetKey) });
+      await objectStore.delete({ bucket: s3Bucket, key: k(inputKey) });
+      await objectStore.delete({ bucket: s3Bucket, key: k(targetKey) });
 
       // Clean up output artifact
       if (outputArtifact.object_key) {

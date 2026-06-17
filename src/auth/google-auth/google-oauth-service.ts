@@ -59,8 +59,8 @@ export class GoogleOAuthService {
       return Err('Google OAuth is not configured');
     }
 
-    // Use SERVER_BASE_URL so redirect URI matches Google Cloud Console registration
-    const redirectUri = getGoogleOAuthRedirectUri();
+    // Use SERVER_BASE_URL or the request's public origin so redirect URI matches Google Cloud Console
+    const redirectUri = getGoogleOAuthRedirectUri(_req);
 
     const googleClientId = getGoogleClientId();
     const googleClientSecret = getGoogleClientSecret();

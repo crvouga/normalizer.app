@@ -2,6 +2,7 @@ import { createLogger } from '~/src/lib/logger';
 import { copyObjectStoreDirectory } from '~/src/lib/object-store/object-store-copy';
 import { createFilesystemObjectStore } from '~/src/shared/object-store-fs';
 import { createObjectStore } from '~/src/shared/s3';
+import { getS3KeyPrefix } from '~/src/shared/s3-config';
 import { TEST_FILES_DIR } from './test-files';
 
 export async function main(): Promise<void> {
@@ -18,6 +19,7 @@ export async function main(): Promise<void> {
   logger.info('Initializing remote object store...');
   const remoteObjectStore = await createObjectStore({
     logger,
+    keyPrefix: getS3KeyPrefix(),
   });
   logger.info('Copying objects from local to remote...');
   await copyObjectStoreDirectory({

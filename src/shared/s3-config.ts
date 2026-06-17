@@ -38,3 +38,9 @@ export const getS3Config = (): S3Config => {
     s3Region,
   };
 };
+
+const S3_KEY_PREFIX_DEFAULT = 'normalizer-app';
+
+export const getS3KeyPrefix = (): string => {
+  return S3_KEY_PREFIX_DEFAULT;
+};

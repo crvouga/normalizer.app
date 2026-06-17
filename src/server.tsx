@@ -16,6 +16,7 @@ import { isOk } from './lib/result';
 import type { Db } from './shared/db';
 import { createDb } from './shared/db';
 import { createObjectStore } from './shared/s3';
+import { getS3KeyPrefix } from './shared/s3-config';
 import { createTrpcEndpoints } from './trpc-server/trpc-http-endpoints';
 import { generateSparklesSvg } from './ui/sparkles-svg-generate';
 import { createUserProfilePictureEndpoints } from './users/user-profile-picture-http-server';
@@ -130,7 +131,11 @@ async function main() {
 
   const serverBaseUrl = process.env.SERVER_BASE_URL || `http://localhost:${port}`;
 
-  const objectStore = await createObjectStore({ logger, serverBaseUrl });
+  const objectStore = await createObjectStore({
+    logger,
+    serverBaseUrl,
+    keyPrefix: getS3KeyPrefix(),
+  });
 
   const googleAuthEndpoints = createGoogleAuthEndpoints({ db, objectStore, logger });
 

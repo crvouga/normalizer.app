@@ -54,16 +54,25 @@ export const createPostgresConnection = async ({
   }
 
   logger.info('Creating new database connection...');
+  const poolState = { keepWarm: true };
   const sql = postgres(dbUrlObj.toString(), {
     connect_timeout: 15,
-    idle_timeout: 20,
     max_lifetime: 60 * 30,
     max: 5,
     onnotice: () => {},
+    // postgres.js reconnect() uses closedDate + backoff - now; if a slot sits in the
+    // closed queue longer than backoff (~5–10ms) that becomes negative and Bun warns.
+    // Warm the pool immediately so closed slots reconnect while closedDate is fresh.
+    onclose() {
+      if (!poolState.keepWarm) return;
+      void sql`SELECT 1`.catch(() => {});
+    },
     connection: {
       search_path: schemaName,
     },
   });
+  (sql as ReturnType<typeof postgres> & { __poolState?: typeof poolState }).__poolState =
+    poolState;
 
   await ensureSchemaExists(sql, schemaName);
   await sql.unsafe(`SET search_path TO "${schemaName}"`);

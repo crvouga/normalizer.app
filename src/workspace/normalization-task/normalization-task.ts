@@ -11,8 +11,8 @@ import type { Logger } from '../../lib/logger';
 import { createNormalizer } from '../../lib/normalizer/normalizer';
 import type { Db, Tx } from '../../shared/db';
 import { createObjectStore } from '../../shared/s3';
+import { getS3Config, getS3KeyPrefix } from '../../shared/s3-config';
 import { enforceKeyPrefix } from '../../lib/object-store/object-key';
-import { getS3Config } from '../../shared/s3-config';
 import type { UserId } from '../../users/user-id';
 import { WorkspaceEventEntity } from '../workspace-event/workspace-event-entity';
 import { WorkspaceEventId } from '../workspace-event/workspace-event-id';
@@ -163,7 +163,7 @@ async function performNormalization({
   projection: WorkspaceProjection;
   startedByUserId: UserId;
 }): Promise<ArtifactId[]> {
-  const objectStore = await createObjectStore({ logger });
+  const objectStore = await createObjectStore({ logger, keyPrefix: getS3KeyPrefix() });
   const llm = await createLLMOpenAIAsync({ logger, tier: 'fast' });
 
   const normalizer = createNormalizer({

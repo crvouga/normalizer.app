@@ -4,7 +4,7 @@ import type { Logger } from '../logger';
 import { MinioClient } from '../minio/minio-client';
 import { Err, Ok, type Result } from '../result';
 import { parseAndValidateURL } from '../url';
-import { enforceKeyPrefix } from './object-key';
+import { applyStoreKeyPrefix, fullStoreKeyPrefix } from './object-key';
 import { ObjectLocation } from './object-location';
 import { ObjectStore } from './object-store';
 import { generateServerPresignedUrl } from './presigned-url';
@@ -23,7 +23,7 @@ export class S3ObjectStore extends ObjectStore {
   private readonly s3Client: S3Client;
   private readonly minioClient: MinioClient;
   private readonly s3Endpoint: string;
-  private readonly keyPrefix: string;
+  private readonly storeNamespace: string;
   private readonly serverBaseUrl: string | undefined;
   private readonly logger: Logger;
 
@@ -32,7 +32,7 @@ export class S3ObjectStore extends ObjectStore {
     s3AccessKeyId,
     s3SecretAccessKey,
     s3Region,
-    keyPrefix,
+    storeNamespace,
     serverBaseUrl,
     logger,
   }: {
@@ -40,14 +40,14 @@ export class S3ObjectStore extends ObjectStore {
     s3AccessKeyId: string;
     s3SecretAccessKey: string;
     s3Region: string;
-    keyPrefix: string;
+    storeNamespace: string;
     serverBaseUrl?: string | undefined;
     logger: Logger;
   }) {
     super();
     const validatedEndpoint = parseAndValidateURL(s3Endpoint, 'Invalid S3 Endpoint');
     this.s3Endpoint = validatedEndpoint;
-    this.keyPrefix = keyPrefix;
+    this.storeNamespace = storeNamespace;
     this.serverBaseUrl = serverBaseUrl?.replace(/\/$/, '');
     this.logger = logger.child(S3ObjectStore.name);
 
@@ -61,7 +61,7 @@ export class S3ObjectStore extends ObjectStore {
     this.logger.debug('Initialized Bun S3Client', {
       s3Endpoint: validatedEndpoint,
       s3Region,
-      keyPrefix,
+      storeNamespace,
     });
 
     this.minioClient = new MinioClient({
@@ -76,7 +76,7 @@ export class S3ObjectStore extends ObjectStore {
   private enforceLocation(location: ObjectLocation): ObjectLocation {
     return {
       bucket: location.bucket,
-      key: enforceKeyPrefix(location.key, this.keyPrefix),
+      key: applyStoreKeyPrefix(location.key, this.storeNamespace),
     };
   }
 
@@ -86,9 +86,9 @@ export class S3ObjectStore extends ObjectStore {
 
   private enforceListPrefix(prefix?: string): string {
     if (!prefix) {
-      return `${this.keyPrefix}/`;
+      return `${fullStoreKeyPrefix(this.storeNamespace)}/`;
     }
-    return enforceKeyPrefix(prefix, this.keyPrefix);
+    return applyStoreKeyPrefix(prefix, this.storeNamespace);
   }
 
   async readMany(
